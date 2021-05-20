@@ -15,3 +15,26 @@
 // along with MAP Protocol.  If not, see <http://www.gnu.org/licenses/>.
 
 package cmd
+
+import (
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+func runCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "run",
+		Short:   "Start the atlas",
+		Args:    cobra.ExactArgs(0),
+		Example: "atlas-cli run",
+		RunE:    RunFn,
+	}
+
+	return cmd
+}
+
+func RunFn(cmd *cobra.Command, _ []string) error {
+
+	return nil
+}

@@ -17,5 +17,5 @@
 package main
 
 func main() {
-	//cmd.Execute()
+	cmd.Execute()
 }
