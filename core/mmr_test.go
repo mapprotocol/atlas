@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
+	"golang.org/x/crypto/sha3"
+	"hash"
 	"math"
 	"math/big"
 	"testing"
@@ -85,7 +91,7 @@ func Test03(t *testing.T) {
 	fmt.Println("val:", val, "fval:", ByteToFloat64(Uint64ToBytes(val)))
 
 	aa := [32]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
-	fmt.Println("aa", Hash_to_f64(common.BytesToHash(aa[:])))
+	fmt.Println("aa", HashToF64(common.BytesToHash(aa[:])))
 	fmt.Println("finish")
 }
 
