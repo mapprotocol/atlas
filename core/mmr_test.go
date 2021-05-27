@@ -152,9 +152,9 @@ func test_O6(count int) {
 		Right:  big.NewInt(100),
 	}
 
-	msg1 := &MapProofs{
-		FirstRes: tmp,
-		SecondRes: &ChainInforProof{
+	msg1 := &ChainProofs{
+		HeaderProof: tmp,
+		InfoProof: &ChainInfoProof{
 			Proof:  proof,
 			Header: nil,
 		},
@@ -174,13 +174,13 @@ func test_O6(count int) {
 	// 	ProofHeight:  4,
 	// 	Leatest:      []*types.Header{},
 	// }
-	msg2 := &UlvpChainProof{
-		Res: msg1,
+	msg2 := &MapProofs{
+		Proofs: msg1,
 	}
 	if data2, err := rlp.EncodeToBytes(msg2); err != nil {
 		fmt.Println("error", err)
 	} else {
-		msg5 := &UlvpChainProof{}
+		msg5 := &MapProofs{}
 		if err := rlp.DecodeBytes(data2, msg5); err != nil {
 			fmt.Println("msg5", msg5, "error", err)
 		}
