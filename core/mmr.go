@@ -208,6 +208,7 @@ type ProofRes struct {
 	H  common.Hash
 	TD *big.Int
 }
+
 type VerifyElem struct {
 	Res        *ProofRes
 	Index      uint64
@@ -220,6 +221,7 @@ type ProofElem struct {
 	Right   bool
 	LeafNum uint64
 }
+
 type ProofInfo struct {
 	RootHash       common.Hash
 	RootDifficulty *big.Int

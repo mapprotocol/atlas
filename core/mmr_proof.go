@@ -17,25 +17,29 @@
 package core
 
 import (
+	"bytes"
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 )
 
-type ChainHeaderProofMsg struct {
+type ChainHeaderProof struct {
 	Proof  *ProofInfo // the leatest blockchain and an proof of existence
 	Header []*types.Header
 	Right  *big.Int
 }
 
-func newChainHeaderProofMsg() *ChainHeaderProofMsg {
-	return &ChainHeaderProofMsg{
+func newChainHeaderProof() *ChainHeaderProof {
+	return &ChainHeaderProof{
 		Proof:  &ProofInfo{},
 		Header: []*types.Header{},
 		Right:  big.NewInt(0),
 	}
 }
-func (b *ChainHeaderProofMsg) Datas() ([]byte, error) {
+func (b *ChainHeaderProof) Datas() ([]byte, error) {
 	data, err := rlp.EncodeToBytes(b)
 	if err != nil {
 		return nil, err
@@ -43,14 +47,46 @@ func (b *ChainHeaderProofMsg) Datas() ([]byte, error) {
 	return data, nil
 }
 
-type ChainInProofMsg struct {
+type ChainInforProof struct {
 	Proof  *ProofInfo
 	Header []*types.Header
 }
 
-func newChainInProofMsg() *ChainInProofMsg {
-	return &ChainInProofMsg{
+func newChainInforProof() *ChainInforProof {
+	return &ChainInforProof{
 		Proof:  &ProofInfo{},
 		Header: []*types.Header{},
 	}
+}
+
+type MapProofs struct {
+	FirstRes  *ChainHeaderProof
+	SecondRes *ChainInforProof
+}
+
+func NewMapProofs() *MapProofs {
+	return &MapProofs{
+		FirstRes:  newChainHeaderProof(),
+		SecondRes: newChainInforProof(),
+	}
+}
+
+func (b *MapProofs) Datas() ([]byte, error) {
+	data, err := rlp.EncodeToBytes(b)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (b *MapProofs) checkMmrRoot() error {
+	if b.FirstRes != nil && b.SecondRes != nil {
+		fRoot, sRoot := b.FirstRes.Proof.RootHash, b.SecondRes.Proof.RootHash
+		if !bytes.Equal(fRoot[:], sRoot[:]) {
+			fmt.Println("mmr root not match for second proof,first:", hex.EncodeToString(fRoot[:]), "second:", hex.EncodeToString(sRoot[:]))
+			return errors.New("mmr root not match for second proof")
+		}
+		return nil
+	}
+	return errors.New("invalid params in checkMmrRoot")
 }

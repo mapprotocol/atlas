@@ -76,7 +76,7 @@ func Test02(t *testing.T) {
 	num := uint64(0)
 	a := NextPowerOfTwo(num)
 	b := float64(100)
-	fmt.Println("b:", math.Log(b), "pos_height:", get_depth(6))
+	fmt.Println("b:", math.Log(b), "pos_height:", getDepth(6))
 	fmt.Println("aa", a, "isPow:", IsPowerOfTwo(num), "GetNodeFromLeaf:", GetNodeFromLeaf(6))
 }
 func modify_slice(v []int) []int {
@@ -146,15 +146,15 @@ func test_O6(count int) {
 	// fmt.Println("leaf_number:", mmr.getLeafNumber(), "root_difficulty:", mmr.GetRootDifficulty())
 	proof, _, _ := mmr.CreateNewProof(right_difficulty)
 
-	tmp := &ChainHeaderProofMsg{
+	tmp := &ChainHeaderProof{
 		Proof:  proof,
 		Header: nil,
 		Right:  big.NewInt(100),
 	}
 
-	msg1 := &UlvpMsgRes{
+	msg1 := &MapProofs{
 		FirstRes: tmp,
-		SecondRes: &ChainInProofMsg{
+		SecondRes: &ChainInforProof{
 			Proof:  proof,
 			Header: nil,
 		},
