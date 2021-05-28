@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
 )
 
@@ -40,7 +41,7 @@ func newChainHeaderProof() *ChainHeaderProof {
 		Right:  big.NewInt(0),
 	}
 }
-func (b *ChainHeaderProof) Datas() ([]byte, error) {
+func (b *ChainHeaderProof) Data() ([]byte, error) {
 	data, err := rlp.EncodeToBytes(b)
 	if err != nil {
 		return nil, err
@@ -53,60 +54,28 @@ type ChainInfoProof struct {
 	Header []*types.Header
 }
 
-func newChainInforProof() *ChainInfoProof {
+func newChainInfoProof() *ChainInfoProof {
 	return &ChainInfoProof{
 		Proof:  &ProofInfo{},
 		Header: []*types.Header{},
 	}
 }
 
-type ChainProofs struct {
-	HeaderProof *ChainHeaderProof
-	InfoProof   *ChainInfoProof
-}
-
-func NewMapProofs() *ChainProofs {
-	return &ChainProofs{
-		HeaderProof: newChainHeaderProof(),
-		InfoProof:   newChainInforProof(),
-	}
-}
-
-func (b *ChainProofs) Datas() ([]byte, error) {
-	data, err := rlp.EncodeToBytes(b)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func (b *ChainProofs) checkMmrRoot() error {
-	if b.HeaderProof != nil && b.InfoProof != nil {
-		fRoot, sRoot := b.HeaderProof.Proof.RootHash, b.InfoProof.Proof.RootHash
-		if !bytes.Equal(fRoot[:], sRoot[:]) {
-			fmt.Println("mmr root not match for second proof,first:", hex.EncodeToString(fRoot[:]), "second:", hex.EncodeToString(sRoot[:]))
-			return errors.New("mmr root not match for second proof")
-		}
-		return nil
-	}
-	return errors.New("invalid params in checkMmrRoot")
-}
-
 ///////////////////////////////////////////////////////////////////////////////////
 
-type OtherChainAdapter struct {
+type ChainAdapter struct {
 	Genesis      common.Hash
 	ConfirmBlock *types.Header
 	ProofHeader  *types.Header
-	Leatest      []*types.Header
+	Latest       []*types.Header
 }
 
-func (o *OtherChainAdapter) Copy() *OtherChainAdapter {
-	tmp := &OtherChainAdapter{
+func (o *ChainAdapter) Copy() *ChainAdapter {
+	tmp := &ChainAdapter{
 		Genesis:      o.Genesis,
 		ConfirmBlock: &types.Header{},
 		ProofHeader:  &types.Header{},
-		Leatest:      o.Leatest,
+		Latest:       o.Latest,
 	}
 	if o.ConfirmBlock != nil {
 		tmp.ConfirmBlock = types.CopyHeader(o.ConfirmBlock)
@@ -119,12 +88,12 @@ func (o *OtherChainAdapter) Copy() *OtherChainAdapter {
 }
 
 // header block check
-func (o *OtherChainAdapter) originHeaderCheck(head []*types.Header) error {
+func (o *ChainAdapter) originHeaderCheck(head []*types.Header) error {
 	// check difficult
 	return nil
 }
 
-func (o *OtherChainAdapter) GenesisCheck(head *types.Header) error {
+func (o *ChainAdapter) GenesisCheck(head *types.Header) error {
 
 	rHash, lHash := head.Hash(), o.Genesis
 	if !bytes.Equal(rHash[:], lHash[:]) {
@@ -133,7 +102,7 @@ func (o *OtherChainAdapter) GenesisCheck(head *types.Header) error {
 	}
 	return nil
 }
-func (o *OtherChainAdapter) checkAndSetHeaders(heads []*types.Header, setcur bool) error {
+func (o *ChainAdapter) checkAndSetHeaders(heads []*types.Header, setcur bool) error {
 	if len(heads) == 0 {
 		return errors.New("invalid params")
 	}
@@ -150,20 +119,20 @@ func (o *OtherChainAdapter) checkAndSetHeaders(heads []*types.Header, setcur boo
 	}
 	return nil
 }
-func (o *OtherChainAdapter) setProofHeader(head *types.Header) {
+func (o *ChainAdapter) setProofHeader(head *types.Header) {
 	o.ProofHeader = types.CopyHeader(head)
 }
-func (o *OtherChainAdapter) setLeatestHeader(confirm *types.Header, leatest []*types.Header) {
+func (o *ChainAdapter) setLeatestHeader(confirm *types.Header, leatest []*types.Header) {
 	o.ConfirmBlock = types.CopyHeader(confirm)
 	tmp := []*types.Header{}
 	for _, v := range leatest {
 		tmp = append(tmp, types.CopyHeader(v))
 	}
-	o.Leatest = tmp
+	o.Latest = tmp
 }
-func (o *OtherChainAdapter) checkMmrRootForFirst(root common.Hash) error {
-	if len(o.Leatest) > 0 {
-		l := o.Leatest[len(o.Leatest)-1]
+func (o *ChainAdapter) checkMmrRootForFirst(root common.Hash) error {
+	if len(o.Latest) > 0 {
+		l := o.Latest[len(o.Latest)-1]
 		rHash := l.MmrRoot
 		if !bytes.Equal(root[:], rHash[:]) {
 			fmt.Println("mmr root not match for first proof in header:", hex.EncodeToString(root[:]), "root in proof:", hex.EncodeToString(rHash[:]))
@@ -176,45 +145,151 @@ func (o *OtherChainAdapter) checkMmrRootForFirst(root common.Hash) error {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-type MapProofs struct {
-	Remote *OtherChainAdapter `json:"remote"     rlp:"nil"`
-	Proofs *ChainProofs
+type ChainProofs struct {
+	Remote      *ChainAdapter `json:"remote"     rlp:"nil"`
+	HeaderProof *ChainHeaderProof
+	InfoProof   *ChainInfoProof
 }
 
-func (mps *MapProofs) Verify() error {
+func NewChainProofs() *ChainProofs {
+	return &ChainProofs{
+		HeaderProof: newChainHeaderProof(),
+		InfoProof:   newChainInfoProof(),
+	}
+}
 
-	if pBlocks, err := VerifyRequiredBlocks(mps.Proofs.HeaderProof.Proof, mps.Proofs.HeaderProof.Right); err != nil {
+func (cps *ChainProofs) Data() ([]byte, error) {
+	data, err := rlp.EncodeToBytes(cps)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (cps *ChainProofs) checkMmrRoot() error {
+	if cps.HeaderProof != nil && cps.InfoProof != nil {
+		fRoot, sRoot := cps.HeaderProof.Proof.RootHash, cps.InfoProof.Proof.RootHash
+		if !bytes.Equal(fRoot[:], sRoot[:]) {
+			fmt.Println("mmr root not match for second proof,first:", hex.EncodeToString(fRoot[:]), "second:", hex.EncodeToString(sRoot[:]))
+			return errors.New("mmr root not match for second proof")
+		}
+		return nil
+	}
+	return errors.New("invalid params in checkMmrRoot")
+}
+
+func (cps *ChainProofs) Verify() error {
+
+	if pBlocks, err := VerifyRequiredBlocks(cps.HeaderProof.Proof, cps.HeaderProof.Right); err != nil {
 		return err
 	} else {
-		if !mps.Proofs.HeaderProof.Proof.VerifyProof(pBlocks) {
+		if !cps.HeaderProof.Proof.VerifyProof(pBlocks) {
 			return errors.New("Verify Proof Failed on first msg")
 		} else {
-			if err := mps.Remote.GenesisCheck(mps.Proofs.HeaderProof.Header[0]); err != nil {
+			if err := cps.Remote.GenesisCheck(cps.HeaderProof.Header[0]); err != nil {
 				return err
 			}
-			if err := mps.Remote.checkAndSetHeaders(mps.Proofs.HeaderProof.Header, false); err != nil {
+			if err := cps.Remote.checkAndSetHeaders(cps.HeaderProof.Header, false); err != nil {
 				return err
 			}
-			if err := mps.Remote.checkMmrRootForFirst(mps.Proofs.HeaderProof.Proof.RootHash); err != nil {
+			if err := cps.Remote.checkMmrRootForFirst(cps.HeaderProof.Proof.RootHash); err != nil {
 				return err
 			}
-			if pBlocks, err := VerifyRequiredBlocks2(mps.Proofs.InfoProof.Proof); err != nil {
+			if pBlocks, err := VerifyRequiredBlocks2(cps.InfoProof.Proof); err != nil {
 				return err
 			} else {
-				if !mps.Proofs.InfoProof.Proof.VerifyProof2(pBlocks) {
+				if !cps.InfoProof.Proof.VerifyProof2(pBlocks) {
 					return errors.New("Verify Proof2 Failed on first msg")
 				}
-				if err := mps.checkMmrRoot(); err != nil {
+				if err := cps.checkMmrRoot(); err != nil {
 					return err
 				}
 				// check headers
-				return mps.Remote.checkAndSetHeaders(mps.Proofs.InfoProof.Header, true)
+				return cps.Remote.checkAndSetHeaders(cps.InfoProof.Header, true)
 			}
 		}
 	}
 	return nil
 }
 
-func (mps *MapProofs) checkMmrRoot() error {
-	return mps.Proofs.checkMmrRoot()
+type ReceiptProof struct { // describes all responses, not just a single one
+	Proofs      NodeList
+	Index       uint64
+	ReceiptHash common.Hash
+}
+
+func (r *ReceiptProof) Verify() (*types.Receipt, error) {
+	keybuf := new(bytes.Buffer)
+	keybuf.Reset()
+	rlp.Encode(keybuf, r.Index)
+	value, err := trie.VerifyProof(r.ReceiptHash, keybuf.Bytes(), r.Proofs.NodeSet())
+	if err != nil {
+		return nil, err
+	}
+
+	var receipt *types.Receipt
+	if err := rlp.DecodeBytes(value, &receipt); err != nil {
+		return nil, err
+	}
+
+	return receipt, err
+}
+
+// newBlockData is the network packet for the block propagation message.
+type MapProofs struct {
+	ChainProof   *ChainProofs
+	ReceiptProof *ReceiptProof
+	End          *big.Int
+	Header       *types.Header
+	Result       bool
+	TxHash       common.Hash
+}
+
+// UlvpTransaction is the network packet for the block propagation message.
+type MapTransaction struct {
+	SimpUlvpP *MapProofs
+	Tx        *types.Transaction
+}
+
+func (mr *MapProofs) VerifyMapTransaction(txHash common.Hash) (*types.Receipt, error) {
+	if !mr.Result {
+		return nil, errors.New("no proof return")
+	}
+	if err := mr.ChainProof.Verify(); err != nil {
+		return nil, err
+	}
+
+	if mr.ChainProof.Remote.ProofHeader.Number.Uint64() != mr.Header.Number.Uint64() {
+		return nil, errors.New("mmr proof not match receipt proof")
+	}
+	receipt, err := mr.ReceiptProof.Verify()
+	if err != nil {
+		return nil, err
+	}
+
+	//if !reflect.DeepEqual(receipt.Bloom, mr.ReceiptProof.Receipt.Bloom) {
+	//	return nil, errors.New("receipt Bloom proof not match receipt")
+	//}
+	//
+	//if !reflect.DeepEqual(receipt.Logs, mr.ReceiptProof.Receipt.Logs) {
+	//	return nil, errors.New("receipt Logs proof not match receipt")
+	//}
+	//
+	//if !reflect.DeepEqual(receipt.CumulativeGasUsed, mr.ReceiptProof.Receipt.CumulativeGasUsed) {
+	//	return nil, errors.New("receipt Logs proof not match receipt")
+	//}
+
+	if mr.TxHash != txHash {
+		return nil, errors.New("txHash checkout failed")
+	}
+	return receipt, nil
+}
+
+func MapVerify(proof []byte, txHash common.Hash) error {
+	su := &MapProofs{}
+	if err := rlp.DecodeBytes(proof, su); err != nil {
+		return err
+	}
+	_, err := su.VerifyMapTransaction(txHash)
+	return err
 }

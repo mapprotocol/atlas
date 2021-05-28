@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 	"hash"
@@ -43,7 +44,7 @@ func (h *testHasher) Hash() common.Hash {
 	return common.BytesToHash(h.hasher.Sum(nil))
 }
 
-func (h *testHasher) Prove(key []byte, fromLevel uint, proofDb mosdb.KeyValueWriter) error {
+func (h *testHasher) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error {
 	return nil
 }
 
@@ -174,13 +175,11 @@ func test_O6(count int) {
 	// 	ProofHeight:  4,
 	// 	Leatest:      []*types.Header{},
 	// }
-	msg2 := &MapProofs{
-		Proofs: msg1,
-	}
+	msg2 := msg1
 	if data2, err := rlp.EncodeToBytes(msg2); err != nil {
 		fmt.Println("error", err)
 	} else {
-		msg5 := &MapProofs{}
+		msg5 := &ChainProofs{}
 		if err := rlp.DecodeBytes(data2, msg5); err != nil {
 			fmt.Println("msg5", msg5, "error", err)
 		}
@@ -189,9 +188,9 @@ func test_O6(count int) {
 
 	var data []rlp.RawValue
 	data = append(data, []byte{1, 2})
-	pReceipt := &ReceiptTrieResps{Proofs: data, Index: 1, ReceiptHash: common.Hash{}}
+	pReceipt := &ReceiptProof{Proofs: data, Index: 1, ReceiptHash: common.Hash{}}
 
-	msg3 := &SimpleUlvpProof{
+	msg3 := &MapProofs{
 		ChainProof:   msg2,
 		ReceiptProof: pReceipt,
 		End:          big.NewInt(120),
@@ -206,7 +205,7 @@ func test_O6(count int) {
 	}
 	fmt.Println("data3 len:", len(data3))
 
-	msg4 := &SimpleUlvpProof{}
+	msg4 := &MapProofs{}
 	if err := rlp.DecodeBytes(data3, msg4); err != nil {
 		fmt.Println("msg4", msg4, "error", err)
 	}
