@@ -17,9 +17,9 @@
 package cmd
 
 import (
-	"github.com/sirupsen/logrus"
+	_ "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	_ "github.com/spf13/viper"
 )
 
 func runCmd() *cobra.Command {
