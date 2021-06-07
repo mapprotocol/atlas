@@ -1,5 +1,6 @@
 package synchr
 
+import "github.com/ethereum/go-ethereum/common"
 import "github.com/ethereum/go-ethereum/core/types"
 
 type HeaderCacheOne struct {
@@ -61,5 +62,21 @@ func (hc *HeaderCache) Add(header *types.Header) bool {
 }
 
 func (hc *HeaderCache) removeTo(minHeightToKeep uint64) {
+	for hc.minHeight < minHeightToKeep {
+		hashesToRemove := hc.hashesByHeight[hc.minHeight]
+		delete(hc.hashesByHeight, hc.minHeight)
+		hc.minHeight++
+		for _, hashToRemove := range hashesToRemove {
+			delete(hc.headers, hashToRemove)
+		}
+	}
+}
 
+func (hc *HeaderCache) Get(hash common.Hash) (*HeaderCacheOne, bool) {
+	hashHex := hash.Hex()
+	item, exists := hc.headers[hashHex]
+	if exists {
+		return item, true
+	}
+	return nil, false
 }
