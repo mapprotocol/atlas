@@ -15,7 +15,6 @@
 // along with MAP Protocol.  If not, see <http://www.gnu.org/licenses/>.
 
 // Package atlasapi implements the general Atlas API functions.
-
 package atlasapi
 
 import (
