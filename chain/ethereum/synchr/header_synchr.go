@@ -2,6 +2,7 @@ package synchr
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -89,5 +90,81 @@ func (s *Synchr) fetchFinalizedHeaders(ctx context.Context, initBlockHeight uint
 }
 
 func (s *Synchr) pollNewHeaders(ctx context.Context, lbi *latestBlockInfo) error {
+	headers := make(chan *types.Header)
+	var headersSubscriptionErr <-chan error
+
+	subscription, err := s.loader.SubscribeNewHead(ctx, headers)
+	if err != nil {
+		s.log.WithError(err).Error("Failed to subscribe to new headers")
+		return err
+	}
+	headersSubscriptionErr = subscription.Err()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-headersSubscriptionErr:
+			return err
+		case header := <-headers:
+			s.headerCache.Add(header)
+			lbi.Lock()
+			lbi.height = header.Number.Uint64()
+
+			s.log.WithFields(logrus.Fields{
+				"blockHash":   header.Hash().Hex(),
+				"blockNumber": lbi.height,
+			}).Debug("Witnessed new header")
+
+			if lbi.fetchFinalizedDone {
+				err = s.forwardAncestry(ctx, header.Hash(), saturatingSub(lbi.height, s.descendantsUntilFinal))
+				if err != nil {
+					s.log.WithFields(logrus.Fields{
+						"blockHash":   header.Hash().Hex(),
+						"blockNumber": lbi.height,
+					}).WithError(err).Error("Failed to forward header and its ancestors")
+				}
+			}
+			lbi.Unlock()
+		}
+	}
+}
+
+func (s *Synchr) forwardAncestry(ctx context.Context, hash common.Hash, oldestHeight uint64) error {
+	item, exists := s.headerCache.Get(hash)
+	if !exists {
+		header, err := s.loader.HeaderByHash(ctx, hash)
+		if err != nil {
+			return err
+		}
+
+		// If a header is too old, it cannot be inserted. We can assume it's already been forwarded
+		if !s.headerCache.Add(header) {
+			return nil
+		}
+		item, _ = s.headerCache.Get(hash)
+	}
+
+	if item.Forwarded {
+		return nil
+	}
+
+	if item.Header.Number.Uint64() > oldestHeight {
+		err := s.forwardAncestry(ctx, item.Header.ParentHash, oldestHeight)
+		if err != nil {
+			return err
+		}
+	}
+
+	s.newHeaders <- item.Header
+	item.Forwarded = true
 	return nil
+}
+
+// Subtraction but returns 0 when r > l
+func saturatingSub(l uint64, r uint64) uint64 {
+	if r > l {
+		return 0
+	}
+	return l - r
 }
