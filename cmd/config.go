@@ -140,8 +140,8 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, atlasConfig) {
 // makeFullNode loads atlas configuration and creates the Ethereum backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
-	if ctx.GlobalIsSet(utils.OverrideLondonFlag.Name) {
-		cfg.Eth.OverrideLondon = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideLondonFlag.Name))
+	if ctx.GlobalIsSet(utils.OverrideBerlinFlag.Name) {
+		cfg.Eth.OverrideBerlin = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideBerlinFlag.Name))
 	}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 

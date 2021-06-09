@@ -66,7 +66,7 @@ var (
 		utils.NoUSBFlag,
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
-		utils.OverrideLondonFlag,
+		utils.OverrideBerlinFlag,
 		utils.EthashCacheDirFlag,
 		utils.EthashCachesInMemoryFlag,
 		utils.EthashCachesOnDiskFlag,
@@ -138,7 +138,7 @@ var (
 		utils.RopstenFlag,
 		utils.RinkebyFlag,
 		utils.GoerliFlag,
-		utils.BaikalFlag,
+		utils.YoloV3Flag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
@@ -147,7 +147,6 @@ var (
 		utils.GpoBlocksFlag,
 		utils.GpoPercentileFlag,
 		utils.GpoMaxGasPriceFlag,
-		utils.GpoIgnoreGasPriceFlag,
 		utils.EWASMInterpreterFlag,
 		utils.EVMInterpreterFlag,
 		utils.MinerNotifyFullFlag,
@@ -275,8 +274,8 @@ func prepare(ctx *cli.Context) {
 	case ctx.GlobalIsSet(utils.GoerliFlag.Name):
 		log.Info("Starting Atlas on Görli testnet...")
 
-	case ctx.GlobalIsSet(utils.BaikalFlag.Name):
-		log.Info("Starting Atlas on Baikal testnet...")
+	case ctx.GlobalIsSet(utils.YoloV3Flag.Name):
+		log.Info("Starting Atlas on YOLOv3 testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Atlas in ephemeral dev mode...")
