@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
+	"math/big"
 	"sync"
 )
 
@@ -86,6 +87,44 @@ func (s *Synchr) StartSync(ctx context.Context, eg *errgroup.Group, initBlockHei
 }
 
 func (s *Synchr) fetchFinalizedHeaders(ctx context.Context, initBlockHeight uint64, lbi *latestBlockInfo) error {
+	syncedUpUntil := initBlockHeight
+
+	for {
+		lbi.Lock()
+		latestFinalizedHeight := saturatingSub(lbi.height, s.descendantsUntilFinal)
+		if syncedUpUntil >= latestFinalizedHeight {
+			// Signals to pollNewHeaders that new headers can be forwarded now
+			lbi.fetchFinalizedDone = true
+			lbi.Unlock()
+
+			s.log.WithField("blockNumber", syncedUpUntil).Debug("Done retrieving finalized headers")
+
+			break
+		}
+		lbi.Unlock()
+
+		header, err := s.loader.HeaderByNumber(ctx, new(big.Int).SetUint64(syncedUpUntil+1))
+		if err != nil {
+			s.log.WithField(
+				"blockNumber", syncedUpUntil+1,
+			).WithError(err).Error("Failed to retrieve finalized header")
+			return err
+		}
+
+		s.log.WithFields(logrus.Fields{
+			"blockHash":   header.Hash().Hex(),
+			"blockNumber": syncedUpUntil + 1,
+		}).Debug("Retrieved finalized header")
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			s.oldHeaders <- header
+		}
+		syncedUpUntil++
+	}
+
 	return nil
 }
 
