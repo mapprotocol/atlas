@@ -16,6 +16,11 @@
 
 package main
 
+import (
+	"github.com/atlas/cmd"
+)
+
+
 func main() {
 	cmd.Execute()
 }
