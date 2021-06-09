@@ -14,27 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with MAP Protocol.  If not, see <http://www.gnu.org/licenses/>.
 
-package cmd
+// +build !go1.6
 
-import (
-	_ "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	_ "github.com/spf13/viper"
-)
+package debug
 
-func runCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "run",
-		Short:   "Start the atlas",
-		Args:    cobra.ExactArgs(0),
-		Example: "atlas-cli run",
-		RunE:    RunFn,
-	}
-
-	return cmd
-}
-
-func RunFn(cmd *cobra.Command, _ []string) error {
-
-	return nil
+// LoudPanic panics in a way that gets all goroutine stacks printed on stderr.
+func LoudPanic(x interface{}) {
+	panic(x)
 }

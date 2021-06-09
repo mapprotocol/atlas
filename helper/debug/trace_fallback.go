@@ -14,13 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with MAP Protocol.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+//+build !go1.5
 
-import (
-	"github.com/mapprotocol/atlas/cmd"
-)
+// no-op implementation of tracing methods for Go < 1.5.
 
+package debug
 
-func main() {
-	cmd.Execute()
+import "errors"
+
+func (*HandlerT) StartGoTrace(string) error {
+	return errors.New("tracing is not supported on Go < 1.5")
+}
+
+func (*HandlerT) StopGoTrace() error {
+	return errors.New("tracing is not supported on Go < 1.5")
 }

@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with MAP Protocol.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+// +build go1.6
 
-import (
-	"github.com/mapprotocol/atlas/cmd"
-)
+package debug
 
+import "runtime/debug"
 
-func main() {
-	cmd.Execute()
+// LoudPanic panics in a way that gets all goroutine stacks printed on stderr.
+func LoudPanic(x interface{}) {
+	debug.SetTraceback("all")
+	panic(x)
 }
