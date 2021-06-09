@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/atlas/cmd"
+	"github.com/mapprotocol/atlas/cmd"
 )
 
 
