@@ -30,7 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 	"github.com/prometheus/tsdb/fileutil"
 )
 
@@ -81,7 +81,7 @@ type freezer struct {
 	tables       map[string]*freezerTable // Data tables for storing everything
 	instanceLock fileutil.Releaser        // File-system lock to prevent double opens
 
-	trigger chan chan struct{} // Manual blocking freeze trigger, test determinism
+	trigger chan chan struct{} // Manual blocking freeze trigger, dbtest determinism
 
 	quit      chan struct{}
 	wg        sync.WaitGroup
@@ -281,7 +281,7 @@ func (f *freezer) Sync() error {
 // incurring additional data shuffling delays on block propagation.
 func (f *freezer) freeze(db ethdb.KeyValueStore) {
 	nfdb := &nofreezedb{KeyValueStore: db}
-	m := mark("test")
+	m := Mark(123)
 	var (
 		backoff   bool
 		triggered chan struct{} // Used in tests

@@ -2,8 +2,8 @@ package ethereum
 
 import (
 	"fmt"
-	etypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
+	etypes "github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/rlp"
 	"github.com/sirupsen/logrus"
 	"github.com/snowfork/ethashproof"
 	"github.com/snowfork/ethashproof/ethash"

@@ -23,16 +23,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/rlp"
 )
 
 // InitDatabaseFromFreezer reinitializes an empty database from a previous batch
 // of frozen ancient blocks. The method iterates over all the frozen blocks and
 // injects into the database the block hash->number mappings.
-func InitDatabaseFromFreezer(db ethdb.Database) {
+func InitDatabaseFromFreezer(db ethdb.Database, m Mark) {
 	// If we can't access the freezer or it's empty, abort
 	frozen, err := db.Ancients()
 	if err != nil || frozen == 0 {
@@ -44,7 +44,7 @@ func InitDatabaseFromFreezer(db ethdb.Database) {
 		logged = start.Add(-7 * time.Second) // Unindex during import is fast, don't double log
 		hash   common.Hash
 	)
-	m := mark("test")
+
 	for i := uint64(0); i < frozen; i++ {
 		// Since the freezer has all data in sequential order on a file,
 		// it would be 'neat' to read more data in one go, and let the
@@ -88,7 +88,7 @@ type blockTxHashes struct {
 // number(s) given, and yields the hashes on a channel. If there is a signal
 // received from interrupt channel, the iteration will be aborted and result
 // channel will be closed.
-func iterateTransactions(db ethdb.Database, from uint64, to uint64, reverse bool, interrupt chan struct{}) chan *blockTxHashes {
+func iterateTransactions(db ethdb.Database, from uint64, to uint64, reverse bool, interrupt chan struct{}, m Mark) chan *blockTxHashes {
 	// One thread sequentially reads data from db
 	type numberRlp struct {
 		number uint64
@@ -105,7 +105,7 @@ func iterateTransactions(db ethdb.Database, from uint64, to uint64, reverse bool
 		rlpCh    = make(chan *numberRlp, threads*2)     // we send raw rlp over this channel
 		hashesCh = make(chan *blockTxHashes, threads*2) // send hashes over hashesCh
 	)
-	m := mark("test")
+
 	// lookup runs in one instance
 	lookup := func() {
 		n, end := from, to
@@ -174,13 +174,13 @@ func iterateTransactions(db ethdb.Database, from uint64, to uint64, reverse bool
 //
 // There is a passed channel, the whole procedure will be interrupted if any
 // signal received.
-func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool) {
+func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool, m Mark) {
 	// short circuit for invalid range
 	if from >= to {
 		return
 	}
 	var (
-		hashesCh = iterateTransactions(db, from, to, true, interrupt)
+		hashesCh = iterateTransactions(db, from, to, true, interrupt, m)
 		batch    = db.NewBatch()
 		start    = time.Now()
 		logged   = start.Add(-7 * time.Second)
@@ -192,7 +192,6 @@ func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan
 		// for stats reporting
 		blocks, txs = 0, 0
 	)
-	m := mark("test")
 	for chanDelivery := range hashesCh {
 		// Push the delivery into the queue and process contiguous ranges.
 		// Since we iterate in reverse, so lower numbers have lower prio, and
@@ -253,26 +252,26 @@ func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan
 //
 // There is a passed channel, the whole procedure will be interrupted if any
 // signal received.
-func IndexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}) {
-	indexTransactions(db, from, to, interrupt, nil)
+func IndexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, m Mark) {
+	indexTransactions(db, from, to, interrupt, nil, m)
 }
 
 // indexTransactionsForTesting is the internal debug version with an additional hook.
-func indexTransactionsForTesting(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool) {
-	indexTransactions(db, from, to, interrupt, hook)
+func indexTransactionsForTesting(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool, m Mark) {
+	indexTransactions(db, from, to, interrupt, hook, m)
 }
 
 // unindexTransactions removes txlookup indices of the specified block range.
 //
 // There is a passed channel, the whole procedure will be interrupted if any
 // signal received.
-func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool) {
+func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool, m Mark) {
 	// short circuit for invalid range
 	if from >= to {
 		return
 	}
 	var (
-		hashesCh = iterateTransactions(db, from, to, false, interrupt)
+		hashesCh = iterateTransactions(db, from, to, false, interrupt, m)
 		batch    = db.NewBatch()
 		start    = time.Now()
 		logged   = start.Add(-7 * time.Second)
@@ -283,7 +282,6 @@ func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt ch
 		// for stats reporting
 		blocks, txs = 0, 0
 	)
-	m := mark("test")
 	// Otherwise spin up the concurrent iterator and unindexer
 	for delivery := range hashesCh {
 		// Push the delivery into the queue and process contiguous ranges.
@@ -341,11 +339,11 @@ func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt ch
 //
 // There is a passed channel, the whole procedure will be interrupted if any
 // signal received.
-func UnindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}) {
-	unindexTransactions(db, from, to, interrupt, nil)
+func UnindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, m Mark) {
+	unindexTransactions(db, from, to, interrupt, nil, m)
 }
 
 // unindexTransactionsForTesting is the internal debug version with an additional hook.
-func unindexTransactionsForTesting(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool) {
-	unindexTransactions(db, from, to, interrupt, hook)
+func unindexTransactionsForTesting(db ethdb.Database, from uint64, to uint64, interrupt chan struct{}, hook func(uint64) bool, m Mark) {
+	unindexTransactions(db, from, to, interrupt, hook, m)
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 )
 
-type mark string
+type Mark uint64
 
 // The fields below define the low level database schema prefixing.
 var (
@@ -78,13 +78,13 @@ var (
 	uncleanShutdownKey = []byte("unclean-shutdown") // config prefix for the db
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
-	headerPrefix       = []byte("h") // headerPrefix + mark + num (uint64 big endian) + hash -> header
-	headerTDSuffix     = []byte("t") // headerPrefix + mark + num (uint64 big endian) + hash + headerTDSuffix -> td
-	headerHashSuffix   = []byte("n") // headerPrefix + mark + num (uint64 big endian) + headerHashSuffix -> hash
+	headerPrefix       = []byte("h") // headerPrefix + Mark + num (uint64 big endian) + hash -> header
+	headerTDSuffix     = []byte("t") // headerPrefix + Mark + num (uint64 big endian) + hash + headerTDSuffix -> td
+	headerHashSuffix   = []byte("n") // headerPrefix + Mark + num (uint64 big endian) + headerHashSuffix -> hash
 	headerNumberPrefix = []byte("H") // headerNumberPrefix + hash -> num (uint64 big endian)
 
-	blockBodyPrefix     = []byte("b") // blockBodyPrefix + mark + num (uint64 big endian) + hash -> block body
-	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + mark + num (uint64 big endian) + hash -> block receipts
+	blockBodyPrefix     = []byte("b") // blockBodyPrefix + Mark + num (uint64 big endian) + hash -> block body
+	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + Mark + num (uint64 big endian) + hash -> block receipts
 
 	txLookupPrefix        = []byte("l") // txLookupPrefix + hash -> transaction/receipt lookup metadata
 	bloomBitsPrefix       = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
@@ -137,8 +137,13 @@ type LegacyTxLookupEntry struct {
 	Index      uint64
 }
 
-func (m mark) toByte() []byte {
-	return []byte(m)
+func (m Mark) toByte() []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(m))
+	return b
+}
+func (m Mark) len() int {
+	return 8
 }
 
 // encodeBlockNumber encodes a block number as big endian uint64
@@ -149,42 +154,42 @@ func encodeBlockNumber(number uint64) []byte {
 }
 
 // headerKeyPrefix = headerPrefix + num (uint64 big endian)
-func headerKeyPrefix(m mark, number uint64) []byte {
+func headerKeyPrefix(m Mark, number uint64) []byte {
 	return append(headerPrefix, append(m.toByte(), encodeBlockNumber(number)...)...)
 }
 
 // headerKey = headerPrefix + num (uint64 big endian) + hash
-func headerKey(m mark, number uint64, hash common.Hash) []byte {
+func headerKey(m Mark, number uint64, hash common.Hash) []byte {
 	return append(append(headerPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), hash.Bytes()...)
 }
 
 // headerTDKey = headerPrefix + num (uint64 big endian) + hash + headerTDSuffix
-func headerTDKey(m mark, number uint64, hash common.Hash) []byte {
+func headerTDKey(m Mark, number uint64, hash common.Hash) []byte {
 	return append(headerKey(m, number, hash), headerTDSuffix...)
 }
 
 // headerHashKey = headerPrefix + num (uint64 big endian) + headerHashSuffix
 // 通过number获取数据
-func headerHashKey(m mark, number uint64) []byte {
+func headerHashKey(m Mark, number uint64) []byte {
 	return append(append(headerPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), headerHashSuffix...)
 }
 
 // headerNumberKey = headerNumberPrefix + hash
-func headerNumberKey(m mark, hash common.Hash) []byte {
+func headerNumberKey(m Mark, hash common.Hash) []byte {
 	return append(append(headerNumberPrefix, m.toByte()...), hash.Bytes()...)
 }
 
-func markKey(b []byte, m mark) []byte {
+func markKey(b []byte, m Mark) []byte {
 	return append(b, m.toByte()...)
 }
 
 // blockBodyKey = blockBodyPrefix + num (uint64 big endian) + hash
-func blockBodyKey(m mark, number uint64, hash common.Hash) []byte {
+func blockBodyKey(m Mark, number uint64, hash common.Hash) []byte {
 	return append(append(blockBodyPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), hash.Bytes()...)
 }
 
 // blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
-func blockReceiptsKey(m mark, number uint64, hash common.Hash) []byte {
+func blockReceiptsKey(m Mark, number uint64, hash common.Hash) []byte {
 	return append(append(blockReceiptsPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), hash.Bytes()...)
 }
 

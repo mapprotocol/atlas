@@ -24,13 +24,13 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 func TestChainIterator(t *testing.T) {
-	// Construct test chain db
+	// Construct dbtest chain db
 	chainDb := NewMemoryDatabase()
-	m := mark("test")
+	m := Mark(123)
 	var block *types.Block
 	var txs []*types.Transaction
 	to := common.BytesToAddress([]byte{0x11})
@@ -80,7 +80,7 @@ func TestChainIterator(t *testing.T) {
 	}
 	for i, c := range cases {
 		var numbers []int
-		hashCh := iterateTransactions(chainDb, c.from, c.to, c.reverse, nil)
+		hashCh := iterateTransactions(chainDb, c.from, c.to, c.reverse, nil, m)
 		if hashCh != nil {
 			for h := range hashCh {
 				numbers = append(numbers, int(h.number))
@@ -103,13 +103,13 @@ func TestChainIterator(t *testing.T) {
 }
 
 func TestIndexTransactions(t *testing.T) {
-	// Construct test chain db
+	// Construct dbtest chain db
 	chainDb := NewMemoryDatabase()
 
 	var block *types.Block
 	var txs []*types.Transaction
 	to := common.BytesToAddress([]byte{0x11})
-	m := mark("test")
+	m := Mark(123)
 	// Write empty genesis block
 	block = types.NewBlock(&types.Header{Number: big.NewInt(int64(0))}, nil, nil, nil, newHasher())
 	WriteBlock(chainDb, block, m)
@@ -162,18 +162,18 @@ func TestIndexTransactions(t *testing.T) {
 			t.Fatalf("Transaction tail mismatch")
 		}
 	}
-	IndexTransactions(chainDb, 5, 11, nil)
+	IndexTransactions(chainDb, 5, 11, nil, m)
 	verify(5, 11, true, 5)
 	verify(0, 5, false, 5)
 
-	IndexTransactions(chainDb, 0, 5, nil)
+	IndexTransactions(chainDb, 0, 5, nil, m)
 	verify(0, 11, true, 0)
 
-	UnindexTransactions(chainDb, 0, 5, nil)
+	UnindexTransactions(chainDb, 0, 5, nil, m)
 	verify(5, 11, true, 5)
 	verify(0, 5, false, 5)
 
-	UnindexTransactions(chainDb, 5, 11, nil)
+	UnindexTransactions(chainDb, 5, 11, nil, m)
 	verify(0, 11, false, 11)
 
 	// Testing corner cases
@@ -187,10 +187,10 @@ func TestIndexTransactions(t *testing.T) {
 			return false
 		}
 		return true
-	})
+	}, m)
 	verify(9, 11, true, 9)
 	verify(0, 9, false, 9)
-	IndexTransactions(chainDb, 0, 9, nil)
+	IndexTransactions(chainDb, 0, 9, nil, m)
 
 	signal = make(chan struct{})
 	var once2 sync.Once
@@ -202,7 +202,7 @@ func TestIndexTransactions(t *testing.T) {
 			return false
 		}
 		return true
-	})
+	}, m)
 	verify(8, 11, true, 8)
 	verify(0, 8, false, 8)
 }

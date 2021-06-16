@@ -1,7 +1,7 @@
 package synchr
 
 import "github.com/ethereum/go-ethereum/common"
-import "github.com/ethereum/go-ethereum/core/types"
+import "github.com/mapprotocol/atlas/core/types"
 
 type HeaderCacheOne struct {
 	Header    *types.Header

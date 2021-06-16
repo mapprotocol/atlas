@@ -23,10 +23,10 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -89,7 +89,7 @@ func TestLookupStorage(t *testing.T) {
 			},
 		},
 	}
-	m := mark("test")
+	m := Mark(123)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			db := NewMemoryDatabase()

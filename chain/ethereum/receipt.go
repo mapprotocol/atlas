@@ -2,7 +2,7 @@ package ethereum
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/core/types"
 	"golang.org/x/sync/errgroup"
 	"sync"
 )

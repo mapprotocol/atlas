@@ -23,14 +23,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/rlp"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.
 func ReadDatabaseVersion(db ethdb.KeyValueReader) *uint64 {
 	var version uint64
-	m := mark("test")
+	m := Mark(123)
 	enc, _ := db.Get(markKey(databaseVersionKey, m))
 	if len(enc) == 0 {
 		return nil
@@ -44,7 +44,7 @@ func ReadDatabaseVersion(db ethdb.KeyValueReader) *uint64 {
 
 // WriteDatabaseVersion stores the version number of the database
 func WriteDatabaseVersion(db ethdb.KeyValueWriter, version uint64) {
-	m := mark("test")
+	m := Mark(123)
 	enc, err := rlp.EncodeToBytes(version)
 	if err != nil {
 		log.Crit("Failed to encode database version", "err", err)
@@ -97,7 +97,7 @@ const crashesToKeep = 10
 // - a count of how many old unclean-shutdowns have been discarded
 func PushUncleanShutdownMarker(db ethdb.KeyValueStore) ([]uint64, uint64, error) {
 	var uncleanShutdowns crashList
-	m := mark("test")
+	m := Mark(123)
 	// Read old data
 	if data, err := db.Get(markKey(uncleanShutdownKey, m)); err != nil {
 		log.Warn("Error reading unclean shutdown markers", "error", err)
@@ -126,7 +126,7 @@ func PushUncleanShutdownMarker(db ethdb.KeyValueStore) ([]uint64, uint64, error)
 // PopUncleanShutdownMarker removes the last unclean shutdown marker
 func PopUncleanShutdownMarker(db ethdb.KeyValueStore) {
 	var uncleanShutdowns crashList
-	m := mark("test")
+	m := Mark(123)
 	// Read old data
 	if data, err := db.Get(markKey(uncleanShutdownKey, m)); err != nil {
 		log.Warn("Error reading unclean shutdown markers", "error", err)

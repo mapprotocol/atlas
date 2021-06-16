@@ -28,7 +28,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

@@ -3,7 +3,7 @@ package synchr
 import (
 	"context"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"math/big"

@@ -25,20 +25,20 @@ import (
 )
 
 // ReadSnapshotDisabled retrieves if the snapshot maintenance is disabled.
-func ReadSnapshotDisabled(db ethdb.KeyValueReader, m mark) bool {
+func ReadSnapshotDisabled(db ethdb.KeyValueReader, m Mark) bool {
 	disabled, _ := db.Has(markKey(snapshotDisabledKey, m))
 	return disabled
 }
 
 // WriteSnapshotDisabled stores the snapshot pause flag.
-func WriteSnapshotDisabled(db ethdb.KeyValueWriter, m mark) {
+func WriteSnapshotDisabled(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Put(markKey(snapshotDisabledKey, m), []byte("42")); err != nil {
 		log.Crit("Failed to store snapshot disabled flag", "err", err)
 	}
 }
 
 // DeleteSnapshotDisabled deletes the flag keeping the snapshot maintenance disabled.
-func DeleteSnapshotDisabled(db ethdb.KeyValueWriter, m mark) {
+func DeleteSnapshotDisabled(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Delete(markKey(snapshotDisabledKey, m)); err != nil {
 		log.Crit("Failed to remove snapshot disabled flag", "err", err)
 	}
@@ -46,7 +46,7 @@ func DeleteSnapshotDisabled(db ethdb.KeyValueWriter, m mark) {
 
 // ReadSnapshotRoot retrieves the root of the block whose state is contained in
 // the persisted snapshot.
-func ReadSnapshotRoot(db ethdb.KeyValueReader, m mark) common.Hash {
+func ReadSnapshotRoot(db ethdb.KeyValueReader, m Mark) common.Hash {
 	data, _ := db.Get(markKey(snapshotRootKey, m))
 	if len(data) != common.HashLength {
 		return common.Hash{}
@@ -56,7 +56,7 @@ func ReadSnapshotRoot(db ethdb.KeyValueReader, m mark) common.Hash {
 
 // WriteSnapshotRoot stores the root of the block whose state is contained in
 // the persisted snapshot.
-func WriteSnapshotRoot(db ethdb.KeyValueWriter, root common.Hash, m mark) {
+func WriteSnapshotRoot(db ethdb.KeyValueWriter, root common.Hash, m Mark) {
 	if err := db.Put(markKey(snapshotRootKey, m), root[:]); err != nil {
 		log.Crit("Failed to store snapshot root", "err", err)
 	}
@@ -64,9 +64,9 @@ func WriteSnapshotRoot(db ethdb.KeyValueWriter, root common.Hash, m mark) {
 
 // DeleteSnapshotRoot deletes the hash of the block whose state is contained in
 // the persisted snapshot. Since snapshots are not immutable, this  method can
-// be used during updates, so a crash or failure will mark the entire snapshot
+// be used during updates, so a crash or failure will Mark the entire snapshot
 // invalid.
-func DeleteSnapshotRoot(db ethdb.KeyValueWriter, m mark) {
+func DeleteSnapshotRoot(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Delete(markKey(snapshotRootKey, m)); err != nil {
 		log.Crit("Failed to remove snapshot root", "err", err)
 	}
@@ -120,14 +120,14 @@ func IterateStorageSnapshots(db ethdb.Iteratee, accountHash common.Hash) ethdb.I
 
 // ReadSnapshotJournal retrieves the serialized in-memory diff layers saved at
 // the last shutdown. The blob is expected to be max a few 10s of megabytes.
-func ReadSnapshotJournal(db ethdb.KeyValueReader, m mark) []byte {
+func ReadSnapshotJournal(db ethdb.KeyValueReader, m Mark) []byte {
 	data, _ := db.Get(markKey(snapshotJournalKey, m))
 	return data
 }
 
 // WriteSnapshotJournal stores the serialized in-memory diff layers to save at
 // shutdown. The blob is expected to be max a few 10s of megabytes.
-func WriteSnapshotJournal(db ethdb.KeyValueWriter, journal []byte, m mark) {
+func WriteSnapshotJournal(db ethdb.KeyValueWriter, journal []byte, m Mark) {
 	if err := db.Put(markKey(snapshotJournalKey, m), journal); err != nil {
 		log.Crit("Failed to store snapshot journal", "err", err)
 	}
@@ -135,7 +135,7 @@ func WriteSnapshotJournal(db ethdb.KeyValueWriter, journal []byte, m mark) {
 
 // DeleteSnapshotJournal deletes the serialized in-memory diff layers saved at
 // the last shutdown
-func DeleteSnapshotJournal(db ethdb.KeyValueWriter, m mark) {
+func DeleteSnapshotJournal(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Delete(markKey(snapshotJournalKey, m)); err != nil {
 		log.Crit("Failed to remove snapshot journal", "err", err)
 	}
@@ -143,14 +143,14 @@ func DeleteSnapshotJournal(db ethdb.KeyValueWriter, m mark) {
 
 // ReadSnapshotGenerator retrieves the serialized snapshot generator saved at
 // the last shutdown.
-func ReadSnapshotGenerator(db ethdb.KeyValueReader, m mark) []byte {
+func ReadSnapshotGenerator(db ethdb.KeyValueReader, m Mark) []byte {
 	data, _ := db.Get(markKey(snapshotGeneratorKey, m))
 	return data
 }
 
 // WriteSnapshotGenerator stores the serialized snapshot generator to save at
 // shutdown.
-func WriteSnapshotGenerator(db ethdb.KeyValueWriter, generator []byte, m mark) {
+func WriteSnapshotGenerator(db ethdb.KeyValueWriter, generator []byte, m Mark) {
 	if err := db.Put(markKey(snapshotGeneratorKey, m), generator); err != nil {
 		log.Crit("Failed to store snapshot generator", "err", err)
 	}
@@ -158,7 +158,7 @@ func WriteSnapshotGenerator(db ethdb.KeyValueWriter, generator []byte, m mark) {
 
 // DeleteSnapshotGenerator deletes the serialized snapshot generator saved at
 // the last shutdown
-func DeleteSnapshotGenerator(db ethdb.KeyValueWriter, m mark) {
+func DeleteSnapshotGenerator(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Delete(markKey(snapshotGeneratorKey, m)); err != nil {
 		log.Crit("Failed to remove snapshot generator", "err", err)
 	}
@@ -166,7 +166,7 @@ func DeleteSnapshotGenerator(db ethdb.KeyValueWriter, m mark) {
 
 // ReadSnapshotRecoveryNumber retrieves the block number of the last persisted
 // snapshot layer.
-func ReadSnapshotRecoveryNumber(db ethdb.KeyValueReader, m mark) *uint64 {
+func ReadSnapshotRecoveryNumber(db ethdb.KeyValueReader, m Mark) *uint64 {
 	data, _ := db.Get(markKey(snapshotRecoveryKey, m))
 	if len(data) == 0 {
 		return nil
@@ -180,7 +180,7 @@ func ReadSnapshotRecoveryNumber(db ethdb.KeyValueReader, m mark) *uint64 {
 
 // WriteSnapshotRecoveryNumber stores the block number of the last persisted
 // snapshot layer.
-func WriteSnapshotRecoveryNumber(db ethdb.KeyValueWriter, m mark, number uint64) {
+func WriteSnapshotRecoveryNumber(db ethdb.KeyValueWriter, m Mark, number uint64) {
 	var buf [8]byte
 	binary.BigEndian.PutUint64(buf[:], number)
 	if err := db.Put(markKey(snapshotRecoveryKey, m), buf[:]); err != nil {
@@ -190,20 +190,20 @@ func WriteSnapshotRecoveryNumber(db ethdb.KeyValueWriter, m mark, number uint64)
 
 // DeleteSnapshotRecoveryNumber deletes the block number of the last persisted
 // snapshot layer.
-func DeleteSnapshotRecoveryNumber(db ethdb.KeyValueWriter, m mark) {
+func DeleteSnapshotRecoveryNumber(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Delete(markKey(snapshotRecoveryKey, m)); err != nil {
 		log.Crit("Failed to remove snapshot recovery number", "err", err)
 	}
 }
 
 // ReadSnapshotSyncStatus retrieves the serialized sync status saved at shutdown.
-func ReadSnapshotSyncStatus(db ethdb.KeyValueReader, m mark) []byte {
+func ReadSnapshotSyncStatus(db ethdb.KeyValueReader, m Mark) []byte {
 	data, _ := db.Get(markKey(snapshotSyncStatusKey, m))
 	return data
 }
 
 // WriteSnapshotSyncStatus stores the serialized sync status to save at shutdown.
-func WriteSnapshotSyncStatus(db ethdb.KeyValueWriter, status []byte, m mark) {
+func WriteSnapshotSyncStatus(db ethdb.KeyValueWriter, status []byte, m Mark) {
 	if err := db.Put(markKey(snapshotSyncStatusKey, m), status); err != nil {
 		log.Crit("Failed to store snapshot sync status", "err", err)
 	}
@@ -211,7 +211,7 @@ func WriteSnapshotSyncStatus(db ethdb.KeyValueWriter, status []byte, m mark) {
 
 // DeleteSnapshotSyncStatus deletes the serialized sync status saved at the last
 // shutdown
-func DeleteSnapshotSyncStatus(db ethdb.KeyValueWriter, m mark) {
+func DeleteSnapshotSyncStatus(db ethdb.KeyValueWriter, m Mark) {
 	if err := db.Delete(markKey(snapshotSyncStatusKey, m)); err != nil {
 		log.Crit("Failed to remove snapshot sync status", "err", err)
 	}

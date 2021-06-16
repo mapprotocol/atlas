@@ -44,7 +44,7 @@ func getChunk(size int, b int) []byte {
 	return data
 }
 
-// TestFreezerBasics test initializing a freezertable from scratch, writing to the table,
+// TestFreezerBasics dbtest initializing a freezertable from scratch, writing to the table,
 // and reading it back.
 func TestFreezerBasics(t *testing.T) {
 	t.Parallel()
@@ -77,7 +77,7 @@ func TestFreezerBasics(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !bytes.Equal(got, exp) {
-			t.Fatalf("test %d, got \n%x != \n%x", y, got, exp)
+			t.Fatalf("dbtest %d, got \n%x != \n%x", y, got, exp)
 		}
 	}
 	// Check that we cannot read too far
@@ -121,7 +121,7 @@ func TestFreezerBasicsClosing(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !bytes.Equal(got, exp) {
-			t.Fatalf("test %d, got \n%x != \n%x", y, got, exp)
+			t.Fatalf("dbtest %d, got \n%x != \n%x", y, got, exp)
 		}
 		f.Close()
 		f, err = newCustomTable(os.TempDir(), fname, rm, wm, sg, 50, true)
@@ -244,7 +244,7 @@ func TestFreezerRepairDanglingHeadLarge(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(got, exp) {
-				t.Fatalf("test %d, got \n%x != \n%x", y, got, exp)
+				t.Fatalf("dbtest %d, got \n%x != \n%x", y, got, exp)
 			}
 		}
 	}
@@ -634,7 +634,7 @@ func TestOffset(t *testing.T) {
 }
 
 // TODO (?)
-// - test that if we remove several head-files, aswell as data last data-file,
+// - dbtest that if we remove several head-files, aswell as data last data-file,
 //   the index is truncated accordingly
 // Right now, the freezer would fail on these conditions:
 // 1. have data files d0, d1, d2, d3
@@ -644,7 +644,7 @@ func TestOffset(t *testing.T) {
 // should be handled already, and the case described above can only (?) happen if an
 // external process/user deletes files from the filesystem.
 
-// TestAppendTruncateParallel is a test to check if the Append/truncate operations are
+// TestAppendTruncateParallel is a dbtest to check if the Append/truncate operations are
 // racy.
 //
 // The reason why it's not a regular fuzzer, within tests/fuzzers, is that it is dependent
