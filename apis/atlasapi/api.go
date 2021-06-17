@@ -1990,7 +1990,7 @@ func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address comm
 		return common.Address{}, err
 	}
 	sealHash := clique.SealHash(header).Bytes()
-	log.Info("test signing of clique block",
+	log.Info("dbtest signing of clique block",
 		"Sealhash", fmt.Sprintf("%x", sealHash),
 		"signature", fmt.Sprintf("%x", signature))
 	pubkey, err := crypto.Ecrecover(sealHash, signature)

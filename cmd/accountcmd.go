@@ -75,7 +75,7 @@ account, create a new account or update an existing account.
 
 It supports interactive mode, when you are prompted for password as well as
 non-interactive mode where passwords are supplied via a given password file.
-Non-interactive mode is only meant for scripted use on test networks or known
+Non-interactive mode is only meant for scripted use on dbtest networks or known
 safe environments.
 
 Make sure you remember the password you gave when creating a new account (with
