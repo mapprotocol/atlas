@@ -7,6 +7,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.3
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
+	github.com/loinfish/azure-storage-go v0.0.1
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-isatty v0.0.12
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
