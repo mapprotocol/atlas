@@ -21,7 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/mapprotocol/atlas/rlp"
+	"github.com/ethereum/go-ethereum/rlp"
 	"sync"
 )
 
