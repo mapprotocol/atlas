@@ -30,7 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/mapprotocol/atlas/params"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/prometheus/tsdb/fileutil"
 )
 

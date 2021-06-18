@@ -374,9 +374,9 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte, m Mark) erro
 		default:
 			var accounted bool
 			for _, meta := range [][]byte{
-				markKey(databaseVersionKey, m), markKey(headHeaderKey, m), markKey(headBlockKey, m), markKey(headFastBlockKey, m), markKey(lastPivotKey, m),
-				fastTrieProgressKey, markKey(snapshotDisabledKey, m), markKey(snapshotRootKey, m), markKey(snapshotJournalKey, m),
-				markKey(snapshotGeneratorKey, m), markKey(snapshotRecoveryKey, m), markKey(txIndexTailKey, m), markKey(fastTxLookupLimitKey, m),
+				m.markKey(databaseVersionKey), m.markKey(headHeaderKey), m.markKey(headBlockKey), m.markKey(headFastBlockKey), m.markKey(lastPivotKey),
+				fastTrieProgressKey, m.markKey(snapshotDisabledKey), m.markKey(snapshotRootKey), m.markKey(snapshotJournalKey),
+				m.markKey(snapshotGeneratorKey), m.markKey(snapshotRecoveryKey), m.markKey(txIndexTailKey), m.markKey(fastTxLookupLimitKey),
 				uncleanShutdownKey, badBlockKey,
 			} {
 				if bytes.Equal(key, meta) {

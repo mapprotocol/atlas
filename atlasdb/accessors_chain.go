@@ -19,6 +19,9 @@ package atlasdb
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"sort"
 
@@ -26,9 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/params"
-	"github.com/mapprotocol/atlas/rlp"
 )
 
 // ReadCanonicalHash retrieves the hash assigned to a canonical block number.
@@ -144,7 +144,7 @@ func DeleteHeaderNumber(db ethdb.KeyValueWriter, hash common.Hash, m Mark) {
 
 // ReadHeadHeaderHash retrieves the hash of the current canonical head header.
 func ReadHeadHeaderHash(db ethdb.KeyValueReader, m Mark) common.Hash {
-	data, _ := db.Get(markKey(headHeaderKey, m))
+	data, _ := db.Get(m.markKey(headHeaderKey))
 	if len(data) == 0 {
 		return common.Hash{}
 	}
@@ -153,14 +153,14 @@ func ReadHeadHeaderHash(db ethdb.KeyValueReader, m Mark) common.Hash {
 
 // WriteHeadHeaderHash stores the hash of the current canonical head header.
 func WriteHeadHeaderHash(db ethdb.KeyValueWriter, hash common.Hash, m Mark) {
-	if err := db.Put(markKey(headHeaderKey, m), hash.Bytes()); err != nil {
+	if err := db.Put(m.markKey(headHeaderKey), hash.Bytes()); err != nil {
 		log.Crit("Failed to store last header's hash", "err", err)
 	}
 }
 
 // ReadHeadBlockHash retrieves the hash of the current canonical head block.
 func ReadHeadBlockHash(db ethdb.KeyValueReader, m Mark) common.Hash {
-	data, _ := db.Get(markKey(headBlockKey, m))
+	data, _ := db.Get(m.markKey(headBlockKey))
 	if len(data) == 0 {
 		return common.Hash{}
 	}
@@ -169,14 +169,14 @@ func ReadHeadBlockHash(db ethdb.KeyValueReader, m Mark) common.Hash {
 
 // WriteHeadBlockHash stores the head block's hash.
 func WriteHeadBlockHash(db ethdb.KeyValueWriter, hash common.Hash, m Mark) {
-	if err := db.Put(markKey(headBlockKey, m), hash.Bytes()); err != nil {
+	if err := db.Put(m.markKey(headBlockKey), hash.Bytes()); err != nil {
 		log.Crit("Failed to store last block's hash", "err", err)
 	}
 }
 
 // ReadHeadFastBlockHash retrieves the hash of the current fast-sync head block.
 func ReadHeadFastBlockHash(db ethdb.KeyValueReader, m Mark) common.Hash {
-	data, _ := db.Get(markKey(headFastBlockKey, m))
+	data, _ := db.Get(m.markKey(headFastBlockKey))
 	if len(data) == 0 {
 		return common.Hash{}
 	}
@@ -185,7 +185,7 @@ func ReadHeadFastBlockHash(db ethdb.KeyValueReader, m Mark) common.Hash {
 
 // WriteHeadFastBlockHash stores the hash of the current fast-sync head block.
 func WriteHeadFastBlockHash(db ethdb.KeyValueWriter, hash common.Hash, m Mark) {
-	if err := db.Put(markKey(headFastBlockKey, m), hash.Bytes()); err != nil {
+	if err := db.Put(m.markKey(headFastBlockKey), hash.Bytes()); err != nil {
 		log.Crit("Failed to store last fast block's hash", "err", err)
 	}
 }
@@ -193,7 +193,7 @@ func WriteHeadFastBlockHash(db ethdb.KeyValueWriter, hash common.Hash, m Mark) {
 // ReadLastPivotNumber retrieves the number of the last pivot block. If the node
 // full synced, the last pivot will always be nil.
 func ReadLastPivotNumber(db ethdb.KeyValueReader, m Mark) *uint64 {
-	data, _ := db.Get(markKey(lastPivotKey, m))
+	data, _ := db.Get(m.markKey(lastPivotKey))
 	if len(data) == 0 {
 		return nil
 	}
@@ -211,7 +211,7 @@ func WriteLastPivotNumber(db ethdb.KeyValueWriter, pivot uint64, m Mark) {
 	if err != nil {
 		log.Crit("Failed to encode pivot block number", "err", err)
 	}
-	if err := db.Put(markKey(lastPivotKey, m), enc); err != nil {
+	if err := db.Put(m.markKey(lastPivotKey), enc); err != nil {
 		log.Crit("Failed to store pivot block number", "err", err)
 	}
 }
@@ -219,7 +219,7 @@ func WriteLastPivotNumber(db ethdb.KeyValueWriter, pivot uint64, m Mark) {
 // ReadFastTrieProgress retrieves the number of tries nodes fast synced to allow
 // reporting correct numbers across restarts.
 func ReadFastTrieProgress(db ethdb.KeyValueReader, m Mark) uint64 {
-	data, _ := db.Get(markKey(fastTrieProgressKey, m))
+	data, _ := db.Get(m.markKey(fastTrieProgressKey))
 	if len(data) == 0 {
 		return 0
 	}
@@ -229,7 +229,7 @@ func ReadFastTrieProgress(db ethdb.KeyValueReader, m Mark) uint64 {
 // WriteFastTrieProgress stores the fast sync trie process counter to support
 // retrieving it across restarts.
 func WriteFastTrieProgress(db ethdb.KeyValueWriter, count uint64, m Mark) {
-	if err := db.Put(markKey(fastTrieProgressKey, m), new(big.Int).SetUint64(count).Bytes()); err != nil {
+	if err := db.Put(m.markKey(fastTrieProgressKey), new(big.Int).SetUint64(count).Bytes()); err != nil {
 		log.Crit("Failed to store fast sync trie progress", "err", err)
 	}
 }
@@ -238,7 +238,7 @@ func WriteFastTrieProgress(db ethdb.KeyValueWriter, count uint64, m Mark) {
 // whose transaction indices has been indexed. If the corresponding entry
 // is non-existent in database it means the indexing has been finished.
 func ReadTxIndexTail(db ethdb.KeyValueReader, m Mark) *uint64 {
-	data, _ := db.Get(markKey(txIndexTailKey, m))
+	data, _ := db.Get(m.markKey(txIndexTailKey))
 	if len(data) != 8 {
 		return nil
 	}
@@ -249,14 +249,14 @@ func ReadTxIndexTail(db ethdb.KeyValueReader, m Mark) *uint64 {
 // WriteTxIndexTail stores the number of oldest indexed block
 // into database.
 func WriteTxIndexTail(db ethdb.KeyValueWriter, m Mark, number uint64) {
-	if err := db.Put(markKey(txIndexTailKey, m), encodeBlockNumber(number)); err != nil {
+	if err := db.Put(m.markKey(txIndexTailKey), encodeBlockNumber(number)); err != nil {
 		log.Crit("Failed to store the transaction index tail", "err", err)
 	}
 }
 
 // ReadFastTxLookupLimit retrieves the tx lookup limit used in fast sync.
 func ReadFastTxLookupLimit(db ethdb.KeyValueReader, m Mark) *uint64 {
-	data, _ := db.Get(markKey(fastTxLookupLimitKey, m))
+	data, _ := db.Get(m.markKey(fastTxLookupLimitKey))
 	if len(data) != 8 {
 		return nil
 	}
@@ -266,7 +266,7 @@ func ReadFastTxLookupLimit(db ethdb.KeyValueReader, m Mark) *uint64 {
 
 // WriteFastTxLookupLimit stores the txlookup limit used in fast sync into database.
 func WriteFastTxLookupLimit(db ethdb.KeyValueWriter, m Mark, number uint64) {
-	if err := db.Put(markKey(fastTxLookupLimitKey, m), encodeBlockNumber(number)); err != nil {
+	if err := db.Put(m.markKey(fastTxLookupLimitKey), encodeBlockNumber(number)); err != nil {
 		log.Crit("Failed to store transaction lookup limit for fast sync", "err", err)
 	}
 }
@@ -725,7 +725,7 @@ func (s badBlockList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 // ReadBadBlock retrieves the bad block with the corresponding block hash.
 func ReadBadBlock(db ethdb.Reader, hash common.Hash, m Mark) *types.Block {
-	blob, err := db.Get(markKey(badBlockKey, m))
+	blob, err := db.Get(m.markKey(badBlockKey))
 	if err != nil {
 		return nil
 	}
@@ -744,7 +744,7 @@ func ReadBadBlock(db ethdb.Reader, hash common.Hash, m Mark) *types.Block {
 // ReadAllBadBlocks retrieves all the bad blocks in the database.
 // All returned blocks are sorted in reverse order by number.
 func ReadAllBadBlocks(db ethdb.Reader, m Mark) []*types.Block {
-	blob, err := db.Get(markKey(badBlockKey, m))
+	blob, err := db.Get(m.markKey(badBlockKey))
 	if err != nil {
 		return nil
 	}
@@ -762,7 +762,7 @@ func ReadAllBadBlocks(db ethdb.Reader, m Mark) []*types.Block {
 // WriteBadBlock serializes the bad block into the database. If the cumulated
 // bad blocks exceeds the limitation, the oldest will be dropped.
 func WriteBadBlock(db ethdb.KeyValueStore, block *types.Block, m Mark) {
-	blob, err := db.Get(markKey(badBlockKey, m))
+	blob, err := db.Get(m.markKey(badBlockKey))
 	if err != nil {
 		log.Warn("Failed to load old bad blocks", "error", err)
 	}
@@ -790,14 +790,14 @@ func WriteBadBlock(db ethdb.KeyValueStore, block *types.Block, m Mark) {
 	if err != nil {
 		log.Crit("Failed to encode bad blocks", "err", err)
 	}
-	if err := db.Put(markKey(badBlockKey, m), data); err != nil {
+	if err := db.Put(m.markKey(badBlockKey), data); err != nil {
 		log.Crit("Failed to write bad blocks", "err", err)
 	}
 }
 
 // DeleteBadBlocks deletes all the bad blocks from the database
 func DeleteBadBlocks(db ethdb.KeyValueWriter, m Mark) {
-	if err := db.Delete(markKey(badBlockKey, m)); err != nil {
+	if err := db.Delete(m.markKey(badBlockKey)); err != nil {
 		log.Crit("Failed to delete bad blocks", "err", err)
 	}
 }

@@ -47,34 +47,34 @@ var (
 	// fastTrieProgressKeytracks the number of trie entries imported during fast sync.
 	fastTrieProgressKey = []byte("TrieSync")
 
-	// markKey(snapshotDisabledKey, m)) flags that the snapshot should not be maintained due to initial sync.
+	// m.markKey(snapshotDisabledKey)) flags that the snapshot should not be maintained due to initial sync.
 	snapshotDisabledKey = []byte("SnapshotDisabled")
 
-	// markKey(snapshotRootKey, m)) tracks the hash of the last snapshot.
+	// m.markKey(snapshotRootKey)) tracks the hash of the last snapshot.
 	snapshotRootKey = []byte("SnapshotRoot")
 
-	// markKey(snapshotJournalKey, m)) tracks the in-memory diff layers across restarts.
+	// m.markKey(snapshotJournalKey)) tracks the in-memory diff layers across restarts.
 	snapshotJournalKey = []byte("SnapshotJournal")
 
-	// markKey(snapshotGeneratorKey, m)) tracks the snapshot generation marker across restarts.
+	// m.markKey(snapshotGeneratorKey)) tracks the snapshot generation marker across restarts.
 	snapshotGeneratorKey = []byte("SnapshotGenerator")
 
-	// markKey(snapshotRecoveryKey, m)) tracks the snapshot recovery marker across restarts.
+	// m.markKey(snapshotRecoveryKey)) tracks the snapshot recovery marker across restarts.
 	snapshotRecoveryKey = []byte("SnapshotRecovery")
 
-	// markKey(snapshotSyncStatusKey, m)) tracks the snapshot sync status across restarts.
+	// m.markKey(snapshotSyncStatusKey)) tracks the snapshot sync status across restarts.
 	snapshotSyncStatusKey = []byte("SnapshotSyncStatus")
 
-	// markKey(txIndexTailKey, m)) tracks the oldest block whose transactions have been indexed.
+	// m.markKey(txIndexTailKey)) tracks the oldest block whose transactions have been indexed.
 	txIndexTailKey = []byte("TransactionIndexTail")
 
-	// markKey(fastTxLookupLimitKey, m)) tracks the transaction lookup limit during fast sync.
+	// m.markKey(fastTxLookupLimitKey)) tracks the transaction lookup limit during fast sync.
 	fastTxLookupLimitKey = []byte("FastTransactionLookupLimit")
 
-	// markKey(badBlockKey, m)) tracks the list of bad blocks seen by local
+	// m.markKey(badBlockKey)) tracks the list of bad blocks seen by local
 	badBlockKey = []byte("InvalidBlock")
 
-	// markKey(uncleanShutdownKey, m)) tracks the list of local crashes
+	// m.markKey(uncleanShutdownKey)) tracks the list of local crashes
 	uncleanShutdownKey = []byte("unclean-shutdown") // config prefix for the db
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
@@ -137,6 +137,7 @@ type LegacyTxLookupEntry struct {
 	Index      uint64
 }
 
+//---------- mark ---------
 func (m Mark) toByte() []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(m))
@@ -145,6 +146,23 @@ func (m Mark) toByte() []byte {
 func (m Mark) len() int {
 	return 8
 }
+
+// change the visit Number by append chain mark   mark + number
+func (m Mark) visitNumber(n uint64) []byte {
+	return append(m.toByte(), encodeBlockNumber(n)...)
+}
+
+//change the visit key by append chain mark      key  + mark
+func (m Mark) markKey(b []byte) []byte {
+	return append(b, m.toByte()...)
+}
+
+//  key  + mark + number
+func (m Mark) markKeyNum(b []byte, n uint64) []byte {
+	return append(append(b, m.toByte()...), encodeBlockNumber(n)...)
+}
+
+//---------- mark ---------
 
 // encodeBlockNumber encodes a block number as big endian uint64
 func encodeBlockNumber(number uint64) []byte {
@@ -155,12 +173,12 @@ func encodeBlockNumber(number uint64) []byte {
 
 // headerKeyPrefix = headerPrefix + num (uint64 big endian)
 func headerKeyPrefix(m Mark, number uint64) []byte {
-	return append(headerPrefix, append(m.toByte(), encodeBlockNumber(number)...)...)
+	return append(headerPrefix, m.visitNumber(number)...)
 }
 
 // headerKey = headerPrefix + num (uint64 big endian) + hash
 func headerKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(append(headerPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), hash.Bytes()...)
+	return append(append(headerPrefix, m.visitNumber(number)...), hash.Bytes()...)
 }
 
 // headerTDKey = headerPrefix + num (uint64 big endian) + hash + headerTDSuffix
@@ -169,28 +187,23 @@ func headerTDKey(m Mark, number uint64, hash common.Hash) []byte {
 }
 
 // headerHashKey = headerPrefix + num (uint64 big endian) + headerHashSuffix
-// 通过number获取数据
 func headerHashKey(m Mark, number uint64) []byte {
-	return append(append(headerPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), headerHashSuffix...)
+	return append(append(headerPrefix, m.visitNumber(number)...), headerHashSuffix...)
 }
 
 // headerNumberKey = headerNumberPrefix + hash
 func headerNumberKey(m Mark, hash common.Hash) []byte {
-	return append(append(headerNumberPrefix, m.toByte()...), hash.Bytes()...)
-}
-
-func markKey(b []byte, m Mark) []byte {
-	return append(b, m.toByte()...)
+	return append(m.markKey(headerNumberPrefix), hash.Bytes()...)
 }
 
 // blockBodyKey = blockBodyPrefix + num (uint64 big endian) + hash
 func blockBodyKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(append(blockBodyPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), hash.Bytes()...)
+	return append(append(blockBodyPrefix, m.visitNumber(number)...), hash.Bytes()...)
 }
 
 // blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
 func blockReceiptsKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(append(blockReceiptsPrefix, append(m.toByte(), encodeBlockNumber(number)...)...), hash.Bytes()...)
+	return append(append(blockReceiptsPrefix, m.visitNumber(number)...), hash.Bytes()...)
 }
 
 // txLookupKey = txLookupPrefix + hash

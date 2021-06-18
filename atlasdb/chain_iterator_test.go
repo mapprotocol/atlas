@@ -17,6 +17,7 @@
 package atlasdb
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"reflect"
 	"sort"
@@ -24,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 )
 
 func TestChainIterator(t *testing.T) {

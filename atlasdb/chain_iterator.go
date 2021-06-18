@@ -17,6 +17,8 @@
 package atlasdb
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -25,8 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/rlp"
 )
 
 // InitDatabaseFromFreezer reinitializes an empty database from a previous batch
