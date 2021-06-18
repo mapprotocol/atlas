@@ -18,20 +18,19 @@ package atlasdb
 
 import (
 	"encoding/json"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/params"
-	"github.com/mapprotocol/atlas/rlp"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
+	"time"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.
 func ReadDatabaseVersion(db ethdb.KeyValueReader) *uint64 {
 	var version uint64
 	m := Mark(123)
-	enc, _ := db.Get(markKey(databaseVersionKey, m))
+	enc, _ := db.Get(m.markKey(databaseVersionKey))
 	if len(enc) == 0 {
 		return nil
 	}
@@ -49,7 +48,7 @@ func WriteDatabaseVersion(db ethdb.KeyValueWriter, version uint64) {
 	if err != nil {
 		log.Crit("Failed to encode database version", "err", err)
 	}
-	if err = db.Put(markKey(databaseVersionKey, m), enc); err != nil {
+	if err = db.Put(m.markKey(databaseVersionKey), enc); err != nil {
 		log.Crit("Failed to store the database version", "err", err)
 	}
 }
@@ -99,7 +98,7 @@ func PushUncleanShutdownMarker(db ethdb.KeyValueStore) ([]uint64, uint64, error)
 	var uncleanShutdowns crashList
 	m := Mark(123)
 	// Read old data
-	if data, err := db.Get(markKey(uncleanShutdownKey, m)); err != nil {
+	if data, err := db.Get(m.markKey(uncleanShutdownKey)); err != nil {
 		log.Warn("Error reading unclean shutdown markers", "error", err)
 	} else if err := rlp.DecodeBytes(data, &uncleanShutdowns); err != nil {
 		return nil, 0, err
@@ -116,7 +115,7 @@ func PushUncleanShutdownMarker(db ethdb.KeyValueStore) ([]uint64, uint64, error)
 	}
 	// And save it again
 	data, _ := rlp.EncodeToBytes(uncleanShutdowns)
-	if err := db.Put(markKey(uncleanShutdownKey, m), data); err != nil {
+	if err := db.Put(m.markKey(uncleanShutdownKey), data); err != nil {
 		log.Warn("Failed to write unclean-shutdown marker", "err", err)
 		return nil, 0, err
 	}
@@ -128,7 +127,7 @@ func PopUncleanShutdownMarker(db ethdb.KeyValueStore) {
 	var uncleanShutdowns crashList
 	m := Mark(123)
 	// Read old data
-	if data, err := db.Get(markKey(uncleanShutdownKey, m)); err != nil {
+	if data, err := db.Get(m.markKey(uncleanShutdownKey)); err != nil {
 		log.Warn("Error reading unclean shutdown markers", "error", err)
 	} else if err := rlp.DecodeBytes(data, &uncleanShutdowns); err != nil {
 		log.Error("Error decoding unclean shutdown markers", "error", err) // Should mos def _not_ happen
@@ -137,7 +136,7 @@ func PopUncleanShutdownMarker(db ethdb.KeyValueStore) {
 		uncleanShutdowns.Recent = uncleanShutdowns.Recent[:l-1]
 	}
 	data, _ := rlp.EncodeToBytes(uncleanShutdowns)
-	if err := db.Put(markKey(uncleanShutdownKey, m), data); err != nil {
+	if err := db.Put(m.markKey(uncleanShutdownKey), data); err != nil {
 		log.Warn("Failed to clear unclean-shutdown marker", "err", err)
 	}
 }
