@@ -7,8 +7,8 @@ import (
 	"github.com/abeychain/go-abey/common"
 	"github.com/abeychain/go-abey/core/types"
 	"github.com/abeychain/go-abey/core/vm"
-
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/relayer/state"
 	"math/big"
 	"strings"
 )
@@ -71,7 +71,7 @@ func register(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err
 		return nil, errors.New("invalid input for staking")
 	}
 	//
-	impawn := vm.NewImpawnImpl()
+	impawn := NewImpawnImpl()
 	err = impawn.Load(evm.StateDB, types.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
@@ -116,7 +116,7 @@ func append_(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err 
 		return nil, errors.New("invalid input for staking")
 	}
 	//
-	impawn := vm.NewImpawnImpl()
+	impawn := NewImpawnImpl()
 	err = impawn.Load(evm.StateDB, types.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
@@ -160,7 +160,7 @@ func withdraw(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err
 		return nil, errors.New("insufficient balance for staking transfer")
 	}
 
-	impawn := vm.NewImpawnImpl()
+	impawn := NewImpawnImpl()
 	err = impawn.Load(evm.StateDB, types.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
@@ -205,7 +205,7 @@ func getBalance(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, e
 		return nil, errors.New("invalid input for staking")
 	}
 
-	impawn := vm.NewImpawnImpl()
+	impawn := NewImpawnImpl()
 	err = impawn.Load(evm.StateDB, types.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
@@ -234,18 +234,70 @@ func getBalance(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, e
 	return ret, err
 }
 func getRelayers(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+	args := struct {
+		relayer  big.Int
+	}{}
+	method, _ := relayerABI.Methods["getRelayers"]
+	err = method.Inputs.Unpack(&args, input)
+	if err != nil{
+		return nil, err
+	}
+	//所有的StakingAccount->relayers
+	impawn := NewImpawnImpl()
+	impawn.Load(evm.StateDB, types.StakingAddress)
+	relayers := impawn.GetAllStakingAccount()
+	_,h := impawn.GetCurrentEpochInfo()
+	if relayers == nil{
+		ret, err = method.Outputs.Pack(h,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil)
+		if err != nil{
+			return nil, err
+		}
+	}else{
+		ret, err = method.Outputs.Pack(h,relayers[0],relayers[1],relayers[2],relayers[3],relayers[4],relayers[5],relayers[6],relayers[7],relayers[8],relayers[9])
+		if err != nil{
+			return nil, err
+		}
+	}
 	return ret, nil
 }
 func getPeriodHeight(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+	args := struct {
+		relayer  common.Address
+	}{}
+	impawn := NewImpawnImpl()
+	impawn.Load(evm.StateDB, types.StakingAddress)
 
+	info,h := impawn.GetCurrentEpochInfo()
+	method, _ := relayerABI.Methods["getPeriodHeight"]
+	err = method.Inputs.Unpack(&args, input)
+	if err != nil {
+		return nil,err
+	}
+	//是不是stakingAccount->relayer
+	impawn.GetStakingAccount(h,args.relayer)
+	isRelayer,_ := impawn.GetStakingAccount(h,args.relayer)
+	if isRelayer == nil{
+		ret, err = method.Outputs.Pack(nil,nil,nil,false)
+		return ret,err
+	}
+	//
+	for _,v := range info{
+		if h == v.EpochID {
+			ret, err = method.Outputs.Pack(big.NewInt(int64(v.BeginHeight)),big.NewInt(int64(v.EndHeight)),big.NewInt(int64(v.BeginHeight-v.EndHeight)),true)
+			if err != nil {
+				return nil,err
+			}
+			break
+		}
+	}
 	return ret, nil
 }
 
-func addLockedBalance(db vm.StateDB, addr common.Address, amount *big.Int) {
+func addLockedBalance(db state.StateDB, addr common.Address, amount *big.Int) {
 	db.SetPOSLocked(addr, new(big.Int).Add(db.GetPOSLocked(addr), amount))
 }
 
-func subLockedBalance(db vm.StateDB, addr common.Address, amount *big.Int) {
+func subLockedBalance(db state.StateDB, addr common.Address, amount *big.Int) {
 	db.SetPOSLocked(addr, new(big.Int).Sub(db.GetPOSLocked(addr), amount))
 }
 

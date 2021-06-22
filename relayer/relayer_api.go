@@ -4,24 +4,19 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/abeychain/go-abey/core/vm"
-	"math/big"
-	"sort"
-	// "sync"
-
-	"github.com/abeychain/go-abey/common"
-	"github.com/abeychain/go-abey/core/types"
-	"github.com/abeychain/go-abey/crypto"
-	"github.com/abeychain/go-abey/params"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/relayer/state"
+	"math/big"
+	"sort"
 )
 
 /////////////////////////////////////////////////////////////////////////////////
 var IC *ImpawnCache
-var OpQueryReward uint8 = 5
-var OpQueryFine uint8 = 6
+//var OpQueryReward uint8 = 5
+//var OpQueryFine uint8 = 6
 
 func init() {
 	IC = newImpawnCache()
@@ -48,7 +43,7 @@ type PairstakingValue struct {
 }
 
 func (v *PairstakingValue) isElection() bool {
-	return (v.State&types.StateStakingOnce != 0 || v.State&types.StateStakingAuto != 0)
+	return (v.State&StateStakingOnce != 0 || v.State&StateStakingAuto != 0)
 }
 
 type RewardItem struct {
@@ -68,11 +63,11 @@ type RedeemItem struct {
 }
 
 func (r *RedeemItem) toHeight() *big.Int {
-	e := types.GetEpochFromID(r.EpochID + 1)
+	e := GetEpochFromID(r.EpochID + 1)
 	return new(big.Int).SetUint64(e.BeginHeight)
 }
 func (r *RedeemItem) fromHeight(hh *big.Int) {
-	e := types.GetEpochFromHeight(hh.Uint64())
+	e := GetEpochFromHeight(hh.Uint64())
 	if e != nil {
 		r.EpochID = e.EpochID
 	}
@@ -84,7 +79,7 @@ func (r *RedeemItem) update(o *RedeemItem) {
 }
 func (r *RedeemItem) isRedeem(target uint64) bool {
 	hh := r.toHeight().Uint64()
-	return target > hh+params.MaxRedeemHeight
+	return target > hh+MaxRedeemHeight
 }
 func newRedeemItem(eid uint64, amount *big.Int) *RedeemItem {
 	return &RedeemItem{
@@ -140,7 +135,7 @@ func (s *impawnUnit) getValidStaking(hh uint64) *big.Int {
 			break
 		}
 	}
-	e := types.GetEpochFromHeight(hh)
+	e := GetEpochFromHeight(hh)
 	r := s.getRedeemItem(e.EpochID)
 	if r != nil {
 		res := new(big.Int).Sub(all, r.Amount)
@@ -179,17 +174,17 @@ func (s *impawnUnit) getRedeemItem(epochID uint64) *RedeemItem {
 func (s *impawnUnit) stopStakingInfo(amount, lastHeight *big.Int) error {
 	all := s.getValidStaking(lastHeight.Uint64())
 	if all.Cmp(amount) < 0 {
-		return types.ErrAmountOver
+		return ErrAmountOver
 	}
-	e := types.GetEpochFromHeight(lastHeight.Uint64())
+	e := GetEpochFromHeight(lastHeight.Uint64())
 	if e == nil {
-		return types.ErrNotFoundEpoch
+		return ErrNotFoundEpoch
 	}
 	r := s.getRedeemItem(e.EpochID)
 	tmp := &RedeemItem{
 		Amount:  new(big.Int).Set(amount),
 		EpochID: e.EpochID,
-		State:   types.StateRedeem,
+		State:   StateRedeem,
 	}
 	if r == nil {
 		s.RedeemInof = append(s.RedeemInof, tmp)
@@ -200,7 +195,7 @@ func (s *impawnUnit) stopStakingInfo(amount, lastHeight *big.Int) error {
 }
 func (s *impawnUnit) redeeming(hh uint64, amount *big.Int) (common.Address, *big.Int, error) {
 	if amount.Cmp(s.getValidRedeem(hh)) > 0 {
-		return common.Address{}, nil, types.ErrAmountOver
+		return common.Address{}, nil, ErrAmountOver
 	}
 	allAmount := big.NewInt(0)
 	s.sortRedeemItems()
@@ -209,12 +204,12 @@ func (s *impawnUnit) redeeming(hh uint64, amount *big.Int) (common.Address, *big
 			allAmount = allAmount.Add(allAmount, v.Amount)
 			res := allAmount.Cmp(amount)
 			if res <= 0 {
-				v.Amount, v.State = v.Amount.Sub(v.Amount, v.Amount), types.StateRedeemed
+				v.Amount, v.State = v.Amount.Sub(v.Amount, v.Amount), StateRedeemed
 				if res == 0 {
 					break
 				}
 			} else {
-				v.State = types.StateRedeemed
+				v.State = StateRedeemed
 				v.Amount.Set(new(big.Int).Sub(allAmount, amount))
 				break
 			}
@@ -232,7 +227,7 @@ func (s *impawnUnit) redeeming(hh uint64, amount *big.Int) (common.Address, *big
 func (s *impawnUnit) finishRedeemed() {
 	pos := -1
 	for i, v := range s.RedeemInof {
-		if v.Amount.Sign() == 0 && v.State == types.StateRedeemed {
+		if v.Amount.Sign() == 0 && v.State == StateRedeemed {
 			pos = i
 		}
 	}
@@ -261,7 +256,7 @@ func (s *impawnUnit) merge(epochid, hh uint64) {
 	tmp := &PairstakingValue{
 		Amount: all,
 		Height: new(big.Int).SetUint64(hh),
-		State:  types.StateStakingAuto,
+		State:  StateStakingAuto,
 	}
 	var val []*PairstakingValue
 	redeem := s.getRedeemItem(epochid)
@@ -406,7 +401,7 @@ func (s *StakingAccount) addAmount(height uint64, amount *big.Int) {
 		Value: []*PairstakingValue{&PairstakingValue{
 			Amount: new(big.Int).Set(amount),
 			Height: new(big.Int).SetUint64(height),
-			State:  types.StateStakingAuto,
+			State:  StateStakingAuto,
 		}},
 		RedeemInof: make([]*RedeemItem, 0),
 	}
@@ -419,7 +414,7 @@ func (s *StakingAccount) updateFee(height uint64, fee *big.Int) {
 }
 func (s *StakingAccount) updatePk(height uint64, pk []byte) {
 	if height > s.getMaxHeight() {
-		s.Modify.VotePubkey = types.CopyVotePk(pk)
+		s.Modify.VotePubkey = CopyVotePk(pk)
 	}
 }
 func (s *StakingAccount) update(sa *StakingAccount, hh uint64, next, move bool) {
@@ -440,7 +435,7 @@ func (s *StakingAccount) update(sa *StakingAccount, hh uint64, next, move bool) 
 			s.Modify.Fee = new(big.Int).Set(sa.Modify.Fee)
 		}
 		if sa.Modify.VotePubkey != nil {
-			s.Modify.VotePubkey = types.CopyVotePk(sa.Modify.VotePubkey)
+			s.Modify.VotePubkey = CopyVotePk(sa.Modify.VotePubkey)
 		}
 	}
 	if next {
@@ -509,17 +504,17 @@ func (s *StakingAccount) getMaxHeight() uint64 {
 }
 func (s *StakingAccount) changeAlterableInfo() {
 	if s.Modify != nil {
-		if s.Modify.Fee != nil && 0 != s.Modify.Fee.Cmp(types.InvalidFee) {
-			if s.Modify.Fee.Sign() >= 0 && s.Modify.Fee.Cmp(types.Base) <= 0 {
+		if s.Modify.Fee != nil && 0 != s.Modify.Fee.Cmp(InvalidFee) {
+			if s.Modify.Fee.Sign() >= 0 && s.Modify.Fee.Cmp(Base) <= 0 {
 				preFee := new(big.Int).Set(s.Fee)
 				s.Fee = new(big.Int).Set(s.Modify.Fee)
-				s.Modify.Fee = new(big.Int).Set(types.InvalidFee)
+				s.Modify.Fee = new(big.Int).Set(InvalidFee)
 				log.Info("apply fee", "Address", s.Unit.GetRewardAddress(), "pre-fee", preFee.String(), "fee", s.Fee.String())
 			}
 		}
 		if s.Modify.VotePubkey != nil && len(s.Modify.VotePubkey) >= 64 {
-			if err := types.ValidPk(s.Modify.VotePubkey); err == nil {
-				s.Votepubkey = types.CopyVotePk(s.Modify.VotePubkey)
+			if err := ValidPk(s.Modify.VotePubkey); err == nil {
+				s.Votepubkey = CopyVotePk(s.Modify.VotePubkey)
 				s.Modify.VotePubkey = []byte{}
 			}
 		}
@@ -527,7 +522,7 @@ func (s *StakingAccount) changeAlterableInfo() {
 }
 func (s *StakingAccount) clone() *StakingAccount {
 	ss := &StakingAccount{
-		Votepubkey: types.CopyVotePk(s.Votepubkey),
+		Votepubkey: CopyVotePk(s.Votepubkey),
 		Unit:       s.Unit.clone(),
 		Fee:        new(big.Int).Set(s.Fee),
 		Committee:  s.Committee,
@@ -542,7 +537,7 @@ func (s *StakingAccount) clone() *StakingAccount {
 			ss.Modify.Fee = new(big.Int).Set(s.Modify.Fee)
 		}
 		if s.Modify.VotePubkey != nil {
-			ss.Modify.VotePubkey = types.CopyVotePk(s.Modify.VotePubkey)
+			ss.Modify.VotePubkey = CopyVotePk(s.Modify.VotePubkey)
 		}
 	}
 	return ss
@@ -560,12 +555,12 @@ func (s *StakingAccount) isvalid() bool {
 func (s *StakingAccount) makeModifyStateByTip10() {
 	if s.Modify == nil {
 		s.Modify = &AlterableInfo{
-			Fee:        new(big.Int).Set(types.InvalidFee),
+			Fee:        new(big.Int).Set(InvalidFee),
 			VotePubkey: []byte{},
 		}
 	} else {
 		if s.Modify.Fee == nil || s.Modify.Fee.Sign() == 0 {
-			s.Modify.Fee = new(big.Int).Set(types.InvalidFee)
+			s.Modify.Fee = new(big.Int).Set(InvalidFee)
 			s.Modify.VotePubkey = []byte{}
 		}
 	}
@@ -627,7 +622,7 @@ type ImpawnImpl struct {
 }
 
 func NewImpawnImpl() *ImpawnImpl {
-	pre := types.GetPreFirstEpoch()
+	pre := GetPreFirstEpoch()
 	return &ImpawnImpl{
 		curEpochID: pre.EpochID,
 		lastReward: 0,
@@ -672,22 +667,27 @@ func (i *ImpawnImpl) getMinEpochID() uint64 {
 	return eid
 }
 func (i *ImpawnImpl) isInCurrentEpoch(hh uint64) bool {
-	return i.curEpochID == types.GetEpochFromHeight(hh).EpochID
+	return i.curEpochID == GetEpochFromHeight(hh).EpochID
 }
-func (i *ImpawnImpl) getCurrentEpochInfo() []*types.EpochIDInfo {
-	var epochs []*types.EpochIDInfo
+func (i *ImpawnImpl) getCurrentEpochInfo() []*EpochIDInfo {
+	var epochs []*EpochIDInfo
 	var eids []float64
 	for k, _ := range i.accounts {
 		eids = append(eids, float64(k))
 	}
 	sort.Float64s(eids)
 	for _, v := range eids {
-		e := types.GetEpochFromID(uint64(v))
+		e := GetEpochFromID(uint64(v))
 		if e != nil {
 			epochs = append(epochs, e)
 		}
 	}
 	return epochs
+}
+
+//当前任期、开始、结束
+func (i *ImpawnImpl) GetCurrentEpochInfo() ([]*EpochIDInfo,uint64){
+	return i.getCurrentEpochInfo(),i.getCurrentEpoch()
 }
 
 func (i *ImpawnImpl) repeatPK(addr common.Address, pk []byte) bool {
@@ -702,7 +702,7 @@ func (i *ImpawnImpl) repeatPK(addr common.Address, pk []byte) bool {
 }
 func (i *ImpawnImpl) GetStakingAccount(epochid uint64, addr common.Address) (*StakingAccount, error) {
 	if v, ok := i.accounts[epochid]; !ok {
-		return nil, types.ErrInvalidStaking
+		return nil, ErrInvalidStaking
 	} else {
 		for _, val := range v {
 			if bytes.Equal(val.Unit.Address.Bytes(), addr.Bytes()) {
@@ -710,7 +710,7 @@ func (i *ImpawnImpl) GetStakingAccount(epochid uint64, addr common.Address) (*St
 			}
 		}
 	}
-	return nil, types.ErrInvalidStaking
+	return nil, ErrInvalidStaking
 }
 func (i *ImpawnImpl) getDAfromSA(sa *StakingAccount, addr common.Address) (*DelegationAccount, error) {
 	for _, ii := range sa.Delegation {
@@ -748,7 +748,7 @@ func (i *ImpawnImpl) getElections2(epochid uint64) []*StakingAccount {
 }
 func (i *ImpawnImpl) getElections3(epochid uint64) []*StakingAccount {
 	eid := epochid
-	if eid >= params.FirstNewEpochID {
+	if eid >= FirstNewEpochID {
 		eid = eid - 1
 	}
 	return i.getElections2(eid)
@@ -781,7 +781,7 @@ func (i *ImpawnImpl) redeemBySa(sa *StakingAccount, height uint64, amount *big.I
 		return err1
 	}
 	if all.Cmp(amount) != 0 {
-		return errors.New(fmt.Sprint(types.ErrRedeemAmount, "request amount", amount, "redeem amount", all))
+		return errors.New(fmt.Sprint(ErrRedeemAmount, "request amount", amount, "redeem amount", all))
 	}
 	sa.finishRedeemed()
 	// fmt.Println("SA redeemed amount:[", all.String(), "],addr:[", addr.String())
@@ -794,18 +794,18 @@ func (i *ImpawnImpl) redeemByDa(da *DelegationAccount, height uint64, amount *bi
 		return err1
 	}
 	if all.Cmp(amount) != 0 {
-		return errors.New(fmt.Sprint(types.ErrRedeemAmount, "request amount", amount, "redeem amount", all))
+		return errors.New(fmt.Sprint(ErrRedeemAmount, "request amount", amount, "redeem amount", all))
 	}
 	da.finishRedeemed()
 	// fmt.Println("DA redeemed amount:[", all.String(), "],addr:[", addr.String())
 	return nil
 }
-func (i *ImpawnImpl) calcRewardInSa(target uint64, sa *StakingAccount, allReward, allStaking *big.Int, item *types.RewardInfo) ([]*types.RewardInfo, error) {
+func (i *ImpawnImpl) calcRewardInSa(target uint64, sa *StakingAccount, allReward, allStaking *big.Int, item *RewardInfo) ([]*RewardInfo, error) {
 	if sa == nil || allReward == nil || item == nil || allStaking == nil {
-		return nil, types.ErrInvalidParam
+		return nil, ErrInvalidParam
 	}
-	var items []*types.RewardInfo
-	fee := new(big.Int).Quo(new(big.Int).Mul(allReward, sa.Fee), types.Base)
+	var items []*RewardInfo
+	fee := new(big.Int).Quo(new(big.Int).Mul(allReward, sa.Fee), Base)
 	all, left, left2 := new(big.Int).Sub(allReward, fee), big.NewInt(0), big.NewInt(0)
 	for _, v := range sa.Delegation {
 		daAll := v.getAllStaking(target)
@@ -815,7 +815,7 @@ func (i *ImpawnImpl) calcRewardInSa(target uint64, sa *StakingAccount, allReward
 		v1 := new(big.Int).Quo(new(big.Int).Mul(all, daAll), allStaking)
 		left = left.Add(left, v1)
 		left2 = left2.Add(left2, daAll)
-		var ii types.RewardInfo
+		var ii RewardInfo
 		ii.Address, ii.Amount, ii.Staking = v.Unit.GetRewardAddress(), new(big.Int).Set(v1), new(big.Int).Set(daAll)
 		items = append(items, &ii)
 	}
@@ -823,28 +823,28 @@ func (i *ImpawnImpl) calcRewardInSa(target uint64, sa *StakingAccount, allReward
 	item.Staking = new(big.Int).Sub(allStaking, left2)
 	return items, nil
 }
-func (i *ImpawnImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *types.EpochIDInfo) ([]*types.SARewardInfos, error) {
+func (i *ImpawnImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *EpochIDInfo) ([]*SARewardInfos, error) {
 	if _, ok := i.accounts[einfo.EpochID]; !ok {
-		return nil, types.ErrInvalidParam
+		return nil, ErrInvalidParam
 	} else {
 		sas := i.getElections3(einfo.EpochID)
 		if sas == nil {
-			return nil, errors.New(fmt.Sprint(types.ErrMatchEpochID, "epochid:", einfo.EpochID))
+			return nil, errors.New(fmt.Sprint(ErrMatchEpochID, "epochid:", einfo.EpochID))
 		}
 		sas = i.fetchAccountsInEpoch(einfo.EpochID, sas)
 		if len(sas) == 0 {
-			return nil, errors.New(fmt.Sprint(types.ErrMatchEpochID, "epochid:", einfo.EpochID, "sas=0"))
+			return nil, errors.New(fmt.Sprint(ErrMatchEpochID, "epochid:", einfo.EpochID, "sas=0"))
 		}
 		impawns := SAImpawns(sas)
 		impawns.sort(target, false)
-		var res []*types.SARewardInfos
+		var res []*SARewardInfos
 		allValidatorStaking := impawns.getAllStaking(target)
 		sum := len(impawns)
 		left := big.NewInt(0)
 
 		for pos, v := range impawns {
-			var info types.SARewardInfos
-			var item types.RewardInfo
+			var info SARewardInfos
+			var item RewardInfo
 			item.Address = v.Unit.GetRewardAddress()
 			allStaking := v.getAllStaking(target)
 			if allStaking.Sign() <= 0 {
@@ -868,10 +868,10 @@ func (i *ImpawnImpl) calcReward(target, effectid uint64, allAmount *big.Int, ein
 		return res, nil
 	}
 }
-func (i *ImpawnImpl) reward(begin, end, effectid uint64, allAmount *big.Int) ([]*types.SARewardInfos, error) {
-	ids := types.GetEpochFromRange(begin, end)
+func (i *ImpawnImpl) reward(begin, end, effectid uint64, allAmount *big.Int) ([]*SARewardInfos, error) {
+	ids := GetEpochFromRange(begin, end)
 	if ids == nil || len(ids) > 2 {
-		return nil, errors.New(fmt.Sprint(types.ErrMatchEpochID, "more than 2 epochid:", begin, end))
+		return nil, errors.New(fmt.Sprint(ErrMatchEpochID, "more than 2 epochid:", begin, end))
 	}
 
 	if len(ids) == 2 {
@@ -902,14 +902,14 @@ func (i *ImpawnImpl) reward(begin, end, effectid uint64, allAmount *big.Int) ([]
 /////////////////////////////////////////////////////////////////////////////////
 // move the accounts from prev to next epoch and keeps the prev account still here
 func (i *ImpawnImpl) move(prev, next, effectHeight uint64) error {
-	nextEpoch := types.GetEpochFromID(next)
+	nextEpoch := GetEpochFromID(next)
 	if nextEpoch == nil {
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	prevInfos, ok := i.accounts[prev]
 	nextInfos, ok2 := i.accounts[next]
 	if !ok {
-		return errors.New(fmt.Sprintln("the epoch is nil", prev, "err:", types.ErrNotMatchEpochInfo))
+		return errors.New(fmt.Sprintln("the epoch is nil", prev, "err:", ErrNotMatchEpochInfo))
 	}
 	if !ok2 {
 		nextInfos = SAImpawns{}
@@ -931,16 +931,16 @@ func (i *ImpawnImpl) move(prev, next, effectHeight uint64) error {
 
 // DoElections called by consensus while it closer the end of epoch,have 500~1000 fast block
 func (i *ImpawnImpl) DoElections(epochid, height uint64) ([]*StakingAccount, error) {
-	if epochid < params.FirstNewEpochID && epochid != i.getCurrentEpoch()+1 {
-		return nil, types.ErrOverEpochID
+	if epochid < FirstNewEpochID && epochid != i.getCurrentEpoch()+1 {
+		return nil, ErrOverEpochID
 	}
-	cur := types.GetEpochFromID(i.curEpochID)
-	if cur.EndHeight != height+params.ElectionPoint && i.curEpochID >= params.FirstNewEpochID {
-		return nil, types.ErrNotElectionTime
+	cur := GetEpochFromID(i.curEpochID)
+	if cur.EndHeight != height+ElectionPoint && i.curEpochID >= FirstNewEpochID {
+		return nil, ErrNotElectionTime
 	}
 	// e := types.GetEpochFromID(epochid)
 	eid := epochid
-	if eid >= params.FirstNewEpochID {
+	if eid >= FirstNewEpochID {
 		eid = eid - 1
 	}
 	if val, ok := i.accounts[eid]; ok {
@@ -948,18 +948,18 @@ func (i *ImpawnImpl) DoElections(epochid, height uint64) ([]*StakingAccount, err
 		var ee []*StakingAccount
 		for _, v := range val {
 			validStaking := v.getValidStakingOnly(height)
-			if validStaking.Cmp(params.ElectionMinLimitForStaking) < 0 {
+			if validStaking.Cmp(ElectionMinLimitForStaking) < 0 {
 				continue
 			}
 			v.Committee = true
 			ee = append(ee, v)
-			if len(ee) >= params.CountInEpoch {
+			if len(ee) >= CountInEpoch {
 				break
 			}
 		}
 		return ee, nil
 	} else {
-		return nil, types.ErrMatchEpochID
+		return nil, ErrMatchEpochID
 	}
 }
 
@@ -967,7 +967,7 @@ func (i *ImpawnImpl) DoElections(epochid, height uint64) ([]*StakingAccount, err
 // it will be save the whole state in the current epoch end block after it called by consensus
 func (i *ImpawnImpl) Shift(epochid, effectHeight uint64) error {
 	lastReward := i.lastReward
-	minEpoch := types.GetEpochFromHeight(lastReward)
+	minEpoch := GetEpochFromHeight(lastReward)
 	min := i.getMinEpochID()
 	// fmt.Println("*** move min:", min, "minEpoch:", minEpoch.EpochID, "lastReward:", i.lastReward)
 	for ii := min; minEpoch.EpochID > 1 && ii < minEpoch.EpochID-1; ii++ {
@@ -976,7 +976,7 @@ func (i *ImpawnImpl) Shift(epochid, effectHeight uint64) error {
 	}
 
 	if epochid != i.getCurrentEpoch()+1 {
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	i.SetCurrentEpoch(epochid)
 	prev := epochid - 1
@@ -986,11 +986,11 @@ func (i *ImpawnImpl) Shift(epochid, effectHeight uint64) error {
 // CancelSAccount cancel amount of asset for staking account,it will be work in next epoch
 func (i *ImpawnImpl) CancelSAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	curEpoch := types.GetEpochFromHeight(curHeight)
+	curEpoch := GetEpochFromHeight(curHeight)
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
 	sa, err := i.GetStakingAccount(curEpoch.EpochID, addr)
 	if err != nil {
@@ -1004,11 +1004,11 @@ func (i *ImpawnImpl) CancelSAccount(curHeight uint64, addr common.Address, amoun
 // CancelDAccount cancel amount of asset for delegation account,it will be work in next epoch
 func (i *ImpawnImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	curEpoch := types.GetEpochFromHeight(curHeight)
+	curEpoch := GetEpochFromHeight(curHeight)
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
 	sa, err := i.GetStakingAccount(curEpoch.EpochID, addrSA)
 	if err != nil {
@@ -1019,8 +1019,8 @@ func (i *ImpawnImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Addr
 		return err
 	}
 	if da == nil {
-		log.Error("CancelDAccount error", "height", curHeight, "SA", addrSA.StringToAbey(), "DA", addrDA.StringToAbey())
-		return types.ErrNotDelegation
+		log.Error("CancelDAccount error", "height", curHeight, "SA", addrSA, "DA", addrDA)
+		return ErrNotDelegation
 	}
 	err3 := da.stopStakingInfo(amount, new(big.Int).SetUint64(curHeight))
 	// fmt.Println("[DA]insert a redeem,address:[", addrSA.String(), "],DA address:[", addrDA.String(), "],amount:[", amount.String(), "],height:", curHeight, "]err:", err3)
@@ -1030,11 +1030,11 @@ func (i *ImpawnImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Addr
 // RedeemSAccount redeem amount of asset for staking account,it will locked for a certain time
 func (i *ImpawnImpl) RedeemSAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	curEpoch := types.GetEpochFromHeight(curHeight)
+	curEpoch := GetEpochFromHeight(curHeight)
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
 	sa, err := i.GetStakingAccount(curEpoch.EpochID, addr)
 	if err != nil {
@@ -1046,11 +1046,11 @@ func (i *ImpawnImpl) RedeemSAccount(curHeight uint64, addr common.Address, amoun
 // RedeemDAccount redeem amount of asset for delegation account,it will locked for a certain time
 func (i *ImpawnImpl) RedeemDAccount(curHeight uint64, addrSA, addrDA common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	curEpoch := types.GetEpochFromHeight(curHeight)
+	curEpoch := GetEpochFromHeight(curHeight)
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
 	sa, err := i.GetStakingAccount(curEpoch.EpochID, addrSA)
 	if err != nil {
@@ -1061,19 +1061,19 @@ func (i *ImpawnImpl) RedeemDAccount(curHeight uint64, addrSA, addrDA common.Addr
 		return err
 	}
 	if da == nil {
-		log.Error("RedeemDAccount error", "height", curHeight, "SA", addrSA.StringToAbey(), "DA", addrDA.StringToAbey())
-		return types.ErrNotDelegation
+		log.Error("RedeemDAccount error", "height", curHeight, "SA", addrSA, "DA", addrDA)
+		return ErrNotDelegation
 	}
 	return i.redeemByDa(da, curHeight, amount)
 }
 
 func (i *ImpawnImpl) insertDAccount(height uint64, da *DelegationAccount) error {
 	if da == nil {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	epochInfo := types.GetEpochFromHeight(height)
+	epochInfo := GetEpochFromHeight(height)
 	if epochInfo == nil || epochInfo.EpochID > i.getCurrentEpoch() {
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	sa, err := i.GetStakingAccount(epochInfo.EpochID, da.SaAddress)
 	if err != nil {
@@ -1094,13 +1094,13 @@ func (i *ImpawnImpl) insertDAccount(height uint64, da *DelegationAccount) error 
 }
 func (i *ImpawnImpl) InsertDAccount2(height uint64, addrSA, addrDA common.Address, val *big.Int) error {
 	if val.Sign() <= 0 || height < 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
 	if bytes.Equal(addrSA.Bytes(), addrDA.Bytes()) {
-		return types.ErrDelegationSelf
+		return ErrDelegationSelf
 	}
 	state := uint8(0)
-	state |= types.StateStakingAuto
+	state |= StateStakingAuto
 	da := &DelegationAccount{
 		SaAddress: addrSA,
 		Unit: &impawnUnit{
@@ -1117,12 +1117,12 @@ func (i *ImpawnImpl) InsertDAccount2(height uint64, addrSA, addrDA common.Addres
 }
 func (i *ImpawnImpl) insertSAccount(height uint64, sa *StakingAccount) error {
 	if sa == nil {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	epochInfo := types.GetEpochFromHeight(height)
+	epochInfo := GetEpochFromHeight(height)
 	if epochInfo == nil || epochInfo.EpochID > i.getCurrentEpoch() {
 		log.Error("insertSAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	if val, ok := i.accounts[epochInfo.EpochID]; !ok {
 		var accounts []*StakingAccount
@@ -1143,19 +1143,19 @@ func (i *ImpawnImpl) insertSAccount(height uint64, sa *StakingAccount) error {
 	return nil
 }
 func (i *ImpawnImpl) InsertSAccount2(height, effectHeight uint64, addr common.Address, pk []byte, val *big.Int, fee *big.Int, auto bool) error {
-	if val.Sign() <= 0 || height < 0 || fee.Sign() < 0 || fee.Cmp(types.Base) > 0 {
-		return types.ErrInvalidParam
+	if val.Sign() <= 0 || height < 0 || fee.Sign() < 0 || fee.Cmp(Base) > 0 {
+		return ErrInvalidParam
 	}
-	if err := types.ValidPk(pk); err != nil {
+	if err := ValidPk(pk); err != nil {
 		return err
 	}
 	if i.repeatPK(addr, pk) {
-		log.Error("Insert SA account repeat pk", "addr", addr.StringToAbey(), "pk", pk)
-		return types.ErrRepeatPk
+		log.Error("Insert SA account repeat pk", "addr", addr, "pk", pk)
+		return ErrRepeatPk
 	}
 	state := uint8(0)
 	if auto {
-		state |= types.StateStakingAuto
+		state |= StateStakingAuto
 	}
 	sa := &StakingAccount{
 		Votepubkey: append([]byte{}, pk...),
@@ -1173,7 +1173,7 @@ func (i *ImpawnImpl) InsertSAccount2(height, effectHeight uint64, addr common.Ad
 	}
 	if height >= effectHeight {
 		sa.Modify = &AlterableInfo{
-			Fee:        new(big.Int).Set(types.InvalidFee),
+			Fee:        new(big.Int).Set(InvalidFee),
 			VotePubkey: []byte{},
 		}
 	}
@@ -1181,12 +1181,12 @@ func (i *ImpawnImpl) InsertSAccount2(height, effectHeight uint64, addr common.Ad
 }
 func (i *ImpawnImpl) AppendSAAmount(height uint64, addr common.Address, val *big.Int) error {
 	if val.Sign() <= 0 || height < 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	epochInfo := types.GetEpochFromHeight(height)
+	epochInfo := GetEpochFromHeight(height)
 	if epochInfo.EpochID > i.getCurrentEpoch() {
 		log.Debug("insertSAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	sa, err := i.GetStakingAccount(epochInfo.EpochID, addr)
 	if err != nil {
@@ -1196,13 +1196,13 @@ func (i *ImpawnImpl) AppendSAAmount(height uint64, addr common.Address, val *big
 	return nil
 }
 func (i *ImpawnImpl) UpdateSAFee(height uint64, addr common.Address, fee *big.Int) error {
-	if height < 0 || fee.Sign() < 0 || fee.Cmp(types.Base) > 0 {
-		return types.ErrInvalidParam
+	if height < 0 || fee.Sign() < 0 || fee.Cmp(Base) > 0 {
+		return ErrInvalidParam
 	}
-	epochInfo := types.GetEpochFromHeight(height)
+	epochInfo := GetEpochFromHeight(height)
 	if epochInfo.EpochID > i.getCurrentEpoch() {
 		log.Info("UpdateSAFee", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	sa, err := i.GetStakingAccount(epochInfo.EpochID, addr)
 	if err != nil {
@@ -1213,19 +1213,19 @@ func (i *ImpawnImpl) UpdateSAFee(height uint64, addr common.Address, fee *big.In
 }
 func (i *ImpawnImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte) error {
 	if height < 0 {
-		return types.ErrInvalidParam
+		return ErrInvalidParam
 	}
-	if err := types.ValidPk(pk); err != nil {
+	if err := ValidPk(pk); err != nil {
 		return err
 	}
 	if i.repeatPK(addr, pk) {
-		log.Error("UpdateSAPK repeat pk", "addr", addr.StringToAbey(), "pk", pk)
-		return types.ErrRepeatPk
+		log.Error("UpdateSAPK repeat pk", "addr", addr, "pk", pk)
+		return ErrRepeatPk
 	}
-	epochInfo := types.GetEpochFromHeight(height)
+	epochInfo := GetEpochFromHeight(height)
 	if epochInfo.EpochID > i.getCurrentEpoch() {
 		log.Info("UpdateSAPK", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
-		return types.ErrOverEpochID
+		return ErrOverEpochID
 	}
 	sa, err := i.GetStakingAccount(epochInfo.EpochID, addr)
 	if err != nil {
@@ -1234,15 +1234,15 @@ func (i *ImpawnImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte) e
 	sa.updatePk(height, pk)
 	return nil
 }
-func (i *ImpawnImpl) Reward(block *types.SnailBlock, allAmount *big.Int, effectid uint64) ([]*types.SARewardInfos, error) {
-	begin, end := types.FromBlock(block)
-	res, err := i.reward(begin, end, effectid, allAmount)
-	if err == nil {
-		i.lastReward = end
-	}
-	return res, err
-}
-func (i *ImpawnImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) ([]*types.SARewardInfos, error) {
+//func (i *ImpawnImpl) Reward(block *types.SnailBlock, allAmount *big.Int, effectid uint64) ([]*SARewardInfos, error) {
+//	begin, end := types.FromBlock(block)
+//	res, err := i.reward(begin, end, effectid, allAmount)
+//	if err == nil {
+//		i.lastReward = end
+//	}
+//	return res, err
+//}
+func (i *ImpawnImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) ([]*SARewardInfos, error) {
 
 	res, err := i.reward(begin, end, effectid, allAmount)
 	if err == nil {
@@ -1262,36 +1262,54 @@ func (i *ImpawnImpl) GetAllStakingAccount() SAImpawns {
 }
 
 // GetStakingAsset returns a map for all staking amount of the address, the key is the SA address
-func (i *ImpawnImpl) GetStakingAsset(addr common.Address) map[common.Address]*types.StakingValue {
+func (i *ImpawnImpl) GetStakingAsset(addr common.Address) map[common.Address]*StakingValue {
 	epochid := i.curEpochID
-	res, _, _, _ := i.getAsset(addr, epochid, types.OpQueryStaking)
+	res, _, _, _ := i.getAsset(addr, epochid, OpQueryStaking)
 	return res
 }
 
 // GetLockedAsset returns a group canceled asset from the state of the addr,it includes redemption on
 // maturity and unmaturity asset
-func (i *ImpawnImpl) GetLockedAsset(addr common.Address) map[common.Address]*types.StakingValue {
+func (i *ImpawnImpl) GetLockedAsset(addr common.Address) map[common.Address]*StakingValue {
 	epochid := i.curEpochID
-	res, _, _, _ := i.getAsset(addr, epochid, types.OpQueryLocked)
+	res, _, _, _ := i.getAsset(addr, epochid, OpQueryLocked)
 	return res
 }
-func (i *ImpawnImpl) GetLockedAsset2(addr common.Address, height uint64) map[common.Address]*types.LockedValue {
+func (i *ImpawnImpl) GetLockedAsset2(addr common.Address, height uint64) map[common.Address]*LockedValue {
 	epochid := i.curEpochID
-	items, _, _, _ := i.getAsset(addr, epochid, types.OpQueryLocked)
-	res := make(map[common.Address]*types.LockedValue)
+	items, _, _, _ := i.getAsset(addr, epochid, OpQueryLocked)
+	res := make(map[common.Address]*LockedValue)
 	for k, v := range items {
 		res[k] = v.ToLockedValue(height)
 	}
 	return res
 }
+
+
 func (i *ImpawnImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	epochid := i.curEpochID
-	lock, _, _, _ := i.getAsset(addr, epochid, types.OpQueryLocked) //types.OpQueryRewarded
-	staked, _, _, _ := i.getAsset(addr, epochid, types.OpQueryStaking)
-	_, unlock, _, _ := i.getAsset(addr, epochid, types.OpQueryCancelable)
+	locked, _, _, _ := i.getAsset(addr, epochid, OpQueryLocked)
+	staked, _, _, _ := i.getAsset(addr, epochid, OpQueryStaking)
+	_, unlock, _, _ := i.getAsset(addr, epochid, OpQueryCancelable)
 	_, _, reward, _ := i.getAsset(addr, epochid, OpQueryReward)
 	_, _, _, fine := i.getAsset(addr, epochid, OpQueryFine)
-	return lock[addr].Value[epochid], staked[addr].Value[epochid], unlock[addr], reward[addr].Amount, fine[addr].Amount
+	var l *big.Int
+	var s *big.Int
+	var r *big.Int
+	var f *big.Int
+	if locked[addr] != nil{
+		l = locked[addr].Value[epochid]
+	}
+	if staked[addr] != nil{
+        s = staked[addr].Value[epochid]
+	}
+	if reward[addr] != nil{
+		r = reward[addr].Amount
+	}
+	if fine[addr] != nil{
+		f = fine[addr].Amount
+	}
+	return l,s, unlock[addr], r, f
 }
 
 func (i *ImpawnImpl) GetReward(addr common.Address) map[common.Address]*RewardItem {
@@ -1309,36 +1327,36 @@ func (i *ImpawnImpl) GetFine(addr common.Address) map[common.Address]*FineItem {
 // GetAllCancelableAsset returns all asset on addr it can be canceled
 func (i *ImpawnImpl) GetAllCancelableAsset(addr common.Address) map[common.Address]*big.Int {
 	epochid := i.curEpochID
-	_, res, _, _ := i.getAsset(addr, epochid, types.OpQueryCancelable)
+	_, res, _, _ := i.getAsset(addr, epochid, OpQueryCancelable)
 	return res
 }
-func (i *ImpawnImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*types.StakingValue, map[common.Address]*big.Int, map[common.Address]*RewardItem, map[common.Address]*FineItem) {
+func (i *ImpawnImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*StakingValue, map[common.Address]*big.Int, map[common.Address]*RewardItem, map[common.Address]*FineItem) {
 	epochid := epoch
-	end := types.GetEpochFromID(epochid).EndHeight
+	end := GetEpochFromID(epochid).EndHeight
 	if val, ok := i.accounts[epochid]; ok {
-		res := make(map[common.Address]*types.StakingValue)
+		res := make(map[common.Address]*StakingValue)
 		res2 := make(map[common.Address]*big.Int)
 		res3 := make(map[common.Address]*RewardItem)
 		res4 := make(map[common.Address]*FineItem)
 		for _, v := range val {
 			if bytes.Equal(v.Unit.Address.Bytes(), addr.Bytes()) {
-				if op&types.OpQueryStaking != 0 || op&types.OpQueryLocked != 0 {
+				if op&OpQueryStaking != 0 || op&OpQueryLocked != 0 {
 					if _, ok := res[addr]; !ok {
-						if op&types.OpQueryLocked != 0 {
-							res[addr] = &types.StakingValue{
+						if op&OpQueryLocked != 0 {
+							res[addr] = &StakingValue{
 								Value: v.Unit.redeemToMap(),
 							}
 						} else {
-							res[addr] = &types.StakingValue{
+							res[addr] = &StakingValue{
 								Value: v.Unit.valueToMap(),
 							}
 						}
 
 					} else {
-						log.Error("getAsset", "repeat staking account", addr.StringToAbey(), "epochid", epochid, "op", op)
+						log.Error("getAsset", "repeat staking account", addr, "epochid", epochid, "op", op)
 					}
 				}
-				if op&types.OpQueryCancelable != 0 {
+				if op&OpQueryCancelable != 0 {
 					all := v.Unit.getValidStaking(end)
 					if all.Sign() >= 0 {
 						res2[addr] = all
@@ -1378,14 +1396,14 @@ func (i *ImpawnImpl) MakeModifyStateByTip10() {
 func (i *ImpawnImpl) GetRoot() common.Hash {
 	return common.Hash{}
 }
-func (i *ImpawnImpl) Save(state vm.StateDB, preAddress common.Address) error {
+func (i *ImpawnImpl) Save(state state.StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data, err := rlp.EncodeToBytes(i)
 
 	if err != nil {
 		log.Crit("Failed to RLP encode ImpawnImpl", "err", err)
 	}
-	hash := types.RlpHash(data)
+	hash := RlpHash(data)
 	state.SetPOSState(preAddress, key, data)
 	tmp := CloneImpawnImpl(i)
 	if tmp != nil {
@@ -1393,7 +1411,7 @@ func (i *ImpawnImpl) Save(state vm.StateDB, preAddress common.Address) error {
 	}
 	return err
 }
-func (i *ImpawnImpl) Load(state vm.StateDB, preAddress common.Address) error {
+func (i *ImpawnImpl) Load(state state.StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data := state.GetPOSState(preAddress, key)
 	lenght := len(data)
@@ -1401,7 +1419,7 @@ func (i *ImpawnImpl) Load(state vm.StateDB, preAddress common.Address) error {
 		return errors.New("Load data = 0")
 	}
 	// cache := true
-	hash := types.RlpHash(data)
+	hash := RlpHash(data)
 	var temp ImpawnImpl
 	if cc, ok := IC.Cache.Get(hash); ok {
 		impawn := cc.(*ImpawnImpl)
@@ -1422,46 +1440,46 @@ func (i *ImpawnImpl) Load(state vm.StateDB, preAddress common.Address) error {
 	return nil
 }
 
-func GetCurrentValidators(state vm.StateDB) []*types.CommitteeMember {
-	i := NewImpawnImpl()
-	i.Load(state, types.StakingAddress)
-	eid := i.getCurrentEpoch()
-	accs := i.getElections3(eid)
-	var vv []*types.CommitteeMember
-	for _, v := range accs {
-		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
-		vv = append(vv, &types.CommitteeMember{
-			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
-			Coinbase:      v.Unit.GetRewardAddress(),
-			Publickey:     types.CopyVotePk(v.Votepubkey),
-			Flag:          types.StateUsedFlag,
-			MType:         types.TypeWorked,
-		})
-	}
-	return vv
-}
+//func GetCurrentValidators(state vm.StateDB) []*types.CommitteeMember {
+//	i := NewImpawnImpl()
+//	i.Load(state, types.StakingAddress)
+//	eid := i.getCurrentEpoch()
+//	accs := i.getElections3(eid)
+//	var vv []*types.CommitteeMember
+//	for _, v := range accs {
+//		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
+//		vv = append(vv, &types.CommitteeMember{
+//			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
+//			Coinbase:      v.Unit.GetRewardAddress(),
+//			Publickey:     types.CopyVotePk(v.Votepubkey),
+//			Flag:          types.StateUsedFlag,
+//			MType:         types.TypeWorked,
+//		})
+//	}
+//	return vv
+//}
 
-func GetValidatorsByEpoch(state vm.StateDB, eid, hh uint64) []*types.CommitteeMember {
-	i := NewImpawnImpl()
-	err := i.Load(state, types.StakingAddress)
-	accs := i.getElections3(eid)
-	first := types.GetFirstEpoch()
-	if hh == first.EndHeight-params.ElectionPoint {
-		fmt.Println("****** accounts len:", len(i.accounts), "election:", len(accs), " err ", err)
-	}
-	var vv []*types.CommitteeMember
-	for _, v := range accs {
-		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
-		vv = append(vv, &types.CommitteeMember{
-			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
-			Coinbase:      v.Unit.GetRewardAddress(),
-			Publickey:     types.CopyVotePk(v.Votepubkey),
-			Flag:          types.StateUsedFlag,
-			MType:         types.TypeWorked,
-		})
-	}
-	return vv
-}
+//func GetValidatorsByEpoch(state vm.StateDB, eid, hh uint64) []*types.CommitteeMember {
+//	i := NewImpawnImpl()
+//	err := i.Load(state, types.StakingAddress)
+//	accs := i.getElections3(eid)
+//	first := types.GetFirstEpoch()
+//	if hh == first.EndHeight-params.ElectionPoint {
+//		fmt.Println("****** accounts len:", len(i.accounts), "election:", len(accs), " err ", err)
+//	}
+//	var vv []*types.CommitteeMember
+//	for _, v := range accs {
+//		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
+//		vv = append(vv, &types.CommitteeMember{
+//			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
+//			Coinbase:      v.Unit.GetRewardAddress(),
+//			Publickey:     types.CopyVotePk(v.Votepubkey),
+//			Flag:          types.StateUsedFlag,
+//			MType:         types.TypeWorked,
+//		})
+//	}
+//	return vv
+//}
 func (i *ImpawnImpl) Counts() int {
 	pos := 0
 	for _, val := range i.accounts {
@@ -1472,15 +1490,15 @@ func (i *ImpawnImpl) Counts() int {
 	}
 	return pos
 }
-func (i *ImpawnImpl) Summay() *types.ImpawnSummay {
-	summay := &types.ImpawnSummay{
+func (i *ImpawnImpl) Summay() *ImpawnSummay {
+	summay := &ImpawnSummay{
 		LastReward: i.lastReward,
-		Infos:      make([]*types.SummayEpochInfo, 0, 0),
+		Infos:      make([]*SummayEpochInfo, 0, 0),
 	}
 	sumAccount := 0
 	for k, val := range i.accounts {
-		info := types.GetEpochFromID(k)
-		item := &types.SummayEpochInfo{
+		info := GetEpochFromID(k)
+		item := &SummayEpochInfo{
 			EpochID:     info.EpochID,
 			BeginHeight: info.BeginHeight,
 			EndHeight:   info.EndHeight,
