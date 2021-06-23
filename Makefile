@@ -2,20 +2,20 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: atals android ios atals-cross evm all test clean
-.PHONY: atals-linux atals-linux-386 atals-linux-amd64 atals-linux-mips64 atals-linux-mips64le
-.PHONY: atals-linux-arm atals-linux-arm-5 atals-linux-arm-6 atals-linux-arm-7 atals-linux-arm64
-.PHONY: atals-darwin atals-darwin-386 atals-darwin-amd64
-.PHONY: atals-windows atals-windows-386 atals-windows-amd64
+.PHONY: atlas android ios atlas-cross evm all test clean
+.PHONY: atlas-linux atlas-linux-386 atlas-linux-amd64 atlas-linux-mips64 atlas-linux-mips64le
+.PHONY: atlas-linux-arm atlas-linux-arm-5 atlas-linux-arm-6 atlas-linux-arm-7 atlas-linux-arm64
+.PHONY: atlas-darwin atlas-darwin-386 atlas-darwin-amd64
+.PHONY: atlas-windows atlas-windows-386 atlas-windows-amd64
 
 GOBIN = ./build/bin
 GO ?= latest
 GORUN = env GO111MODULE=on go run
 
-atals:
+atlas:
 	$(GORUN) build/ci.go install .
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/atals\" to launch atals."
+	@echo "Run \"$(GOBIN)/atlas\" to launch atlas."
 
 all:
 	$(GORUN) build/ci.go install
@@ -23,14 +23,14 @@ all:
 android:
 	$(GORUN) build/ci.go aar --local
 	@echo "Done building."
-	@echo "Import \"$(GOBIN)/atals.aar\" to use the library."
-	@echo "Import \"$(GOBIN)/atals-sources.jar\" to add javadocs"
+	@echo "Import \"$(GOBIN)/atlas.aar\" to use the library."
+	@echo "Import \"$(GOBIN)/atlas-sources.jar\" to add javadocs"
 	@echo "For more info see https://stackoverflow.com/questions/20994336/android-studio-how-to-attach-javadoc"
 
 ios:
 	$(GORUN) build/ci.go xcode --local
 	@echo "Done building."
-	@echo "Import \"$(GOBIN)/atals.framework\" to use the library."
+	@echo "Import \"$(GOBIN)/atlas.framework\" to use the library."
 
 test: all
 	$(GORUN) build/ci.go test
@@ -56,92 +56,92 @@ devtools:
 
 # Cross Compilation Targets (xgo)
 
-atals-cross: atals-linux atals-darwin atals-windows atals-android atals-ios
+atlas-cross: atlas-linux atlas-darwin atlas-windows atlas-android atlas-ios
 	@echo "Full cross compilation done:"
-	@ls -ld $(GOBIN)/atals-*
+	@ls -ld $(GOBIN)/atlas-*
 
-atals-linux: atals-linux-386 atals-linux-amd64 atals-linux-arm atals-linux-mips64 atals-linux-mips64le
+atlas-linux: atlas-linux-386 atlas-linux-amd64 atlas-linux-arm atlas-linux-mips64 atlas-linux-mips64le
 	@echo "Linux cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-*
+	@ls -ld $(GOBIN)/atlas-linux-*
 
-atals-linux-386:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/386 -v ./cmd/atals
+atlas-linux-386:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/386 -v ./cmd/atlas
 	@echo "Linux 386 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep 386
+	@ls -ld $(GOBIN)/atlas-linux-* | grep 386
 
-atals-linux-amd64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/amd64 -v ./cmd/atals
+atlas-linux-amd64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/amd64 -v ./cmd/atlas
 	@echo "Linux amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep amd64
+	@ls -ld $(GOBIN)/atlas-linux-* | grep amd64
 
-atals-linux-arm: atals-linux-arm-5 atals-linux-arm-6 atals-linux-arm-7 atals-linux-arm64
+atlas-linux-arm: atlas-linux-arm-5 atlas-linux-arm-6 atlas-linux-arm-7 atlas-linux-arm64
 	@echo "Linux ARM cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep arm
+	@ls -ld $(GOBIN)/atlas-linux-* | grep arm
 
-atals-linux-arm-5:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-5 -v ./cmd/atals
+atlas-linux-arm-5:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-5 -v ./cmd/atlas
 	@echo "Linux ARMv5 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep arm-5
+	@ls -ld $(GOBIN)/atlas-linux-* | grep arm-5
 
-atals-linux-arm-6:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-6 -v ./cmd/atals
+atlas-linux-arm-6:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-6 -v ./cmd/atlas
 	@echo "Linux ARMv6 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep arm-6
+	@ls -ld $(GOBIN)/atlas-linux-* | grep arm-6
 
-atals-linux-arm-7:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-7 -v ./cmd/atals
+atlas-linux-arm-7:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-7 -v ./cmd/atlas
 	@echo "Linux ARMv7 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep arm-7
+	@ls -ld $(GOBIN)/atlas-linux-* | grep arm-7
 
-atals-linux-arm64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm64 -v ./cmd/atals
+atlas-linux-arm64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm64 -v ./cmd/atlas
 	@echo "Linux ARM64 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep arm64
+	@ls -ld $(GOBIN)/atlas-linux-* | grep arm64
 
-atals-linux-mips:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips --ldflags '-extldflags "-static"' -v ./cmd/atals
+atlas-linux-mips:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips --ldflags '-extldflags "-static"' -v ./cmd/atlas
 	@echo "Linux MIPS cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep mips
+	@ls -ld $(GOBIN)/atlas-linux-* | grep mips
 
-atals-linux-mipsle:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mipsle --ldflags '-extldflags "-static"' -v ./cmd/atals
+atlas-linux-mipsle:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mipsle --ldflags '-extldflags "-static"' -v ./cmd/atlas
 	@echo "Linux MIPSle cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep mipsle
+	@ls -ld $(GOBIN)/atlas-linux-* | grep mipsle
 
-atals-linux-mips64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64 --ldflags '-extldflags "-static"' -v ./cmd/atals
+atlas-linux-mips64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64 --ldflags '-extldflags "-static"' -v ./cmd/atlas
 	@echo "Linux MIPS64 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep mips64
+	@ls -ld $(GOBIN)/atlas-linux-* | grep mips64
 
-atals-linux-mips64le:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64le --ldflags '-extldflags "-static"' -v ./cmd/atals
+atlas-linux-mips64le:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64le --ldflags '-extldflags "-static"' -v ./cmd/atlas
 	@echo "Linux MIPS64le cross compilation done:"
-	@ls -ld $(GOBIN)/atals-linux-* | grep mips64le
+	@ls -ld $(GOBIN)/atlas-linux-* | grep mips64le
 
-atals-darwin: atals-darwin-386 atals-darwin-amd64
+atlas-darwin: atlas-darwin-386 atlas-darwin-amd64
 	@echo "Darwin cross compilation done:"
-	@ls -ld $(GOBIN)/atals-darwin-*
+	@ls -ld $(GOBIN)/atlas-darwin-*
 
-atals-darwin-386:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/386 -v ./cmd/atals
+atlas-darwin-386:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/386 -v ./cmd/atlas
 	@echo "Darwin 386 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-darwin-* | grep 386
+	@ls -ld $(GOBIN)/atlas-darwin-* | grep 386
 
-atals-darwin-amd64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/amd64 -v ./cmd/atals
+atlas-darwin-amd64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/amd64 -v ./cmd/atlas
 	@echo "Darwin amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-darwin-* | grep amd64
+	@ls -ld $(GOBIN)/atlas-darwin-* | grep amd64
 
-atals-windows: atals-windows-386 atals-windows-amd64
+atlas-windows: atlas-windows-386 atlas-windows-amd64
 	@echo "Windows cross compilation done:"
-	@ls -ld $(GOBIN)/atals-windows-*
+	@ls -ld $(GOBIN)/atlas-windows-*
 
-atals-windows-386:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/386 -v ./cmd/atals
+atlas-windows-386:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/386 -v ./cmd/atlas
 	@echo "Windows 386 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-windows-* | grep 386
+	@ls -ld $(GOBIN)/atlas-windows-* | grep 386
 
-atals-windows-amd64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/amd64 -v ./cmd/atals
+atlas-windows-amd64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/amd64 -v ./cmd/atlas
 	@echo "Windows amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/atals-windows-* | grep amd64
+	@ls -ld $(GOBIN)/atlas-windows-* | grep amd64

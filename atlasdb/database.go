@@ -1,4 +1,4 @@
-// Copyright 2018 The go-ethereum Authors
+// Copyright 2014 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -17,432 +17,460 @@
 package atlasdb
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"os"
-	"sync/atomic"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/leveldb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/olekukonko/tablewriter"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/filter"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// freezerdb is a database wrapper that enabled freezer data retrievals.
-type freezerdb struct {
-	ethdb.KeyValueStore
-	ethdb.AncientStore
+const (
+	writeDelayNThreshold       = 200
+	writeDelayThreshold        = 350 * time.Millisecond
+	writeDelayWarningThrottler = 1 * time.Minute
+)
+
+var OpenFileLimit = 64
+
+type LDBDatabase struct {
+	fn string      // filename for reporting
+	db *leveldb.DB // LevelDB instance
+
+	compTimeMeter    metrics.Meter // Meter for measuring the total time spent in database compaction
+	compReadMeter    metrics.Meter // Meter for measuring the data read during compaction
+	compWriteMeter   metrics.Meter // Meter for measuring the data written during compaction
+	writeDelayNMeter metrics.Meter // Meter for measuring the write delay number due to database compaction
+	writeDelayMeter  metrics.Meter // Meter for measuring the write delay duration due to database compaction
+	diskReadMeter    metrics.Meter // Meter for measuring the effective amount of data read
+	diskWriteMeter   metrics.Meter // Meter for measuring the effective amount of data written
+
+	quitLock sync.Mutex      // Mutex protecting the quit channel access
+	quitChan chan chan error // Quit channel to stop the metrics collection before closing the database
+
+	log log.Logger // Contextual logger tracking the database path
 }
 
-// Close implements io.Closer, closing both the fast key-value store as well as
-// the slow ancient tables.
-func (frdb *freezerdb) Close() error {
-	var errs []error
-	if err := frdb.AncientStore.Close(); err != nil {
-		errs = append(errs, err)
+// NewLDBDatabase returns a LevelDB wrapped object.
+func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
+	logger := log.New("database", file)
+
+	// Ensure we have some minimal caching and file guarantees
+	if cache < 16 {
+		cache = 16
 	}
-	if err := frdb.KeyValueStore.Close(); err != nil {
-		errs = append(errs, err)
+	if handles < 16 {
+		handles = 16
 	}
-	if len(errs) != 0 {
-		return fmt.Errorf("%v", errs)
+	logger.Info("Allocated cache and file handles", "cache", cache, "handles", handles)
+
+	// Open the db and recover any potential corruptions
+	db, err := leveldb.OpenFile(file, &opt.Options{
+		OpenFilesCacheCapacity: handles,
+		BlockCacheCapacity:     cache / 2 * opt.MiB,
+		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
+		Filter:                 filter.NewBloomFilter(10),
+	})
+	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
+		db, err = leveldb.RecoverFile(file, nil)
 	}
-	return nil
-}
-
-// Freeze is a helper method used for external testing to trigger and block until
-// a freeze cycle completes, without having to sleep for a minute to trigger the
-// automatic background run.
-func (frdb *freezerdb) Freeze(threshold uint64) error {
-	if frdb.AncientStore.(*freezer).readonly {
-		return errReadOnly
-	}
-	// Set the freezer threshold to a temporary value
-	defer func(old uint64) {
-		atomic.StoreUint64(&frdb.AncientStore.(*freezer).threshold, old)
-	}(atomic.LoadUint64(&frdb.AncientStore.(*freezer).threshold))
-	atomic.StoreUint64(&frdb.AncientStore.(*freezer).threshold, threshold)
-
-	// Trigger a freeze cycle and block until it's done
-	trigger := make(chan struct{}, 1)
-	frdb.AncientStore.(*freezer).trigger <- trigger
-	<-trigger
-	return nil
-}
-
-// nofreezedb is a database wrapper that disables freezer data retrievals.
-type nofreezedb struct {
-	ethdb.KeyValueStore
-}
-
-// HasAncient returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) HasAncient(kind string, number uint64) (bool, error) {
-	return false, errNotSupported
-}
-
-// Ancient returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) Ancient(kind string, number uint64) ([]byte, error) {
-	return nil, errNotSupported
-}
-
-// Ancients returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) Ancients() (uint64, error) {
-	return 0, errNotSupported
-}
-
-// AncientSize returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) AncientSize(kind string) (uint64, error) {
-	return 0, errNotSupported
-}
-
-// AppendAncient returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) AppendAncient(number uint64, hash, header, body, receipts, td []byte) error {
-	return errNotSupported
-}
-
-// TruncateAncients returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) TruncateAncients(items uint64) error {
-	return errNotSupported
-}
-
-// Sync returns an error as we don't have a backing chain freezer.
-func (db *nofreezedb) Sync() error {
-	return errNotSupported
-}
-
-// NewDatabase creates a high level database on top of a given key-value data
-// store without a freezer moving immutable chain segments into cold storage.
-func NewDatabase(db ethdb.KeyValueStore) ethdb.Database {
-	return &nofreezedb{
-		KeyValueStore: db,
-	}
-}
-
-// NewDatabaseWithFreezer creates a high level database on top of a given key-
-// value data store with a freezer moving immutable chain segments into cold
-// storage.
-func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezer string, namespace string, readonly bool, m Mark) (ethdb.Database, error) {
-	// Create the idle freezer instance
-	frdb, err := newFreezer(freezer, namespace, readonly)
+	// (Re)check for errors and abort if opening of the db failed
 	if err != nil {
 		return nil, err
 	}
-	// Since the freezer can be stored separately from the user's key-value database,
-	// there's a fairly high probability that the user requests invalid combinations
-	// of the freezer and database. Ensure that we don't shoot ourselves in the foot
-	// by serving up conflicting data, leading to both datastores getting corrupted.
-	//
-	//   - If both the freezer and key-value store is empty (no genesis), we just
-	//     initialized a new empty freezer, so everything's fine.
-	//   - If the key-value store is empty, but the freezer is not, we need to make
-	//     sure the user's genesis matches the freezer. That will be checked in the
-	//     blockchain, since we don't have the genesis block here (nor should we at
-	//     this point care, the key-value/freezer combo is valid).
-	//   - If neither the key-value store nor the freezer is empty, cross validate
-	//     the genesis hashes to make sure they are compatible. If they are, also
-	//     ensure that there's no gap between the freezer and sunsequently leveldb.
-	//   - If the key-value store is not empty, but the freezer is we might just be
-	//     upgrading to the freezer release, or we might have had a small chain and
-	//     not frozen anything yet. Ensure that no blocks are missing yet from the
-	//     key-value store, since that would mean we already had an old freezer.
-
-	// If the genesis hash is empty, we have a new key-value store, so nothing to
-	// validate in this method. If, however, the genesis hash is not nil, compare
-	// it to the freezer content.
-	if kvgenesis, _ := db.Get(headerHashKey(m, 0)); len(kvgenesis) > 0 {
-		if frozen, _ := frdb.Ancients(); frozen > 0 {
-			// If the freezer already contains something, ensure that the genesis blocks
-			// match, otherwise we might mix up freezers across chains and destroy both
-			// the freezer and the key-value store.
-			frgenesis, err := frdb.Ancient(freezerHashTable, 0)
-			if err != nil {
-				return nil, fmt.Errorf("failed to retrieve genesis from ancient %v", err)
-			} else if !bytes.Equal(kvgenesis, frgenesis) {
-				return nil, fmt.Errorf("genesis mismatch: %#x (leveldb) != %#x (ancients)", kvgenesis, frgenesis)
-			}
-			// Key-value store and freezer belong to the same network. Ensure that they
-			// are contiguous, otherwise we might end up with a non-functional freezer.
-			if kvhash, _ := db.Get(headerHashKey(m, frozen)); len(kvhash) == 0 {
-				// Subsequent header after the freezer limit is missing from the database.
-				// Reject startup is the database has a more recent head.
-				if *ReadHeaderNumber(db, ReadHeadHeaderHash(db, m), m) > frozen-1 {
-					return nil, fmt.Errorf("gap (#%d) in the chain between ancients and leveldb", frozen)
-				}
-				// Database contains only older data than the freezer, this happens if the
-				// state was wiped and reinited from an existing freezer.
-			}
-			// Otherwise, key-value store continues where the freezer left off, all is fine.
-			// We might have duplicate blocks (crash after freezer write but before key-value
-			// store deletion, but that's fine).
-		} else {
-			// If the freezer is empty, ensure nothing was moved yet from the key-value
-			// store, otherwise we'll end up missing data. We check block #1 to decide
-			// if we froze anything previously or not, but do take care of databases with
-			// only the genesis block.
-			if ReadHeadHeaderHash(db, m) != common.BytesToHash(kvgenesis) {
-				// Key-value store contains more data than the genesis block, make sure we
-				// didn't freeze anything yet.
-				if kvblob, _ := db.Get(headerHashKey(m, 1)); len(kvblob) == 0 {
-					return nil, errors.New("ancient chain segments already extracted, please set --datadir.ancient to the correct path")
-				}
-				// Block #1 is still in the database, we're allowed to init a new feezer
-			}
-			// Otherwise, the head header is still the genesis, we're allowed to init a new
-			// feezer.
-		}
-	}
-	// Freezer is consistent with the key-value database, permit combining the two
-	if !frdb.readonly {
-		frdb.wg.Add(1)
-		go func() {
-			frdb.freeze(db)
-			frdb.wg.Done()
-		}()
-	}
-	return &freezerdb{
-		KeyValueStore: db,
-		AncientStore:  frdb,
+	return &LDBDatabase{
+		fn:  file,
+		db:  db,
+		log: logger,
 	}, nil
 }
 
-// NewMemoryDatabase creates an ephemeral in-memory key-value database without a
-// freezer moving immutable chain segments into cold storage.
-func NewMemoryDatabase() ethdb.Database {
-	return NewDatabase(memorydb.New())
+// Path returns the path to the database directory.
+func (db *LDBDatabase) Path() string {
+	return db.fn
 }
 
-// NewMemoryDatabaseWithCap creates an ephemeral in-memory key-value database
-// with an initial starting capacity, but without a freezer moving immutable
-// chain segments into cold storage.
-func NewMemoryDatabaseWithCap(size int) ethdb.Database {
-	return NewDatabase(memorydb.NewWithCap(size))
+// Put puts the given key / value to the queue
+func (db *LDBDatabase) Put(key []byte, value []byte) error {
+	return db.db.Put(key, value, nil)
 }
 
-// NewLevelDBDatabase creates a persistent key-value database without a freezer
-// moving immutable chain segments into cold storage.
-func NewLevelDBDatabase(file string, cache int, handles int, namespace string, readonly bool) (ethdb.Database, error) {
-	db, err := leveldb.New(file, cache, handles, namespace, readonly)
+func (db *LDBDatabase) Has(key []byte) (bool, error) {
+	return db.db.Has(key, nil)
+}
+
+// Get returns the given key if it's present.
+func (db *LDBDatabase) Get(key []byte) ([]byte, error) {
+	dat, err := db.db.Get(key, nil)
 	if err != nil {
 		return nil, err
 	}
-	return NewDatabase(db), nil
+	return dat, nil
 }
 
-// NewLevelDBDatabaseWithFreezer creates a persistent key-value database with a
-// freezer moving immutable chain segments into cold storage.
-func NewLevelDBDatabaseWithFreezer(file string, cache int, handles int, freezer string, namespace string, readonly bool, m Mark) (ethdb.Database, error) {
-	kvdb, err := leveldb.New(file, cache, handles, namespace, readonly)
-	if err != nil {
-		return nil, err
+// Delete deletes the key from the queue and database
+func (db *LDBDatabase) Delete(key []byte) error {
+	return db.db.Delete(key, nil)
+}
+
+func (db *LDBDatabase) NewIterator() iterator.Iterator {
+	return db.db.NewIterator(nil, nil)
+}
+
+// NewIteratorWithPrefix returns a iterator to iterate over subset of database content with a particular prefix.
+func (db *LDBDatabase) NewIteratorWithPrefix(prefix []byte) iterator.Iterator {
+	return db.db.NewIterator(util.BytesPrefix(prefix), nil)
+}
+
+func (db *LDBDatabase) Close() {
+	// Stop the metrics collection to avoid internal database races
+	db.quitLock.Lock()
+	defer db.quitLock.Unlock()
+
+	if db.quitChan != nil {
+		errc := make(chan error)
+		db.quitChan <- errc
+		if err := <-errc; err != nil {
+			db.log.Error("Metrics collection failed", "err", err)
+		}
+		db.quitChan = nil
 	}
-	frdb, err := NewDatabaseWithFreezer(kvdb, freezer, namespace, readonly, m)
-	if err != nil {
-		kvdb.Close()
-		return nil, err
+	err := db.db.Close()
+	if err == nil {
+		db.log.Info("Database closed")
+	} else {
+		db.log.Error("Failed to close database", "err", err)
 	}
-	return frdb, nil
 }
 
-type counter uint64
-
-func (c counter) String() string {
-	return fmt.Sprintf("%d", c)
+func (db *LDBDatabase) LDB() *leveldb.DB {
+	return db.db
 }
 
-func (c counter) Percentage(current uint64) string {
-	return fmt.Sprintf("%d", current*100/uint64(c))
+// Meter configures the database metrics collectors and
+func (db *LDBDatabase) Meter(prefix string) {
+	if metrics.Enabled {
+		// Initialize all the metrics collector at the requested prefix
+		db.compTimeMeter = metrics.NewRegisteredMeter(prefix+"compact/time", nil)
+		db.compReadMeter = metrics.NewRegisteredMeter(prefix+"compact/input", nil)
+		db.compWriteMeter = metrics.NewRegisteredMeter(prefix+"compact/output", nil)
+		db.diskReadMeter = metrics.NewRegisteredMeter(prefix+"disk/read", nil)
+		db.diskWriteMeter = metrics.NewRegisteredMeter(prefix+"disk/write", nil)
+	}
+	// Initialize write delay metrics no matter we are in metric mode or not.
+	db.writeDelayMeter = metrics.NewRegisteredMeter(prefix+"compact/writedelay/duration", nil)
+	db.writeDelayNMeter = metrics.NewRegisteredMeter(prefix+"compact/writedelay/counter", nil)
+
+	// Create a quit channel for the periodic collector and run it
+	db.quitLock.Lock()
+	db.quitChan = make(chan chan error)
+	db.quitLock.Unlock()
+
+	go db.meter(3 * time.Second)
 }
 
-// stat stores sizes and count for a parameter
-type stat struct {
-	size  common.StorageSize
-	count counter
-}
+// meter periodically retrieves internal leveldb counters and reports them to
+// the metrics subsystem.
+//
+// This is how a stats table look like (currently):
+//   Compactions
+//    Level |   Tables   |    Size(MB)   |    Time(sec)  |    Read(MB)   |   Write(MB)
+//   -------+------------+---------------+---------------+---------------+---------------
+//      0   |          0 |       0.00000 |       1.27969 |       0.00000 |      12.31098
+//      1   |         85 |     109.27913 |      28.09293 |     213.92493 |     214.26294
+//      2   |        523 |    1000.37159 |       7.26059 |      66.86342 |      66.77884
+//      3   |        570 |    1113.18458 |       0.00000 |       0.00000 |       0.00000
+//
+// This is how the write delay look like (currently):
+// DelayN:5 Delay:406.604657ms Paused: false
+//
+// This is how the iostats look like (currently):
+// Read(MB):3895.04860 Write(MB):3654.64712
+func (db *LDBDatabase) meter(refresh time.Duration) {
+	// Create the counters to store current and previous compaction values
+	compactions := make([][]float64, 2)
+	for i := 0; i < 2; i++ {
+		compactions[i] = make([]float64, 3)
+	}
+	// Create storage for iostats.
+	var iostats [2]float64
 
-// Add size to the stat and increase the counter by 1
-func (s *stat) Add(size common.StorageSize) {
-	s.size += size
-	s.count++
-}
-
-func (s *stat) Size() string {
-	return s.size.String()
-}
-
-func (s *stat) Count() string {
-	return s.count.String()
-}
-
-// InspectDatabase traverses the entire database and checks the size
-// of all different categories of data.
-func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte, m Mark) error {
-	it := db.NewIterator(keyPrefix, keyStart)
-	defer it.Release()
+	// Create storage and warning log tracer for write delay.
+	var (
+		delaystats      [2]int64
+		lastWriteDelay  time.Time
+		lastWriteDelayN time.Time
+		lastWritePaused time.Time
+	)
 
 	var (
-		count  int64
-		start  = time.Now()
-		logged = time.Now()
-
-		// Key-value store statistics
-		headers         stat
-		bodies          stat
-		receipts        stat
-		tds             stat
-		numHashPairings stat
-		hashNumPairings stat
-		tries           stat
-		codes           stat
-		txLookups       stat
-		accountSnaps    stat
-		storageSnaps    stat
-		preimages       stat
-		bloomBits       stat
-		cliqueSnaps     stat
-
-		// Ancient store statistics
-		ancientHeadersSize  common.StorageSize
-		ancientBodiesSize   common.StorageSize
-		ancientReceiptsSize common.StorageSize
-		ancientTdsSize      common.StorageSize
-		ancientHashesSize   common.StorageSize
-
-		// Les statistic
-		chtTrieNodes   stat
-		bloomTrieNodes stat
-
-		// Meta- and unaccounted data
-		metadata     stat
-		unaccounted  stat
-		shutdownInfo stat
-
-		// Totals
-		total common.StorageSize
+		errc chan error
+		merr error
 	)
-	// Inspect key-value database first.
-	for it.Next() {
-		var (
-			key  = it.Key()
-			size = common.StorageSize(len(key) + len(it.Value()))
-		)
-		total += size
-		switch {
-		case bytes.HasPrefix(key, headerPrefix) && len(key) == (len(headerPrefix)+8+common.HashLength):
-			headers.Add(size)
-		case bytes.HasPrefix(key, blockBodyPrefix) && len(key) == (len(blockBodyPrefix)+8+common.HashLength):
-			bodies.Add(size)
-		case bytes.HasPrefix(key, blockReceiptsPrefix) && len(key) == (len(blockReceiptsPrefix)+8+common.HashLength):
-			receipts.Add(size)
-		case bytes.HasPrefix(key, headerPrefix) && bytes.HasSuffix(key, headerTDSuffix):
-			tds.Add(size)
-		case bytes.HasPrefix(key, headerPrefix) && bytes.HasSuffix(key, headerHashSuffix):
-			numHashPairings.Add(size)
-		case bytes.HasPrefix(key, headerNumberPrefix) && len(key) == (len(headerNumberPrefix)+common.HashLength):
-			hashNumPairings.Add(size)
-		case len(key) == common.HashLength:
-			tries.Add(size)
-		case bytes.HasPrefix(key, CodePrefix) && len(key) == len(CodePrefix)+common.HashLength:
-			codes.Add(size)
-		case bytes.HasPrefix(key, txLookupPrefix) && len(key) == (len(txLookupPrefix)+common.HashLength):
-			txLookups.Add(size)
-		case bytes.HasPrefix(key, SnapshotAccountPrefix) && len(key) == (len(SnapshotAccountPrefix)+common.HashLength):
-			accountSnaps.Add(size)
-		case bytes.HasPrefix(key, SnapshotStoragePrefix) && len(key) == (len(SnapshotStoragePrefix)+2*common.HashLength):
-			storageSnaps.Add(size)
-		case bytes.HasPrefix(key, preimagePrefix) && len(key) == (len(preimagePrefix)+common.HashLength):
-			preimages.Add(size)
-		case bytes.HasPrefix(key, bloomBitsPrefix) && len(key) == (len(bloomBitsPrefix)+10+common.HashLength):
-			bloomBits.Add(size)
-		case bytes.HasPrefix(key, BloomBitsIndexPrefix):
-			bloomBits.Add(size)
-		case bytes.HasPrefix(key, []byte("clique-")) && len(key) == 7+common.HashLength:
-			cliqueSnaps.Add(size)
-		case bytes.HasPrefix(key, []byte("cht-")) ||
-			bytes.HasPrefix(key, []byte("chtIndexV2-")) ||
-			bytes.HasPrefix(key, []byte("chtRootV2-")): // Canonical hash trie
-			chtTrieNodes.Add(size)
-		case bytes.HasPrefix(key, []byte("blt-")) ||
-			bytes.HasPrefix(key, []byte("bltIndex-")) ||
-			bytes.HasPrefix(key, []byte("bltRoot-")): // Bloomtrie sub
-			bloomTrieNodes.Add(size)
-		case bytes.Equal(key, uncleanShutdownKey):
-			shutdownInfo.Add(size)
-		default:
-			var accounted bool
-			for _, meta := range [][]byte{
-				m.markKey(databaseVersionKey), m.markKey(headHeaderKey), m.markKey(headBlockKey), m.markKey(headFastBlockKey), m.markKey(lastPivotKey),
-				fastTrieProgressKey, m.markKey(snapshotDisabledKey), m.markKey(snapshotRootKey), m.markKey(snapshotJournalKey),
-				m.markKey(snapshotGeneratorKey), m.markKey(snapshotRecoveryKey), m.markKey(txIndexTailKey), m.markKey(fastTxLookupLimitKey),
-				uncleanShutdownKey, badBlockKey,
-			} {
-				if bytes.Equal(key, meta) {
-					metadata.Add(size)
-					accounted = true
-					break
+
+	// Iterate ad infinitum and collect the stats
+	for i := 1; errc == nil && merr == nil; i++ {
+		// Retrieve the database stats
+		stats, err := db.db.GetProperty("leveldb.stats")
+		if err != nil {
+			db.log.Error("Failed to read database stats", "err", err)
+			merr = err
+			continue
+		}
+		// Find the compaction table, skip the header
+		lines := strings.Split(stats, "\n")
+		for len(lines) > 0 && strings.TrimSpace(lines[0]) != "Compactions" {
+			lines = lines[1:]
+		}
+		if len(lines) <= 3 {
+			db.log.Error("Compaction table not found")
+			merr = errors.New("compaction table not found")
+			continue
+		}
+		lines = lines[3:]
+
+		// Iterate over all the table rows, and accumulate the entries
+		for j := 0; j < len(compactions[i%2]); j++ {
+			compactions[i%2][j] = 0
+		}
+		for _, line := range lines {
+			parts := strings.Split(line, "|")
+			if len(parts) != 6 {
+				break
+			}
+			for idx, counter := range parts[3:] {
+				value, err := strconv.ParseFloat(strings.TrimSpace(counter), 64)
+				if err != nil {
+					db.log.Error("Compaction entry parsing failed", "err", err)
+					merr = err
+					continue
 				}
-			}
-			if !accounted {
-				unaccounted.Add(size)
+				compactions[i%2][idx] += value
 			}
 		}
-		count++
-		if count%1000 == 0 && time.Since(logged) > 8*time.Second {
-			log.Info("Inspecting database", "count", count, "elapsed", common.PrettyDuration(time.Since(start)))
-			logged = time.Now()
+		// Update all the requested meters
+		if db.compTimeMeter != nil {
+			db.compTimeMeter.Mark(int64((compactions[i%2][0] - compactions[(i-1)%2][0]) * 1000 * 1000 * 1000))
+		}
+		if db.compReadMeter != nil {
+			db.compReadMeter.Mark(int64((compactions[i%2][1] - compactions[(i-1)%2][1]) * 1024 * 1024))
+		}
+		if db.compWriteMeter != nil {
+			db.compWriteMeter.Mark(int64((compactions[i%2][2] - compactions[(i-1)%2][2]) * 1024 * 1024))
+		}
+
+		// Retrieve the write delay statistic
+		writedelay, err := db.db.GetProperty("leveldb.writedelay")
+		if err != nil {
+			db.log.Error("Failed to read database write delay statistic", "err", err)
+			merr = err
+			continue
+		}
+		var (
+			delayN        int64
+			delayDuration string
+			duration      time.Duration
+			paused        bool
+		)
+		if n, err := fmt.Sscanf(writedelay, "DelayN:%d Delay:%s Paused:%t", &delayN, &delayDuration, &paused); n != 3 || err != nil {
+			db.log.Error("Write delay statistic not found")
+			merr = err
+			continue
+		}
+		duration, err = time.ParseDuration(delayDuration)
+		if err != nil {
+			db.log.Error("Failed to parse delay duration", "err", err)
+			merr = err
+			continue
+		}
+		if db.writeDelayNMeter != nil {
+			db.writeDelayNMeter.Mark(delayN - delaystats[0])
+			// If the write delay number been collected in the last minute exceeds the predefined threshold,
+			// print a warning log here.
+			// If a warning that db performance is laggy has been displayed,
+			// any subsequent warnings will be withhold for 1 minute to don't overwhelm the user.
+			if int(db.writeDelayNMeter.Rate1()) > writeDelayNThreshold &&
+				time.Now().After(lastWriteDelayN.Add(writeDelayWarningThrottler)) {
+				db.log.Warn("Write delay number exceeds the threshold (200 per second) in the last minute")
+				lastWriteDelayN = time.Now()
+			}
+		}
+		if db.writeDelayMeter != nil {
+			db.writeDelayMeter.Mark(duration.Nanoseconds() - delaystats[1])
+			// If the write delay duration been collected in the last minute exceeds the predefined threshold,
+			// print a warning log here.
+			// If a warning that db performance is laggy has been displayed,
+			// any subsequent warnings will be withhold for 1 minute to don't overwhelm the user.
+			if int64(db.writeDelayMeter.Rate1()) > writeDelayThreshold.Nanoseconds() &&
+				time.Now().After(lastWriteDelay.Add(writeDelayWarningThrottler)) {
+				db.log.Warn("Write delay duration exceeds the threshold (35% of the time) in the last minute")
+				lastWriteDelay = time.Now()
+			}
+		}
+		// If a warning that db is performing compaction has been displayed, any subsequent
+		// warnings will be withheld for one minute not to overwhelm the user.
+		if paused && delayN-delaystats[0] == 0 && duration.Nanoseconds()-delaystats[1] == 0 &&
+			time.Now().After(lastWritePaused.Add(writeDelayWarningThrottler)) {
+			db.log.Warn("Database compacting, degraded performance")
+			lastWritePaused = time.Now()
+		}
+
+		delaystats[0], delaystats[1] = delayN, duration.Nanoseconds()
+
+		// Retrieve the database iostats.
+		ioStats, err := db.db.GetProperty("leveldb.iostats")
+		if err != nil {
+			db.log.Error("Failed to read database iostats", "err", err)
+			merr = err
+			continue
+		}
+		var nRead, nWrite float64
+		parts := strings.Split(ioStats, " ")
+		if len(parts) < 2 {
+			db.log.Error("Bad syntax of ioStats", "ioStats", ioStats)
+			merr = fmt.Errorf("bad syntax of ioStats %s", ioStats)
+			continue
+		}
+		if n, err := fmt.Sscanf(parts[0], "Read(MB):%f", &nRead); n != 1 || err != nil {
+			db.log.Error("Bad syntax of read entry", "entry", parts[0])
+			merr = err
+			continue
+		}
+		if n, err := fmt.Sscanf(parts[1], "Write(MB):%f", &nWrite); n != 1 || err != nil {
+			db.log.Error("Bad syntax of write entry", "entry", parts[1])
+			merr = err
+			continue
+		}
+		if db.diskReadMeter != nil {
+			db.diskReadMeter.Mark(int64((nRead - iostats[0]) * 1024 * 1024))
+		}
+		if db.diskWriteMeter != nil {
+			db.diskWriteMeter.Mark(int64((nWrite - iostats[1]) * 1024 * 1024))
+		}
+		iostats[0], iostats[1] = nRead, nWrite
+
+		// Sleep a bit, then repeat the stats collection
+		select {
+		case errc = <-db.quitChan:
+			// Quit requesting, stop hammering the database
+		case <-time.After(refresh):
+			// Timeout, gather a new set of stats
 		}
 	}
-	// Inspect append-only file store then.
-	ancientSizes := []*common.StorageSize{&ancientHeadersSize, &ancientBodiesSize, &ancientReceiptsSize, &ancientHashesSize, &ancientTdsSize}
-	for i, category := range []string{freezerHeaderTable, freezerBodiesTable, freezerReceiptTable, freezerHashTable, freezerDifficultyTable} {
-		if size, err := db.AncientSize(category); err == nil {
-			*ancientSizes[i] += common.StorageSize(size)
-			total += common.StorageSize(size)
-		}
-	}
-	// Get number of ancient rows inside the freezer
-	ancients := counter(0)
-	if count, err := db.Ancients(); err == nil {
-		ancients = counter(count)
-	}
-	// Display the database statistic.
-	stats := [][]string{
-		{"Key-Value store", "Headers", headers.Size(), headers.Count()},
-		{"Key-Value store", "Bodies", bodies.Size(), bodies.Count()},
-		{"Key-Value store", "Receipt lists", receipts.Size(), receipts.Count()},
-		{"Key-Value store", "Difficulties", tds.Size(), tds.Count()},
-		{"Key-Value store", "Block number->hash", numHashPairings.Size(), numHashPairings.Count()},
-		{"Key-Value store", "Block hash->number", hashNumPairings.Size(), hashNumPairings.Count()},
-		{"Key-Value store", "Transaction index", txLookups.Size(), txLookups.Count()},
-		{"Key-Value store", "Bloombit index", bloomBits.Size(), bloomBits.Count()},
-		{"Key-Value store", "Contract codes", codes.Size(), codes.Count()},
-		{"Key-Value store", "Trie nodes", tries.Size(), tries.Count()},
-		{"Key-Value store", "Trie preimages", preimages.Size(), preimages.Count()},
-		{"Key-Value store", "Account snapshot", accountSnaps.Size(), accountSnaps.Count()},
-		{"Key-Value store", "Storage snapshot", storageSnaps.Size(), storageSnaps.Count()},
-		{"Key-Value store", "Clique snapshots", cliqueSnaps.Size(), cliqueSnaps.Count()},
-		{"Key-Value store", "Singleton metadata", metadata.Size(), metadata.Count()},
-		{"Key-Value store", "Shutdown metadata", shutdownInfo.Size(), shutdownInfo.Count()},
-		{"Ancient store", "Headers", ancientHeadersSize.String(), ancients.String()},
-		{"Ancient store", "Bodies", ancientBodiesSize.String(), ancients.String()},
-		{"Ancient store", "Receipt lists", ancientReceiptsSize.String(), ancients.String()},
-		{"Ancient store", "Difficulties", ancientTdsSize.String(), ancients.String()},
-		{"Ancient store", "Block number->hash", ancientHashesSize.String(), ancients.String()},
-		{"Light client", "CHT trie nodes", chtTrieNodes.Size(), chtTrieNodes.Count()},
-		{"Light client", "Bloom trie nodes", bloomTrieNodes.Size(), bloomTrieNodes.Count()},
-	}
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Database", "Category", "Size", "Items"})
-	table.SetFooter([]string{"", "Total", total.String(), " "})
-	table.AppendBulk(stats)
-	table.Render()
 
-	if unaccounted.size > 0 {
-		log.Error("Database contains unaccounted data", "size", unaccounted.size, "count", unaccounted.count)
+	if errc == nil {
+		errc = <-db.quitChan
 	}
+	errc <- merr
+}
 
+func (db *LDBDatabase) NewBatch() Batch {
+	return &ldbBatch{db: db.db, b: new(leveldb.Batch)}
+}
+
+type ldbBatch struct {
+	db   *leveldb.DB
+	b    *leveldb.Batch
+	size int
+}
+
+func (b *ldbBatch) Put(key, value []byte) error {
+	b.b.Put(key, value)
+	b.size += len(value)
 	return nil
+}
+
+func (b *ldbBatch) Delete(key []byte) error {
+	b.b.Delete(key)
+	b.size += 1
+	return nil
+}
+
+func (b *ldbBatch) Write() error {
+	return b.db.Write(b.b, nil)
+}
+
+func (b *ldbBatch) ValueSize() int {
+	return b.size
+}
+
+func (b *ldbBatch) Reset() {
+	b.b.Reset()
+	b.size = 0
+}
+
+type table struct {
+	db     Database
+	prefix string
+}
+
+// NewTable returns a Database object that prefixes all keys with a given
+// string.
+func NewTable(db Database, prefix string) Database {
+	return &table{
+		db:     db,
+		prefix: prefix,
+	}
+}
+
+func (dt *table) Put(key []byte, value []byte) error {
+	return dt.db.Put(append([]byte(dt.prefix), key...), value)
+}
+
+func (dt *table) Has(key []byte) (bool, error) {
+	return dt.db.Has(append([]byte(dt.prefix), key...))
+}
+
+func (dt *table) Get(key []byte) ([]byte, error) {
+	return dt.db.Get(append([]byte(dt.prefix), key...))
+}
+
+func (dt *table) Delete(key []byte) error {
+	return dt.db.Delete(append([]byte(dt.prefix), key...))
+}
+
+func (dt *table) Close() {
+	// Do nothing; don't close the underlying DB.
+}
+
+type tableBatch struct {
+	batch  Batch
+	prefix string
+}
+
+// NewTableBatch returns a Batch object which prefixes all keys with a given string.
+func NewTableBatch(db Database, prefix string) Batch {
+	return &tableBatch{db.NewBatch(), prefix}
+}
+
+func (dt *table) NewBatch() Batch {
+	return &tableBatch{dt.db.NewBatch(), dt.prefix}
+}
+
+func (tb *tableBatch) Put(key, value []byte) error {
+	return tb.batch.Put(append([]byte(tb.prefix), key...), value)
+}
+
+func (tb *tableBatch) Delete(key []byte) error {
+	return tb.batch.Delete(append([]byte(tb.prefix), key...))
+}
+
+func (tb *tableBatch) Write() error {
+	return tb.batch.Write()
+}
+
+func (tb *tableBatch) ValueSize() int {
+	return tb.batch.ValueSize()
+}
+
+func (tb *tableBatch) Reset() {
+	tb.batch.Reset()
 }
