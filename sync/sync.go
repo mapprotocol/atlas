@@ -93,6 +93,10 @@ func save(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err err
 	}
 
 	// validate header
+	header := new(ETHHeader)
+	if _, err := header.ValidateHeaderChain(args.header); err != nil {
+		return nil, err
+	}
 
 	// save
 	return nil, nil
