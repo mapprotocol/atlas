@@ -46,13 +46,13 @@ var (
 	stateGcBodyReceiptKey = []byte("LastState")
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
-	headerPrefix       = []byte("h") // headerPrefix + Mark + num (uint64 big endian) + hash -> header
-	headerTDSuffix     = []byte("t") // headerPrefix + Mark + num (uint64 big endian) + hash + headerTDSuffix -> td
-	headerHashSuffix   = []byte("n") // headerPrefix + Mark + num (uint64 big endian) + headerHashSuffix -> hash
+	headerPrefix       = []byte("h") // headerPrefix + ChainType + num (uint64 big endian) + hash -> header
+	headerTDSuffix     = []byte("t") // headerPrefix + ChainType + num (uint64 big endian) + hash + headerTDSuffix -> td
+	headerHashSuffix   = []byte("n") // headerPrefix + ChainType + num (uint64 big endian) + headerHashSuffix -> hash
 	headerNumberPrefix = []byte("H") // headerNumberPrefix + hash -> num (uint64 big endian)
 
-	blockBodyPrefix     = []byte("b") // blockBodyPrefix + Mark + num (uint64 big endian) + hash -> block body
-	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + Mark + num (uint64 big endian) + hash -> block receipts
+	blockBodyPrefix     = []byte("b") // blockBodyPrefix + ChainType + num (uint64 big endian) + hash -> block body
+	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + ChainType + num (uint64 big endian) + hash -> block receipts
 
 	txLookupPrefix  = []byte("l") // txLookupPrefix + hash -> transaction/receipt lookup metadata
 	bloomBitsPrefix = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
@@ -68,30 +68,30 @@ var (
 )
 
 //--------------- mark ---------
-type Mark uint64
+type ChainType uint64
 
-func (m Mark) toByte() []byte {
+func (t ChainType) toByte() []byte {
 	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(m))
+	binary.BigEndian.PutUint64(b, uint64(t))
 	return b
 }
-func (m Mark) len() int {
+func (t ChainType) len() int {
 	return 8
 }
 
 // change the visit Number by append chain mark   mark + number
-func (m Mark) markNumber(n uint64) []byte {
-	return append(m.toByte(), encodeBlockNumber(n)...)
+func (t ChainType) setTypeNumber(n uint64) []byte {
+	return append(t.toByte(), encodeBlockNumber(n)...)
 }
 
 //change the visit key by append chain mark      key  + mark
-func (m Mark) markKey(b []byte) []byte {
-	return append(b, m.toByte()...)
+func (t ChainType) setTypeKey(b []byte) []byte {
+	return append(b, t.toByte()...)
 }
 
 //  key  + mark + number
-func (m Mark) markKeyNum(b []byte, n uint64) []byte {
-	return append(append(b, m.toByte()...), encodeBlockNumber(n)...)
+func (t ChainType) setTypeKeyNum(b []byte, n uint64) []byte {
+	return append(append(b, t.toByte()...), encodeBlockNumber(n)...)
 }
 
 //--------------- mark ---------
@@ -103,32 +103,32 @@ func encodeBlockNumber(number uint64) []byte {
 }
 
 // headerKey = headerPrefix + num (uint64 big endian) + hash
-func headerKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(append(headerPrefix, m.markNumber(number)...), hash.Bytes()...)
+func headerKey(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(append(headerPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 
 }
 
 // headerTDKey = headerPrefix + num (uint64 big endian) + hash + headerTDSuffix
-func headerTDKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(headerKey(m, number, hash), headerTDSuffix...)
+func headerTDKey(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(headerKey(t, number, hash), headerTDSuffix...)
 }
 
 // headerHashKey = headerPrefix + num (uint64 big endian) + headerHashSuffix
-func headerHashKey(m Mark, number uint64) []byte {
-	return append(append(headerPrefix, m.markNumber(number)...), headerHashSuffix...)
+func headerHashKey(t ChainType, number uint64) []byte {
+	return append(append(headerPrefix, t.setTypeNumber(number)...), headerHashSuffix...)
 }
 
 // headerNumberKey = headerNumberPrefix + hash
-func headerNumberKey(m Mark, hash common.Hash) []byte {
-	return append(m.markKey(headerNumberPrefix), hash.Bytes()...)
+func headerNumberKey(t ChainType, hash common.Hash) []byte {
+	return append(t.setTypeKey(headerNumberPrefix), hash.Bytes()...)
 }
 
 // blockBodyKey = blockBodyPrefix + num (uint64 big endian) + hash
-func blockBodyKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(append(blockBodyPrefix, m.markNumber(number)...), hash.Bytes()...)
+func blockBodyKey(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(append(blockBodyPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 }
 
 // blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
-func blockReceiptsKey(m Mark, number uint64, hash common.Hash) []byte {
-	return append(append(blockReceiptsPrefix, m.markNumber(number)...), hash.Bytes()...)
+func blockReceiptsKey(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(append(blockReceiptsPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 }
