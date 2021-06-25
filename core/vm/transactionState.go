@@ -1,8 +1,8 @@
-package relayer
+package vm
 
 import (
 	"errors"
-	"github.com/abeychain/go-abey/common"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 

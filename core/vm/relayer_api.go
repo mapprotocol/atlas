@@ -1,4 +1,4 @@
-package relayer
+package vm
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/mapprotocol/atlas/core/vm/state"
 	"math/big"
 	"sort"
 )
@@ -1396,7 +1395,7 @@ func (i *ImpawnImpl) MakeModifyStateByTip10() {
 func (i *ImpawnImpl) GetRoot() common.Hash {
 	return common.Hash{}
 }
-func (i *ImpawnImpl) Save(state state.StateDB, preAddress common.Address) error {
+func (i *ImpawnImpl) Save(state StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data, err := rlp.EncodeToBytes(i)
 
@@ -1411,7 +1410,7 @@ func (i *ImpawnImpl) Save(state state.StateDB, preAddress common.Address) error 
 	}
 	return err
 }
-func (i *ImpawnImpl) Load(state state.StateDB, preAddress common.Address) error {
+func (i *ImpawnImpl) Load(state StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data := state.GetPOSState(preAddress, key)
 	lenght := len(data)

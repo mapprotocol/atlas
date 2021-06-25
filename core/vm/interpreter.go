@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -12,7 +14,7 @@ import (
 // Config are the configuration options for the Interpreter
 type Config struct {
 	Debug                   bool   // Enables debugging
-	Tracer                  vm.Tracer // Opcode logger
+	Tracer                  Tracer // Opcode logger
 	NoRecursion             bool   // Disables call, callcode, delegate call and create
 	EnablePreimageRecording bool   // Enables recording of SHA3/keccak preimages
 
@@ -49,9 +51,9 @@ type Interpreter interface {
 // ScopeContext contains the things that are per-call, such as stack and memory,
 // but not transients like pc and gas
 type ScopeContext struct {
-	Memory   *vm.Memory
-	Stack    *vm.Stack
-	Contract *vm.Contract
+	Memory   *Memory
+	Stack    *Stack
+	Contract *Contract
 }
 
 // keccakState wraps sha3.state. In addition to the usual hash methods, it also supports
@@ -80,7 +82,7 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 	// the jump table was initialised. If it was not
 	// we'll set the default jump table.
 	if cfg.JumpTable[vm.STOP] == nil {
-		var jt vm.JumpTable
+		var jt JumpTable
 		switch {
 		case evm.chainRules.IsBerlin:
 			jt = berlinInstructionSet
@@ -100,7 +102,7 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 			jt = frontierInstructionSet
 		}
 		for i, eip := range cfg.ExtraEips {
-			if err := vm.EnableEIP(eip, &jt); err != nil {
+			if err := EnableEIP(eip, &jt); err != nil {
 				// Disable it, so caller can check if it's activated or not
 				cfg.ExtraEips = append(cfg.ExtraEips[:i], cfg.ExtraEips[i+1:]...)
 				log.Error("EIP activation failed", "eip", eip, "error", err)
@@ -108,7 +110,23 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 		}
 		cfg.JumpTable = jt
 	}
-
+	//if cfg.JumpTable[vm.STOP] == nil {
+	//	var jt JumpTable = yoloV1InstructionSet
+	//	// switch {
+	//	// case evm.chainRules.IsTIP11:
+	//	// 	jt = yoloV1InstructionSet
+	//	// default:
+	//	// 	jt = constantinopleInstructionSet
+	//	// }
+	//	for i, eip := range cfg.ExtraEips {
+	//		if err := EnableEIP(eip, &jt); err != nil {
+	//			// Disable it, so caller can check if it's activated or not
+	//			cfg.ExtraEips = append(cfg.ExtraEips[:i], cfg.ExtraEips[i+1:]...)
+	//			log.Error("EIP activation failed", "eip", eip, "error", err)
+	//		}
+	//	}
+	//	cfg.JumpTable = jt
+	//}
 	return &EVMInterpreter{
 		evm: evm,
 		cfg: cfg,
@@ -145,7 +163,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 
 	var (
 		op          vm.OpCode        // current opcode
-		mem         = vm.NewMemory() // bound memory
+		mem         = NewMemory() // bound memory
 		stack       = newstack()  // local stack
 		callContext = &ScopeContext{
 			Memory:   mem,
@@ -202,22 +220,22 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		op = contract.GetOp(pc)
 		operation := in.cfg.JumpTable[op]
 		if operation == nil {
-			return nil, &vm.ErrInvalidOpCode{opcode: op}
+			return nil, errors.New("invalid opcode: " + op.String())
 		}
 		// Validate stack
-		if sLen := stack.len(); sLen < operation.minStack {
-			return nil, &vm.ErrStackUnderflow{stackLen: sLen, required: operation.minStack}
+		if sLen := len(stack.Data()); sLen < operation.minStack {
+			return nil, errors.New(fmt.Sprintf("stack underflow (%d <=> %d)", sLen, operation.minStack))//&vm.ErrStackUnderflow{stackLen: sLen, required: operation.minStack}
 		} else if sLen > operation.maxStack {
-			return nil, &vm.ErrStackOverflow{stackLen: sLen, limit: operation.maxStack}
+			return nil, errors.New(fmt.Sprintf("stack limit reached %d (%d)", sLen, operation.minStack))
 		}
 		// If the operation is valid, enforce and write restrictions
 		if in.readOnly && in.evm.chainRules.IsByzantium {
 			// If the interpreter is operating in readonly mode, make sure no
-			// state-modifying operation is performed. The 3rd stack item
+			// state-modifying operation is performed. The 3rd stack it
 			// for a call operation is the value. Transferring value from one
 			// account to the others means the state is modified and should also
 			// return with an error.
-			if operation.writes || (op == CALL && stack.Back(2).Sign() != 0) {
+			if operation.writes || (op == vm.CALL && stack.Back(2).Sign() != 0) {
 				return nil, vm.ErrWriteProtection
 			}
 		}
@@ -289,4 +307,12 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 // run by the current interpreter.
 func (in *EVMInterpreter) CanRun(code []byte) bool {
 	return true
+}
+
+func toWordSize(size uint64) uint64 {
+	if size > math.MaxUint64-31 {
+		return math.MaxUint64/32 + 1
+	}
+
+	return (size + 31) / 32
 }

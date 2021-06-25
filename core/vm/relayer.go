@@ -1,13 +1,12 @@
-package relayer
+package vm
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/abeychain/go-abey/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/core/vm/state"
 	"math/big"
 	"strings"
 )
@@ -19,7 +18,7 @@ func init() {
 }
 
 //判断运行的method
-func RunContract(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	var method *abi.Method
 	method, err = relayerABI.MethodById(input)
 	if err != nil {
@@ -52,14 +51,38 @@ func RunContract(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, 
 	return ret, err
 }
 
-func register(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
-	args := struct {
+func test() error{
+	abi, err := abi.JSON(strings.NewReader(RelayerABIJSON))
+	if err != nil {
+		return err
+	}
+	const hexdata = `000000000000000000000000376c47978271565f56deb45495afa69e59c16ab200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000158`
+	data, err := hex.DecodeString(hexdata)
+	if err != nil {
+		return err
+	}
+	type ReceivedEvent struct {
+		Sender common.Address
+		Amount *big.Int
+		Memo   []byte
+	}
+	var ev ReceivedEvent
+
+	err = abi.UnpackIntoInterface(&ev, "received", data)
+	if err != nil {
+		return  err
+	}
+	return nil
+}
+
+func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	type reg struct {
 		Pubkey []byte
 		Fee    *big.Int
 		Value  *big.Int
-	}{}
-	method, _ := relayerABI.Methods["register"]
-	err = method.Inputs.Unpack(&args, input)
+	}
+	var args reg
+	err = relayerABI.UnpackIntoInterface(&args, "received", input)
 	if err != nil {
 		log.Error("Unpack register pubkey error", "err", err)
 		return nil, errors.New("invalid input for staking")
@@ -92,7 +115,7 @@ func register(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err
 	addLockedBalance(evm.StateDB, from, args.Value)
 	//
 	event := relayerABI.Events["Register"]
-	logData, err := event.Inputs.PackNonIndexed(args.Pubkey, args.Value, args.Fee)
+	logData, err := event.Inputs.Pack(args.Pubkey, args.Value, args.Fee)
 	if err != nil {
 		log.Error("Pack staking log error", "error", err)
 		return nil, err
@@ -100,12 +123,13 @@ func register(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err
 	log.Info("register log: ", logData)
 	return nil, nil
 }
-func append_(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	from := contract.CallerAddress
 	amount := big.NewInt(0)
 
-	method, _ := relayerABI.Methods["append"]
-	err = method.Inputs.Unpack(&amount, input)
+	//method, _ := relayerABI.Methods["append"]
+	//err = method.Inputs.Unpack(&amount, input)
+	err = relayerABI.UnpackIntoInterface(&amount, "received", input)
 	if err != nil {
 		log.Error("Unpack append value error", "err", err)
 		return nil, errors.New("invalid input for staking")
@@ -136,7 +160,7 @@ func append_(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err 
 	addLockedBalance(evm.StateDB, from, amount)
 	//
 	event := relayerABI.Events["Append"]
-	logData, err := event.Inputs.PackNonIndexed(amount)
+	logData, err := event.Inputs.Pack(amount)
 	if err != nil {
 		log.Error("Pack staking log error", "error", err)
 		return nil, err
@@ -144,12 +168,13 @@ func append_(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err 
 	log.Info("append log: ", logData)
 	return nil, nil
 }
-func withdraw(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	from := contract.CallerAddress
 	amount := new(big.Int)
 
-	method, _ := relayerABI.Methods["withdraw"]
-	err = method.Inputs.Unpack(&amount, input)
+	//method, _ := relayerABI.Methods["withdraw"]
+	//err = method.Inputs.Unpack(&amount, input)
+	err = relayerABI.UnpackIntoInterface(&amount, "received", input)
 	if err != nil {
 		log.Error("Unpack withdraw input error")
 		return nil, errors.New("invalid input for staking")
@@ -181,7 +206,7 @@ func withdraw(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err
 	subLockedBalance(evm.StateDB, from, amount)
 
 	event := relayerABI.Events["Withdraw"]
-	logData, err := event.Inputs.PackNonIndexed(amount)
+	logData, err := event.Inputs.Pack(amount)
 	if err != nil {
 		log.Error("Pack staking log error", "error", err)
 		return nil, err
@@ -189,7 +214,7 @@ func withdraw(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err
 	log.Info("append log: ", logData)
 	return nil, nil
 }
-func getBalance(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	var registerAddr common.Address
 	method, _ := relayerABI.Methods["getBalance"]
 	var (
@@ -198,7 +223,8 @@ func getBalance(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, e
 		unlocked = big.NewInt(0)
 	)
 
-	err = method.Inputs.Unpack(&registerAddr, input)
+	//err = method.Inputs.Unpack(&registerAddr, input)
+	err = relayerABI.UnpackIntoInterface(&registerAddr, "received", input)
 	if err != nil {
 		log.Error("Unpack getBalance input error")
 		return nil, errors.New("invalid input for staking")
@@ -232,12 +258,13 @@ func getBalance(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, e
 	ret, err = method.Outputs.Pack(staked, locked, unlocked)
 	return ret, err
 }
-func getRelayers(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
 		relayer  big.Int
 	}{}
 	method, _ := relayerABI.Methods["getRelayers"]
-	err = method.Inputs.Unpack(&args, input)
+	//err = method.Inputs.Unpack(&args, input)
+	err = relayerABI.UnpackIntoInterface(&args, "received", input)
 	if err != nil{
 		return nil, err
 	}
@@ -259,7 +286,7 @@ func getRelayers(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, 
 	}
 	return ret, nil
 }
-func getPeriodHeight(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
 		relayer  common.Address
 	}{}
@@ -268,7 +295,8 @@ func getPeriodHeight(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []by
 
 	info,h := impawn.GetCurrentEpochInfo()
 	method, _ := relayerABI.Methods["getPeriodHeight"]
-	err = method.Inputs.Unpack(&args, input)
+	//err = method.Inputs.Unpack(&args, input)
+	err = relayerABI.UnpackIntoInterface(&args, "received", input)
 	if err != nil {
 		return nil,err
 	}
@@ -292,11 +320,11 @@ func getPeriodHeight(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []by
 	return ret, nil
 }
 
-func addLockedBalance(db state.StateDB, addr common.Address, amount *big.Int) {
+func addLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
 	db.SetPOSLocked(addr, new(big.Int).Add(db.GetPOSLocked(addr), amount))
 }
 
-func subLockedBalance(db state.StateDB, addr common.Address, amount *big.Int) {
+func subLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
 	db.SetPOSLocked(addr, new(big.Int).Sub(db.GetPOSLocked(addr), amount))
 }
 

@@ -1,10 +1,11 @@
-package relayer
+package vm
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/core/vm/state"
 	"github.com/mapprotocol/atlas/rlp"
 	"golang.org/x/crypto/sha3"
 
@@ -17,15 +18,20 @@ import (
 var (
 	baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	fbaseUnit  = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	mixImpawn  = new(big.Int).Mul(big.NewInt(1000), baseUnit)
+	//mixImpawn  = new(big.Int).Mul(big.NewInt(1000), baseUnit)
 	Base       = new(big.Int).SetUint64(10000)
 	InvalidFee = big.NewInt(65535)
 	// StakingAddress is defined as Address('truestaking')
 	// i.e. contractAddress = 0x000000000000000000747275657374616b696E67
 	StakingAddress    = common.BytesToAddress([]byte("truestaking"))
 
-	PreCompiledAddress    = common.BytesToAddress([]byte("precompiled"))
-	MixEpochCount     = 2
+	//PreCompiledAddress    = common.BytesToAddress([]byte("precompiled"))
+	//MixEpochCount     = 2
+	ModExpQuadCoeffDiv              uint64 = 20
+	Bn256AddGas                     uint64 = 500
+	Bn256ScalarMulGas               uint64 = 40000
+	Bn256PairingBaseGas             uint64 = 100000
+	Bn256PairingPerPointGas         uint64 = 80000
 )
 
 var (
@@ -230,28 +236,28 @@ func CloneChainReward(reward *ChainReward) *ChainReward {
 	return &res
 }
 
-type BalanceInfo struct {
-	Address common.Address `json:"address"`
-	Valid   *big.Int       `json:"valid"`
-	Lock    *big.Int       `json:"lock"`
-}
+//type BalanceInfo struct {
+//	Address common.Address `json:"address"`
+//	Valid   *big.Int       `json:"valid"`
+//	Lock    *big.Int       `json:"lock"`
+//}
 
 type BlockBalance struct {
-	Balance []*BalanceInfo `json:"addrWithBalance"       gencodec:"required"`
+	Balance []*state.BalanceInfo `json:"addrWithBalance"       gencodec:"required"`
 }
 
-func (s *BlockBalance) ToMap() map[common.Address]*BalanceInfo {
-	infos := make(map[common.Address]*BalanceInfo)
+func (s *BlockBalance) ToMap() map[common.Address]*state.BalanceInfo {
+	infos := make(map[common.Address]*state.BalanceInfo)
 	for _, v := range s.Balance {
 		infos[v.Address] = v
 	}
 	return infos
 }
 
-func ToBalanceInfos(items map[common.Address]*BalanceInfo) []*BalanceInfo {
-	infos := make([]*BalanceInfo, 0, 0)
+func ToBalanceInfos(items map[common.Address]*state.BalanceInfo) []*state.BalanceInfo {
+	infos := make([]*state.BalanceInfo, 0, 0)
 	for k, v := range items {
-		infos = append(infos, &BalanceInfo{
+		infos = append(infos, &state.BalanceInfo{
 			Address: k,
 			Valid:   new(big.Int).Set(v.Valid),
 			Lock:    new(big.Int).Set(v.Lock),
@@ -472,3 +478,13 @@ func RlpHash(x interface{}) (h common.Hash) {
 	hw.Sum(h[:0])
 	return h
 }
+
+func allZero(b []byte) bool {
+	for _, byte := range b {
+		if byte != 0 {
+			return false
+		}
+	}
+	return true
+}
+

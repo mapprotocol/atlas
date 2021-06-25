@@ -1,9 +1,9 @@
 package vm
 
 import (
-"github.com/ethereum/go-ethereum/common"
-"github.com/ethereum/go-ethereum/core/types"
-"math/big"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
 )
 
 type StateDB interface {
@@ -54,4 +54,9 @@ type StateDB interface {
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool)
 	ForEachPOSStorage(common.Address, func(common.Hash, []byte) bool)
+	///////////////////////
+	SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool)
+	AddSlotToAccessList(addr common.Address, slot common.Hash)
+	AddAddressToAccessList(addr common.Address)
+	AddressInAccessList(addr common.Address) bool
 }

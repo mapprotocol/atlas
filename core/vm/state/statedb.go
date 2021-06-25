@@ -1,6 +1,5 @@
 package state
 
-
 import (
 	"errors"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/mapprotocol/atlas/core/vm/relayer"
 	"math/big"
 	"sort"
 	"sync"
@@ -79,7 +77,7 @@ type StateDB struct {
 	logSize      uint
 
 	preimages      map[common.Hash][]byte
-	balancesChange map[common.Address]*relayer.BalanceInfo
+	balancesChange map[common.Address]*BalanceInfo
 
 	// Journal of state modifications. This is the backbone of
 	// Snapshot and RevertToSnapshot.
@@ -89,6 +87,24 @@ type StateDB struct {
 
 	lock sync.Mutex
 }
+
+//
+func (self *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool) {
+	panic("implement me")
+}
+
+func (self *StateDB) AddSlotToAccessList(addr common.Address, slot common.Hash) {
+	panic("implement me")
+}
+
+func (self *StateDB) AddAddressToAccessList(addr common.Address) {
+	panic("implement me")
+}
+
+func (self *StateDB) AddressInAccessList(addr common.Address) bool {
+	panic("implement me")
+}
+//
 
 // Create a new state from a given trie.
 func New(root common.Hash, db Database) (*StateDB, error) {
@@ -103,7 +119,7 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 		stateObjectsDirty: make(map[common.Address]struct{}),
 		logs:              make(map[common.Hash][]*types.Log),
 		preimages:         make(map[common.Hash][]byte),
-		balancesChange:    make(map[common.Address]*relayer.BalanceInfo),
+		balancesChange:    make(map[common.Address]*BalanceInfo),
 		journal:           newJournal(),
 	}, nil
 }
@@ -178,7 +194,7 @@ func (self *StateDB) Preimages() map[common.Hash][]byte {
 }
 
 // BalancesChange returns a list of balance change that have been submitted.
-func (self *StateDB) BalancesChange() map[common.Address]*relayer.BalanceInfo {
+func (self *StateDB) BalancesChange() map[common.Address]*BalanceInfo {
 	return self.balancesChange
 }
 
@@ -297,7 +313,7 @@ func (self *StateDB) GetPOSState(a common.Address, b common.Hash) []byte {
 
 func (self *StateDB) GetPOSLocked(addr common.Address) *big.Int {
 	key := lockedKey(addr)
-	return self.GetState(relayer.StakingAddress, key).Big()
+	return self.GetState(StakingAddress, key).Big()
 }
 
 // GetProof returns the MerkleProof for a given Account
@@ -416,7 +432,7 @@ func (self *StateDB) SetPOSState(addr common.Address, key common.Hash, value []b
 
 func (self *StateDB) SetPOSLocked(addr common.Address, value *big.Int) {
 	key := lockedKey(addr)
-	self.SetState(relayer.StakingAddress, key, common.BigToHash(value))
+	self.SetState(StakingAddress, key, common.BigToHash(value))
 }
 
 func (self *StateDB) SetState(addr common.Address, key, value common.Hash) {
@@ -472,6 +488,7 @@ func (self *StateDB) deleteStateObject(stateObject *stateObject) {
 // Retrieve a state object given by the address. Returns nil if not found.
 func (self *StateDB) getStateObject(addr common.Address) (stateObject *stateObject) {
 	// Prefer 'live' objects.
+	//fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",self)
 	if self.stateObjects != nil {
 		if obj := self.stateObjects[addr]; obj != nil {
 			if obj.deleted {
@@ -694,7 +711,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 			if !exist {
 				continue
 			}
-			b := relayer.BalanceInfo{}
+			b := BalanceInfo{}
 			b.Address = stateObject.address
 			b.Valid = s.GetUnlockedBalance(stateObject.address)
 			b.Lock = s.GetPOSLocked(stateObject.address)

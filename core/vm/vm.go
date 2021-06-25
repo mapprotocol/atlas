@@ -26,19 +26,20 @@ type (
 	GetHashFunc func(uint64) common.Hash
 )
 
-func (evm *EVM) precompile(addr common.Address) (vm.PrecompiledContract, bool) {
-	var precompiles map[common.Address]vm.PrecompiledContract
-	//precompiles = PrecompiledContractsYoloPos
-	switch {
-	case evm.chainRules.IsBerlin:
-		precompiles = vm.PrecompiledContractsBerlin
-	case evm.chainRules.IsIstanbul:
-		precompiles = vm.PrecompiledContractsIstanbul
-	case evm.chainRules.IsByzantium:
-		precompiles = vm.PrecompiledContractsByzantium
-	default:
-		precompiles = vm.PrecompiledContractsHomestead
-	}
+func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
+	var precompiles map[common.Address]PrecompiledContract
+	precompiles = PrecompiledContractsYoloPos
+	//switch {
+	//case evm.chainRules.IsBerlin:
+	//	precompiles = vm.PrecompiledContractsBerlin
+	//case evm.chainRules.IsIstanbul:
+	//	precompiles = vm.PrecompiledContractsIstanbul
+	//case evm.chainRules.IsByzantium:
+	//	precompiles = vm.PrecompiledContractsByzantium
+	//default:
+	//	precompiles = vm.PrecompiledContractsHomestead
+	//}
+
 	p, ok := precompiles[addr]
 	return p, ok
 }
@@ -131,7 +132,7 @@ type EVM struct {
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(ctx BlockContext, statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config) *EVM {
+func NewEVM(ctx BlockContext,txc TxContext,statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config) *EVM {
 	evm := &EVM{
 		//Context:      ctx,
 		//StateDB:      statedb,
@@ -140,7 +141,7 @@ func NewEVM(ctx BlockContext, statedb StateDB, chainConfig *params.ChainConfig, 
 		//chainRules:   chainConfig.Rules(ctx.BlockNumber),
 		//interpreters: make([]vm.Interpreter, 0, 1),
 		Context:      ctx,
-		TxContext:    nil,
+		TxContext:    txc,
 		StateDB:      statedb,
 		vmConfig:     vmConfig,
 		chainConfig:  chainConfig,
@@ -176,7 +177,7 @@ func (evm *EVM) Interpreter() Interpreter {
 // parameters. It also handles any necessary value transfer required and takes
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
-func (evm *EVM) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int, fee *big.Int) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int, fee *big.Int) (ret []byte, leftOverGas uint64, err error) {
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -225,11 +226,11 @@ func (evm *EVM) Call(caller vm.ContractRef, addr common.Address, input []byte, g
 
 	// If the account has no code, we can abort here
 	// The depth-check is already done, and precompiles handled above
-	contract := NewContract(caller, vm.AccountRef(addr), value, gas)
+	contract := NewContract(caller, AccountRef(addr), value, gas)
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
 
 	if isPrecompile {
-		ret, gas, err = vm.RunPrecompiledContract(p, input, gas)
+		ret, gas, err = RunPrecompiledContract(evm,p, input, gas,nil)
 	} else {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.
@@ -263,7 +264,7 @@ func (evm *EVM) Call(caller vm.ContractRef, addr common.Address, input []byte, g
 //
 // CallCode differs from Call in the sense that it executes the given address'
 // code with the caller as context.
-func (evm *EVM) CallCode(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -282,12 +283,12 @@ func (evm *EVM) CallCode(caller vm.ContractRef, addr common.Address, input []byt
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
-	contract := NewContract(caller, vm.AccountRef(caller.Address()), value, gas)
+	contract := NewContract(caller, AccountRef(caller.Address()), value, gas)
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
 
 	// It is allowed to call precompiles, even via delegatecall
 	if p, isPrecompile := evm.precompile(addr); isPrecompile {
-		ret, gas, err = vm.RunPrecompiledContract(p, input, gas)
+		ret, gas, err = RunPrecompiledContract(evm,p, input, gas,nil)
 	} else {
 
 		ret, err = run(evm, contract, input, false)
@@ -307,7 +308,7 @@ func (evm *EVM) CallCode(caller vm.ContractRef, addr common.Address, input []byt
 //
 // DelegateCall differs from CallCode in the sense that it executes the given address'
 // code with the caller as context and the caller is set to the caller of the caller.
-func (evm *EVM) DelegateCall(caller vm.ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -318,12 +319,12 @@ func (evm *EVM) DelegateCall(caller vm.ContractRef, addr common.Address, input [
 	var snapshot = evm.StateDB.Snapshot()
 
 	// Initialise a new contract and make initialise the delegate values
-	contract := NewContract(caller, vm.AccountRef(caller.Address()), nil, gas).AsDelegate()
+	contract := NewContract(caller, AccountRef(caller.Address()), nil, gas).AsDelegate()
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
 
 	// It is allowed to call precompiles, even via delegatecall
 	if p, isPrecompile := evm.precompile(addr); isPrecompile {
-		ret, gas, err = vm.RunPrecompiledContract(p, input, gas)
+		ret, gas, err = RunPrecompiledContract(evm,p, input, gas,nil)
 	} else {
 		ret, err = run(evm, contract, input, false)
 		gas = contract.Gas
@@ -341,7 +342,7 @@ func (evm *EVM) DelegateCall(caller vm.ContractRef, addr common.Address, input [
 // as parameters while disallowing any modifications to the state during the call.
 // Opcodes that attempt to perform such modifications will result in exceptions
 // instead of performing the modifications.
-func (evm *EVM) StaticCall(caller vm.ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -358,7 +359,7 @@ func (evm *EVM) StaticCall(caller vm.ContractRef, addr common.Address, input []b
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
-	contract := NewContract(caller, vm.AccountRef(addr), new(big.Int), gas)
+	contract := NewContract(caller, AccountRef(addr), new(big.Int), gas)
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
 
 	// We do an AddBalance of zero here, just in order to trigger a touch.
@@ -368,7 +369,7 @@ func (evm *EVM) StaticCall(caller vm.ContractRef, addr common.Address, input []b
 	evm.StateDB.AddBalance(addr, big.NewInt(0))
 
 	if p, isPrecompile := evm.precompile(addr); isPrecompile {
-		ret, gas, err = vm.RunPrecompiledContract(p, input, gas)
+		ret, gas, err = RunPrecompiledContract(evm,p, input, gas,nil)
 	} else {
 		// When an error was returned by the EVM or when setting the creation code
 		// above we revert to the snapshot and consume any gas remaining. Additionally
@@ -399,7 +400,7 @@ func (c *codeAndHash) Hash() common.Hash {
 
 
 // create creates a new contract using code as deployment code.
-func (evm *EVM) create(caller vm.ContractRef, codeAndHash *codeAndHash, gas uint64, value *big.Int, address common.Address, fee *big.Int) ([]byte, common.Address, uint64, error) {
+func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64, value *big.Int, address common.Address, fee *big.Int) ([]byte, common.Address, uint64, error) {
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if evm.depth > int(params.CallCreateDepth) {
@@ -433,7 +434,7 @@ func (evm *EVM) create(caller vm.ContractRef, codeAndHash *codeAndHash, gas uint
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
-	contract := NewContract(caller, vm.AccountRef(address), value, gas)
+	contract := NewContract(caller, AccountRef(address), value, gas)
 	contract.SetCodeOptionalHash(&address, codeAndHash)
 
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
@@ -488,7 +489,7 @@ func (evm *EVM) create(caller vm.ContractRef, codeAndHash *codeAndHash, gas uint
 }
 
 // Create creates a new contract using code as deployment code.
-func (evm *EVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *big.Int, fee *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
+func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int, fee *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr = crypto.CreateAddress(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
 	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr, fee)
 }
@@ -497,7 +498,7 @@ func (evm *EVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *bi
 //
 // The different between Create2 with Create is Create2 uses sha3(0xff ++ msg.sender ++ salt ++ sha3(init_code))[12:]
 // instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
-func (evm *EVM) Create2(caller vm.ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int, fee *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
+func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int, fee *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	codeAndHash := &codeAndHash{code: code}
 	contractAddr = crypto.CreateAddress2(caller.Address(), common.Hash(salt.Bytes32()), codeAndHash.Hash().Bytes())
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr, fee)
