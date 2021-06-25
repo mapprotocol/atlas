@@ -3,12 +3,16 @@ package core
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
 	"github.com/mapprotocol/atlas/atlasdb"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	ethHeader "github.com/mapprotocol/atlas/core/vm/sync"
+	"gopkg.in/urfave/cli.v1"
 	"math/big"
 	mrand "math/rand"
 	"sync"
@@ -19,14 +23,24 @@ import (
 var (
 	nilDb_err = errors.New("no db")
 )
+var (
+	once     sync.Once
+	chainsDb atlasdb.Database
+	StoreMgr *HeaderChainStore
+)
+
+func GetStoreMgr(chainType rawdb.ChainType) *HeaderChainStore {
+	StoreMgr.currentChainType = chainType
+	return StoreMgr
+}
 
 const (
-	DefultChainType = rawdb.ChainType(0)
+	DefaultChainType = rawdb.ChainType(0)
 )
 
 type HeaderChainStore struct {
-	chainDb atlasdb.Database
-
+	chainDb           atlasdb.Database
+	once              sync.Once
 	currentChainType  rawdb.ChainType
 	currentHeaderHash common.Hash
 	currentHeader     atomic.Value   // Current head of the header chain (may be above the block chain!)
@@ -36,26 +50,28 @@ type HeaderChainStore struct {
 }
 
 func OpenDatabase(file string, cache, handles int) (atlasdb.Database, error) {
-	return atlasdb.NewLDBDatabase(file, cache, handles)
+	return atlasdb.NewLDBDatabase(file, 10, 10)
 }
-func NewStoreDb(chainDb atlasdb.Database, m rawdb.ChainType) (*HeaderChainStore, error) {
-	if chainDb == nil {
-		return nil, nilDb_err
+
+func NewStoreDb(ctx *cli.Context, config *ethconfig.Config) {
+	path := node.DefaultDataDir()
+	if ctx.GlobalIsSet(utils.DataDirFlag.Name) {
+		path = ctx.GlobalString(utils.DataDirFlag.Name)
 	}
+	chainDb, _ := OpenDatabase(path, config.DatabaseCache, config.DatabaseHandles)
 	db := &HeaderChainStore{
 		chainDb:          chainDb,
-		currentChainType: m,
+		currentChainType: DefaultChainType,
 	}
 	db.SetHead(0)
 	db.currentHeader.Store(db.GetHeaderByNumber(0))
 	db.currentHeaderHash = db.CurrentHeader().Hash()
-	return db, nil
+	StoreMgr = db
 }
 
 func (lc *HeaderChainStore) SetHead(head uint64) {
 	lc.Mu.Lock()
 	defer lc.Mu.Unlock()
-
 }
 
 func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
