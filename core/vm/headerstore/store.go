@@ -1,13 +1,16 @@
-package sync
+package headerstore
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/chain/eth"
 )
 
 const ABI_JSON = `[
@@ -54,12 +57,12 @@ var Gas = map[string]uint64{
 	"save": 0,
 }
 
-// RunSync execute atlas sync contract
+// RunSync execute atlas header store contract
 func RunSync(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
 	method, err := abiSync.MethodById(input)
 	if err != nil {
 		log.Error("No method found")
-		return nil, ErrExecutionReverted
+		return nil, eth.ErrExecutionReverted
 	}
 
 	data := input[4:]
@@ -67,13 +70,13 @@ func RunSync(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err 
 	case SAVE:
 		ret, err = save(evm, contract, data)
 	default:
-		log.Warn("sync call fallback function")
-		err = ErrSyncInvalidInput
+		log.Warn("header call fallback function")
+		err = eth.ErrSyncInvalidInput
 	}
 
 	if err != nil {
 		log.Warn("Sync error code", "code", err)
-		err = ErrExecutionReverted
+		err = eth.ErrExecutionReverted
 	}
 
 	return ret, err
@@ -90,26 +93,29 @@ func save(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err err
 	err = abiSync.UnpackIntoInterface(args, SAVE, input)
 	if err != nil {
 		log.Error("save Unpack error", "err", err)
-		return nil, ErrSyncInvalidInput
+		return nil, eth.ErrSyncInvalidInput
 	}
 
-	var hs []*ETHHeader
+	var hs []*eth.Header
 	err = json.Unmarshal(args.Header, &hs)
 	if err != nil {
-		// todo
-		log.Error(fmt.Sprintf("args.header json unmarshal failed, args.header: %+v, error: %v", err, args.Header))
-		return nil, ErrJSONUnmarshal
+		log.Error("args.Header json unmarshal failed.", "args.Header", args.Header, "err", err)
+		return nil, eth.ErrJSONUnmarshal
 	}
 
 	// validate header
-	header := new(ETHHeader)
+	header := new(eth.Header)
+	start := time.Now()
 	if _, err := header.ValidateHeaderChain(hs); err != nil {
+		log.Error("ValidateHeaderChain failed.", "err", err)
 		return nil, err
 	}
 
 	// reward
 
 	// store
-
+	if _, err = core.GetStoreMgr(chain.ChainTypeETH).InsertHeaderChain(hs, start); err != nil {
+		log.Error("InsertHeaderChain failed.", "err", err)
+	}
 	return nil, nil
 }

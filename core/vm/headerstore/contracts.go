@@ -1,12 +1,12 @@
-package sync
+package headerstore
 
 import "github.com/ethereum/go-ethereum/core/vm"
 
-type sync struct{}
+type headerStore struct{}
 
-func (s *sync) RequiredGas(evm *vm.EVM, input []byte) uint64 {
+func (s *headerStore) RequiredGas(evm *vm.EVM, input []byte) uint64 {
 	var (
-		baseGas uint64 = 0 // todo sync
+		baseGas uint64 = 0 // todo header
 	)
 
 	method, err := abiSync.MethodById(input)
@@ -20,6 +20,6 @@ func (s *sync) RequiredGas(evm *vm.EVM, input []byte) uint64 {
 	return baseGas
 }
 
-func (s *sync) Run(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
+func (s *headerStore) Run(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
 	return RunSync(evm, contract, input)
 }

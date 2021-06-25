@@ -25,7 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
-	ethHeader "github.com/mapprotocol/atlas/core/vm/sync"
+	"github.com/mapprotocol/atlas/core/chain/eth"
 	"math/big"
 )
 
@@ -193,12 +193,12 @@ func HasHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType) 
 }
 
 // ReadHeader retrieves the block header corresponding to the hash.
-func ReadHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *ethHeader.ETHHeader {
+func ReadHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *eth.Header {
 	data := ReadHeaderRLP(db, hash, number, m)
 	if len(data) == 0 {
 		return nil
 	}
-	header := new(ethHeader.ETHHeader)
+	header := new(eth.Header)
 	if err := rlp.Decode(bytes.NewReader(data), header); err != nil {
 		log.Error("Invalid block header RLP", "hash", hash, "err", err)
 		return nil
@@ -208,7 +208,7 @@ func ReadHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType)
 
 // WriteHeader stores a block header into the database and also stores the hash-
 // to-number mapping.
-func WriteHeader(db DatabaseWriter, header *ethHeader.ETHHeader, m ChainType) {
+func WriteHeader(db DatabaseWriter, header *eth.Header, m ChainType) {
 	// Write the hash -> number mapping
 	var (
 		hash    = header.Hash()

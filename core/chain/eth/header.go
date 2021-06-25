@@ -1,4 +1,4 @@
-package sync
+package eth
 
 import (
 	"bytes"
@@ -30,11 +30,7 @@ var (
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
 )
 
-type Header interface {
-	ValidateHeaderChain(from string, inputs []byte) (int, error)
-}
-
-type ETHHeader struct {
+type Header struct {
 	ParentHash  common.Hash      `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash      `json:"sha3Uncles"       gencodec:"required"`
 	Coinbase    common.Address   `json:"miner"            gencodec:"required"`
@@ -52,11 +48,11 @@ type ETHHeader struct {
 	Nonce       types.BlockNonce `json:"nonce"`
 }
 
-func (eh *ETHHeader) Hash() common.Hash {
+func (eh *Header) Hash() common.Hash {
 	return rlpHash(eh)
 }
 
-func (eh *ETHHeader) ValidateHeaderChain(chain []*ETHHeader) (int, error) {
+func (eh *Header) ValidateHeaderChain(chain []*Header) (int, error) {
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 1; i < len(chain); i++ {
 		if chain[i].Number.Uint64() != chain[i-1].Number.Uint64()+1 {
@@ -84,7 +80,7 @@ func (eh *ETHHeader) ValidateHeaderChain(chain []*ETHHeader) (int, error) {
 	return 0, nil
 }
 
-func (eh *ETHHeader) VerifyHeaders(headers []*ETHHeader) (chan<- struct{}, <-chan error) {
+func (eh *Header) VerifyHeaders(headers []*Header) (chan<- struct{}, <-chan error) {
 	// todo 优化？
 	abort := make(chan struct{})
 	results := make(chan error, len(headers))
@@ -103,7 +99,7 @@ func (eh *ETHHeader) VerifyHeaders(headers []*ETHHeader) (chan<- struct{}, <-cha
 	return abort, results
 }
 
-func (eh *ETHHeader) verifyHeader(header *ETHHeader, parents []*ETHHeader) error {
+func (eh *Header) verifyHeader(header *Header, parents []*Header) error {
 	if header.Number == nil {
 		return errUnknownBlock
 	}
@@ -162,14 +158,14 @@ func (eh *ETHHeader) verifyHeader(header *ETHHeader, parents []*ETHHeader) error
 	return eh.verifyCascadingFields(header, parents)
 }
 
-func (eh *ETHHeader) verifyCascadingFields(header *ETHHeader, parents []*ETHHeader) error {
+func (eh *Header) verifyCascadingFields(header *Header, parents []*Header) error {
 	// The genesis block is the always valid dead-end
 	number := header.Number.Uint64()
 	if number == 0 {
 		return nil
 	}
 	// Ensure that the block's timestamp isn't too close to its parent
-	var parent *ETHHeader
+	var parent *Header
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
