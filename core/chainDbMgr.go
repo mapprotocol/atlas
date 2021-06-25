@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/atlasdb"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	ethHeader "github.com/mapprotocol/atlas/core/vm/sync"
 	"math/big"
 	mrand "math/rand"
 	"sync"
@@ -24,7 +24,7 @@ const (
 	DefultChainType = rawdb.ChainType(0)
 )
 
-type HeaderChain struct {
+type HeaderChainStore struct {
 	chainDb atlasdb.Database
 
 	currentChainType  rawdb.ChainType
@@ -38,11 +38,11 @@ type HeaderChain struct {
 func OpenDatabase(file string, cache, handles int) (atlasdb.Database, error) {
 	return atlasdb.NewLDBDatabase(file, cache, handles)
 }
-func NewStoreDb(chainDb atlasdb.Database, m rawdb.ChainType) (*HeaderChain, error) {
+func NewStoreDb(chainDb atlasdb.Database, m rawdb.ChainType) (*HeaderChainStore, error) {
 	if chainDb == nil {
 		return nil, nilDb_err
 	}
-	db := &HeaderChain{
+	db := &HeaderChainStore{
 		chainDb:          chainDb,
 		currentChainType: m,
 	}
@@ -52,21 +52,21 @@ func NewStoreDb(chainDb atlasdb.Database, m rawdb.ChainType) (*HeaderChain, erro
 	return db, nil
 }
 
-func (lc *HeaderChain) SetHead(head uint64) {
+func (lc *HeaderChainStore) SetHead(head uint64) {
 	lc.Mu.Lock()
 	defer lc.Mu.Unlock()
 
 }
 
-func (db *HeaderChain) SetMark(m rawdb.ChainType) {
+func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
 	db.currentChainType = m
 }
 
-func (db *HeaderChain) ReadHeader(Hash common.Hash, number uint64) *types.Header {
+func (db *HeaderChainStore) ReadHeader(Hash common.Hash, number uint64) *ethHeader.ETHHeader {
 	return rawdb.ReadHeader(db.chainDb, Hash, number, db.currentChainType)
 }
 
-func (db *HeaderChain) WriteHeader(header *types.Header) {
+func (db *HeaderChainStore) WriteHeader(header *ethHeader.ETHHeader) {
 	batch := db.chainDb.NewBatch()
 	// Flush all accumulated deletions.
 	if err := batch.Write(); err != nil {
@@ -74,12 +74,12 @@ func (db *HeaderChain) WriteHeader(header *types.Header) {
 	}
 	rawdb.WriteHeader(db.chainDb, header, db.currentChainType)
 }
-func (db *HeaderChain) DeleteHeader(hash common.Hash, number uint64) {
+func (db *HeaderChainStore) DeleteHeader(hash common.Hash, number uint64) {
 	rawdb.DeleteHeader(db.chainDb, hash, number, db.currentChainType)
 }
 
-func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, start time.Time) (WriteStatus, error) {
-	res, err := hc.writeHeaders(chain)
+func (hc *HeaderChainStore) InsertHeaderChain(chains []*ethHeader.ETHHeader, start time.Time) (WriteStatus, error) {
+	res, err := hc.writeHeaders(chains)
 
 	// Report some public statistics so the user has a clue what's going on
 	context := []interface{}{
@@ -104,7 +104,7 @@ func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, start time.Time)
 
 // GetBlockNumber retrieves the block number belonging to the given hash
 // from the cache or database
-func (hc *HeaderChain) GetBlockNumber(hash common.Hash) *uint64 {
+func (hc *HeaderChainStore) GetBlockNumber(hash common.Hash) *uint64 {
 	number := rawdb.ReadHeaderNumber(hc.chainDb, hash, hc.currentChainType)
 	return number
 }
@@ -113,9 +113,9 @@ func (hc *HeaderChain) GetBlockNumber(hash common.Hash) *uint64 {
 type WriteStatus byte
 
 const (
-	NonStatTy WriteStatus = iota
-	CanonStatTy
-	SideStatTy
+	NonStatTy   WriteStatus = iota // the no
+	CanonStatTy                    // the Canonical
+	SideStatTy                     // the branch
 )
 
 type headerWriteResult struct {
@@ -123,7 +123,7 @@ type headerWriteResult struct {
 	ignored    int
 	imported   int
 	lastHash   common.Hash
-	lastHeader *types.Header
+	lastHeader *ethHeader.ETHHeader
 }
 
 // numberHash is just a container for a number and a hash, to represent a block
@@ -132,21 +132,21 @@ type numberHash struct {
 	hash   common.Hash
 }
 
-func (hc *HeaderChain) GetTd(hash common.Hash, number uint64) *big.Int {
+func (hc *HeaderChainStore) GetTd(hash common.Hash, number uint64) *big.Int {
 	td := rawdb.ReadTd(hc.chainDb, hash, number, hc.currentChainType)
 	if td == nil {
 		return nil
 	}
 	return td
 }
-func (hc *HeaderChain) HasHeader(hash common.Hash, number uint64) bool {
+func (hc *HeaderChainStore) HasHeader(hash common.Hash, number uint64) bool {
 	return rawdb.HasHeader(hc.chainDb, hash, number, hc.currentChainType)
 }
-func (hc *HeaderChain) CurrentHeader() *types.Header {
-	return hc.currentHeader.Load().(*types.Header)
+func (hc *HeaderChainStore) CurrentHeader() *ethHeader.ETHHeader {
+	return hc.currentHeader.Load().(*ethHeader.ETHHeader)
 }
 
-func (hc *HeaderChain) GetHeader(hash common.Hash, number uint64) *types.Header {
+func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *ethHeader.ETHHeader {
 
 	header := rawdb.ReadHeader(hc.chainDb, hash, number, hc.currentChainType)
 	if header == nil {
@@ -156,7 +156,24 @@ func (hc *HeaderChain) GetHeader(hash common.Hash, number uint64) *types.Header 
 	return header
 }
 
-func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWriteResult, err error) {
+// CopyHeader creates a deep copy of a block header to prevent side effects from
+// modifying a header variable.
+func CopyHeader(h *ethHeader.ETHHeader) *ethHeader.ETHHeader {
+	cpy := *h
+	if cpy.Difficulty = new(big.Int); h.Difficulty != nil {
+		cpy.Difficulty.Set(h.Difficulty)
+	}
+	if cpy.Number = new(big.Int); h.Number != nil {
+		cpy.Number.Set(h.Number)
+	}
+	if len(h.Extra) > 0 {
+		cpy.Extra = make([]byte, len(h.Extra))
+		copy(cpy.Extra, h.Extra)
+	}
+	return &cpy
+}
+
+func (hc *HeaderChainStore) writeHeaders(headers []*ethHeader.ETHHeader) (result *headerWriteResult, err error) {
 	if len(headers) == 0 {
 		return &headerWriteResult{}, nil
 	}
@@ -169,7 +186,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 		lastHash   = headers[0].ParentHash          // Last imported header hash
 		newTD      = new(big.Int).Set(ptd)          // Total difficulty of inserted chain
 
-		lastHeader    *types.Header
+		lastHeader    *ethHeader.ETHHeader
 		inserted      []numberHash // Ephemeral lookup of number/hash for the chain
 		firstInserted = -1         // Index of the first non-ignored header
 	)
@@ -279,7 +296,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 		markerBatch.Reset()
 		// Last step update all in-memory head header markers
 		hc.currentHeaderHash = lastHash
-		hc.currentHeader.Store(types.CopyHeader(lastHeader))
+		hc.currentHeader.Store(CopyHeader(lastHeader))
 
 		// Chain status is canonical since this insert was a reorg.
 		// Note that all inserts which have higher TD than existing are 'reorg'.
@@ -298,7 +315,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 	}, nil
 }
 
-func (hc *HeaderChain) ValidateHeaderChain(chain []*types.Header, checkFreq int) (int, error) {
+func (hc *HeaderChainStore) ValidateHeaderChain(chain []*ethHeader.ETHHeader, checkFreq int) (int, error) {
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 1; i < len(chain); i++ {
 		if chain[i].Number.Uint64() != chain[i-1].Number.Uint64()+1 {
@@ -336,7 +353,7 @@ func (hc *HeaderChain) ValidateHeaderChain(chain []*types.Header, checkFreq int)
 
 // GetBlockHashesFromHash retrieves a number of block hashes starting at a given
 // hash, fetching towards the genesis block.
-func (hc *HeaderChain) GetBlockHashesFromHash(hash common.Hash, max uint64) []common.Hash {
+func (hc *HeaderChainStore) GetBlockHashesFromHash(hash common.Hash, max uint64) []common.Hash {
 	// Get the origin header from which to fetch
 	header := hc.GetHeaderByHash(hash)
 	if header == nil {
@@ -359,7 +376,7 @@ func (hc *HeaderChain) GetBlockHashesFromHash(hash common.Hash, max uint64) []co
 
 // GetTdByHash retrieves a block's total difficulty in the canonical chain from the
 // database by hash, caching it if found.
-func (hc *HeaderChain) GetTdByHash(hash common.Hash) *big.Int {
+func (hc *HeaderChainStore) GetTdByHash(hash common.Hash) *big.Int {
 	number := hc.GetBlockNumber(hash)
 	if number == nil {
 		return nil
@@ -369,7 +386,7 @@ func (hc *HeaderChain) GetTdByHash(hash common.Hash) *big.Int {
 
 // GetHeaderByHash retrieves a block header from the database by hash, caching it if
 // found.
-func (hc *HeaderChain) GetHeaderByHash(hash common.Hash) *types.Header {
+func (hc *HeaderChainStore) GetHeaderByHash(hash common.Hash) *ethHeader.ETHHeader {
 	number := hc.GetBlockNumber(hash)
 	if number == nil {
 		return nil
@@ -379,7 +396,7 @@ func (hc *HeaderChain) GetHeaderByHash(hash common.Hash) *types.Header {
 
 // GetHeaderByNumber retrieves a block header from the database by number,
 // caching it (associated with its hash) if found.
-func (hc *HeaderChain) GetHeaderByNumber(number uint64) *types.Header {
+func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *ethHeader.ETHHeader {
 	hash := rawdb.ReadCanonicalHash(hc.chainDb, number, hc.currentChainType)
 	if hash == (common.Hash{}) {
 		return nil
@@ -387,13 +404,13 @@ func (hc *HeaderChain) GetHeaderByNumber(number uint64) *types.Header {
 	return hc.GetHeader(hash, number)
 }
 
-func (hc *HeaderChain) GetCanonicalHash(number uint64) common.Hash {
+func (hc *HeaderChainStore) GetCanonicalHash(number uint64) common.Hash {
 	return rawdb.ReadCanonicalHash(hc.chainDb, number, hc.currentChainType)
 }
 
 // SetCurrentHeader sets the in-memory head header marker of the canonical chan
 // as the given header.
-func (hc *HeaderChain) SetCurrentHeader(head *types.Header) {
+func (hc *HeaderChainStore) SetCurrentHeader(head *ethHeader.ETHHeader) {
 	hc.currentHeader.Store(head)
 	hc.currentHeaderHash = head.Hash()
 }

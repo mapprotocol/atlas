@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	ethHeader "github.com/mapprotocol/atlas/core/vm/sync"
 	"math/big"
 )
 
@@ -192,12 +193,12 @@ func HasHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType) 
 }
 
 // ReadHeader retrieves the block header corresponding to the hash.
-func ReadHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *types.Header {
+func ReadHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *ethHeader.ETHHeader {
 	data := ReadHeaderRLP(db, hash, number, m)
 	if len(data) == 0 {
 		return nil
 	}
-	header := new(types.Header)
+	header := new(ethHeader.ETHHeader)
 	if err := rlp.Decode(bytes.NewReader(data), header); err != nil {
 		log.Error("Invalid block header RLP", "hash", hash, "err", err)
 		return nil
@@ -207,7 +208,7 @@ func ReadHeader(db DatabaseReader, hash common.Hash, number uint64, m ChainType)
 
 // WriteHeader stores a block header into the database and also stores the hash-
 // to-number mapping.
-func WriteHeader(db DatabaseWriter, header *types.Header, m ChainType) {
+func WriteHeader(db DatabaseWriter, header *ethHeader.ETHHeader, m ChainType) {
 	// Write the hash -> number mapping
 	var (
 		hash    = header.Hash()
@@ -379,39 +380,6 @@ func DeleteReceipts(db DatabaseDeleter, hash common.Hash, number uint64, m Chain
 	if err := db.Delete(blockReceiptsKey(m, number, hash)); err != nil {
 		log.Crit("Failed to delete block receipts", "err", err)
 	}
-}
-
-// ReadBlock retrieves an entire block corresponding to the hash, assembling it
-// back from the stored header and body. If either the header or body could not
-// be retrieved nil is returned.
-//
-// Note, due to concurrent download of header and block body the header and thus
-// canonical hash can be stored in the database but the body data not (yet).
-
-// TODO WithBody(body.Transactions,nil)  nil: signs []*SignInfo
-func ReadBlock(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *types.Block {
-	header := ReadHeader(db, hash, number, m)
-	if header == nil {
-		return nil
-	}
-	body := ReadBody(db, hash, number, m)
-	if body == nil {
-		return nil
-	}
-	return types.NewBlockWithHeader(header).WithBody(body.Transactions, body.Uncles)
-}
-
-// WriteBlock serializes a block into the database, header and body separately.
-func WriteBlock(db DatabaseWriter, block *types.Block, m ChainType) {
-	WriteBody(db, block.Hash(), block.NumberU64(), block.Body(), m)
-	WriteHeader(db, block.Header(), m)
-}
-
-// DeleteBlock removes all block data associated with a hash.
-func DeleteBlock(db DatabaseDeleter, hash common.Hash, number uint64, m ChainType) {
-	DeleteReceipts(db, hash, number, m)
-	DeleteHeader(db, hash, number, m)
-	DeleteBody(db, hash, number, m)
 }
 
 // WriteChainConfig writes the chain config settings to the database.

@@ -39,7 +39,6 @@ func Test(t *testing.T) {
 		}
 		//fmt.Println(block.Hash())
 		rawdb.WriteTd(db, block.Hash(), block.NumberU64(), g.Difficulty, m)
-		rawdb.WriteBlock(db, block, m)
 		rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil, m)
 		rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64(), m)
 		rawdb.WriteHeadBlockHash(db, block.Hash(), m)
