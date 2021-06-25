@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,11 +20,6 @@ import (
 )
 
 var (
-	nilDb_err = errors.New("no db")
-)
-var (
-	once     sync.Once
-	chainsDb atlasdb.Database
 	StoreMgr *HeaderChainStore
 )
 
@@ -40,12 +34,10 @@ const (
 
 type HeaderChainStore struct {
 	chainDb           atlasdb.Database
-	once              sync.Once
 	currentChainType  rawdb.ChainType
 	currentHeaderHash common.Hash
-	currentHeader     atomic.Value   // Current head of the header chain (may be above the block chain!)
-	wg                sync.WaitGroup // chain processing wait group for shutting down
-	Mu                sync.RWMutex   // blockchaindb insertion lock
+	currentHeader     atomic.Value // Current head of the header chain (may be above the block chain!)
+	Mu                sync.RWMutex // blockchaindb insertion lock
 	rand              *mrand.Rand
 }
 
