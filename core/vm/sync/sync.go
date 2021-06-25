@@ -1,10 +1,11 @@
 package sync
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
-	"github.com/abeychain/go-abey/accounts/abi"
-
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -28,7 +29,7 @@ const ABI_JSON = `[
 				"type": "bytes"
 			}
 		],
-		"name": "sam",
+		"name": "save",
 		"outputs": [
 			{
 				"internalType": "bool",
@@ -79,25 +80,36 @@ func RunSync(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err 
 }
 
 func save(evm *vm.EVM, contract *vm.Contract, input []byte) (ret []byte, err error) {
-	// RLP decode
+	// decode
 	args := struct {
-		from   string
-		to     string
-		header []*ETHHeader
+		From   string
+		To     string
+		Header []byte
 	}{}
 
-	err = abiSync.Methods[SAVE].Inputs.Unpack(args, input)
+	err = abiSync.UnpackIntoInterface(args, SAVE, input)
 	if err != nil {
 		log.Error("save Unpack error", "err", err)
 		return nil, ErrSyncInvalidInput
 	}
 
+	var hs []*ETHHeader
+	err = json.Unmarshal(args.Header, &hs)
+	if err != nil {
+		// todo
+		log.Error(fmt.Sprintf("args.header json unmarshal failed, args.header: %+v, error: %v", err, args.Header))
+		return nil, ErrJSONUnmarshal
+	}
+
 	// validate header
 	header := new(ETHHeader)
-	if _, err := header.ValidateHeaderChain(args.header); err != nil {
+	if _, err := header.ValidateHeaderChain(hs); err != nil {
 		return nil, err
 	}
 
-	// save
+	// reward
+
+	// store
+
 	return nil, nil
 }
