@@ -90,6 +90,7 @@ func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
 		}
 	}
 	tr, err := trie.NewSecure(root, db.db)
+
 	if err != nil {
 		return nil, err
 	}

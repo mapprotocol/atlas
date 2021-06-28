@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/core/vm/state"
-	"github.com/mapprotocol/atlas/rlp"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/ethereum/go-ethereum/common"
