@@ -20,7 +20,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // StateDB is an EVM database for full state querying.
@@ -74,6 +74,13 @@ type StateDB interface {
 	AddPreimage(common.Hash, []byte)
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
+
+	GetUnlockedBalance(addr common.Address) *big.Int
+	GetLockedBalance(addr common.Address) *big.Int
+	SetLockedBalance(addr common.Address, value *big.Int)
+
+	//GetPOSState(common.Address, common.Hash) []byte
+	//SetPOSState(common.Address, common.Hash, []byte)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM
