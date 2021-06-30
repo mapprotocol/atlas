@@ -18,6 +18,7 @@
 package rawdb
 
 import (
+	"bytes"
 	"encoding/binary"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,39 +27,71 @@ import (
 
 // The fields below define the low level database schema prefixing.
 var (
-	// headHeaderKey tracks the latest know header's hash.
+	// databaseVersionKey tracks the current database version.
+	databaseVersionKey = []byte("DatabaseVersion")
+
+	// headHeaderKey tracks the latest known header's hash.
 	headHeaderKey = []byte("LastHeader")
 
-	// headBlockKey tracks the latest know full block's hash.
+	// headBlockKey tracks the latest known full block's hash.
 	headBlockKey = []byte("LastBlock")
 
-	headRewardKey = []byte("LastReward")
-
-	lastBlockKey = []byte("LastBlockIndex")
-
-	// headFastBlockKey tracks the latest known incomplete block's hash duirng fast sync.
+	// headFastBlockKey tracks the latest known incomplete block's hash during fast sync.
 	headFastBlockKey = []byte("LastFast")
+
+	// lastPivotKey tracks the last pivot block used by fast sync (to reenable on sethead).
+	lastPivotKey = []byte("LastPivot")
 
 	// fastTrieProgressKey tracks the number of trie entries imported during fast sync.
 	fastTrieProgressKey = []byte("TrieSync")
 
-	// stateGcBodyReceiptKey tracks the number of body and receipt entries delete during state sync.
-	stateGcBodyReceiptKey = []byte("LastState")
+	// snapshotDisabledKey flags that the snapshot should not be maintained due to initial sync.
+	snapshotDisabledKey = []byte("SnapshotDisabled")
+
+	// snapshotRootKey tracks the hash of the last snapshot.
+	snapshotRootKey = []byte("SnapshotRoot")
+
+	// snapshotJournalKey tracks the in-memory diff layers across restarts.
+	snapshotJournalKey = []byte("SnapshotJournal")
+
+	// snapshotGeneratorKey tracks the snapshot generation marker across restarts.
+	snapshotGeneratorKey = []byte("SnapshotGenerator")
+
+	// snapshotRecoveryKey tracks the snapshot recovery marker across restarts.
+	snapshotRecoveryKey = []byte("SnapshotRecovery")
+
+	// snapshotSyncStatusKey tracks the snapshot sync status across restarts.
+	snapshotSyncStatusKey = []byte("SnapshotSyncStatus")
+
+	// txIndexTailKey tracks the oldest block whose transactions have been indexed.
+	txIndexTailKey = []byte("TransactionIndexTail")
+
+	// fastTxLookupLimitKey tracks the transaction lookup limit during fast sync.
+	fastTxLookupLimitKey = []byte("FastTransactionLookupLimit")
+
+	// badBlockKey tracks the list of bad blocks seen by local
+	badBlockKey = []byte("InvalidBlock")
+
+	// uncleanShutdownKey tracks the list of local crashes
+	uncleanShutdownKey = []byte("unclean-shutdown") // config prefix for the db
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
-	headerPrefix       = []byte("h") // headerPrefix + ChainType + num (uint64 big endian) + hash -> header
-	headerTDSuffix     = []byte("t") // headerPrefix + ChainType + num (uint64 big endian) + hash + headerTDSuffix -> td
-	headerHashSuffix   = []byte("n") // headerPrefix + ChainType + num (uint64 big endian) + headerHashSuffix -> hash
+	headerPrefix       = []byte("h") // headerPrefix + num (uint64 big endian) + hash -> header
+	headerTDSuffix     = []byte("t") // headerPrefix + num (uint64 big endian) + hash + headerTDSuffix -> td
+	headerHashSuffix   = []byte("n") // headerPrefix + num (uint64 big endian) + headerHashSuffix -> hash
 	headerNumberPrefix = []byte("H") // headerNumberPrefix + hash -> num (uint64 big endian)
 
-	blockBodyPrefix     = []byte("b") // blockBodyPrefix + ChainType + num (uint64 big endian) + hash -> block body
-	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + ChainType + num (uint64 big endian) + hash -> block receipts
+	blockBodyPrefix     = []byte("b") // blockBodyPrefix + num (uint64 big endian) + hash -> block body
+	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + num (uint64 big endian) + hash -> block receipts
 
-	txLookupPrefix  = []byte("l") // txLookupPrefix + hash -> transaction/receipt lookup metadata
-	bloomBitsPrefix = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
+	txLookupPrefix        = []byte("l") // txLookupPrefix + hash -> transaction/receipt lookup metadata
+	bloomBitsPrefix       = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
+	SnapshotAccountPrefix = []byte("a") // SnapshotAccountPrefix + account hash -> account trie value
+	SnapshotStoragePrefix = []byte("o") // SnapshotStoragePrefix + account hash + storage hash -> storage trie value
+	CodePrefix            = []byte("c") // CodePrefix + code hash -> account code
 
-	preimagePrefix = []byte("secure-key-")        // preimagePrefix + hash -> preimage
-	configPrefix   = []byte("atlaschain-config-") // config prefix for the db
+	preimagePrefix = []byte("secure-key-")      // preimagePrefix + hash -> preimage
+	configPrefix   = []byte("ethereum-config-") // config prefix for the db
 
 	// Chain index prefixes (use `i` + single byte to avoid mixing data types).
 	BloomBitsIndexPrefix = []byte("iB") // BloomBitsIndexPrefix is the data table of a chain indexer to track its progress
@@ -67,34 +100,41 @@ var (
 	preimageHitCounter = metrics.NewRegisteredCounter("db/preimage/hits", nil)
 )
 
-//--------------- mark ---------
-type ChainType uint64
+const (
+	// freezerHeaderTable indicates the name of the freezer header table.
+	freezerHeaderTable = "headers"
 
-func (t ChainType) toByte() []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(t))
-	return b
-}
-func (t ChainType) len() int {
-	return 8
+	// freezerHashTable indicates the name of the freezer canonical hash table.
+	freezerHashTable = "hashes"
+
+	// freezerBodiesTable indicates the name of the freezer block body table.
+	freezerBodiesTable = "bodies"
+
+	// freezerReceiptTable indicates the name of the freezer receipts table.
+	freezerReceiptTable = "receipts"
+
+	// freezerDifficultyTable indicates the name of the freezer total difficulty table.
+	freezerDifficultyTable = "diffs"
+)
+
+// FreezerNoSnappy configures whether compression is disabled for the ancient-tables.
+// Hashes and difficulties don't compress well.
+var FreezerNoSnappy = map[string]bool{
+	freezerHeaderTable:     false,
+	freezerHashTable:       true,
+	freezerBodiesTable:     false,
+	freezerReceiptTable:    false,
+	freezerDifficultyTable: true,
 }
 
-// change the visit Number by append chain mark   mark + number
-func (t ChainType) setTypeNumber(n uint64) []byte {
-	return append(t.toByte(), encodeBlockNumber(n)...)
+// LegacyTxLookupEntry is the legacy TxLookupEntry definition with some unnecessary
+// fields.
+type LegacyTxLookupEntry struct {
+	BlockHash  common.Hash
+	BlockIndex uint64
+	Index      uint64
 }
 
-//change the visit key by append chain mark      key  + mark
-func (t ChainType) setTypeKey(b []byte) []byte {
-	return append(b, t.toByte()...)
-}
-
-//  key  + mark + number
-func (t ChainType) setTypeKeyNum(b []byte, n uint64) []byte {
-	return append(append(b, t.toByte()...), encodeBlockNumber(n)...)
-}
-
-//--------------- mark ---------
 // encodeBlockNumber encodes a block number as big endian uint64
 func encodeBlockNumber(number uint64) []byte {
 	enc := make([]byte, 8)
@@ -102,33 +142,91 @@ func encodeBlockNumber(number uint64) []byte {
 	return enc
 }
 
-// headerKey = headerPrefix + num (uint64 big endian) + hash
-func headerKey(t ChainType, number uint64, hash common.Hash) []byte {
-	return append(append(headerPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
+// headerKeyPrefix = headerPrefix + num (uint64 big endian)
+func headerKeyPrefix(number uint64) []byte {
+	return append(headerPrefix, encodeBlockNumber(number)...)
+}
 
+// headerKey = headerPrefix + num (uint64 big endian) + hash
+func headerKey(number uint64, hash common.Hash) []byte {
+	return append(append(headerPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
 }
 
 // headerTDKey = headerPrefix + num (uint64 big endian) + hash + headerTDSuffix
-func headerTDKey(t ChainType, number uint64, hash common.Hash) []byte {
-	return append(headerKey(t, number, hash), headerTDSuffix...)
+func headerTDKey(number uint64, hash common.Hash) []byte {
+	return append(headerKey(number, hash), headerTDSuffix...)
 }
 
 // headerHashKey = headerPrefix + num (uint64 big endian) + headerHashSuffix
-func headerHashKey(t ChainType, number uint64) []byte {
-	return append(append(headerPrefix, t.setTypeNumber(number)...), headerHashSuffix...)
+func headerHashKey(number uint64) []byte {
+	return append(append(headerPrefix, encodeBlockNumber(number)...), headerHashSuffix...)
 }
 
 // headerNumberKey = headerNumberPrefix + hash
-func headerNumberKey(t ChainType, hash common.Hash) []byte {
-	return append(t.setTypeKey(headerNumberPrefix), hash.Bytes()...)
+func headerNumberKey(hash common.Hash) []byte {
+	return append(headerNumberPrefix, hash.Bytes()...)
 }
 
 // blockBodyKey = blockBodyPrefix + num (uint64 big endian) + hash
-func blockBodyKey(t ChainType, number uint64, hash common.Hash) []byte {
-	return append(append(blockBodyPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
+func blockBodyKey(number uint64, hash common.Hash) []byte {
+	return append(append(blockBodyPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
 }
 
 // blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
-func blockReceiptsKey(t ChainType, number uint64, hash common.Hash) []byte {
-	return append(append(blockReceiptsPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
+func blockReceiptsKey(number uint64, hash common.Hash) []byte {
+	return append(append(blockReceiptsPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
+}
+
+// txLookupKey = txLookupPrefix + hash
+func txLookupKey(hash common.Hash) []byte {
+	return append(txLookupPrefix, hash.Bytes()...)
+}
+
+// accountSnapshotKey = SnapshotAccountPrefix + hash
+func accountSnapshotKey(hash common.Hash) []byte {
+	return append(SnapshotAccountPrefix, hash.Bytes()...)
+}
+
+// storageSnapshotKey = SnapshotStoragePrefix + account hash + storage hash
+func storageSnapshotKey(accountHash, storageHash common.Hash) []byte {
+	return append(append(SnapshotStoragePrefix, accountHash.Bytes()...), storageHash.Bytes()...)
+}
+
+// storageSnapshotsKey = SnapshotStoragePrefix + account hash + storage hash
+func storageSnapshotsKey(accountHash common.Hash) []byte {
+	return append(SnapshotStoragePrefix, accountHash.Bytes()...)
+}
+
+// bloomBitsKey = bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash
+func bloomBitsKey(bit uint, section uint64, hash common.Hash) []byte {
+	key := append(append(bloomBitsPrefix, make([]byte, 10)...), hash.Bytes()...)
+
+	binary.BigEndian.PutUint16(key[1:], uint16(bit))
+	binary.BigEndian.PutUint64(key[3:], section)
+
+	return key
+}
+
+// preimageKey = preimagePrefix + hash
+func preimageKey(hash common.Hash) []byte {
+	return append(preimagePrefix, hash.Bytes()...)
+}
+
+// codeKey = CodePrefix + hash
+func codeKey(hash common.Hash) []byte {
+	return append(CodePrefix, hash.Bytes()...)
+}
+
+// IsCodeKey reports whether the given byte slice is the key of contract code,
+// if so return the raw code hash as well.
+func IsCodeKey(key []byte) (bool, []byte) {
+	if bytes.HasPrefix(key, CodePrefix) && len(key) == common.HashLength+len(CodePrefix) {
+		return true, key[len(CodePrefix):]
+	}
+	return false, nil
+}
+
+// configKey = configPrefix + hash
+func configKey(hash common.Hash) []byte {
+	return append(configPrefix, hash.Bytes()...)
 }
