@@ -223,8 +223,8 @@ func (api *ExternalSigner) SignTx(account accounts.Account, tx *types.Transactio
 		args.ChainID = (*hexutil.Big)(tx.ChainId())
 	}
 	if tx.Type() == types.AccessListTxType {
-		accessList := tx.AccessList()
-		args.AccessList = &accessList
+		//accessList := tx.AccessList()
+		//args.AccessList = &accessList
 	}
 	var res signTransactionResult
 	if err := api.client.Call(&res, "account_signTransaction", args); err != nil {
