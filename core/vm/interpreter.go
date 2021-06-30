@@ -1,14 +1,28 @@
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package vm
 
 import (
-	"errors"
-	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
 	"hash"
 	"sync/atomic"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // Config are the configuration options for the Interpreter
@@ -81,7 +95,7 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 	// We use the STOP instruction whether to see
 	// the jump table was initialised. If it was not
 	// we'll set the default jump table.
-	if cfg.JumpTable[vm.STOP] == nil {
+	if cfg.JumpTable[STOP] == nil {
 		var jt JumpTable
 		switch {
 		case evm.chainRules.IsBerlin:
@@ -110,23 +124,7 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 		}
 		cfg.JumpTable = jt
 	}
-	//if cfg.JumpTable[vm.STOP] == nil {
-	//	var jt JumpTable = yoloV1InstructionSet
-	//	// switch {
-	//	// case evm.chainRules.IsTIP11:
-	//	// 	jt = yoloV1InstructionSet
-	//	// default:
-	//	// 	jt = constantinopleInstructionSet
-	//	// }
-	//	for i, eip := range cfg.ExtraEips {
-	//		if err := EnableEIP(eip, &jt); err != nil {
-	//			// Disable it, so caller can check if it's activated or not
-	//			cfg.ExtraEips = append(cfg.ExtraEips[:i], cfg.ExtraEips[i+1:]...)
-	//			log.Error("EIP activation failed", "eip", eip, "error", err)
-	//		}
-	//	}
-	//	cfg.JumpTable = jt
-	//}
+
 	return &EVMInterpreter{
 		evm: evm,
 		cfg: cfg,
@@ -146,7 +144,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 	defer func() { in.evm.depth-- }()
 
 	// Make sure the readOnly is only set if we aren't in readOnly yet.
-	// This makes also sure that the readOnly flag isn't removed for child calls.
+	// This also makes sure that the readOnly flag isn't removed for child calls.
 	if readOnly && !in.readOnly {
 		in.readOnly = true
 		defer func() { in.readOnly = false }()
@@ -162,7 +160,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 	}
 
 	var (
-		op          vm.OpCode        // current opcode
+		op          OpCode        // current opcode
 		mem         = NewMemory() // bound memory
 		stack       = newstack()  // local stack
 		callContext = &ScopeContext{
@@ -220,29 +218,29 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		op = contract.GetOp(pc)
 		operation := in.cfg.JumpTable[op]
 		if operation == nil {
-			return nil, errors.New("invalid opcode: " + op.String())
+			return nil, &ErrInvalidOpCode{opcode: op}
 		}
 		// Validate stack
-		if sLen := len(stack.Data()); sLen < operation.minStack {
-			return nil, errors.New(fmt.Sprintf("stack underflow (%d <=> %d)", sLen, operation.minStack))//&vm.ErrStackUnderflow{stackLen: sLen, required: operation.minStack}
+		if sLen := stack.len(); sLen < operation.minStack {
+			return nil, &ErrStackUnderflow{stackLen: sLen, required: operation.minStack}
 		} else if sLen > operation.maxStack {
-			return nil, errors.New(fmt.Sprintf("stack limit reached %d (%d)", sLen, operation.minStack))
+			return nil, &ErrStackOverflow{stackLen: sLen, limit: operation.maxStack}
 		}
-		// If the operation is valid, enforce and write restrictions
+		// If the operation is valid, enforce write restrictions
 		if in.readOnly && in.evm.chainRules.IsByzantium {
 			// If the interpreter is operating in readonly mode, make sure no
-			// state-modifying operation is performed. The 3rd stack it
+			// state-modifying operation is performed. The 3rd stack item
 			// for a call operation is the value. Transferring value from one
 			// account to the others means the state is modified and should also
 			// return with an error.
-			if operation.writes || (op == vm.CALL && stack.Back(2).Sign() != 0) {
-				return nil, vm.ErrWriteProtection
+			if operation.writes || (op == CALL && stack.Back(2).Sign() != 0) {
+				return nil, ErrWriteProtection
 			}
 		}
 		// Static portion of gas
 		cost = operation.constantGas // For tracing
 		if !contract.UseGas(operation.constantGas) {
-			return nil, vm.ErrOutOfGas
+			return nil, ErrOutOfGas
 		}
 
 		var memorySize uint64
@@ -253,12 +251,12 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		if operation.memorySize != nil {
 			memSize, overflow := operation.memorySize(stack)
 			if overflow {
-				return nil, vm.ErrGasUintOverflow
+				return nil, ErrGasUintOverflow
 			}
 			// memory is expanded in words of 32 bytes. Gas
 			// is also calculated in words.
 			if memorySize, overflow = math.SafeMul(toWordSize(memSize), 32); overflow {
-				return nil, vm.ErrGasUintOverflow
+				return nil, ErrGasUintOverflow
 			}
 		}
 		// Dynamic portion of gas
@@ -269,7 +267,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			dynamicCost, err = operation.dynamicGas(in.evm, contract, stack, mem, memorySize)
 			cost += dynamicCost // total cost, for debug tracing
 			if err != nil || !contract.UseGas(dynamicCost) {
-				return nil, vm.ErrOutOfGas
+				return nil, ErrOutOfGas
 			}
 		}
 		if memorySize > 0 {
@@ -293,7 +291,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		case err != nil:
 			return nil, err
 		case operation.reverts:
-			return res, vm.ErrExecutionReverted
+			return res, ErrExecutionReverted
 		case operation.halts:
 			return res, nil
 		case !operation.jumps:
@@ -307,12 +305,4 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 // run by the current interpreter.
 func (in *EVMInterpreter) CanRun(code []byte) bool {
 	return true
-}
-
-func toWordSize(size uint64) uint64 {
-	if size > math.MaxUint64-31 {
-		return math.MaxUint64/32 + 1
-	}
-
-	return (size + 31) / 32
 }

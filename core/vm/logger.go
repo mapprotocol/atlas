@@ -1,20 +1,37 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package vm
 
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
 	"io"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 )
 
+// Storage represents a contract's storage.
 type Storage map[common.Hash]common.Hash
 
 // Copy duplicates the current storage.
@@ -44,7 +61,7 @@ type LogConfig struct {
 // prior to the execution of the statement.
 type StructLog struct {
 	Pc            uint64                      `json:"pc"`
-	Op            vm.OpCode                      `json:"op"`
+	Op            OpCode                      `json:"op"`
 	Gas           uint64                      `json:"gas"`
 	GasCost       uint64                      `json:"gasCost"`
 	Memory        []byte                      `json:"memory"`
@@ -88,8 +105,8 @@ func (s *StructLog) ErrorString() string {
 // if you need to retain them beyond the current call.
 type Tracer interface {
 	CaptureStart(env *EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int)
-	CaptureState(env *EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error)
-	CaptureFault(env *EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error)
+	CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error)
+	CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error)
 	CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error)
 }
 
@@ -125,7 +142,7 @@ func (l *StructLogger) CaptureStart(env *EVM, from common.Address, to common.Add
 // CaptureState logs a new structured log message and pushes it out to the environment
 //
 // CaptureState also tracks SLOAD/SSTORE ops to track storage change.
-func (l *StructLogger) CaptureState(env *EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
+func (l *StructLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
 	memory := scope.Memory
 	stack := scope.Stack
 	contract := scope.Contract
@@ -156,18 +173,18 @@ func (l *StructLogger) CaptureState(env *EVM, pc uint64, op vm.OpCode, gas, cost
 			l.storage[contract.Address()] = make(Storage)
 		}
 		// capture SLOAD opcodes and record the read entry in the local storage
-		if op == vm.SLOAD && len(stack.Data()) >= 1 {
+		if op == SLOAD && stack.len() >= 1 {
 			var (
-				address = common.Hash(stack.Data()[len(stack.Data())-1].Bytes32())
+				address = common.Hash(stack.data[stack.len()-1].Bytes32())
 				value   = env.StateDB.GetState(contract.Address(), address)
 			)
 			l.storage[contract.Address()][address] = value
 		}
 		// capture SSTORE opcodes and record the written entry in the local storage.
-		if op == vm.SSTORE && len(stack.Data()) >= 2 {
+		if op == SSTORE && stack.len() >= 2 {
 			var (
-				value   = common.Hash(stack.Data()[len(stack.Data())-2].Bytes32())
-				address = common.Hash(stack.Data()[len(stack.Data())-1].Bytes32())
+				value   = common.Hash(stack.data[stack.len()-2].Bytes32())
+				address = common.Hash(stack.data[stack.len()-1].Bytes32())
 			)
 			l.storage[contract.Address()][address] = value
 		}
@@ -185,7 +202,7 @@ func (l *StructLogger) CaptureState(env *EVM, pc uint64, op vm.OpCode, gas, cost
 
 // CaptureFault implements the Tracer interface to trace an execution fault
 // while running an opcode.
-func (l *StructLogger) CaptureFault(env *EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
+func (l *StructLogger) CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
 }
 
 // CaptureEnd is called after the call finishes to finalize the tracing.
@@ -289,14 +306,14 @@ func (t *mdLogger) CaptureStart(env *EVM, from common.Address, to common.Address
 }
 
 // CaptureState also tracks SLOAD/SSTORE ops to track storage change.
-func (t *mdLogger) CaptureState(env *EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
+func (t *mdLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
 	stack := scope.Stack
 	fmt.Fprintf(t.out, "| %4d  | %10v  |  %3d |", pc, op, cost)
 
 	if !t.cfg.DisableStack {
 		// format stack
 		var a []string
-		for _, elem := range stack.Data() {
+		for _, elem := range stack.data {
 			a = append(a, fmt.Sprintf("%v", elem.String()))
 		}
 		b := fmt.Sprintf("[%v]", strings.Join(a, ","))
@@ -309,7 +326,7 @@ func (t *mdLogger) CaptureState(env *EVM, pc uint64, op vm.OpCode, gas, cost uin
 	}
 }
 
-func (t *mdLogger) CaptureFault(env *EVM, pc uint64, op vm.OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
+func (t *mdLogger) CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
 	fmt.Fprintf(t.out, "\nError: at pc=%d, op=%v: %v\n", pc, op, err)
 }
 

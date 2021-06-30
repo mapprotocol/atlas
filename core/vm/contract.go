@@ -1,12 +1,29 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package vm
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/holiman/uint256"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 )
 
+// ContractRef is a reference to the contract's backing object
 type ContractRef interface {
 	Address() common.Address
 }
@@ -73,7 +90,7 @@ func (c *Contract) validJumpdest(dest *uint256.Int) bool {
 		return false
 	}
 	// Only JUMPDESTs allowed for destinations
-	if vm.OpCode(c.Code[udest]) != vm.JUMPDEST {
+	if OpCode(c.Code[udest]) != JUMPDEST {
 		return false
 	}
 	return c.isCode(udest)
@@ -125,8 +142,8 @@ func (c *Contract) AsDelegate() *Contract {
 }
 
 // GetOp returns the n'th element in the contract's byte array
-func (c *Contract) GetOp(n uint64) vm.OpCode {
-	return vm.OpCode(c.GetByte(n))
+func (c *Contract) GetOp(n uint64) OpCode {
+	return OpCode(c.GetByte(n))
 }
 
 // GetByte returns the n'th byte in the contract's byte array

@@ -1,13 +1,27 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package vm
 
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 )
 
 func opAdd(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
@@ -312,14 +326,14 @@ func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, scope *ScopeConte
 
 	offset64, overflow := dataOffset.Uint64WithOverflow()
 	if overflow {
-		return nil, vm.ErrReturnDataOutOfBounds
+		return nil, ErrReturnDataOutOfBounds
 	}
 	// we can reuse dataOffset now (aliasing it for clarity)
 	var end = dataOffset
 	end.Add(&dataOffset, &length)
 	end64, overflow := end.Uint64WithOverflow()
 	if overflow || uint64(len(interpreter.returnData)) < end64 {
-		return nil, vm.ErrReturnDataOutOfBounds
+		return nil, ErrReturnDataOutOfBounds
 	}
 	scope.Memory.Set(memOffset.Uint64(), length.Uint64(), interpreter.returnData[offset64:end64])
 	return nil, nil
@@ -510,7 +524,7 @@ func opSstore(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]b
 func opJump(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	pos := scope.Stack.pop()
 	if !scope.Contract.validJumpdest(&pos) {
-		return nil, vm.ErrInvalidJump
+		return nil, ErrInvalidJump
 	}
 	*pc = pos.Uint64()
 	return nil, nil
@@ -520,7 +534,7 @@ func opJumpi(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]by
 	pos, cond := scope.Stack.pop(), scope.Stack.pop()
 	if !cond.IsZero() {
 		if !scope.Contract.validJumpdest(&pos) {
-			return nil, vm.ErrInvalidJump
+			return nil, ErrInvalidJump
 		}
 		*pc = pos.Uint64()
 	} else {
@@ -563,19 +577,19 @@ func opCreate(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]b
 
 	scope.Contract.UseGas(gas)
 	//TODO: use uint256.Int instead of converting with toBig()
-	var bigVal = big.NewInt(0)
+	var bigVal = big0
 	if !value.IsZero() {
 		bigVal = value.ToBig()
 	}
-	var bigFee = big.NewInt(1)
-	res, addr, returnGas, suberr := interpreter.evm.Create(scope.Contract, input, gas, bigVal,bigFee)
+
+	res, addr, returnGas, suberr := interpreter.evm.Create(scope.Contract, input, gas, bigVal)
 	// Push item on the stack based on the returned error. If the ruleset is
 	// homestead we must check for CodeStoreOutOfGasError (homestead only
 	// rule) and treat as an error, if the ruleset is frontier we must
 	// ignore this error and pretend the operation was successful.
-	if interpreter.evm.chainRules.IsHomestead && suberr == vm.ErrCodeStoreOutOfGas {
+	if interpreter.evm.chainRules.IsHomestead && suberr == ErrCodeStoreOutOfGas {
 		stackvalue.Clear()
-	} else if suberr != nil && suberr != vm.ErrCodeStoreOutOfGas {
+	} else if suberr != nil && suberr != ErrCodeStoreOutOfGas {
 		stackvalue.Clear()
 	} else {
 		stackvalue.SetBytes(addr.Bytes())
@@ -583,12 +597,11 @@ func opCreate(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]b
 	scope.Stack.push(&stackvalue)
 	scope.Contract.Gas += returnGas
 
-	if suberr == vm.ErrExecutionReverted {
+	if suberr == ErrExecutionReverted {
 		return res, nil
 	}
 	return nil, nil
 }
-
 
 func opCreate2(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	var (
@@ -605,12 +618,12 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]
 	// reuse size int for stackvalue
 	stackvalue := size
 	//TODO: use uint256.Int instead of converting with toBig()
-	bigEndowment := big.NewInt(0)
+	bigEndowment := big0
 	if !endowment.IsZero() {
 		bigEndowment = endowment.ToBig()
 	}
-	var bigFee = big.NewInt(1)
-	res, addr, returnGas, suberr := interpreter.evm.Create2(scope.Contract, input, gas, bigEndowment, &salt,bigFee)
+	res, addr, returnGas, suberr := interpreter.evm.Create2(scope.Contract, input, gas,
+		bigEndowment, &salt)
 	// Push item on the stack based on the returned error.
 	if suberr != nil {
 		stackvalue.Clear()
@@ -620,7 +633,7 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]
 	scope.Stack.push(&stackvalue)
 	scope.Contract.Gas += returnGas
 
-	if suberr == vm.ErrExecutionReverted {
+	if suberr == ErrExecutionReverted {
 		return res, nil
 	}
 	return nil, nil
@@ -638,8 +651,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 	// Get the arguments from the memory.
 	args := scope.Memory.GetPtr(int64(inOffset.Uint64()), int64(inSize.Uint64()))
 
-	var bigVal = big.NewInt(0)
-	var bigFee = big.NewInt(1)
+	var bigVal = big0
 	//TODO: use uint256.Int instead of converting with toBig()
 	// By using big0 here, we save an alloc for the most common case (non-ether-transferring contract calls),
 	// but it would make more sense to extend the usage of uint256.Int
@@ -648,7 +660,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 		bigVal = value.ToBig()
 	}
 
-	ret, returnGas, err := interpreter.evm.Call(scope.Contract, toAddr, args, gas, bigVal,bigFee)
+	ret, returnGas, err := interpreter.evm.Call(scope.Contract, toAddr, args, gas, bigVal)
 
 	if err != nil {
 		temp.Clear()
@@ -656,7 +668,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 		temp.SetOne()
 	}
 	stack.push(&temp)
-	if err == nil || err == vm.ErrExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		scope.Memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	scope.Contract.Gas += returnGas
@@ -677,7 +689,7 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([
 	args := scope.Memory.GetPtr(int64(inOffset.Uint64()), int64(inSize.Uint64()))
 
 	//TODO: use uint256.Int instead of converting with toBig()
-	var bigVal = big.NewInt(0)
+	var bigVal = big0
 	if !value.IsZero() {
 		gas += params.CallStipend
 		bigVal = value.ToBig()
@@ -690,7 +702,7 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([
 		temp.SetOne()
 	}
 	stack.push(&temp)
-	if err == nil || err == vm.ErrExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		scope.Memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	scope.Contract.Gas += returnGas
@@ -717,7 +729,7 @@ func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext
 		temp.SetOne()
 	}
 	stack.push(&temp)
-	if err == nil || err == vm.ErrExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		scope.Memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	scope.Contract.Gas += returnGas
@@ -744,7 +756,7 @@ func opStaticCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) 
 		temp.SetOne()
 	}
 	stack.push(&temp)
-	if err == nil || err == vm.ErrExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		scope.Memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	scope.Contract.Gas += returnGas
@@ -860,20 +872,4 @@ func makeSwap(size int64) executionFunc {
 		scope.Stack.swap(int(size))
 		return nil, nil
 	}
-}
-
-func getData(data []byte, start uint64, size uint64) []byte {
-	length := uint64(len(data))
-	if start > length {
-		start = length
-	}
-	end := start + size
-	if end > length {
-		end = length
-	}
-	return common.RightPadBytes(data[start:end], int(size))
-}
-
-func GetData(data []byte, start uint64, size uint64)[]byte{
-	return getData(data, start, size)
 }

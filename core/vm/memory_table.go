@@ -1,6 +1,20 @@
-package vm
+// Copyright 2017 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-import "github.com/holiman/uint256"
+package vm
 
 func memorySha3(stack *Stack) (uint64, bool) {
 	return calcMemSize64(stack.Back(0), stack.Back(1))
@@ -96,25 +110,4 @@ func memoryRevert(stack *Stack) (uint64, bool) {
 
 func memoryLog(stack *Stack) (uint64, bool) {
 	return calcMemSize64(stack.Back(0), stack.Back(1))
-}
-
-func calcMemSize64(off, l *uint256.Int) (uint64, bool) {
-	if !l.IsUint64() {
-		return 0, true
-	}
-	return calcMemSize64WithUint(off, l.Uint64())
-}
-func calcMemSize64WithUint(off *uint256.Int, length64 uint64) (uint64, bool) {
-	// if length is zero, memsize is always zero, regardless of offset
-	if length64 == 0 {
-		return 0, false
-	}
-	// Check that offset doesn't overflow
-	offset64, overflow := off.Uint64WithOverflow()
-	if overflow {
-		return 0, true
-	}
-	val := offset64 + length64
-	// if value < either of it's parts, then it overflowed
-	return val, val < offset64
 }

@@ -1,4 +1,4 @@
-// Copyright 2017 The go-ethereum Authors
+// Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,29 +14,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+/*
+Package vm implements the Ethereum Virtual Machine.
+
+The vm package implements one EVM, a byte code VM. The BC (Byte Code) VM loops
+over a set of bytes and executes them according to the set of rules defined
+in the Ethereum yellow paper.
+*/
 package vm
-
-import (
-	"github.com/ethereum/go-ethereum/params"
-)
-
-func minSwapStack(n int) int {
-	return minStack(n, n)
-}
-func maxSwapStack(n int) int {
-	return maxStack(n, n)
-}
-
-func minDupStack(n int) int {
-	return minStack(n, n+1)
-}
-func maxDupStack(n int) int {
-	return maxStack(n, n+1)
-}
-
-func maxStack(pop, push int) int {
-	return int(params.StackLimit) + pop - push
-}
-func minStack(pops, push int) int {
-	return pops
-}
