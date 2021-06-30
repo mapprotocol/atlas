@@ -70,10 +70,10 @@ func newTestBackendWithGenerator(blocks int, generator func(int, *chain.BlockGen
 		Alloc:  chain.GenesisAlloc{testAddr: {Balance: big.NewInt(1000000)}},
 	}).MustCommit(db)
 
-	chain, _ := chain.NewBlockChain(db, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+	block_chain, _ := chain.NewBlockChain(db, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
 
-	bs, _ := chain.GenerateChain(params.TestChainConfig, chain.Genesis(), ethash.NewFaker(), db, blocks, generator)
-	if _, err := chain.InsertChain(bs); err != nil {
+	bs, _ := chain.GenerateChain(params.TestChainConfig, block_chain.Genesis(), ethash.NewFaker(), db, blocks, generator)
+	if _, err := block_chain.InsertChain(bs); err != nil {
 		panic(err)
 	}
 	txconfig := txsdetails.DefaultTxPoolConfig
@@ -81,8 +81,8 @@ func newTestBackendWithGenerator(blocks int, generator func(int, *chain.BlockGen
 
 	return &testBackend{
 		db:     db,
-		chain:  chain,
-		txpool: txsdetails.NewTxPool(txconfig, params.TestChainConfig, chain),
+		chain:  block_chain,
+		txpool: txsdetails.NewTxPool(txconfig, params.TestChainConfig, block_chain),
 	}
 }
 

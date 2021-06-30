@@ -42,7 +42,7 @@ import (
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )

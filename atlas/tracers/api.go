@@ -39,7 +39,7 @@ import (
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -170,7 +170,7 @@ type TraceCallConfig struct {
 	Tracer         *string
 	Timeout        *string
 	Reexec         *uint64
-	StateOverrides *ethapi.StateOverride
+	StateOverrides *atlasapi.StateOverride
 }
 
 // StdTraceConfig holds extra parameters to standard-json trace functions.
@@ -732,7 +732,7 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 // created during the execution of EVM if the given transaction was added on
 // top of the provided block and returns them as a JSON object.
 // You can provide -2 as a block number to trace on top of the pending block.
-func (api *API) TraceCall(ctx context.Context, args ethapi.CallArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
+func (api *API) TraceCall(ctx context.Context, args atlasapi.CallArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
 	// Try to retrieve the specified block
 	var (
 		err   error
@@ -837,11 +837,11 @@ func (api *API) traceTx(ctx context.Context, message processor.Message, txctx *t
 		if len(result.Revert()) > 0 {
 			returnVal = fmt.Sprintf("%x", result.Revert())
 		}
-		return &ethapi.ExecutionResult{
+		return &atlasapi.ExecutionResult{
 			Gas:         result.UsedGas,
 			Failed:      result.Failed(),
 			ReturnValue: returnVal,
-			StructLogs:  ethapi.FormatLogs(tracer.StructLogs()),
+			StructLogs:  atlasapi.FormatLogs(tracer.StructLogs()),
 		}, nil
 
 	case *Tracer:
