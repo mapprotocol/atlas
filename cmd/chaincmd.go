@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/chain"
 	"os"
 	"runtime"
 	"strconv"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -183,7 +183,7 @@ func initGenesis(ctx *cli.Context) error {
 	}
 	defer file.Close()
 
-	genesis := new(core.Genesis)
+	genesis := new(chain.Genesis)
 	if err := json.NewDecoder(file).Decode(genesis); err != nil {
 		utils.Fatalf("invalid genesis file: %v", err)
 	}
@@ -196,7 +196,7 @@ func initGenesis(ctx *cli.Context) error {
 		if err != nil {
 			utils.Fatalf("Failed to open database: %v", err)
 		}
-		_, hash, err := core.SetupGenesisBlock(chaindb, genesis)
+		_, hash, err := chain.SetupGenesisBlock(chaindb, genesis)
 		if err != nil {
 			utils.Fatalf("Failed to write genesis block: %v", err)
 		}
@@ -210,7 +210,7 @@ func dumpGenesis(ctx *cli.Context) error {
 	// TODO(rjl493456442) support loading from the custom datadir
 	genesis := utils.MakeGenesis(ctx)
 	if genesis == nil {
-		genesis = core.DefaultGenesisBlock()
+		genesis = chain.DefaultGenesisBlock()
 	}
 	if err := json.NewEncoder(os.Stdout).Encode(genesis); err != nil {
 		utils.Fatalf("could not encode genesis")
