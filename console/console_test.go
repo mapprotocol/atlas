@@ -34,7 +34,7 @@ import (
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/ethereum/go-ethereum/internal/jsre"
 	"github.com/mapprotocol/atlas/miner"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/cmd/node"
 )
 
 const (

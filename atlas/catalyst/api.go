@@ -30,7 +30,7 @@ import (
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/atlas"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/cmd/node"
 	chainParams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"

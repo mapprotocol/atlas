@@ -40,7 +40,7 @@ import (
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/miner"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/params"

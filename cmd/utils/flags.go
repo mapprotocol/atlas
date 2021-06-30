@@ -59,7 +59,7 @@ import (
 	"github.com/ethereum/go-ethereum/metrics/exp"
 	"github.com/ethereum/go-ethereum/metrics/influxdb"
 	"github.com/mapprotocol/atlas/miner"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/nat"

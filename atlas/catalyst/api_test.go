@@ -27,7 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/atlas"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/ethereum/go-ethereum/params"
 )
 

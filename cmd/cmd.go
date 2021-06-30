@@ -38,7 +38,7 @@ import (
 	"github.com/mapprotocol/atlas/helper/flags"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"gopkg.in/urfave/cli.v1"
 )
 
