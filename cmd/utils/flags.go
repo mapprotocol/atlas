@@ -51,11 +51,9 @@ import (
 	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/atlas/tracers"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethstats"
-	"github.com/ethereum/go-ethereum/graphql"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/les"
+	"github.com/mapprotocol/atlas/apis/atlasapi"
+	"github.com/mapprotocol/atlas/helper/flags"
+	//"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/metrics/exp"
@@ -1698,43 +1696,36 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 // RegisterEthService adds an Ethereum client to the stack.
 // The second return value is the full node instance, which may be nil if the
 // node is running as a light client.
-func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (ethapi.Backend, *eth.Ethereum) {
-	if cfg.SyncMode == downloader.LightSync {
-		backend, err := les.New(stack, cfg)
-		if err != nil {
-			Fatalf("Failed to register the Ethereum service: %v", err)
-		}
-		stack.RegisterAPIs(tracers.APIs(backend.ApiBackend))
-		return backend.ApiBackend, nil
-	}
+func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (atlasapi.Backend, *eth.Ethereum) {
+	//if cfg.SyncMode == downloader.LightSync {
+	//	backend, err := les.New(stack, cfg)
+	//	if err != nil {
+	//		Fatalf("Failed to register the Ethereum service: %v", err)
+	//	}
+	//	stack.RegisterAPIs(tracers.APIs(backend.ApiBackend))
+	//	return backend.ApiBackend, nil
+	//}
 	backend, err := eth.New(stack, cfg)
 	if err != nil {
 		Fatalf("Failed to register the Ethereum service: %v", err)
 	}
-	if cfg.LightServ > 0 {
-		_, err := les.NewLesServer(stack, backend, cfg)
-		if err != nil {
-			Fatalf("Failed to create the LES server: %v", err)
-		}
-	}
+	//if cfg.LightServ > 0 {
+	//	_, err := les.NewLesServer(stack, backend, cfg)
+	//	if err != nil {
+	//		Fatalf("Failed to create the LES server: %v", err)
+	//	}
+	//}
 	stack.RegisterAPIs(tracers.APIs(backend.APIBackend))
 	return backend.APIBackend, backend
 }
 
 // RegisterEthStatsService configures the Ethereum Stats daemon and adds it to
 // the given node.
-func RegisterEthStatsService(stack *node.Node, backend ethapi.Backend, url string) {
-	if err := ethstats.New(stack, backend, backend.Engine(), url); err != nil {
-		Fatalf("Failed to register the Ethereum Stats service: %v", err)
-	}
-}
-
-// RegisterGraphQLService is a utility function to construct a new service and register it against a node.
-func RegisterGraphQLService(stack *node.Node, backend ethapi.Backend, cfg node.Config) {
-	if err := graphql.New(stack, backend, cfg.GraphQLCors, cfg.GraphQLVirtualHosts); err != nil {
-		Fatalf("Failed to register the GraphQL service: %v", err)
-	}
-}
+//func RegisterEthStatsService(stack *node.Node, backend atlasapi.Backend, url string) {
+//	if err := ethstats.New(stack, backend, backend.Engine(), url); err != nil {
+//		Fatalf("Failed to register the Ethereum Stats service: %v", err)
+//	}
+//}
 
 func SetupMetrics(ctx *cli.Context) {
 	if metrics.Enabled {

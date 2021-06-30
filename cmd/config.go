@@ -19,7 +19,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/apis/atlasapi"
+	//"github.com/mapprotocol/atlas/core"
 	"math/big"
 	"os"
 	"reflect"
@@ -27,13 +28,13 @@ import (
 
 	"gopkg.in/urfave/cli.v1"
 
-	"github.com/mapprotocol/atlas/cmd/utils"
-	"github.com/mapprotocol/atlas/atlas/catalyst"
-	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
+	"github.com/mapprotocol/atlas/atlas/catalyst"
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
+	"github.com/mapprotocol/atlas/cmd/utils"
+
 	"github.com/naoina/toml"
 )
 
@@ -145,7 +146,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 		cfg.Eth.OverrideBerlin = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideBerlinFlag.Name))
 	}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
-	core.NewStoreDb(ctx, &cfg.Eth)
+	//core.NewStoreDb(ctx, &cfg.Eth)
 	//atlasdb.NewLDBDatabase("data3", 1, 1)
 	// Configure catalyst.
 	if ctx.GlobalBool(utils.CatalystFlag.Name) {
@@ -157,14 +158,10 @@ func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 		}
 	}
 
-	// Configure GraphQL if requested
-	if ctx.GlobalIsSet(utils.GraphQLEnabledFlag.Name) {
-		utils.RegisterGraphQLService(stack, backend, cfg.Node)
-	}
 	// Add the Ethereum Stats daemon if requested.
-	if cfg.Ethstats.URL != "" {
-		utils.RegisterEthStatsService(stack, backend, cfg.Ethstats.URL)
-	}
+	//if cfg.Ethstats.URL != "" {
+	//	utils.RegisterEthStatsService(stack, backend, cfg.Ethstats.URL)
+	//}
 	return stack, backend
 }
 
