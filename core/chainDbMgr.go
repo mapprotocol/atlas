@@ -1,11 +1,11 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	mrand "math/rand"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -20,13 +20,18 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
+var error01 = errors.New("no storedb")
+
 var (
 	StoreMgr *HeaderChainStore
 )
 
-func GetStoreMgr(chainType rawdb.ChainType) *HeaderChainStore {
+func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
+	if StoreMgr == nil {
+		return nil, error01
+	}
 	StoreMgr.currentChainType = chainType
-	return StoreMgr
+	return StoreMgr, nil
 }
 
 const (
@@ -34,12 +39,10 @@ const (
 )
 
 type HeaderChainStore struct {
-	chainDb           atlasdb.Database
-	currentChainType  rawdb.ChainType
-	currentHeaderHash common.Hash
-	currentHeader     atomic.Value // Current head of the header chain (may be above the block chain!)
-	Mu                sync.RWMutex // blockchaindb insertion lock
-	rand              *mrand.Rand
+	chainDb          atlasdb.Database
+	currentChainType rawdb.ChainType
+	Mu               sync.RWMutex // blockchaindb insertion lock
+	rand             *mrand.Rand
 }
 
 func OpenDatabase(file string, cache, handles int) (atlasdb.Database, error) {
@@ -56,15 +59,7 @@ func NewStoreDb(ctx *cli.Context, config *ethconfig.Config) {
 		chainDb:          chainDb,
 		currentChainType: DefaultChainType,
 	}
-	db.SetHead(0)
-	db.currentHeader.Store(db.GetHeaderByNumber(0))
-	db.currentHeaderHash = db.CurrentHeader().Hash()
 	StoreMgr = db
-}
-
-func (lc *HeaderChainStore) SetHead(head uint64) {
-	lc.Mu.Lock()
-	defer lc.Mu.Unlock()
 }
 
 func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
@@ -151,17 +146,25 @@ func (hc *HeaderChainStore) GetTd(hash common.Hash, number uint64) *big.Int {
 func (hc *HeaderChainStore) HasHeader(hash common.Hash, number uint64) bool {
 	return rawdb.HasHeader(hc.chainDb, hash, number, hc.currentChainType)
 }
-func (hc *HeaderChainStore) CurrentHeader() *eth.Header {
-	return hc.currentHeader.Load().(*eth.Header)
+func (hc *HeaderChainStore) CurrentHeaderNumber() uint64 {
+	currentHeaderHash := hc.CurrentHeaderHash()
+	currentNum := (rawdb.ReadHeaderNumber(hc.chainDb, currentHeaderHash, hc.currentChainType))
+	if currentNum == nil {
+		return uint64(0)
+	}
+	return *(currentNum)
 }
-
+func (hc *HeaderChainStore) CurrentHeaderHash() common.Hash {
+	return rawdb.ReadHeadHeaderHash(hc.chainDb, hc.currentChainType)
+}
+func (hc *HeaderChainStore) WriteCurrentHeaderHash(hash common.Hash) {
+	rawdb.WriteHeadHeaderHash(hc.chainDb, hash, hc.currentChainType)
+}
 func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *eth.Header {
-
 	header := rawdb.ReadHeader(hc.chainDb, hash, number, hc.currentChainType)
 	if header == nil {
 		return nil
 	}
-
 	return header
 }
 
@@ -206,16 +209,12 @@ func (hc *HeaderChainStore) writeHeaders(headers []*eth.Header) (result *headerW
 		// The headers have already been validated at this point, so we already
 		// know that it's a contiguous chain, where
 		// headers[i].Hash() == headers[i+1].ParentHash
-		if i < len(headers)-1 {
-			hash = headers[i+1].ParentHash
-		} else {
-			hash = header.Hash()
-		}
+		hash = header.Hash()
 		number := header.Number.Uint64()
 		newTD.Add(newTD, header.Difficulty)
 
 		// If the header is already known, skip it, otherwise store
-		if !hc.HasHeader(hash, number) {
+		if !rawdb.HasHeader(hc.chainDb, hash, number, hc.currentChainType) {
 			// Irrelevant of the canonical status, write the TD and header to the database.
 			rawdb.WriteTd(batch, hash, number, newTD, hc.currentChainType)
 
@@ -236,9 +235,10 @@ func (hc *HeaderChainStore) writeHeaders(headers []*eth.Header) (result *headerW
 	batch.Reset()
 
 	var (
-		head    = hc.CurrentHeader().Number.Uint64()
-		localTD = hc.GetTd(hc.currentHeaderHash, head)
-		status  = SideStatTy
+		head              = hc.CurrentHeaderNumber()
+		currentHeaderHash = hc.CurrentHeaderHash()
+		localTD           = hc.GetTd(currentHeaderHash, head)
+		status            = SideStatTy
 	)
 	// If the total difficulty is higher than our known, add it to the canonical chain
 	// Second clause in the if statement reduces the vulnerability to selfish mining.
@@ -254,7 +254,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*eth.Header) (result *headerW
 	// If the parent of the (first) block is already the canon header,
 	// we don't have to go backwards to delete canon blocks, but
 	// simply pile them onto the existing chain
-	chainAlreadyCanon := headers[0].ParentHash == hc.currentHeaderHash
+	chainAlreadyCanon := headers[0].ParentHash == currentHeaderHash
 	if reorg {
 		// If the header can be added into canonical chain, adjust the
 		// header chain markers(canonical indexes and head header flag).
@@ -304,8 +304,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*eth.Header) (result *headerW
 		}
 		markerBatch.Reset()
 		// Last step update all in-memory head header markers
-		hc.currentHeaderHash = lastHash
-		hc.currentHeader.Store(CopyHeader(lastHeader))
+		hc.WriteCurrentHeaderHash(lastHash)
 
 		// Chain status is canonical since this insert was a reorg.
 		// Note that all inserts which have higher TD than existing are 'reorg'.
@@ -415,11 +414,4 @@ func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *eth.Header {
 
 func (hc *HeaderChainStore) GetCanonicalHash(number uint64) common.Hash {
 	return rawdb.ReadCanonicalHash(hc.chainDb, number, hc.currentChainType)
-}
-
-// SetCurrentHeader sets the in-memory head header marker of the canonical chan
-// as the given header.
-func (hc *HeaderChainStore) SetCurrentHeader(head *eth.Header) {
-	hc.currentHeader.Store(head)
-	hc.currentHeaderHash = head.Hash()
 }
