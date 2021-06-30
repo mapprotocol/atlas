@@ -3,7 +3,6 @@ package vm
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -26,7 +25,6 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 		return nil, errors.New("execution reverted")
 	}
 	data := input[4:]
-	fmt.Println("input[]: ", input, "--指针后移4位--> data[]: ", data)
 	switch method.Name {
 	case "register":
 		ret, err = register(evm, contract, data)
@@ -51,7 +49,7 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	return ret, err
 }
 
-func test() error{
+func test() error {
 	abi, err := abi.JSON(strings.NewReader(RelayerABIJSON))
 	if err != nil {
 		return err
@@ -70,7 +68,7 @@ func test() error{
 
 	err = abi.UnpackIntoInterface(&ev, "received", data)
 	if err != nil {
-		return  err
+		return err
 	}
 	return nil
 }
@@ -260,27 +258,27 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 }
 func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		relayer  big.Int
+		relayer big.Int
 	}{}
 	method, _ := relayerABI.Methods["getRelayers"]
 	//err = method.Inputs.Unpack(&args, input)
 	err = relayerABI.UnpackIntoInterface(&args, "received", input)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	//所有的StakingAccount->relayers
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, StakingAddress)
 	relayers := impawn.GetAllStakingAccount()
-	_,h := impawn.GetCurrentEpochInfo()
-	if relayers == nil{
-		ret, err = method.Outputs.Pack(h,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil)
-		if err != nil{
+	_, h := impawn.GetCurrentEpochInfo()
+	if relayers == nil {
+		ret, err = method.Outputs.Pack(h, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		if err != nil {
 			return nil, err
 		}
-	}else{
-		ret, err = method.Outputs.Pack(h,relayers[0],relayers[1],relayers[2],relayers[3],relayers[4],relayers[5],relayers[6],relayers[7],relayers[8],relayers[9])
-		if err != nil{
+	} else {
+		ret, err = method.Outputs.Pack(h, relayers[0], relayers[1], relayers[2], relayers[3], relayers[4], relayers[5], relayers[6], relayers[7], relayers[8], relayers[9])
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -288,31 +286,31 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 }
 func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		relayer  common.Address
+		relayer common.Address
 	}{}
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, StakingAddress)
 
-	info,h := impawn.GetCurrentEpochInfo()
+	info, h := impawn.GetCurrentEpochInfo()
 	method, _ := relayerABI.Methods["getPeriodHeight"]
 	//err = method.Inputs.Unpack(&args, input)
 	err = relayerABI.UnpackIntoInterface(&args, "received", input)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	//是不是stakingAccount->relayer
-	impawn.GetStakingAccount(h,args.relayer)
-	isRelayer,_ := impawn.GetStakingAccount(h,args.relayer)
-	if isRelayer == nil{
-		ret, err = method.Outputs.Pack(nil,nil,nil,false)
-		return ret,err
+	impawn.GetStakingAccount(h, args.relayer)
+	isRelayer, _ := impawn.GetStakingAccount(h, args.relayer)
+	if isRelayer == nil {
+		ret, err = method.Outputs.Pack(nil, nil, nil, false)
+		return ret, err
 	}
 	//
-	for _,v := range info{
+	for _, v := range info {
 		if h == v.EpochID {
-			ret, err = method.Outputs.Pack(big.NewInt(int64(v.BeginHeight)),big.NewInt(int64(v.EndHeight)),big.NewInt(int64(v.BeginHeight-v.EndHeight)),true)
+			ret, err = method.Outputs.Pack(big.NewInt(int64(v.BeginHeight)), big.NewInt(int64(v.EndHeight)), big.NewInt(int64(v.BeginHeight-v.EndHeight)), true)
 			if err != nil {
-				return nil,err
+				return nil, err
 			}
 			break
 		}
@@ -328,7 +326,6 @@ func subLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
 	db.SetLockedBalance(addr, new(big.Int).Sub(db.GetLockedBalance(addr), amount))
 }
 
-//relayer abi源文件
 const RelayerABIJSON = `[
   {
     "name": "Register",

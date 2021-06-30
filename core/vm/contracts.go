@@ -21,6 +21,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	//"github.com/ethereum/go-ethereum/core/state"
+	"github.com/mapprotocol/atlas/core/state"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -46,69 +49,69 @@ type PrecompiledContract interface {
 // PrecompiledContractsHomestead contains the default set of pre-compiled Ethereum
 // contracts used in the Frontier and Homestead releases.
 var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
+	common.BytesToAddress([]byte{1}):             &ecrecover{},
+	common.BytesToAddress([]byte{2}):             &sha256hash{},
+	common.BytesToAddress([]byte{3}):             &ripemd160hash{},
+	common.BytesToAddress([]byte{4}):             &dataCopy{},
 	common.BytesToAddress([]byte("truestaking")): &relayer{},
 }
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
 // contracts used in the Byzantium release.
 var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{6}): &bn256AddByzantium{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulByzantium{},
-	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
+	common.BytesToAddress([]byte{1}):             &ecrecover{},
+	common.BytesToAddress([]byte{2}):             &sha256hash{},
+	common.BytesToAddress([]byte{3}):             &ripemd160hash{},
+	common.BytesToAddress([]byte{4}):             &dataCopy{},
+	common.BytesToAddress([]byte{5}):             &bigModExp{eip2565: false},
+	common.BytesToAddress([]byte{6}):             &bn256AddByzantium{},
+	common.BytesToAddress([]byte{7}):             &bn256ScalarMulByzantium{},
+	common.BytesToAddress([]byte{8}):             &bn256PairingByzantium{},
 	common.BytesToAddress([]byte("truestaking")): &relayer{},
 }
 
 // PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum
 // contracts used in the Istanbul release.
 var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{9}): &blake2F{},
+	common.BytesToAddress([]byte{1}):             &ecrecover{},
+	common.BytesToAddress([]byte{2}):             &sha256hash{},
+	common.BytesToAddress([]byte{3}):             &ripemd160hash{},
+	common.BytesToAddress([]byte{4}):             &dataCopy{},
+	common.BytesToAddress([]byte{5}):             &bigModExp{eip2565: false},
+	common.BytesToAddress([]byte{6}):             &bn256AddIstanbul{},
+	common.BytesToAddress([]byte{7}):             &bn256ScalarMulIstanbul{},
+	common.BytesToAddress([]byte{8}):             &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{9}):             &blake2F{},
 	common.BytesToAddress([]byte("truestaking")): &relayer{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
 // contracts used in the Berlin release.
 var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: true},
-	common.BytesToAddress([]byte{6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{9}): &blake2F{},
+	common.BytesToAddress([]byte{1}):             &ecrecover{},
+	common.BytesToAddress([]byte{2}):             &sha256hash{},
+	common.BytesToAddress([]byte{3}):             &ripemd160hash{},
+	common.BytesToAddress([]byte{4}):             &dataCopy{},
+	common.BytesToAddress([]byte{5}):             &bigModExp{eip2565: true},
+	common.BytesToAddress([]byte{6}):             &bn256AddIstanbul{},
+	common.BytesToAddress([]byte{7}):             &bn256ScalarMulIstanbul{},
+	common.BytesToAddress([]byte{8}):             &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{9}):             &blake2F{},
 	common.BytesToAddress([]byte("truestaking")): &relayer{},
 }
 
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
 // contracts specified in EIP-2537. These are exported for testing purposes.
 var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{10}): &bls12381G1Add{},
-	common.BytesToAddress([]byte{11}): &bls12381G1Mul{},
-	common.BytesToAddress([]byte{12}): &bls12381G1MultiExp{},
-	common.BytesToAddress([]byte{13}): &bls12381G2Add{},
-	common.BytesToAddress([]byte{14}): &bls12381G2Mul{},
-	common.BytesToAddress([]byte{15}): &bls12381G2MultiExp{},
-	common.BytesToAddress([]byte{16}): &bls12381Pairing{},
-	common.BytesToAddress([]byte{17}): &bls12381MapG1{},
-	common.BytesToAddress([]byte{18}): &bls12381MapG2{},
+	common.BytesToAddress([]byte{10}):            &bls12381G1Add{},
+	common.BytesToAddress([]byte{11}):            &bls12381G1Mul{},
+	common.BytesToAddress([]byte{12}):            &bls12381G1MultiExp{},
+	common.BytesToAddress([]byte{13}):            &bls12381G2Add{},
+	common.BytesToAddress([]byte{14}):            &bls12381G2Mul{},
+	common.BytesToAddress([]byte{15}):            &bls12381G2MultiExp{},
+	common.BytesToAddress([]byte{16}):            &bls12381Pairing{},
+	common.BytesToAddress([]byte{17}):            &bls12381MapG1{},
+	common.BytesToAddress([]byte{18}):            &bls12381MapG2{},
 	common.BytesToAddress([]byte("truestaking")): &relayer{},
 }
 
@@ -1054,10 +1057,10 @@ type relayer struct{}
 
 func (c *relayer) RequiredGas(input []byte) uint64 {
 	var (
-	    abiStaking abi.ABI
-		baseGas uint64 = 21000
-		method  *abi.Method
-		err     error
+		abiStaking abi.ABI
+		baseGas    uint64 = 21000
+		method     *abi.Method
+		err        error
 	)
 	method, err = abiStaking.MethodById(input)
 
@@ -1073,6 +1076,9 @@ func (c *relayer) RequiredGas(input []byte) uint64 {
 }
 
 func (c *relayer) Run(input []byte) ([]byte, error) {
-
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
+	statedb.GetOrNewStateObject(StakingAddress)
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+	contract := NewContract(nil, nil, nil, 100000)
 	return RunContract(evm, contract, input)
 }
