@@ -21,7 +21,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 var errEthashStopped = errors.New("ethash stopped")

@@ -18,14 +18,14 @@ package downloader
 
 import (
 	"fmt"
-	chain2 "github.com/ethereum/go-ethereum/core/chain"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )

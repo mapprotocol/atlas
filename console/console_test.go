@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/chain"
+	"github.com/mapprotocol/atlas/core/chain"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -28,12 +28,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/mapprotocol/atlas/atlas"
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/ethereum/go-ethereum/miner"
+	"github.com/mapprotocol/atlas/miner"
 	"github.com/ethereum/go-ethereum/node"
 )
 

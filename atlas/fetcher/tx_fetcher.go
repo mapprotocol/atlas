@@ -19,7 +19,7 @@ package fetcher
 import (
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/txsdetails"
+	"github.com/mapprotocol/atlas/core/txsdetails"
 	mrand "math/rand"
 	"sort"
 	"time"
@@ -27,7 +27,7 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 )

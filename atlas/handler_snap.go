@@ -17,8 +17,8 @@
 package eth
 
 import (
-	"github.com/ethereum/go-ethereum/core/chain"
-	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/atlas/protocols/snap"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 

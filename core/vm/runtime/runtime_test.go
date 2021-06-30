@@ -18,21 +18,21 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/processor"
+	"github.com/mapprotocol/atlas/core/processor"
 	"math/big"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/asm"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/asm"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 )
 

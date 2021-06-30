@@ -23,8 +23,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/forkid"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/mapprotocol/atlas/core/forkid"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 

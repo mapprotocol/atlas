@@ -22,8 +22,8 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/eth/protocols/eth"
-	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/mapprotocol/atlas/atlas/protocols/eth"
+	"github.com/mapprotocol/atlas/atlas/protocols/snap"
 	"github.com/ethereum/go-ethereum/p2p"
 )
 

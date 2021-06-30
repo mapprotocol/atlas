@@ -29,7 +29,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/chain"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"os"
 	"sort"

@@ -20,6 +20,7 @@ require (
 	github.com/snowfork/go-substrate-rpc-client/v2 v2.0.2-0.20210428122320-4d6675ae3db9
 	github.com/snowfork/polkadot-ethereum/relayer v0.0.0-20210607215333-30e40ae74061
 	github.com/stretchr/testify v1.7.0
+	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

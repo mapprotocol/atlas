@@ -2,9 +2,9 @@ package core
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	eth_rawdb "github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/core"
+	eth_rawdb "github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/core/chain/eth"
 	"github.com/mapprotocol/atlas/core/rawdb"

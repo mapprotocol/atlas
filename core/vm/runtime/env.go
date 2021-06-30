@@ -17,8 +17,8 @@
 package runtime
 
 import (
-	"github.com/ethereum/go-ethereum/core/processor"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/vm"
 )
 
 func NewEnv(cfg *Config) *vm.EVM {

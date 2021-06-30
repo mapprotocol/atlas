@@ -27,9 +27,9 @@ import (
 
 	"gopkg.in/urfave/cli.v1"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/eth/catalyst"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/mapprotocol/atlas/cmd/utils"
+	"github.com/mapprotocol/atlas/atlas/catalyst"
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"

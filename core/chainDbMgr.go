@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/mapprotocol/atlas/atlasdb"

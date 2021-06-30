@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/state/snapshot"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 

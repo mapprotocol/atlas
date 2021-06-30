@@ -30,7 +30,7 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/ethereum/go-ethereum/log"
 )
 
