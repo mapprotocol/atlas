@@ -24,21 +24,21 @@ func TestHeaderInsertion01(t *testing.T) {
 		chainDb: chainDb0,
 	}
 	StoreMgr = &db
-
+	chainType := rawdb.ChainType(321)
 	var (
 		db001   = rawdb.NewMemoryDatabase()
-		genesis = (&core.Genesis{}).MustCommit(db001)
+		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
 	)
 
-	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), rawdb.ChainType(123))
-	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, rawdb.ChainType(123))
-	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), rawdb.ChainType(123))
-	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), rawdb.ChainType(123))
-	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), rawdb.ChainType(123))
-	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), rawdb.ChainType(123))
-	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, rawdb.ChainType(123))
+	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
+	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
+	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
+	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
 
-	hc, _ := GetStoreMgr(rawdb.ChainType(123))
+	hc, _ := GetStoreMgr(chainType)
 	// chain A: G->A1->A2...A128
 	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
 
@@ -240,7 +240,7 @@ func TestHeaderChainStore_ReadCanonicalHash(t *testing.T) {
 		chainDb: chainDb0,
 	}
 	StoreMgr = &db
-	hs, _ := GetStoreMgr(rawdb.ChainType(123))
+	hs, _ := GetStoreMgr(rawdb.ChainType(321))
 
 	tests := []struct {
 		name   string
