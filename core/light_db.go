@@ -420,3 +420,7 @@ func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *types.Header {
 func (hc *HeaderChainStore) GetCanonicalHash(number uint64) common.Hash {
 	return rawdb.ReadCanonicalHash_multiChain(hc.chainDb, number, hc.currentChainType)
 }
+
+func (hc *HeaderChainStore) ReadCanonicalHash(number uint64) common.Hash {
+	return rawdb.ReadCanonicalHash_multiChain(hc.chainDb, number, hc.currentChainType)
+}
