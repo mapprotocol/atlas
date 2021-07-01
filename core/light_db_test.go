@@ -1,0 +1,124 @@
+package core
+
+import (
+	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/core"
+	eth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
+	"math/big"
+
+	"testing"
+	"time"
+)
+
+// This test checks status reporting of InsertHeaderChain.
+func TestHeaderInsertion01(t *testing.T) {
+
+	chainDb0, _ := OpenDatabase("data111", 20, 20)
+
+	db := HeaderChainStore{
+		chainDb: chainDb0,
+	}
+	StoreMgr = &db
+
+	var (
+		db001   = rawdb.NewMemoryDatabase()
+		genesis = (&core.Genesis{}).MustCommit(db001)
+	)
+
+	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), rawdb.ChainType(123))
+	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, rawdb.ChainType(123))
+	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), rawdb.ChainType(123))
+	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), rawdb.ChainType(123))
+	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), rawdb.ChainType(123))
+	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), rawdb.ChainType(123))
+	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, rawdb.ChainType(123))
+
+	hc, _ := GetStoreMgr(rawdb.ChainType(123))
+	// chain A: G->A1->A2...A128
+	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
+
+	chainA001 := converChainList(chainA)
+
+	// chain B: G->A1->B2...B128
+	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db001, 10)
+	chainB001 := converChainList(chainB)
+	log.Root().SetHandler(log.StdoutHandler)
+
+	// Inserting 64 headers on an empty chain, expecting
+	// 1 callbacks, 1 canon-status, 0 sidestatus,
+	testInsert01(t, hc, chainA001[:64], CanonStatTyState, nil)
+
+	// Inserting 64 identical headers, expecting
+	// 0 callbacks, 0 canon-status, 0 sidestatus,
+	testInsert01(t, hc, chainA001[:64], NonStatTyState, nil)
+
+	// Inserting the same some old, some new headers
+	// 1 callbacks, 1 canon, 0 side
+	testInsert01(t, hc, chainA001[32:96], CanonStatTyState, nil)
+
+	// Inserting side blocks, but not overtaking the canon chain
+	testInsert01(t, hc, chainB001[0:32], SideStatTyState, nil)
+
+	// Inserting more side blocks, but we don't have the parent
+	testInsert01(t, hc, chainB001[34:36], NonStatTyState, nil)
+
+	// Inserting more sideblocks, overtaking the canon chain
+	testInsert01(t, hc, chainB001[32:97], CanonStatTyState, nil)
+
+	// Inserting more A-headers, taking back the canonicality
+	testInsert01(t, hc, chainA001[90:100], CanonStatTyState, nil)
+
+	// And B becomes canon again
+	testInsert01(t, hc, chainB001[97:107], CanonStatTyState, nil)
+
+	// And B becomes even longer
+	testInsert01(t, hc, chainB001[107:128], CanonStatTyState, nil)
+}
+
+func testInsert01(t *testing.T, hc *HeaderChainStore, chain []*types.Header, wantStatus WriteStatus, wantErr error) {
+	t.Helper()
+	status, _ := hc.InsertHeaderChain(chain, time.Now())
+	if status != wantStatus {
+		t.Errorf("wrong write status from InsertHeaderChain: got %v, want %v", status, wantStatus)
+	}
+}
+
+func converChainList(headers []*eth_types.Header) (newChains1 []*types.Header) {
+	l := len(headers)
+	newChains := make([]types.Header, l)
+	for i := 0; i < l; i++ {
+		newChains1 = append(newChains1, convertChain(&newChains[i], headers[i]))
+	}
+	return
+}
+
+func convertChain(header *types.Header, e *eth_types.Header) *types.Header {
+	header.ParentHash = e.ParentHash
+	header.UncleHash = e.UncleHash
+	header.Coinbase = e.Coinbase
+	header.Root = e.Root
+	header.TxHash = e.TxHash
+	header.ReceiptHash = e.ReceiptHash
+	header.GasLimit = e.GasLimit
+	header.GasUsed = e.GasUsed
+	header.Time = e.Time
+	header.MixDigest = e.MixDigest
+	header.Nonce = types.EncodeNonce(e.Nonce.Uint64())
+	header.Bloom.SetBytes(e.Bloom.Bytes())
+	if header.Difficulty = new(big.Int); e.Difficulty != nil {
+		header.Difficulty.Set(e.Difficulty)
+	}
+	if header.Number = new(big.Int); e.Number != nil {
+		header.Number.Set(e.Number)
+	}
+	if len(e.Extra) > 0 {
+		header.Extra = make([]byte, len(e.Extra))
+		copy(header.Extra, e.Extra)
+	}
+	// test rlp
+	//fmt.Println(e.Hash(), "/n", header.Hash())
+	return header
+}

@@ -36,7 +36,9 @@ var (
 	// headBlockKey tracks the latest known full block's hash.
 	headBlockKey = []byte("LastBlock")
 
-	// headFastBlockKey tracks the latest known incomplete block's hash during fast sync.
+	lastBlockKey = []byte("LastBlockIndex")
+
+	// headFastBlockKey tracks the latest known incomplete block's hash duirng fast sync.
 	headFastBlockKey = []byte("LastFast")
 
 	// lastPivotKey tracks the last pivot block used by fast sync (to reenable on sethead).
@@ -229,4 +231,62 @@ func IsCodeKey(key []byte) (bool, []byte) {
 // configKey = configPrefix + hash
 func configKey(hash common.Hash) []byte {
 	return append(configPrefix, hash.Bytes()...)
+}
+
+//--------------- mark ---------
+type ChainType uint64
+
+func (t ChainType) toByte() []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(t))
+	return b
+}
+func (t ChainType) len() int {
+	return 8
+}
+
+// change the visit Number by append chain mark   mark + number
+func (t ChainType) setTypeNumber(n uint64) []byte {
+	return append(t.toByte(), encodeBlockNumber(n)...)
+}
+
+//change the visit key by append chain mark      key  + mark
+func (t ChainType) setTypeKey(b []byte) []byte {
+	return append(b, t.toByte()...)
+}
+
+//  key  + mark + number
+func (t ChainType) setTypeKeyNum(b []byte, n uint64) []byte {
+	return append(append(b, t.toByte()...), encodeBlockNumber(n)...)
+}
+
+//--------------- mark ---------
+// headerKey = headerPrefix + num (uint64 big endian) + hash
+func headerKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(append(headerPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
+}
+
+// headerTDKey = headerPrefix + num (uint64 big endian) + hash + headerTDSuffix
+func headerTDKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(headerKey_multiChain(t, number, hash), headerTDSuffix...)
+}
+
+// headerHashKey = headerPrefix + num (uint64 big endian) + headerHashSuffix
+func headerHashKey_multiChain(t ChainType, number uint64) []byte {
+	return append(append(headerPrefix, t.setTypeNumber(number)...), headerHashSuffix...)
+}
+
+// headerNumberKey = headerNumberPrefix + hash
+func headerNumberKey_multiChain(t ChainType, hash common.Hash) []byte {
+	return append(t.setTypeKey(headerNumberPrefix), hash.Bytes()...)
+}
+
+// blockBodyKey = blockBodyPrefix + num (uint64 big endian) + hash
+func blockBodyKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(append(blockBodyPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
+}
+
+// blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
+func blockReceiptsKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(append(blockReceiptsPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 }
