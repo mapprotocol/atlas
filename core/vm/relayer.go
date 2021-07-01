@@ -301,6 +301,10 @@ func subLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
 	db.SetLockedBalance(addr, new(big.Int).Sub(db.GetLockedBalance(addr), amount))
 }
 
+func GenesisAddLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
+	db.SetLockedBalance(addr, new(big.Int).Add(db.GetLockedBalance(addr), amount))
+}
+
 const RelayerABIJSON = `[
   {
     "name": "Register",
