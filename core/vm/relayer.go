@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"encoding/hex"
 	"errors"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,30 +46,6 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 		err = errors.New("execution reverted")
 	}
 	return ret, err
-}
-
-func test() error {
-	abi, err := abi.JSON(strings.NewReader(RelayerABIJSON))
-	if err != nil {
-		return err
-	}
-	const hexdata = `000000000000000000000000376c47978271565f56deb45495afa69e59c16ab200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000158`
-	data, err := hex.DecodeString(hexdata)
-	if err != nil {
-		return err
-	}
-	type ReceivedEvent struct {
-		Sender common.Address
-		Amount *big.Int
-		Memo   []byte
-	}
-	var ev ReceivedEvent
-
-	err = abi.UnpackIntoInterface(&ev, "received", data)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {

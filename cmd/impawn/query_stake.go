@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/abeychain/go-abey/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
@@ -11,7 +10,7 @@ import (
 var AppendCommand = cli.Command{
 	Name:   "append",
 	Usage:  "Append validator deposit staking count",
-	Action: utils.MigrateFlags(AppendImpawn),
+	Action: MigrateFlags(AppendImpawn),
 	Flags:  ImpawnFlags,
 }
 
@@ -34,7 +33,7 @@ func AppendImpawn(ctx *cli.Context) error {
 var UpdateFeeCommand = cli.Command{
 	Name:   "updatefee",
 	Usage:  "Update delegate fee will take effect in next epoch",
-	Action: utils.MigrateFlags(UpdateFeeImpawn),
+	Action: MigrateFlags(UpdateFeeImpawn),
 	Flags:  ImpawnFlags,
 }
 
@@ -59,7 +58,7 @@ func UpdateFeeImpawn(ctx *cli.Context) error {
 var UpdatePKCommand = cli.Command{
 	Name:   "updatepk",
 	Usage:  "Update staking pk will take effect in next epoch",
-	Action: utils.MigrateFlags(UpdatePKImpawn),
+	Action: MigrateFlags(UpdatePKImpawn),
 	Flags:  ImpawnFlags,
 }
 
@@ -82,7 +81,7 @@ func UpdatePKImpawn(ctx *cli.Context) error {
 var cancelCommand = cli.Command{
 	Name:   "cancel",
 	Usage:  "Call this staking will cancelled at the next epoch",
-	Action: utils.MigrateFlags(cancelImpawn),
+	Action: MigrateFlags(cancelImpawn),
 	Flags:  ImpawnFlags,
 }
 
@@ -103,7 +102,7 @@ func cancelImpawn(ctx *cli.Context) error {
 var withdrawCommand = cli.Command{
 	Name:   "withdraw",
 	Usage:  "Call this will instant receive your deposit money",
-	Action: utils.MigrateFlags(withdrawImpawn),
+	Action: MigrateFlags(withdrawImpawn),
 	Flags:  ImpawnFlags,
 }
 
@@ -127,7 +126,7 @@ func withdrawImpawn(ctx *cli.Context) error {
 var queryStakingCommand = cli.Command{
 	Name:   "querystaking",
 	Usage:  "Query staking info, can cancel info and can withdraw info",
-	Action: utils.MigrateFlags(queryStakingImpawn),
+	Action: MigrateFlags(queryStakingImpawn),
 	Flags:  append(ImpawnFlags, AddressFlag),
 }
 
@@ -143,7 +142,7 @@ func queryStakingImpawn(ctx *cli.Context) error {
 var queryRewardCommand = cli.Command{
 	Name:   "queryreward",
 	Usage:  "Query reward info, contain deposit and delegate reward",
-	Action: utils.MigrateFlags(queryRewardImpawn),
+	Action: MigrateFlags(queryRewardImpawn),
 	Flags:  append(ImpawnFlags, AddressFlag),
 }
 
@@ -168,7 +167,7 @@ func queryRewardImpawn(ctx *cli.Context) error {
 var sendCommand = cli.Command{
 	Name:   "send",
 	Usage:  "Send general transaction",
-	Action: utils.MigrateFlags(sendTX),
+	Action: MigrateFlags(sendTX),
 	Flags:  append(ImpawnFlags, AddressFlag),
 }
 
@@ -192,21 +191,21 @@ func sendTX(ctx *cli.Context) error {
 var depositDCommand = cli.Command{
 	Name:   "deposit",
 	Usage:  "Deposit staking on a validator address",
-	Action: utils.MigrateFlags(delegateImpawn),
+	Action: MigrateFlags(delegateImpawn),
 	Flags:  append(ImpawnFlags, AddressFlag),
 }
 
 var cancelDCommand = cli.Command{
 	Name:   "cancel",
 	Usage:  "Call this staking will cancelled delegate at the next epoch",
-	Action: utils.MigrateFlags(cancelDImpawn),
+	Action: MigrateFlags(cancelDImpawn),
 	Flags:  append(ImpawnFlags, AddressFlag),
 }
 
 var withdrawDCommand = cli.Command{
 	Name:   "withdraw",
 	Usage:  "Call this will instant receive your deposit money",
-	Action: utils.MigrateFlags(withdrawDImpawn),
+	Action: MigrateFlags(withdrawDImpawn),
 	Flags:  append(ImpawnFlags, AddressFlag),
 }
 
@@ -287,7 +286,7 @@ func withdrawDImpawn(ctx *cli.Context) error {
 var queryTxCommand = cli.Command{
 	Name:   "querytx",
 	Usage:  "Query tx hash, get transaction result",
-	Action: utils.MigrateFlags(queryTxImpawn),
+	Action: MigrateFlags(queryTxImpawn),
 	Flags:  append(ImpawnFlags, TxHashFlag),
 }
 

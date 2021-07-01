@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/abeychain/go-abey/cmd/utils"
 	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path/filepath"
@@ -22,6 +21,16 @@ var (
 	KeyStoreFlag = cli.StringFlag{
 		Name:  "keystore",
 		Usage: "Keystore file path",
+	}
+	RPCListenAddrFlag = cli.StringFlag{
+		Name:  "rpcaddr",
+		Usage: "HTTP-RPC server listening interface",
+		Value: "localhost",
+	}
+	RPCPortFlag = cli.IntFlag{
+		Name:  "rpcport",
+		Usage: "HTTP-RPC server listening port",
+		Value: 8545,
 	}
 	TrueValueFlag = cli.Uint64Flag{
 		Name:  "value",
@@ -54,14 +63,14 @@ var (
 		Value: "",
 	}
 	SnailNumberFlag = cli.Uint64Flag{
-		Name:  "snailnumber",
-		Usage: "Query reward use snail number,please current snail number -14",
+		Name:  "blocknumber",
+		Usage: "Query reward use block number,please current block number -14",
 	}
 	ImpawnFlags = []cli.Flag{
 		KeyFlag,
 		KeyStoreFlag,
-		utils.RPCListenAddrFlag,
-		utils.RPCPortFlag,
+		RPCListenAddrFlag,
+		RPCPortFlag,
 		TrueValueFlag,
 		FeeFlag,
 		PubKeyKeyFlag,
@@ -78,8 +87,8 @@ func init() {
 	app.Flags = []cli.Flag{
 		KeyFlag,
 		KeyStoreFlag,
-		utils.RPCListenAddrFlag,
-		utils.RPCPortFlag,
+		RPCListenAddrFlag,
+		RPCPortFlag,
 		TrueValueFlag,
 		FeeFlag,
 		AddressFlag,
@@ -88,7 +97,7 @@ func init() {
 		SnailNumberFlag,
 		BFTKeyKeyFlag,
 	}
-	app.Action = utils.MigrateFlags(impawn)
+	app.Action = MigrateFlags(impawn)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
@@ -106,7 +115,7 @@ func init() {
 		queryTxCommand,
 		queryRewardCommand,
 	}
-	cli.CommandHelpTemplate = utils.OriginCommandHelpTemplate
+	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
@@ -114,5 +123,18 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+}
+
+var OriginCommandHelpTemplate string = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...] {{if .Description}}{{.Description}} {{end}}{{if .Subcommands}} SUBCOMMANDS:     {{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}     {{end}}{{end}}{{if .Flags}} OPTIONS: {{range $.Flags}}{{"\t"}}{{.}} {{end}} {{end}}`
+
+func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error {
+	return func(ctx *cli.Context) error {
+		for _, name := range ctx.FlagNames() {
+			if ctx.IsSet(name) {
+				ctx.GlobalSet(name, ctx.String(name))
+			}
+		}
+		return action(ctx)
 	}
 }

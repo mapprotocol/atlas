@@ -5,17 +5,15 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	//"github.com/abeychain/go-abey/cmd/utils"
 	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	console "github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/mapprotocol/atlas/core/vm"
-	//"github.com/abeychain/go-abey/abeyclient"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
+	"github.com/mapprotocol/atlas/core/vm"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"log"
@@ -43,14 +41,14 @@ var (
 	holder        common.Address
 	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	StakingAddress common.Address = common.BytesToAddress([]byte("truestaking"))
-	Base       = new(big.Int).SetUint64(10000)
+	Base                          = new(big.Int).SetUint64(10000)
 )
 
 const (
 	datadirPrivateKey      = "key"
 	datadirDefaultKeyStore = "keystore"
 	ImpawnAmount           = 20000
-	RewardInterval    = 14
+	RewardInterval         = 14
 )
 
 func impawn(ctx *cli.Context) error {
@@ -112,12 +110,11 @@ func getPubKey(ctx *cli.Context, conn *ethclient.Client) (string, []byte, error)
 	}
 
 	pk := common.Hex2Bytes(pubkey)
-	if _,err := crypto.UnmarshalPubkey(pk); err != nil {
+	if _, err := crypto.UnmarshalPubkey(pk); err != nil {
 		printError("ValidPk error", err)
 	}
 	return pubkey, pk, err
 }
-
 
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
 	// Ensure a valid value field and resolve the account nonce
@@ -329,7 +326,7 @@ func PrintBalance(conn *ethclient.Client, from common.Address) {
 	trueValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
 
 	sbalance, err := conn.LockBalanceAt(context.Background(), from, nil)
-	fmt.Println("Your wallet valid balance is ", trueValue, "'true ", " lock balance is ",sbalance, "'true ")
+	fmt.Println("Your wallet valid balance is ", trueValue, "'true ", " lock balance is ", sbalance, "'true ")
 }
 
 func loadPrivate(ctx *cli.Context) {
@@ -349,8 +346,8 @@ func loadPrivate(ctx *cli.Context) {
 }
 
 func dialConn(ctx *cli.Context) (*ethclient.Client, string) {
-	ip = ctx.GlobalString("rpcaddr")//utils.RPCListenAddrFlag.Name)
-	port = ctx.GlobalInt("rpcport")//utils.RPCPortFlag.Name)
+	ip = ctx.GlobalString("rpcaddr") //utils.RPCListenAddrFlag.Name)
+	port = ctx.GlobalInt("rpcport")  //utils.RPCPortFlag.Name)
 
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	// Create an IPC based RPC connection to a remote node
@@ -383,7 +380,7 @@ func loadSigningKey(keyfile string) common.Address {
 	if err != nil {
 		printError(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
 	}
-	password, _ := console.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
+	password, _ := prompt.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
 	//password := "secret"
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {

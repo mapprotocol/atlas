@@ -69,16 +69,16 @@ func TestRegister(t *testing.T) {
 	value := big.NewInt(1000)
 	db := rawdb.NewMemoryDatabase()
 
-	statedb, err := state.New(common.Hash{}, state.NewDatabase(db),nil)
-	fmt.Println("!!!!!!!!!!!!",statedb)
-	fmt.Println("!!!!!!!!!!!!!@@",state.NewDatabase(db))
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@@",db)
+	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	fmt.Println("statedb: ", statedb)
+	fmt.Println("newDatabase: ", state.NewDatabase(db))
+	fmt.Println("rawdb: ", db)
 	if err != nil {
 		t.Fatal(err)
 	}
 	statedb.GetOrNewStateObject(StakingAddress)
 
-	evm := NewEVM(BlockContext{}, TxContext{},statedb , params.TestChainConfig, Config{})
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "value", value)
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
@@ -90,9 +90,9 @@ func TestAppend(t *testing.T) {
 	value := big.NewInt(1000)
 	var h uint64 = 1000
 	db := rawdb.NewMemoryDatabase()
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db),nil)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
 	statedb.GetOrNewStateObject(StakingAddress)
-	evm := NewEVM(BlockContext{}, TxContext{}, statedb , params.TestChainConfig, Config{})
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	impawn.AppendSAAmount(h, common.Address{'1'}, value)
@@ -102,9 +102,9 @@ func TestWithdraw(t *testing.T) {
 	value := big.NewInt(1000)
 	var h uint64 = 1000
 	db := rawdb.NewMemoryDatabase()
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db),nil)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
 	statedb.GetOrNewStateObject(StakingAddress)
-	evm := NewEVM(BlockContext{}, TxContext{}, statedb , params.TestChainConfig, Config{})
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "value", value)
 	impawn := NewImpawnImpl()
@@ -113,18 +113,18 @@ func TestWithdraw(t *testing.T) {
 }
 func TestGetBalance(t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db),nil)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
 	statedb.GetOrNewStateObject(StakingAddress)
-	evm := NewEVM(BlockContext{}, TxContext{}, statedb , params.TestChainConfig, Config{})
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	fmt.Println(impawn.GetBalance(common.Address{'1'}))
 }
 func TestGetRelayer(t *testing.T) {
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()),nil)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	statedb.GetOrNewStateObject(StakingAddress)
-	evm := NewEVM(BlockContext{}, TxContext{}, statedb , params.TestChainConfig, Config{})
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
@@ -132,19 +132,18 @@ func TestGetRelayer(t *testing.T) {
 	impawn.GetCurrentEpochInfo()
 }
 func TestGetPeriodHeight(t *testing.T) {
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()),nil)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	statedb.GetOrNewStateObject(StakingAddress)
-	evm := NewEVM(BlockContext{}, TxContext{}, statedb , params.TestChainConfig, Config{})
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
-	info,h := impawn.GetCurrentEpochInfo()
-	isRelayer,_ := impawn.GetStakingAccount(h,common.Address{'1'})
+	info, h := impawn.GetCurrentEpochInfo()
+	isRelayer, _ := impawn.GetStakingAccount(h, common.Address{'1'})
 
-	for _,v := range info{
+	for _, v := range info {
 		if h == v.EpochID {
-			fmt.Println("查询编号，开始高度，结束高度: ",v.EpochID,v.BeginHeight,v.EndHeight,isRelayer)
+			fmt.Println("查询编号，开始高度，结束高度: ", v.EpochID, v.BeginHeight, v.EndHeight, isRelayer)
 		}
 	}
 
 }
-

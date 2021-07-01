@@ -993,7 +993,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 //
 // This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
 func (s *StateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list types.AccessList) {
-	            //PrepareAccessList(sender common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
+	//PrepareAccessList(sender common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
 	s.AddAddressToAccessList(sender)
 	if dst != nil {
 		s.AddAddressToAccessList(*dst)
@@ -1047,13 +1047,23 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 
 ////////////////////////////////////////////
 func (s *StateDB) GetUnlockedBalance(addr common.Address) *big.Int {
-	panic("implement me")
+	return new(big.Int).Sub(s.GetBalance(addr), s.GetLockedBalance(addr))
 }
 
+var StakingAddress common.Address = common.BytesToAddress([]byte("truestaking"))
+
 func (s *StateDB) GetLockedBalance(addr common.Address) *big.Int {
-	panic("implement me")
+	key := lockedKey(addr)
+	return s.GetState(StakingAddress, key).Big()
 }
 
 func (s *StateDB) SetLockedBalance(addr common.Address, value *big.Int) {
-	panic("implement me")
+	key := lockedKey(addr)
+	s.SetState(StakingAddress, key, common.BigToHash(value))
+}
+
+func lockedKey(addr common.Address) (h common.Hash) {
+	var lockedPosition = common.BytesToHash([]byte{1})
+	base := append(common.BytesToHash(addr[:]).Bytes(), lockedPosition.Bytes()...)
+	return crypto.Keccak256Hash(base)
 }
