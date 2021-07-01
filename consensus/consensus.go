@@ -18,13 +18,15 @@
 package consensus
 
 import (
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // ChainHeaderReader defines a small collection of methods needed to access the local
@@ -124,4 +126,26 @@ type PoW interface {
 
 	// Hashrate returns the current mining hashrate of a PoW consensus engine.
 	Hashrate() float64
+}
+
+func makeImpawInitState(config *params.ChainConfig, state *state.StateDB, fastNumber *big.Int) bool {
+	//if config.TIP7.FastNumber.Cmp(fastNumber) == 0 {}
+	if fastNumber == big.NewInt(0) {
+		stateAddress := vm.StakingAddress
+		key := common.BytesToHash(stateAddress[:])
+		obj := state.GetState(stateAddress, key)
+		if len(obj) == 0 {
+			i := vm.NewImpawnImpl()
+			i.Save(state, stateAddress)
+			state.SetNonce(stateAddress, 1)
+			state.SetCode(stateAddress, stateAddress[:])
+			log.Info("makeImpawInitState success")
+			return true
+		}
+	}
+	return false
+}
+func OnceInitImpawnState(config *params.ChainConfig, state *state.StateDB, fastNumber *big.Int) bool {
+	return makeImpawInitState(config, state, fastNumber)
+	//return true
 }
