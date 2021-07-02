@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
-	//"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/multiChain"
 	"math/big"
 	"os"
 	"reflect"
@@ -29,10 +29,10 @@ import (
 	"gopkg.in/urfave/cli.v1"
 
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/atlas/catalyst"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/cmd/utils"
 
 	"github.com/naoina/toml"
@@ -146,8 +146,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 		cfg.Eth.OverrideBerlin = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideBerlinFlag.Name))
 	}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
-	//core.NewStoreDb(ctx, &cfg.Eth)
-	//atlasdb.NewLDBDatabase("data3", 1, 1)
+	multiChain.NewStoreDb(ctx, &cfg.Eth)
 	// Configure catalyst.
 	if ctx.GlobalBool(utils.CatalystFlag.Name) {
 		if eth == nil {

@@ -1,8 +1,10 @@
-package core
+package multiChain
 
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethdb"
+
 	"math/big"
 	mrand "math/rand"
 	"sync"
@@ -11,10 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/mapprotocol/atlas/atlasdb"
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"gopkg.in/urfave/cli.v1"
@@ -39,14 +40,14 @@ const (
 )
 
 type HeaderChainStore struct {
-	chainDb          atlasdb.Database
+	chainDb          ethdb.Database
 	currentChainType rawdb.ChainType
 	Mu               sync.RWMutex // blockchaindb insertion lock
 	rand             *mrand.Rand
 }
 
-func OpenDatabase(file string, cache, handles int) (atlasdb.Database, error) {
-	return atlasdb.NewLDBDatabase(file, 10, 10)
+func OpenDatabase(file string, cache, handles int) (ethdb.Database, error) {
+	return rawdb.NewLevelDBDatabase(file, 10, 10, "", false)
 }
 
 func NewStoreDb(ctx *cli.Context, config *ethconfig.Config) {

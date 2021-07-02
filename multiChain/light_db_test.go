@@ -1,4 +1,4 @@
-package core
+package multiChain
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 // This test checks status reporting of InsertHeaderChain.
 func TestHeaderInsertion01(t *testing.T) {
 
-	chainDb0, _ := OpenDatabase("data111", 20, 20)
+	chainDb0, _ := OpenDatabase("data222", 20, 20)
 
 	db := HeaderChainStore{
 		chainDb: chainDb0,
@@ -126,13 +126,13 @@ func convertChain(header *types.Header, e *eth_types.Header) *types.Header {
 }
 
 func TestHeaderChainStore_CurrentHeaderHash(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data111", 20, 20)
+	chainDb0, _ := OpenDatabase("data222", 20, 20)
 
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
 	StoreMgr = &db
-	hs, _ := GetStoreMgr(rawdb.ChainType(123))
+	hs, _ := GetStoreMgr(rawdb.ChainType(321))
 
 	tests := []struct {
 		name   string
@@ -162,7 +162,7 @@ func TestHeaderChainStore_CurrentHeaderHash(t *testing.T) {
 }
 
 func TestHeaderChainStore_GetHeaderByNumber(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data111", 20, 20)
+	chainDb0, _ := OpenDatabase("data222", 20, 20)
 
 	db := HeaderChainStore{
 		chainDb: chainDb0,
@@ -202,7 +202,7 @@ func TestHeaderChainStore_GetHeaderByNumber(t *testing.T) {
 }
 
 func TestHeaderChainStore_CurrentHeaderNumber(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data111", 20, 20)
+	chainDb0, _ := OpenDatabase("data222", 20, 20)
 
 	db := HeaderChainStore{
 		chainDb: chainDb0,
@@ -234,13 +234,13 @@ func TestHeaderChainStore_CurrentHeaderNumber(t *testing.T) {
 }
 
 func TestHeaderChainStore_ReadCanonicalHash(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data111", 20, 20)
+	chainDb0, _ := OpenDatabase("data222", 20, 20)
 
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
 	StoreMgr = &db
-	hs, _ := GetStoreMgr(rawdb.ChainType(321))
+	hs, _ := GetStoreMgr(rawdb.ChainType(123))
 
 	tests := []struct {
 		name   string
