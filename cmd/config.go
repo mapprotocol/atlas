@@ -146,7 +146,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 		cfg.Eth.OverrideBerlin = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideBerlinFlag.Name))
 	}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
-	chainDB.NewStoreDb(ctx, &cfg.Eth)
+	chainDB.NewStoreDb(ctx, cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles)
 	// Configure catalyst.
 	if ctx.GlobalBool(utils.CatalystFlag.Name) {
 		if eth == nil {

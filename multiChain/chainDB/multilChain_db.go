@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/multiChain/ethereum"
 	"gopkg.in/urfave/cli.v1"
@@ -50,12 +49,12 @@ func OpenDatabase(file string, cache, handles int) (ethdb.Database, error) {
 	return rawdb.NewLevelDBDatabase(file, 10, 10, "", false)
 }
 
-func NewStoreDb(ctx *cli.Context, config *ethconfig.Config) {
+func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) {
 	path := node.DefaultDataDir()
 	if ctx.GlobalIsSet(utils.DataDirFlag.Name) {
 		path = ctx.GlobalString(utils.DataDirFlag.Name)
 	}
-	chainDb, _ := OpenDatabase(path, config.DatabaseCache, config.DatabaseHandles)
+	chainDb, _ := OpenDatabase(path, DatabaseCache, DatabaseHandles)
 	db := &HeaderChainStore{
 		chainDb:          chainDb,
 		currentChainType: DefaultChainType,
