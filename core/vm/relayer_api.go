@@ -1681,3 +1681,13 @@ func (vs delegationItemByAmount) Swap(i, j int) {
 	vs[i] = vs[j]
 	vs[j] = it
 }
+
+func GetCurrentEpochID(evm *EVM) (uint64, error) {
+	impawn := NewImpawnImpl()
+	err := impawn.Load(evm.StateDB, SyncAddress)
+	if err != nil {
+		log.Error("impawn load error", "error", err)
+		return 0, err
+	}
+	return impawn.getCurrentEpoch(), nil
+}
