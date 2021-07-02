@@ -20,6 +20,7 @@ package consensus
 import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -128,10 +129,9 @@ type PoW interface {
 	Hashrate() float64
 }
 
-func makeImpawInitState(config *params.ChainConfig, state *state.StateDB, fastNumber *big.Int) bool {
-	//if config.TIP7.FastNumber.Cmp(fastNumber) == 0 {}
-	if fastNumber == big.NewInt(0) {
-		stateAddress := vm.StakingAddress
+func makeImpawInitState(state *state.StateDB, blockNumber *big.Int) bool {
+	if blockNumber == big.NewInt(0) {
+		stateAddress := params2.StakingAddress
 		key := common.BytesToHash(stateAddress[:])
 		obj := state.GetState(stateAddress, key)
 		if len(obj) == 0 {
@@ -145,7 +145,6 @@ func makeImpawInitState(config *params.ChainConfig, state *state.StateDB, fastNu
 	}
 	return false
 }
-func OnceInitImpawnState(config *params.ChainConfig, state *state.StateDB, fastNumber *big.Int) bool {
-	return makeImpawInitState(config, state, fastNumber)
-	//return true
+func OnceInitImpawnState(state *state.StateDB, fastNumber *big.Int) bool {
+	return makeImpawInitState(state, fastNumber)
 }

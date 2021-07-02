@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/state"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"testing"
 )
@@ -76,7 +77,7 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(StakingAddress)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
 
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "value", value)
@@ -91,7 +92,7 @@ func TestAppend(t *testing.T) {
 	var h uint64 = 1000
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(StakingAddress)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
@@ -103,7 +104,7 @@ func TestWithdraw(t *testing.T) {
 	var h uint64 = 1000
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(StakingAddress)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "value", value)
@@ -114,7 +115,7 @@ func TestWithdraw(t *testing.T) {
 func TestGetBalance(t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(StakingAddress)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	impawn := NewImpawnImpl()
@@ -123,7 +124,7 @@ func TestGetBalance(t *testing.T) {
 }
 func TestGetRelayer(t *testing.T) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	statedb.GetOrNewStateObject(StakingAddress)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	impawn := NewImpawnImpl()
@@ -133,7 +134,7 @@ func TestGetRelayer(t *testing.T) {
 }
 func TestGetPeriodHeight(t *testing.T) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	statedb.GetOrNewStateObject(StakingAddress)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})

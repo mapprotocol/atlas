@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
 )
@@ -67,7 +68,7 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	}
 	//
 	impawn := NewImpawnImpl()
-	err = impawn.Load(evm.StateDB, StakingAddress)
+	err = impawn.Load(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
 		return nil, err
@@ -80,7 +81,7 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		return nil, err
 	}
 	//
-	err = impawn.Save(evm.StateDB, StakingAddress)
+	err = impawn.Save(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking save state error", "error", err)
 		return nil, err
@@ -113,7 +114,7 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 	}
 	//
 	impawn := NewImpawnImpl()
-	err = impawn.Load(evm.StateDB, StakingAddress)
+	err = impawn.Load(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
 		return nil, err
@@ -125,7 +126,7 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 		return nil, err
 	}
 	//
-	err = impawn.Save(evm.StateDB, StakingAddress)
+	err = impawn.Save(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking save state error", "error", err)
 		return nil, err
@@ -158,7 +159,7 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	}
 
 	impawn := NewImpawnImpl()
-	err = impawn.Load(evm.StateDB, StakingAddress)
+	err = impawn.Load(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
 		return nil, err
@@ -171,7 +172,7 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		return nil, err
 	}
 
-	err = impawn.Save(evm.StateDB, StakingAddress)
+	err = impawn.Save(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking save state error", "error", err)
 		return nil, err
@@ -204,7 +205,7 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 	}
 
 	impawn := NewImpawnImpl()
-	err = impawn.Load(evm.StateDB, StakingAddress)
+	err = impawn.Load(evm.StateDB, params.StakingAddress)
 	if err != nil {
 		log.Error("Staking load error", "error", err)
 		return nil, err
@@ -243,7 +244,7 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	}
 	//所有的StakingAccount->relayers
 	impawn := NewImpawnImpl()
-	impawn.Load(evm.StateDB, StakingAddress)
+	impawn.Load(evm.StateDB, params.StakingAddress)
 	relayers := impawn.GetAllStakingAccount()
 	_, h := impawn.GetCurrentEpochInfo()
 	if relayers == nil {
@@ -264,7 +265,7 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 		relayer common.Address
 	}{}
 	impawn := NewImpawnImpl()
-	impawn.Load(evm.StateDB, StakingAddress)
+	impawn.Load(evm.StateDB, params.StakingAddress)
 
 	info, h := impawn.GetCurrentEpochInfo()
 	method, _ := relayerABI.Methods["getPeriodHeight"]

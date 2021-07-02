@@ -21,6 +21,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/mapprotocol/atlas/accounts/abi"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -1064,7 +1065,7 @@ func (c *relayer) RequiredGas(input []byte) uint64 {
 	if err != nil {
 		return baseGas
 	}
-	if gas, ok := StakingGas[string(method.Name)]; ok {
+	if gas, ok := params2.StakingGas[string(method.Name)]; ok {
 		return gas
 	} else {
 		return baseGas

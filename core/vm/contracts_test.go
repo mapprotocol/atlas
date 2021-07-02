@@ -20,7 +20,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	params2 "github.com/mapprotocol/atlas/params"
 	"io/ioutil"
+	"math/big"
 	"testing"
 	"time"
 
@@ -92,11 +97,17 @@ var blake2FMalformedInputTests = []precompiledFailureTest{
 }
 
 func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+	contract := NewContract(nil, nil, big.NewInt(0), 0)
+
 	p := allPrecompiles[common.HexToAddress(addr)]
 	in := common.Hex2Bytes(test.Input)
 	gas := p.RequiredGas(in)
 	t.Run(fmt.Sprintf("%s-Gas=%d", test.Name, gas), func(t *testing.T) {
-		if res, _, err := RunPrecompiledContract(p, in, gas); err != nil {
+		if res, _, err := RunPrecompiledContract(evm, contract, p, in, gas); err != nil {
 			t.Error(err)
 		} else if common.Bytes2Hex(res) != test.Expected {
 			t.Errorf("Expected %v, got %v", test.Expected, common.Bytes2Hex(res))
@@ -113,12 +124,18 @@ func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
 }
 
 func testPrecompiledOOG(addr string, test precompiledTest, t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+	contract := NewContract(nil, nil, big.NewInt(0), 0)
+
 	p := allPrecompiles[common.HexToAddress(addr)]
 	in := common.Hex2Bytes(test.Input)
 	gas := p.RequiredGas(in) - 1
 
 	t.Run(fmt.Sprintf("%s-Gas=%d", test.Name, gas), func(t *testing.T) {
-		_, _, err := RunPrecompiledContract(p, in, gas)
+		_, _, err := RunPrecompiledContract(evm, contract, p, in, gas)
 		if err.Error() != "out of gas" {
 			t.Errorf("Expected error [out of gas], got [%v]", err)
 		}
@@ -131,11 +148,17 @@ func testPrecompiledOOG(addr string, test precompiledTest, t *testing.T) {
 }
 
 func testPrecompiledFailure(addr string, test precompiledFailureTest, t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	statedb.GetOrNewStateObject(params2.StakingAddress)
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+	contract := NewContract(nil, nil, big.NewInt(0), 0)
+
 	p := allPrecompiles[common.HexToAddress(addr)]
 	in := common.Hex2Bytes(test.Input)
 	gas := p.RequiredGas(in)
 	t.Run(test.Name, func(t *testing.T) {
-		_, _, err := RunPrecompiledContract(p, in, gas)
+		_, _, err := RunPrecompiledContract(evm, contract, p, in, gas)
 		if err.Error() != test.ExpectedError {
 			t.Errorf("Expected error [%v], got [%v]", test.ExpectedError, err)
 		}
@@ -162,12 +185,18 @@ func benchmarkPrecompiled(addr string, test precompiledTest, bench *testing.B) {
 	)
 
 	bench.Run(fmt.Sprintf("%s-Gas=%d", test.Name, reqGas), func(bench *testing.B) {
+		db := rawdb.NewMemoryDatabase()
+		statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
+		statedb.GetOrNewStateObject(params2.StakingAddress)
+		evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+		contract := NewContract(nil, nil, big.NewInt(0), 0)
+
 		bench.ReportAllocs()
 		start := time.Now()
 		bench.ResetTimer()
 		for i := 0; i < bench.N; i++ {
 			copy(data, in)
-			res, _, err = RunPrecompiledContract(p, data, reqGas)
+			res, _, err = RunPrecompiledContract(evm, contract, p, data, reqGas)
 		}
 		bench.StopTimer()
 		elapsed := uint64(time.Since(start))

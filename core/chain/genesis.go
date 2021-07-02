@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
 
@@ -274,7 +275,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	//////////////////////////////////pro compiled////////////////////////////////////
 	var baseAllocamount *big.Int = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e18))
 	var ElectionMinLimitForStaking *big.Int = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	consensus.OnceInitImpawnState(g.Config, statedb, new(big.Int).SetUint64(g.Number))
+	consensus.OnceInitImpawnState(statedb, new(big.Int).SetUint64(g.Number))
 	impl := vm.NewImpawnImpl()
 	hh := g.Number
 	if hh != 0 {
@@ -292,22 +293,22 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		}
 		err = impl.InsertSAccount2(hh, 0, member.Coinbase, member.Publickey, amount, big.NewInt(100), true)
 		if err != nil {
-			log.Error("ToFastBlock InsertSAccount", "error", err)
+			log.Error("ToBlock InsertSAccount", "error", err)
 		} else {
 			vm.GenesisAddLockedBalance(statedb, member.Coinbase, amount)
 		}
 	}
 	_, err := impl.DoElections(1, 0)
 	if err != nil {
-		log.Error("ToFastBlock DoElections", "error", err)
+		log.Error("ToBlock DoElections", "error", err)
 	}
 	err = impl.Shift(1, 0)
 	if err != nil {
-		log.Error("ToFastBlock Shift", "error", err)
+		log.Error("ToBlock Shift", "error", err)
 	}
-	err = impl.Save(statedb, vm.StakingAddress)
+	err = impl.Save(statedb, params2.StakingAddress)
 	if err != nil {
-		log.Error("ToFastBlock IMPL Save", "error", err)
+		log.Error("ToBlock IMPL Save", "error", err)
 	}
 	////////////////////////////////////////////////////////////////////////////
 	root := statedb.IntermediateRoot(false)
@@ -450,18 +451,19 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 		ExtraData:  append(append(make([]byte, 32), faucet[:]...), make([]byte, crypto.SignatureLength)...),
 		GasLimit:   11500000,
 		Difficulty: big.NewInt(1),
-		Alloc: map[common.Address]GenesisAccount{
-			common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
-			common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
-			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
-			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
-			common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
-			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
-			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
-			common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-			common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
-			faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
-		},
+		Alloc:      defaultCommitt(),
+		//	map[common.Address]GenesisAccount{
+		//	common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
+		//	common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
+		//	common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
+		//	common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
+		//	common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
+		//	common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
+		//	common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
+		//	common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
+		//	common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
+		//	faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
+		//},
 	}
 }
 
@@ -511,7 +513,7 @@ type CommitteeMember struct {
 }
 
 func defaultCommitt2() []*CommitteeMember {
-	key1 := hexutil.MustDecode("0x04e9dd750f5a409ae52533241c0b4a844c000613f34320c737f787b69ebaca45f10703f77a1b78ed00a8bd5c0bc22508262a33a81e65b2e90a4eb9a8f5a6391db3")
+	key1 := hexutil.MustDecode("0x04600254af4ce74276f54b4f9df193f2cb72ed76b7341cb144f4d6f1408402dc10719eebdcb947ced9ac6fe9a690e004692db6222de7867cbab712246eb23a50b7")
 	key2 := hexutil.MustDecode("0x04c042a428a7df304ac7ea81c1555da49310cebb079a905c8256080e8234af804dad4ad9995771f96fba8182b117f62d2f1a6643e27f5f272c293a8301b6a84442")
 	key3 := hexutil.MustDecode("0x04dc1da011509b6ea17527550cc480f6eb076a225da2bcc87ec7a24669375f229945d76e4f9dbb4bd26c72392050a18c3922bd7ef38c04e018192b253ef4fc9dcb")
 	key4 := hexutil.MustDecode("0x04952af3d04c0b0ba3d16eea8ca0ab6529f5c6e2d08f4aa954ae2296d4ded9f04c8a9e1d52be72e6cebb86b4524645fafac04ac8633c4b33638254b2eb64a89c6a")
@@ -522,7 +524,7 @@ func defaultCommitt2() []*CommitteeMember {
 	key9 := hexutil.MustDecode("0x042ec25823b375f655117d1a7003f9526e9adc0d6d50150812e0408fbfb3256810c912d7cd7e5441bc5e54ac143fb6274ac496548e1a2aaaf370e8aa8b5b1ced4d")
 	key10 := hexutil.MustDecode("0x043e3014c29e42015fe891ca3e97e5fb05961beca9e349b821c6738eadd17d9b784295638e26c1d7ca71beb8703ec8cf944c67f3835bf5119f78192b535ac6a5e0")
 	cm := []*CommitteeMember{
-		&CommitteeMember{Coinbase: common.HexToAddress("0x80f0a40f60f08a4D7345A8411FF1721E25d23DF5"), Publickey: key1},
+		&CommitteeMember{Coinbase: common.HexToAddress("0x3e3429F72450A39CE227026E8DdeF331E9973E4d"), Publickey: key1},
 		&CommitteeMember{Coinbase: common.HexToAddress("0x1Cfe2A1D7B9CBfce14d06bAFfa338b2465216255"), Publickey: key2},
 		&CommitteeMember{Coinbase: common.HexToAddress("0x1275db492b0d02855a38Bd3Cdf73C92137CD1691"), Publickey: key3},
 		&CommitteeMember{Coinbase: common.HexToAddress("0xF11A544F74a2F4Faa2AF8Aa38F9388A4Cc2F3ACC"), Publickey: key4},

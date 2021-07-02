@@ -6,77 +6,13 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/params"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
-)
-
-var (
-	baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	fbaseUnit  = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	Base       = new(big.Int).SetUint64(10000)
-	InvalidFee = big.NewInt(65535)
-	StakingAddress    = common.BytesToAddress([]byte("truestaking"))
-)
-
-var StakingGas = map[string]uint64{
-	"getBalance":       450000,
-	"register":         2400000,
-	"append":           2400000,
-	"withdraw":         2520000,
-	"getPeriodHeight":  450000,
-	"getRelayers":      450000,
-}
-
-var (
-	CountInEpoch                      = 20
-	MaxRedeemHeight            uint64 = 250000   // about 15 days
-	NewEpochLength             uint64 = 25000  // about 1.5 days
-	ElectionPoint              uint64 = 200
-	FirstNewEpochID            uint64 = 1
-	DposForkPoint              uint64 = 0
-	ElectionMinLimitForStaking        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-)
-
-var (
-	ErrInvalidParam      = errors.New("Invalid Param")
-	ErrOverEpochID       = errors.New("Over epoch id")
-	ErrNotSequential     = errors.New("epoch id not sequential")
-	ErrInvalidEpochInfo  = errors.New("Invalid epoch info")
-	ErrNotFoundEpoch     = errors.New("cann't found the epoch info")
-	ErrInvalidStaking    = errors.New("Invalid staking account")
-	ErrMatchEpochID      = errors.New("wrong match epoch id in a reward block")
-	ErrNotStaking        = errors.New("Not match the staking account")
-	ErrNotDelegation     = errors.New("Not match the delegation account")
-	ErrNotMatchEpochInfo = errors.New("the epoch info is not match with accounts")
-	ErrNotElectionTime   = errors.New("not time to election the next committee")
-	ErrAmountOver        = errors.New("the amount more than staking amount")
-	ErrDelegationSelf    = errors.New("Cann't delegation myself")
-	ErrRedeemAmount      = errors.New("wrong redeem amount")
-	ErrForbidAddress     = errors.New("Forbidding Address")
-	ErrRepeatPk          = errors.New("repeat PK on staking tx")
-)
-
-const (
-	// StateStakingOnce can be election only once
-	StateStakingOnce uint8 = 1 << iota
-	// StateStakingAuto can be election in every epoch
-	StateStakingAuto
-	StateStakingCancel
-	// StateRedeem can be redeem real time (after MaxRedeemHeight block)
-	StateRedeem
-	// StateRedeemed flag the asset which is staking in the height is redeemed
-	StateRedeemed
-)
-const (
-	OpQueryStaking uint8 = 1 << iota
-	OpQueryLocked
-	OpQueryCancelable
-	OpQueryReward
-	OpQueryFine
 )
 
 type SummayEpochInfo struct {
@@ -119,11 +55,12 @@ type RewardInfo struct {
 	Amount  *big.Int       `json:"Amount"`
 	Staking *big.Int       `json:"Staking"`
 }
+
 func (e *RewardInfo) clone() *RewardInfo {
 	return &RewardInfo{
-		Address:	e.Address,
-		Amount:		new(big.Int).Set(e.Amount),
-		Staking:	new(big.Int).Set(e.Staking),
+		Address: e.Address,
+		Amount:  new(big.Int).Set(e.Amount),
+		Staking: new(big.Int).Set(e.Staking),
 	}
 }
 func (e *RewardInfo) String() string {
@@ -169,10 +106,11 @@ func mergeRewardInfos(items1, itmes2 []*RewardInfo) []*RewardInfo {
 type SARewardInfos struct {
 	Items []*RewardInfo `json:"Items"`
 }
+
 func (s *SARewardInfos) clone() *SARewardInfos {
 	var res SARewardInfos
-	for _,v := range s.Items {
-		res.Items = append(res.Items,v.clone())
+	for _, v := range s.Items {
+		res.Items = append(res.Items, v.clone())
 	}
 	return &res
 }
@@ -191,14 +129,15 @@ func (s *SARewardInfos) String() string {
 	return ss
 }
 func (s *SARewardInfos) StringToToken() map[string]interface{} {
-	ss := make([]map[string]interface{},0,0)
+	ss := make([]map[string]interface{}, 0, 0)
 	for _, v := range s.Items {
-		ss = append(ss,v.ToJson())
+		ss = append(ss, v.ToJson())
 	}
 	item := make(map[string]interface{})
 	item["SaReward"] = ss
 	return item
 }
+
 type TimedChainReward struct {
 	St     uint64
 	Number uint64
@@ -212,7 +151,8 @@ type ChainReward struct {
 	FruitBase     []*RewardInfo    `json:"fruitminer"`
 	CommitteeBase []*SARewardInfos `json:"committeeReward"`
 }
-func (s *ChainReward) CoinRewardInfo()  map[string]interface{} {
+
+func (s *ChainReward) CoinRewardInfo() map[string]interface{} {
 	feild := map[string]interface{}{
 		"blockminer": s.CoinBase.ToJson(),
 	}
@@ -220,9 +160,9 @@ func (s *ChainReward) CoinRewardInfo()  map[string]interface{} {
 }
 
 func (s *ChainReward) CommitteeRewardInfo() map[string]interface{} {
-	infos := make([]map[string]interface{},0,0)
-	for _,v := range s.CommitteeBase {
-		infos = append(infos,v.StringToToken())
+	infos := make([]map[string]interface{}, 0, 0)
+	for _, v := range s.CommitteeBase {
+		infos = append(infos, v.StringToToken())
 	}
 	feild := map[string]interface{}{
 		"committeeReward": infos,
@@ -232,13 +172,13 @@ func (s *ChainReward) CommitteeRewardInfo() map[string]interface{} {
 
 func CloneChainReward(reward *ChainReward) *ChainReward {
 	var res ChainReward
-	res.Height,res.St = reward.Height,reward.St
+	res.Height, res.St = reward.Height, reward.St
 	res.CoinBase = reward.CoinBase.clone()
-	for _,v := range reward.FruitBase {
-		res.FruitBase = append(res.FruitBase,v.clone())
+	for _, v := range reward.FruitBase {
+		res.FruitBase = append(res.FruitBase, v.clone())
 	}
-	for _,v := range reward.CommitteeBase {
-		res.CommitteeBase = append(res.CommitteeBase,v.clone())
+	for _, v := range reward.CommitteeBase {
+		res.CommitteeBase = append(res.CommitteeBase, v.clone())
 	}
 	return &res
 }
@@ -327,7 +267,7 @@ func (e *EpochIDInfo) isValid() bool {
 	if e.EpochID < 0 {
 		return false
 	}
-	if e.EpochID == 0 && DposForkPoint+1 != e.BeginHeight {
+	if e.EpochID == 0 && params.DposForkPoint+1 != e.BeginHeight {
 		return false
 	}
 	if e.BeginHeight < 0 || e.EndHeight <= 0 || e.EndHeight <= e.BeginHeight {
@@ -369,10 +309,11 @@ func (s *StakingValue) ToLockedValue(height uint64) *LockedValue {
 }
 
 func toReward(val *big.Float) *big.Int {
-	val = val.Mul(val, fbaseUnit)
+	val = val.Mul(val, params.FbaseUnit)
 	ii, _ := val.Int64()
 	return big.NewInt(ii)
 }
+
 //func FromBlock(block *SnailBlock) (begin, end uint64) {
 //	begin, end = 0, 0
 //	l := len(block.Fruits())
@@ -383,20 +324,20 @@ func toReward(val *big.Float) *big.Int {
 //}
 func GetFirstEpoch() *EpochIDInfo {
 	return &EpochIDInfo{
-		EpochID:     FirstNewEpochID,
-		BeginHeight: DposForkPoint + 1,
-		EndHeight:   DposForkPoint + NewEpochLength,
+		EpochID:     params.FirstNewEpochID,
+		BeginHeight: params.DposForkPoint + 1,
+		EndHeight:   params.DposForkPoint + params.NewEpochLength,
 	}
 }
 func GetPreFirstEpoch() *EpochIDInfo {
 	return &EpochIDInfo{
-		EpochID:     FirstNewEpochID - 1,
+		EpochID:     params.FirstNewEpochID - 1,
 		BeginHeight: 0,
-		EndHeight:   DposForkPoint,
+		EndHeight:   params.DposForkPoint,
 	}
 }
 func GetEpochFromHeight(hh uint64) *EpochIDInfo {
-	if hh <= DposForkPoint {
+	if hh <= params.DposForkPoint {
 		return GetPreFirstEpoch()
 	}
 	first := GetFirstEpoch()
@@ -404,10 +345,10 @@ func GetEpochFromHeight(hh uint64) *EpochIDInfo {
 		return first
 	}
 	var eid uint64
-	if (hh-first.EndHeight)%NewEpochLength == 0 {
-		eid = (hh-first.EndHeight)/NewEpochLength + first.EpochID
+	if (hh-first.EndHeight)%params.NewEpochLength == 0 {
+		eid = (hh-first.EndHeight)/params.NewEpochLength + first.EpochID
 	} else {
-		eid = (hh-first.EndHeight)/NewEpochLength + first.EpochID + 1
+		eid = (hh-first.EndHeight)/params.NewEpochLength + first.EpochID + 1
 	}
 	return GetEpochFromID(eid)
 }
@@ -422,12 +363,12 @@ func GetEpochFromID(eid uint64) *EpochIDInfo {
 	}
 	return &EpochIDInfo{
 		EpochID:     eid,
-		BeginHeight: first.EndHeight + (eid-first.EpochID-1)*NewEpochLength + 1,
-		EndHeight:   first.EndHeight + (eid-first.EpochID)*NewEpochLength,
+		BeginHeight: first.EndHeight + (eid-first.EpochID-1)*params.NewEpochLength + 1,
+		EndHeight:   first.EndHeight + (eid-first.EpochID)*params.NewEpochLength,
 	}
 }
 func GetEpochFromRange(begin, end uint64) []*EpochIDInfo {
-	if end == 0 || begin > end || (begin < DposForkPoint && end < DposForkPoint) {
+	if end == 0 || begin > end || (begin < params.DposForkPoint && end < params.DposForkPoint) {
 		return nil
 	}
 	var ids []*EpochIDInfo
@@ -438,7 +379,7 @@ func GetEpochFromRange(begin, end uint64) []*EpochIDInfo {
 		ids = append(ids, e1)
 		e = e1.EndHeight
 	} else {
-		e = DposForkPoint
+		e = params.DposForkPoint
 	}
 	for e < end {
 		e2 := GetEpochFromHeight(e + 1)
@@ -464,17 +405,17 @@ func ValidPk(pk []byte) error {
 }
 func MinCalcRedeemHeight(eid uint64) uint64 {
 	e := GetEpochFromID(eid + 1)
-	return e.BeginHeight + MaxRedeemHeight + 1
+	return e.BeginHeight + params.MaxRedeemHeight + 1
 }
 func ForbidAddress(addr common.Address) error {
-	if bytes.Equal(addr[:], StakingAddress[:]) {
-		return errors.New(fmt.Sprint("addr error:", addr, ErrForbidAddress))
+	if bytes.Equal(addr[:], params.StakingAddress[:]) {
+		return errors.New(fmt.Sprint("addr error:", addr, params.ErrForbidAddress))
 	}
 	return nil
 }
 func IsUnlocked(eid, height uint64) bool {
 	e := GetEpochFromID(eid + 1)
-	return height > e.BeginHeight+MaxRedeemHeight
+	return height > e.BeginHeight+params.MaxRedeemHeight
 }
 
 func RlpHash(x interface{}) (h common.Hash) {
@@ -485,4 +426,3 @@ func RlpHash(x interface{}) (h common.Hash) {
 	hw.Sum(h[:0])
 	return h
 }
-
