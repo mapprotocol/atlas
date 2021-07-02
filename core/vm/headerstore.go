@@ -3,11 +3,14 @@ package vm
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/mapprotocol/atlas/multiChain"
+	"github.com/mapprotocol/atlas/multiChain/chainDB"
 	"github.com/mapprotocol/atlas/multiChain/ethereum"
 )
 
@@ -126,7 +129,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 	// validate header
 	header := new(ethereum.Header)
-	//start := time.Now()
+	start := time.Now()
 	if _, err := header.ValidateHeaderChain(hs); err != nil {
 		log.Error("ValidateHeaderChain failed.", "err", err)
 		return nil, err
@@ -165,13 +168,13 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	// reward
 
 	// store
-	//store, err := multiChain.GetStoreMgr(multiChain.ChainTypeETH)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if _, err := store.InsertHeaderChain(hs, start); err != nil {
-	//	log.Error("InsertHeaderChain failed.", "err", err)
-	//	return nil, err
-	//}
+	store, err := chainDB.GetStoreMgr(multiChain.ChainTypeETH)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.InsertHeaderChain(hs, start); err != nil {
+		log.Error("InsertHeaderChain failed.", "err", err)
+		return nil, err
+	}
 	return nil, nil
 }
