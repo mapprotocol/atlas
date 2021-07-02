@@ -14,6 +14,7 @@ import (
 
 /////////////////////////////////////////////////////////////////////////////////
 var IC *ImpawnCache
+
 //var OpQueryReward uint8 = 5
 //var OpQueryFine uint8 = 6
 
@@ -685,8 +686,8 @@ func (i *ImpawnImpl) getCurrentEpochInfo() []*EpochIDInfo {
 }
 
 //当前任期、开始、结束
-func (i *ImpawnImpl) GetCurrentEpochInfo() ([]*EpochIDInfo,uint64){
-	return i.getCurrentEpochInfo(),i.getCurrentEpoch()
+func (i *ImpawnImpl) GetCurrentEpochInfo() ([]*EpochIDInfo, uint64) {
+	return i.getCurrentEpochInfo(), i.getCurrentEpoch()
 }
 
 func (i *ImpawnImpl) repeatPK(addr common.Address, pk []byte) bool {
@@ -1233,6 +1234,7 @@ func (i *ImpawnImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte) e
 	sa.updatePk(height, pk)
 	return nil
 }
+
 //func (i *ImpawnImpl) Reward(block *types.SnailBlock, allAmount *big.Int, effectid uint64) ([]*SARewardInfos, error) {
 //	begin, end := types.FromBlock(block)
 //	res, err := i.reward(begin, end, effectid, allAmount)
@@ -1284,7 +1286,6 @@ func (i *ImpawnImpl) GetLockedAsset2(addr common.Address, height uint64) map[com
 	return res
 }
 
-
 func (i *ImpawnImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	epochid := i.curEpochID
 	locked, _, _, _ := i.getAsset(addr, epochid, OpQueryLocked)
@@ -1296,19 +1297,19 @@ func (i *ImpawnImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big.I
 	var s *big.Int
 	var r *big.Int
 	var f *big.Int
-	if locked[addr] != nil{
+	if locked[addr] != nil {
 		l = locked[addr].Value[epochid]
 	}
-	if staked[addr] != nil{
-        s = staked[addr].Value[epochid]
+	if staked[addr] != nil {
+		s = staked[addr].Value[epochid]
 	}
-	if reward[addr] != nil{
+	if reward[addr] != nil {
 		r = reward[addr].Amount
 	}
-	if fine[addr] != nil{
+	if fine[addr] != nil {
 		f = fine[addr].Amount
 	}
-	return l,s, unlock[addr], r, f
+	return l, s, unlock[addr], r, f
 }
 
 func (i *ImpawnImpl) GetReward(addr common.Address) map[common.Address]*RewardItem {
@@ -1416,7 +1417,7 @@ func (i *ImpawnImpl) Load(state StateDB, preAddress common.Address) error {
 	//data := state.GetPOSState(preAddress, key)
 	hash := state.GetState(preAddress, key)
 	data, err := rlp.EncodeToBytes(hash)
-	if err != nil  {
+	if err != nil {
 		return errors.New("EncodeToBytes failed")
 	}
 	//lenght := len(data)
@@ -1678,4 +1679,14 @@ func (vs delegationItemByAmount) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
 	vs[j] = it
+}
+
+func GetCurrentEpochID(evm *EVM) (uint64, error) {
+	impawn := NewImpawnImpl()
+	err := impawn.Load(evm.StateDB, SyncAddress)
+	if err != nil {
+		log.Error("impawn load error", "error", err)
+		return 0, err
+	}
+	return impawn.getCurrentEpoch(), nil
 }
