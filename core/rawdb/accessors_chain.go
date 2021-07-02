@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/mapprotocol/atlas/multiChain/ethereum"
 	"math/big"
 	"sort"
 
@@ -984,12 +985,12 @@ func HasHeader_multiChain(db DatabaseReader, hash common.Hash, number uint64, m 
 }
 
 // ReadHeader retrieves the block header corresponding to the hash.
-func ReadHeader_multiChain(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *types.Header {
+func ReadHeader_multiChain(db DatabaseReader, hash common.Hash, number uint64, m ChainType) *ethereum.Header {
 	data := ReadHeaderRLP_multiChain(db, hash, number, m)
 	if len(data) == 0 {
 		return nil
 	}
-	header := new(types.Header)
+	header := new(ethereum.Header)
 	if err := rlp.Decode(bytes.NewReader(data), header); err != nil {
 		log.Error("Invalid block header RLP", "hash", hash, "err", err)
 		return nil
@@ -999,7 +1000,7 @@ func ReadHeader_multiChain(db DatabaseReader, hash common.Hash, number uint64, m
 
 // WriteHeader stores a block header into the database and also stores the hash-
 // to-number mapping.
-func WriteHeader_multiChain(db DatabaseWriter, header *types.Header, m ChainType) {
+func WriteHeader_multiChain(db DatabaseWriter, header *ethereum.Header, m ChainType) {
 	// Write the hash -> number mapping
 	var (
 		hash    = header.Hash()

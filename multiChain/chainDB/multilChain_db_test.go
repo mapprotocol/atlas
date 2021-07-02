@@ -1,4 +1,4 @@
-package multiChain
+package chainDB
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	eth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/multiChain/ethereum"
 	"math/big"
 	"reflect"
 	"testing"
@@ -23,7 +23,7 @@ func TestHeaderInsertion01(t *testing.T) {
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
-	StoreMgr = &db
+	storeMgr = &db
 	chainType := rawdb.ChainType(321)
 	var (
 		db001   = rawdb.NewMemoryDatabase()
@@ -80,7 +80,7 @@ func TestHeaderInsertion01(t *testing.T) {
 	testInsert01(t, hc, chainB001[107:128], CanonStatTyState, nil)
 }
 
-func testInsert01(t *testing.T, hc *HeaderChainStore, chain []*types.Header, wantStatus WriteStatus, wantErr error) {
+func testInsert01(t *testing.T, hc *HeaderChainStore, chain []*ethereum.Header, wantStatus WriteStatus, wantErr error) {
 	t.Helper()
 	status, _ := hc.InsertHeaderChain(chain, time.Now())
 	if status != wantStatus {
@@ -88,16 +88,16 @@ func testInsert01(t *testing.T, hc *HeaderChainStore, chain []*types.Header, wan
 	}
 }
 
-func converChainList(headers []*eth_types.Header) (newChains1 []*types.Header) {
+func converChainList(headers []*eth_types.Header) (newChains1 []*ethereum.Header) {
 	l := len(headers)
-	newChains := make([]types.Header, l)
+	newChains := make([]ethereum.Header, l)
 	for i := 0; i < l; i++ {
 		newChains1 = append(newChains1, convertChain(&newChains[i], headers[i]))
 	}
 	return
 }
 
-func convertChain(header *types.Header, e *eth_types.Header) *types.Header {
+func convertChain(header *ethereum.Header, e *eth_types.Header) *ethereum.Header {
 	header.ParentHash = e.ParentHash
 	header.UncleHash = e.UncleHash
 	header.Coinbase = e.Coinbase
@@ -108,7 +108,7 @@ func convertChain(header *types.Header, e *eth_types.Header) *types.Header {
 	header.GasUsed = e.GasUsed
 	header.Time = e.Time
 	header.MixDigest = e.MixDigest
-	header.Nonce = types.EncodeNonce(e.Nonce.Uint64())
+	header.Nonce = eth_types.EncodeNonce(e.Nonce.Uint64())
 	header.Bloom.SetBytes(e.Bloom.Bytes())
 	if header.Difficulty = new(big.Int); e.Difficulty != nil {
 		header.Difficulty.Set(e.Difficulty)
@@ -131,7 +131,7 @@ func TestHeaderChainStore_CurrentHeaderHash(t *testing.T) {
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
-	StoreMgr = &db
+	storeMgr = &db
 	hs, _ := GetStoreMgr(rawdb.ChainType(321))
 
 	tests := []struct {
@@ -167,7 +167,7 @@ func TestHeaderChainStore_GetHeaderByNumber(t *testing.T) {
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
-	StoreMgr = &db
+	storeMgr = &db
 	hs, _ := GetStoreMgr(rawdb.ChainType(123))
 
 	type args struct {
@@ -207,8 +207,8 @@ func TestHeaderChainStore_CurrentHeaderNumber(t *testing.T) {
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
-	StoreMgr = &db
-	hs, _ := GetStoreMgr(rawdb.ChainType(123))
+	storeMgr = &db
+	hs, _ := GetStoreMgr(rawdb.ChainType(321))
 
 	tests := []struct {
 		name   string
@@ -239,7 +239,7 @@ func TestHeaderChainStore_ReadCanonicalHash(t *testing.T) {
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
-	StoreMgr = &db
+	storeMgr = &db
 	hs, _ := GetStoreMgr(rawdb.ChainType(123))
 
 	tests := []struct {

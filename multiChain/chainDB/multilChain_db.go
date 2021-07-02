@@ -1,4 +1,4 @@
-package multiChain
+package chainDB
 
 import (
 	"errors"
@@ -17,22 +17,22 @@ import (
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/multiChain/ethereum"
 	"gopkg.in/urfave/cli.v1"
 )
 
 var error01 = errors.New("no storedb")
 
 var (
-	StoreMgr *HeaderChainStore
+	storeMgr *HeaderChainStore
 )
 
 func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
-	if StoreMgr == nil {
+	if storeMgr == nil {
 		return nil, error01
 	}
-	StoreMgr.currentChainType = chainType
-	return StoreMgr, nil
+	storeMgr.currentChainType = chainType
+	return storeMgr, nil
 }
 
 const (
@@ -60,18 +60,18 @@ func NewStoreDb(ctx *cli.Context, config *ethconfig.Config) {
 		chainDb:          chainDb,
 		currentChainType: DefaultChainType,
 	}
-	StoreMgr = db
+	storeMgr = db
 }
 
 func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
 	db.currentChainType = m
 }
 
-func (db *HeaderChainStore) ReadHeader(Hash common.Hash, number uint64) *types.Header {
+func (db *HeaderChainStore) ReadHeader(Hash common.Hash, number uint64) *ethereum.Header {
 	return rawdb.ReadHeader_multiChain(db.chainDb, Hash, number, db.currentChainType)
 }
 
-func (db *HeaderChainStore) WriteHeader(header *types.Header) {
+func (db *HeaderChainStore) WriteHeader(header *ethereum.Header) {
 	batch := db.chainDb.NewBatch()
 	// Flush all accumulated deletions.
 	if err := batch.Write(); err != nil {
@@ -83,7 +83,7 @@ func (db *HeaderChainStore) DeleteHeader(hash common.Hash, number uint64) {
 	rawdb.DeleteHeader_multiChain(db.chainDb, hash, number, db.currentChainType)
 }
 
-func (hc *HeaderChainStore) InsertHeaderChain(chains []*types.Header, start time.Time) (WriteStatus, error) {
+func (hc *HeaderChainStore) InsertHeaderChain(chains []*ethereum.Header, start time.Time) (WriteStatus, error) {
 	res, err := hc.writeHeaders(chains)
 
 	// Report some public statistics so the user has a clue what's going on
@@ -128,7 +128,7 @@ type headerWriteResultState struct {
 	ignored    int
 	imported   int
 	lastHash   common.Hash
-	lastHeader *types.Header
+	lastHeader *ethereum.Header
 }
 
 // numberHashInfo is just a container for a number and a hash, to represent a block
@@ -161,7 +161,7 @@ func (hc *HeaderChainStore) CurrentHeaderHash() common.Hash {
 func (hc *HeaderChainStore) WriteCurrentHeaderHash(hash common.Hash) {
 	rawdb.WriteHeadHeaderHash_multiChain(hc.chainDb, hash, hc.currentChainType)
 }
-func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *types.Header {
+func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *ethereum.Header {
 	header := rawdb.ReadHeader_multiChain(hc.chainDb, hash, number, hc.currentChainType)
 	if header == nil {
 		return nil
@@ -171,7 +171,7 @@ func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *types.He
 
 // CopyHeader creates a deep copy of a block header to prevent side effects from
 // modifying a header variable.
-func CopyHeader(h *types.Header) *types.Header {
+func CopyHeader(h *ethereum.Header) *ethereum.Header {
 	cpy := *h
 	if cpy.Difficulty = new(big.Int); h.Difficulty != nil {
 		cpy.Difficulty.Set(h.Difficulty)
@@ -186,7 +186,7 @@ func CopyHeader(h *types.Header) *types.Header {
 	return &cpy
 }
 
-func (hc *HeaderChainStore) writeHeaders(headers []*types.Header) (result *headerWriteResultState, err error) {
+func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *headerWriteResultState, err error) {
 	if len(headers) == 0 {
 		return &headerWriteResultState{}, nil
 	}
@@ -204,7 +204,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*types.Header) (result *heade
 		lastHash   = headers[0].ParentHash          // Last imported header hash
 		newTD      = new(big.Int).Set(ptd)          // Total difficulty of inserted chain
 
-		lastHeader    *types.Header
+		lastHeader    *ethereum.Header
 		inserted      []numberHashInfo // Ephemeral lookup of number/hash for the chain
 		firstInserted = -1             // Index of the first non-ignored header
 	)
@@ -329,7 +329,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*types.Header) (result *heade
 	}, nil
 }
 
-func (hc *HeaderChainStore) ValidateHeaderChain(chain []*types.Header, checkFreq int) (int, error) {
+func (hc *HeaderChainStore) ValidateHeaderChain(chain []*ethereum.Header, checkFreq int) (int, error) {
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 1; i < len(chain); i++ {
 		if chain[i].Number.Uint64() != chain[i-1].Number.Uint64()+1 {
@@ -400,7 +400,7 @@ func (hc *HeaderChainStore) GetTdByHash(hash common.Hash) *big.Int {
 
 // GetHeaderByHash retrieves a block header from the database by hash, caching it if
 // found.
-func (hc *HeaderChainStore) GetHeaderByHash(hash common.Hash) *types.Header {
+func (hc *HeaderChainStore) GetHeaderByHash(hash common.Hash) *ethereum.Header {
 	number := hc.GetBlockNumber(hash)
 	if number == nil {
 		return nil
@@ -410,7 +410,7 @@ func (hc *HeaderChainStore) GetHeaderByHash(hash common.Hash) *types.Header {
 
 // GetHeaderByNumber retrieves a block header from the database by number,
 // caching it (associated with its hash) if found.
-func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *types.Header {
+func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *ethereum.Header {
 	hash := rawdb.ReadCanonicalHash_multiChain(hc.chainDb, number, hc.currentChainType)
 	if hash == (common.Hash{}) {
 		return nil
