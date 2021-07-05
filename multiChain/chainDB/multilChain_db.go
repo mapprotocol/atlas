@@ -157,7 +157,7 @@ func (hc *HeaderChainStore) CurrentHeaderNumber() uint64 {
 func (hc *HeaderChainStore) CurrentHeaderHash() common.Hash {
 	return rawdb.ReadHeadHeaderHash_multiChain(hc.chainDb, hc.currentChainType)
 }
-func (hc *HeaderChainStore) WriteCurrentHeaderHash(hash common.Hash) {
+func (hc *HeaderChainStore) writeCurrentHeaderHash(hash common.Hash) {
 	rawdb.WriteHeadHeaderHash_multiChain(hc.chainDb, hash, hc.currentChainType)
 }
 func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *ethereum.Header {
@@ -309,7 +309,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 		}
 		markerBatch.Reset()
 		// Last step update all in-memory head header markers
-		hc.WriteCurrentHeaderHash(lastHash)
+		hc.writeCurrentHeaderHash(lastHash)
 
 		// Chain status is canonical since this insert was a reorg.
 		// Note that all inserts which have higher TD than existing are 'reorg'.
@@ -415,10 +415,6 @@ func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *ethereum.Header {
 		return nil
 	}
 	return hc.GetHeader(hash, number)
-}
-
-func (hc *HeaderChainStore) GetCanonicalHash(number uint64) common.Hash {
-	return rawdb.ReadCanonicalHash_multiChain(hc.chainDb, number, hc.currentChainType)
 }
 
 func (hc *HeaderChainStore) ReadCanonicalHash(number uint64) common.Hash {
