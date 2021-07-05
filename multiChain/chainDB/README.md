@@ -53,7 +53,10 @@ InsertHeaderChain
 ```
 ```golang
 for Example:
-   	status, _ := hc.InsertHeaderChain(chain, time.Now())
+   	status, error := hc.InsertHeaderChain(chain, time.Now())
+    if error !=nil {
+        ....
+    }
    	if status != wantStatus {
    		t.Errorf("wrong write status from InsertHeaderChain: got %v, want %v", status, wantStatus)
    	}
