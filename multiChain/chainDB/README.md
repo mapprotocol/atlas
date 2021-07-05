@@ -19,7 +19,13 @@ func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
 	return storeMgr, nil
 }
 ```
-
+```golang
+for Example:
+    hc, error := GetStoreMgr(chainType)
+    if error !=nil {
+        ....
+    }
+```
 
 ## Building the multilChain db source
 
@@ -31,17 +37,31 @@ Write block header information：
 WriteHeader 
 1.header | headerInfo (ethereum.Header)
 ```
-Get block header information with hash and number .  ps:return *ethereum.Header 
+
+Get block header information with hash and number .  
 ```golang
 ReadHeader
 1.Hash  | hashValue
 2.number| blockNumber
+return *ethereum.Header 
 ```
 Insert what you want to deposit
 ```golang
 InsertHeaderChain 
 1.chains | Incoming  []*ethereum.Header
 2.start| time.Time for log
+```
+```golang
+for Example:
+   	status, _ := hc.InsertHeaderChain(chain, time.Now())
+   	if status != wantStatus {
+   		t.Errorf("wrong write status from InsertHeaderChain: got %v, want %v", status, wantStatus)
+   	}
+ps:
+status value
+NonStatTyState   WriteStatus = iota // not the Canonical will be ignore
+CanonStatTyState                    // the Canonical
+SideStatTyState                     // the branch
 ```
 Get block number with hash .  return *uint64
 ```golang
