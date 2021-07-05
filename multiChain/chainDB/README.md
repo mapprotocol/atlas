@@ -53,7 +53,10 @@ InsertHeaderChain
 ```
 ```golang
 for Example:
-   	status, _ := hc.InsertHeaderChain(chain, time.Now())
+   	status, error := hc.InsertHeaderChain(chain, time.Now())
+    if error !=nil {
+        ....
+    }
    	if status != wantStatus {
    		t.Errorf("wrong write status from InsertHeaderChain: got %v, want %v", status, wantStatus)
    	}
@@ -83,14 +86,14 @@ Get difficulty with hash：
 GetTdByHash  | return  *big.Int
 ```
 
-Get header information via hash：
+Get header information by hash：
 ```golang
 GetHeaderByHash  | return  *Header
 ```
 
 Get header information for a type of chain through number：
 ```golang
-GetHeaderByHash   | return  *Header
+GetHeaderByNumber   | return  *Header
 ```
 
 Get the headhash of a type of specification chain through number：
