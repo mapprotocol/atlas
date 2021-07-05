@@ -2,6 +2,7 @@ package vm
 
 import (
 	"encoding/json"
+	"math/big"
 	"strings"
 	"time"
 
@@ -62,9 +63,9 @@ const ABI_JSON = `[
 const (
 	Save           = "save"
 	GetAbnormalMsg = "getAbnormalMsg"
-
-	TimesLimit = 3
 )
+
+const TimesLimit = 3
 
 // Sync contract ABI
 var (
@@ -177,4 +178,30 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	args := struct {
+		height big.Int
+	}{}
+
+	err = abiSync.UnpackIntoInterface(args, GetAbnormalMsg, input)
+	if err != nil {
+		log.Error("save Unpack error", "err", err)
+		return nil, ErrSyncInvalidInput
+	}
+
+	headerStore := NewHeaderStore()
+	err = headerStore.Load(evm.StateDB, SyncAddress)
+	if err != nil {
+		log.Error("header store load error", "error", err)
+		return nil, err
+	}
+
+	msg := headerStore.LoadAbnormalMsg(args.height.Uint64())
+	if msg == "" {
+		msg = "not found abnormal msg"
+	}
+
+	return abiSync.Methods[GetAbnormalMsg].Outputs.Pack(msg)
 }
