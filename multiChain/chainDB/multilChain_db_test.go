@@ -271,3 +271,93 @@ func TestHeaderChainStore_ReadCanonicalHash(t *testing.T) {
 		})
 	}
 }
+func Test_thread_InsertHeaderChain(t *testing.T) {
+	chainDb0, _ := OpenDatabase("data333", 20, 20)
+
+	db := HeaderChainStore{
+		chainDb: chainDb0,
+	}
+	storeMgr = &db
+	chainType := rawdb.ChainType(333)
+	var (
+		db001   = rawdb.NewMemoryDatabase()
+		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
+	)
+
+	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
+	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
+	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
+	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
+
+	hc, _ := GetStoreMgr(chainType)
+	// chain A: G->A1->A2...A128
+	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
+
+	chainA001 := converChainList(chainA)
+
+	for i := 0; i < 1000; i++ {
+
+		go func() {
+			hc.InsertHeaderChain(chainA001, time.Now())
+			fmt.Println("111")
+		}()
+	}
+	time.Sleep(5 * time.Second)
+
+}
+func Test_thread_WriteHeader(t *testing.T) {
+	chainDb0, _ := OpenDatabase("data333", 20, 20)
+
+	db := HeaderChainStore{
+		chainDb: chainDb0,
+	}
+	storeMgr = &db
+	chainType := rawdb.ChainType(333)
+	var (
+		db001   = rawdb.NewMemoryDatabase()
+		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
+	)
+
+	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
+	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
+	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
+	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
+
+	hc, _ := GetStoreMgr(chainType)
+	// chain A: G->A1->A2...A128
+	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
+
+	chainA001 := converChainList(chainA)
+
+	for i := 0; i < 1000; i++ {
+
+		go func() {
+			hc.WriteHeader(chainA001[0])
+			fmt.Println(hc.ReadHeader(chainA001[0].Hash(), 1))
+		}()
+	}
+	time.Sleep(5 * time.Second)
+
+}
+func Test_GetStoreMgr(t *testing.T) {
+	chainDb0, _ := OpenDatabase("data333", 20, 20)
+
+	db := HeaderChainStore{
+		chainDb: chainDb0,
+	}
+	storeMgr = &db
+	for i := 0; i < 1000; i++ {
+
+		go func() {
+			GetStoreMgr(rawdb.ChainType(i))
+		}()
+	}
+	time.Sleep(5 * time.Second)
+
+}
