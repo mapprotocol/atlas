@@ -3,6 +3,7 @@ package params
 import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 )
 
