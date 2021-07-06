@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -38,12 +39,15 @@ type storeInfo struct {
 }
 
 type HeaderStore struct {
-	// the key is the height of the block
-	headerStoreInfo map[uint64]storeInfo
+	height2receiveTimes map[uint64]uint8
 	// the first layer key is the epoch id
 	// the second layer key is the relayer address
 	// the value is the number of times the repeater has been synchronized
-	epochStore map[uint64]map[common.Address]uint64
+	relayerSyncTimes map[uint64]map[common.Address]uint64
+	// the first layer key is the relayer address
+	// the second layer key is the height of the block
+	// the value is abnormal msg
+	abnormalMsg map[common.Address]map[uint64]string
 }
 
 func NewHeaderStore() *HeaderStore {
@@ -104,7 +108,7 @@ func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 			return err
 		}
 		hs = *cp
-		h.epochStore, h.headerStoreInfo = hs.epochStore, hs.headerStoreInfo
+		h.height2receiveTimes, h.relayerSyncTimes, h.abnormalMsg = hs.height2receiveTimes, hs.relayerSyncTimes, hs.abnormalMsg
 		return nil
 	}
 
@@ -112,39 +116,53 @@ func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 		log.Error("HeaderStore RLP decode failed", "err", err, "HeaderStore", data)
 		return fmt.Errorf("HeaderStore RLP decode failed, error: %s", err.Error())
 	}
+
 	clone, err := CloneHeaderStore(&hs)
 	if err != nil {
 		return err
 	}
 	hsCache.Cache.Add(hash, clone)
-	h.epochStore, h.headerStoreInfo = hs.epochStore, hs.headerStoreInfo
+	h.height2receiveTimes, h.relayerSyncTimes, h.abnormalMsg = hs.height2receiveTimes, hs.relayerSyncTimes, hs.abnormalMsg
 	return nil
 }
 
 func (h *HeaderStore) GetReceiveTimes(height uint64) uint8 {
-	return h.headerStoreInfo[height].receiveTimes
+	return h.height2receiveTimes[height]
 }
 
 func (h *HeaderStore) IncrReceiveTimes(height uint64) {
-	s := h.headerStoreInfo[height]
-	s.receiveTimes++
+	h.height2receiveTimes[height]++
 }
 
-func (h *HeaderStore) StoreAbnormalMsg(height uint64, msg string) {
-	s := h.headerStoreInfo[height]
-	s.abnormalMsg = msg
+func (h *HeaderStore) StoreAbnormalMsg(relayer common.Address, height uint64, msg string) {
+	h.abnormalMsg[relayer][height] = msg
 }
 
-func (h *HeaderStore) LoadAbnormalMsg(height uint64) string {
-	return h.headerStoreInfo[height].abnormalMsg
+func (h *HeaderStore) LoadAbnormalMsg(relayer common.Address, height uint64) string {
+	return h.abnormalMsg[relayer][height]
 }
 
 func (h *HeaderStore) AddSyncTimes(epochID, amount uint64, relayer common.Address) {
-	h.epochStore[epochID][relayer] += amount
+	h.relayerSyncTimes[epochID][relayer] += amount
 }
 
 func (h *HeaderStore) LoadSyncTimes(epochID uint64, relayer common.Address) uint64 {
-	return h.epochStore[epochID][relayer]
+	return h.relayerSyncTimes[epochID][relayer]
+}
+
+func (h *HeaderStore) GetSortedRelayers(epochID uint64) []common.Address {
+	m := h.relayerSyncTimes[epochID]
+	rss := make([]string, 0, len(m))
+	rs := make([]common.Address, 0, len(m))
+	for addr := range m {
+		rss = append(rss, addr.String())
+	}
+
+	sort.Strings(rss)
+	for _, r := range rss {
+		rs = append(rs, common.HexToAddress(r))
+	}
+	return rs
 }
 
 func HistoryWorkEfficiency(state StateDB, epochId uint64, relayer common.Address) (uint64, error) {
