@@ -147,9 +147,9 @@ func (h *HeaderStore) LoadSyncTimes(epochID uint64, relayer common.Address) uint
 	return h.epochStore[epochID][relayer]
 }
 
-func HistoryWorkEfficiency(evm *EVM, epochId uint64, relayer common.Address) (uint64, error) {
+func HistoryWorkEfficiency(state StateDB, epochId uint64, relayer common.Address) (uint64, error) {
 	headerStore := NewHeaderStore()
-	err := headerStore.Load(evm.StateDB, SyncAddress)
+	err := headerStore.Load(state, SyncAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return 0, err

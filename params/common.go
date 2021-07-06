@@ -31,6 +31,7 @@ var (
 	FirstNewEpochID            uint64 = 1
 	DposForkPoint              uint64 = 0
 	ElectionMinLimitForStaking        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
+	MinWorkEfficiency          uint64 = 100
 )
 
 var (
@@ -69,4 +70,27 @@ const (
 	OpQueryCancelable
 	OpQueryReward
 	OpQueryFine
+)
+
+const (
+	// CommitteeStart start pbft consensus
+	CommitteeStart = iota
+	// CommitteeStop stop pbft consensus
+	CommitteeStop
+	// CommitteeSwitchover switch pbft committee
+	CommitteeSwitchover
+	// CommitteeUpdate update committee members and backups
+	CommitteeUpdate
+	// CommitteeOver notify current pbft committee end fastBlock
+	CommitteeOver
+
+	StateUnusedFlag    = 0xa0
+	StateUsedFlag      = 0xa1
+	StateSwitchingFlag = 0xa2
+	StateRemovedFlag   = 0xa3
+	StateAppendFlag    = 0xa4
+	// health enter type
+	TypeFixed  = 0xa1
+	TypeWorked = 0xa2
+	TypeBack   = 0xa3
 )

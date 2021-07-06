@@ -20,6 +20,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"runtime"
 	"time"
@@ -27,13 +30,13 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -579,8 +582,87 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 // setting the final state on the header
 func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// Accumulate any block and uncle rewards and commit the final state root
+	consensus.OnceInitImpawnState(state, new(big.Int).Set(header.Number))
+	ethash.finalizeRelayers(state, header.Number)
+	ethash.finalizeFastGas(state, header.Number, big.NewInt(0))
 	accumulateRewards(chain.Config(), state, header, uncles)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+}
+
+func (ethash *Ethash) finalizeFastGas(state *state.StateDB, number *big.Int, feeAmount *big.Int) error {
+	if feeAmount == nil || feeAmount.Uint64() == 0 {
+		return nil
+	}
+	epoch := vm.GetEpochFromHeight(number.Uint64())
+	committee := vm.GetValidatorsByEpoch(state, epoch.EpochID, number.Uint64())
+	//committee := params2.GetCommitteeMember()
+	committeeGas := big.NewInt(0)
+	if len(committee) == 0 {
+		return errors.New("not have committee")
+	}
+	committeeGas = new(big.Int).Div(feeAmount, big.NewInt(int64(len(committee))))
+	for _, v := range committee {
+		state.AddBalance(v.Coinbase, committeeGas)
+		LogPrint("committee's gas award", v.Coinbase, committeeGas)
+	}
+	return nil
+}
+
+//LogPrint log debug
+func LogPrint(info string, addr common.Address, amount *big.Int) {
+	log.Debug("[Consensus AddBalance]", "info", info, "CoinBase:", addr.String(), "amount", amount)
+}
+
+func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) error {
+	next := new(big.Int).Add(number, big1)
+	first := vm.GetFirstEpoch()
+	if first.BeginHeight == next.Uint64() {
+		i := vm.NewImpawnImpl()
+		if err := i.Load(state, params2.StakingAddress); err != nil {
+			return err
+		}
+		if es, err := i.DoElections(state, first.EpochID, next.Uint64()); err != nil {
+			return err
+		} else {
+			log.Info("init in first forked, Do pre election", "height", next, "epoch:", first.EpochID, "len:", len(es), "err", err)
+		}
+		if err := i.Shift(first.EpochID, 0); err != nil {
+			return err
+		}
+		if err := i.Save(state, params2.StakingAddress); err != nil {
+			return err
+		}
+		log.Info("init in first forked,", "height", next, "epoch:", first.EpochID)
+	}
+
+	epoch := vm.GetEpochFromHeight(number.Uint64())
+	if number.Uint64() == epoch.EndHeight-params2.ElectionPoint {
+		i := vm.NewImpawnImpl()
+		if err := i.Load(state, params2.StakingAddress); err != nil {
+			return err
+		}
+		if es, err := i.DoElections(state, epoch.EpochID+1, number.Uint64()); err != nil {
+			return err
+		} else {
+			log.Info("Do validators election", "height", number, "epoch:", epoch.EpochID+1, "len:", len(es), "err", err)
+		}
+		if err := i.Save(state, params2.StakingAddress); err != nil {
+			return err
+		}
+	}
+
+	if number.Uint64() == epoch.EndHeight {
+		i := vm.NewImpawnImpl()
+		err := i.Load(state, params2.StakingAddress)
+		log.Info("Force new epoch", "height", number, "err", err)
+		if err := i.Shift(epoch.EpochID+1, 0); err != nil {
+			return err
+		}
+		if err := i.Save(state, params2.StakingAddress); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // FinalizeAndAssemble implements consensus.Engine, accumulating the block and
@@ -588,7 +670,6 @@ func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.
 func (ethash *Ethash) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// Finalize block
 	ethash.Finalize(chain, header, state, txs, uncles)
-
 	// Header seems complete, assemble into a block and return
 	return types.NewBlock(header, txs, uncles, receipts, trie.NewStackTrie(nil)), nil
 }

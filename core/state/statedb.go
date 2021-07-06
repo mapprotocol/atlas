@@ -20,6 +20,7 @@ package state
 import (
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sort"
 	"time"
@@ -1050,16 +1051,14 @@ func (s *StateDB) GetUnlockedBalance(addr common.Address) *big.Int {
 	return new(big.Int).Sub(s.GetBalance(addr), s.GetLockedBalance(addr))
 }
 
-var StakingAddress common.Address = common.BytesToAddress([]byte("truestaking"))
-
 func (s *StateDB) GetLockedBalance(addr common.Address) *big.Int {
 	key := lockedKey(addr)
-	return s.GetState(StakingAddress, key).Big()
+	return s.GetState(params.StakingAddress, key).Big()
 }
 
 func (s *StateDB) SetLockedBalance(addr common.Address, value *big.Int) {
 	key := lockedKey(addr)
-	s.SetState(StakingAddress, key, common.BigToHash(value))
+	s.SetState(params.StakingAddress, key, common.BigToHash(value))
 }
 
 func lockedKey(addr common.Address) (h common.Hash) {

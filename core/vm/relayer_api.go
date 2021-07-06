@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
@@ -931,7 +932,7 @@ func (i *ImpawnImpl) move(prev, next, effectHeight uint64) error {
 ////////////// external function //////////////////////////////////////////
 
 // DoElections called by consensus while it closer the end of epoch,have 500~1000 fast block
-func (i *ImpawnImpl) DoElections(epochid, height uint64) ([]*StakingAccount, error) {
+func (i *ImpawnImpl) DoElections(state StateDB, epochid, height uint64) ([]*StakingAccount, error) {
 	if epochid < params.FirstNewEpochID && epochid != i.getCurrentEpoch()+1 {
 		return nil, params.ErrOverEpochID
 	}
@@ -949,7 +950,8 @@ func (i *ImpawnImpl) DoElections(epochid, height uint64) ([]*StakingAccount, err
 		var ee []*StakingAccount
 		for _, v := range val {
 			validStaking := v.getValidStakingOnly(height)
-			if validStaking.Cmp(params.ElectionMinLimitForStaking) < 0 {
+			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
+			if validStaking.Cmp(params.ElectionMinLimitForStaking) < 0 && num < params.MinWorkEfficiency {
 				continue
 			}
 			v.Committee = true
@@ -1447,46 +1449,46 @@ func (i *ImpawnImpl) Load(state StateDB, preAddress common.Address) error {
 	return nil
 }
 
-//func GetCurrentValidators(state vm.StateDB) []*types.CommitteeMember {
-//	i := NewImpawnImpl()
-//	i.Load(state, StakingAddress)
-//	eid := i.getCurrentEpoch()
-//	accs := i.getElections3(eid)
-//	var vv []*types.CommitteeMember
-//	for _, v := range accs {
-//		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
-//		vv = append(vv, &types.CommitteeMember{
-//			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
-//			Coinbase:      v.Unit.GetRewardAddress(),
-//			Publickey:     types.CopyVotePk(v.Votepubkey),
-//			Flag:          types.StateUsedFlag,
-//			MType:         types.TypeWorked,
-//		})
-//	}
-//	return vv
-//}
+func GetCurrentValidators(state StateDB) []*params.CommitteeMember {
+	i := NewImpawnImpl()
+	i.Load(state, params.StakingAddress)
+	eid := i.getCurrentEpoch()
+	accs := i.getElections3(eid)
+	var vv []*params.CommitteeMember
+	for _, v := range accs {
+		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
+		vv = append(vv, &params.CommitteeMember{
+			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
+			Coinbase:      v.Unit.GetRewardAddress(),
+			Publickey:     CopyVotePk(v.Votepubkey),
+			Flag:          params.StateUsedFlag,
+			MType:         params.TypeWorked,
+		})
+	}
+	return vv
+}
 
-//func GetValidatorsByEpoch(state vm.StateDB, eid, hh uint64) []*types.CommitteeMember {
-//	i := NewImpawnImpl()
-//	err := i.Load(state, types.StakingAddress)
-//	accs := i.getElections3(eid)
-//	first := types.GetFirstEpoch()
-//	if hh == first.EndHeight-params.ElectionPoint {
-//		fmt.Println("****** accounts len:", len(i.accounts), "election:", len(accs), " err ", err)
-//	}
-//	var vv []*types.CommitteeMember
-//	for _, v := range accs {
-//		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
-//		vv = append(vv, &types.CommitteeMember{
-//			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
-//			Coinbase:      v.Unit.GetRewardAddress(),
-//			Publickey:     types.CopyVotePk(v.Votepubkey),
-//			Flag:          types.StateUsedFlag,
-//			MType:         types.TypeWorked,
-//		})
-//	}
-//	return vv
-//}
+func GetValidatorsByEpoch(state StateDB, eid, hh uint64) []*params.CommitteeMember {
+	i := NewImpawnImpl()
+	err := i.Load(state, params.StakingAddress)
+	accs := i.getElections3(eid)
+	first := GetFirstEpoch()
+	if hh == first.EndHeight-params.ElectionPoint {
+		fmt.Println("****** accounts len:", len(i.accounts), "election:", len(accs), " err ", err)
+	}
+	var vv []*params.CommitteeMember
+	for _, v := range accs {
+		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
+		vv = append(vv, &params.CommitteeMember{
+			CommitteeBase: crypto.PubkeyToAddress(*pubkey),
+			Coinbase:      v.Unit.GetRewardAddress(),
+			Publickey:     CopyVotePk(v.Votepubkey),
+			Flag:          params.StateUsedFlag,
+			MType:         params.TypeWorked,
+		})
+	}
+	return vv
+}
 func (i *ImpawnImpl) Counts() int {
 	pos := 0
 	for _, val := range i.accounts {

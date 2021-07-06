@@ -242,7 +242,7 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	if err != nil {
 		return nil, err
 	}
-	//所有的StakingAccount->relayers
+	//StakingAccount->relayers
 	impawn := NewImpawnImpl()
 	impawn.Load(evm.StateDB, params.StakingAddress)
 	relayers := impawn.GetAllStakingAccount()
@@ -274,7 +274,7 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	if err != nil {
 		return nil, err
 	}
-	//是不是stakingAccount->relayer
+	//stakingAccount->relayer
 	impawn.GetStakingAccount(h, args.relayer)
 	isRelayer, _ := impawn.GetStakingAccount(h, args.relayer)
 	if isRelayer == nil {
