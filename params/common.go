@@ -14,7 +14,7 @@ var (
 	RelayerAddress = common.BytesToAddress([]byte("truestaking"))
 )
 
-var StakingGas = map[string]uint64{
+var RelayerGas = map[string]uint64{
 	"getBalance":      450000,
 	"register":        2400000,
 	"append":          2400000,
@@ -24,14 +24,14 @@ var StakingGas = map[string]uint64{
 }
 
 var (
-	CountInEpoch                      = 20
-	MaxRedeemHeight            uint64 = 20000
-	NewEpochLength             uint64 = 10000
-	ElectionPoint              uint64 = 100
-	FirstNewEpochID            uint64 = 1
-	DposForkPoint              uint64 = 0
-	ElectionMinLimitForStaking        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	MinWorkEfficiency          uint64 = 100 //every relayer generate 100 block at least
+	CountInEpoch                       = 10
+	MaxRedeemHeight             uint64 = 20000
+	NewEpochLength              uint64 = 10000
+	ElectionPoint               uint64 = 100
+	FirstNewEpochID             uint64 = 1
+	PowForkPoint                uint64 = 0
+	ElectionMinLimitForRegister        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
+	MinWorkEfficiency           uint64 = 50 //every relayer generate 100 block at least
 )
 
 var (
@@ -54,10 +54,10 @@ var (
 )
 
 const (
-	// StateStakingOnce can be election only once
-	StateStakingOnce uint8 = 1 << iota
-	// StateStakingAuto can be election in every epoch
-	StateStakingAuto
+	// StateRegisterOnce can be election only once
+	StateRegisterOnce uint8 = 1 << iota
+	// StateResgisterAuto can be election in every epoch
+	StateResgisterAuto
 	StateStakingCancel
 	// StateRedeem can be redeem real time (after MaxRedeemHeight block)
 	StateRedeem
@@ -73,17 +73,6 @@ const (
 )
 
 const (
-	// CommitteeStart start pbft consensus
-	CommitteeStart = iota
-	// CommitteeStop stop pbft consensus
-	CommitteeStop
-	// CommitteeSwitchover switch pbft committee
-	CommitteeSwitchover
-	// CommitteeUpdate update committee members and backups
-	CommitteeUpdate
-	// CommitteeOver notify current pbft committee end fastBlock
-	CommitteeOver
-
 	StateUnusedFlag    = 0xa0
 	StateUsedFlag      = 0xa1
 	StateSwitchingFlag = 0xa2

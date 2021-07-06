@@ -25,20 +25,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts"
-	"github.com/mapprotocol/atlas/accounts/keystore"
-	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/mapprotocol/atlas/atlas"
-	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
-	"github.com/mapprotocol/atlas/helper/debug"
-	"github.com/mapprotocol/atlas/helper/flags"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/accounts/keystore"
+	"github.com/mapprotocol/atlas/apis/atlasapi"
+	"github.com/mapprotocol/atlas/atlas"
+	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/cmd/node"
+	"github.com/mapprotocol/atlas/cmd/utils"
+	"github.com/mapprotocol/atlas/helper/debug"
+	"github.com/mapprotocol/atlas/helper/flags"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -136,9 +136,6 @@ var (
 		utils.DeveloperFlag,
 		utils.DeveloperPeriodFlag,
 		utils.RopstenFlag,
-		utils.RinkebyFlag,
-		utils.GoerliFlag,
-		utils.YoloV3Flag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
@@ -268,14 +265,14 @@ func prepare(ctx *cli.Context) {
 	case ctx.GlobalIsSet(utils.RopstenFlag.Name):
 		log.Info("Starting Atlas on Ropsten testnet...")
 
-	case ctx.GlobalIsSet(utils.RinkebyFlag.Name):
-		log.Info("Starting Atlas on Rinkeby testnet...")
-
-	case ctx.GlobalIsSet(utils.GoerliFlag.Name):
-		log.Info("Starting Atlas on Görli testnet...")
-
-	case ctx.GlobalIsSet(utils.YoloV3Flag.Name):
-		log.Info("Starting Atlas on YOLOv3 testnet...")
+	//case ctx.GlobalIsSet(utils.RinkebyFlag.Name):
+	//	log.Info("Starting Atlas on Rinkeby testnet...")
+	//
+	//case ctx.GlobalIsSet(utils.GoerliFlag.Name):
+	//	log.Info("Starting Atlas on Görli testnet...")
+	//
+	//case ctx.GlobalIsSet(utils.YoloV3Flag.Name):
+	//	log.Info("Starting Atlas on YOLOv3 testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Atlas in ephemeral dev mode...")
@@ -286,7 +283,7 @@ func prepare(ctx *cli.Context) {
 	// If we're a full node on mainnet without --cache specified, bump default cache allowance
 	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
 		// Make sure we're not on any supported preconfigured testnet either
-		if !ctx.GlobalIsSet(utils.RopstenFlag.Name) && !ctx.GlobalIsSet(utils.RinkebyFlag.Name) && !ctx.GlobalIsSet(utils.GoerliFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
+		if !ctx.GlobalIsSet(utils.RopstenFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
 			// Nope, we're really on mainnet. Bump that cache up!
 			log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
 			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))

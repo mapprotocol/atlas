@@ -1065,7 +1065,7 @@ func (c *relayer) RequiredGas(input []byte) uint64 {
 	if err != nil {
 		return baseGas
 	}
-	if gas, ok := params2.StakingGas[string(method.Name)]; ok {
+	if gas, ok := params2.RelayerGas[string(method.Name)]; ok {
 		return gas
 	} else {
 		return baseGas

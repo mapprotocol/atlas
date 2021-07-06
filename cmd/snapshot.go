@@ -21,16 +21,16 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/state/pruner"
-	"github.com/mapprotocol/atlas/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/cmd/utils"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/state/pruner"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -59,8 +59,6 @@ var (
 					utils.DataDirFlag,
 					utils.AncientFlag,
 					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 					utils.CacheTrieJournalFlag,
 					utils.BloomFilterSizeFlag,
 				},
@@ -89,8 +87,6 @@ the trie clean cache with default directory will be deleted.
 					utils.DataDirFlag,
 					utils.AncientFlag,
 					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 				},
 				Description: `
 atlas snapshot verify-state <state-root>
@@ -109,8 +105,6 @@ In other words, this command does the snapshot to trie conversion.
 					utils.DataDirFlag,
 					utils.AncientFlag,
 					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 				},
 				Description: `
 atlas snapshot traverse-state <state-root>
@@ -131,8 +125,6 @@ It's also usable without snapshot enabled.
 					utils.DataDirFlag,
 					utils.AncientFlag,
 					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 				},
 				Description: `
 atlas snapshot traverse-rawstate <state-root>

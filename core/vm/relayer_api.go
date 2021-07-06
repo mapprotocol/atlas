@@ -45,7 +45,7 @@ type PairstakingValue struct {
 }
 
 func (v *PairstakingValue) isElection() bool {
-	return (v.State&params.StateStakingOnce != 0 || v.State&params.StateStakingAuto != 0)
+	return (v.State&params.StateRegisterOnce != 0 || v.State&params.StateResgisterAuto != 0)
 }
 
 type RewardItem struct {
@@ -258,7 +258,7 @@ func (s *registerUnit) merge(epochid, hh uint64) {
 	tmp := &PairstakingValue{
 		Amount: all,
 		Height: new(big.Int).SetUint64(hh),
-		State:  params.StateStakingAuto,
+		State:  params.StateResgisterAuto,
 	}
 	var val []*PairstakingValue
 	redeem := s.getRedeemItem(epochid)
@@ -403,7 +403,7 @@ func (s *StakingAccount) addAmount(height uint64, amount *big.Int) {
 		Value: []*PairstakingValue{&PairstakingValue{
 			Amount: new(big.Int).Set(amount),
 			Height: new(big.Int).SetUint64(height),
-			State:  params.StateStakingAuto,
+			State:  params.StateResgisterAuto,
 		}},
 		RedeemInof: make([]*RedeemItem, 0),
 	}
@@ -951,7 +951,7 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*St
 		for _, v := range val {
 			validStaking := v.getValidStakingOnly(height)
 			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
-			if validStaking.Cmp(params.ElectionMinLimitForStaking) < 0 && num < params.MinWorkEfficiency {
+			if validStaking.Cmp(params.ElectionMinLimitForRegister) < 0 && num < params.MinWorkEfficiency {
 				continue
 			}
 			v.Committee = true
@@ -1103,7 +1103,7 @@ func (i *RegisterImpl) InsertDAccount2(height uint64, addrSA, addrDA common.Addr
 		return params.ErrDelegationSelf
 	}
 	state := uint8(0)
-	state |= params.StateStakingAuto
+	state |= params.StateResgisterAuto
 	da := &DelegationAccount{
 		SaAddress: addrSA,
 		Unit: &registerUnit{
@@ -1158,7 +1158,7 @@ func (i *RegisterImpl) InsertSAccount2(height, effectHeight uint64, addr common.
 	}
 	state := uint8(0)
 	if auto {
-		state |= params.StateStakingAuto
+		state |= params.StateResgisterAuto
 	}
 	sa := &StakingAccount{
 		Votepubkey: append([]byte{}, pk...),
@@ -1390,7 +1390,7 @@ func (i *RegisterImpl) MakeModifyStateByTip10() {
 		for _, v := range val {
 			v.makeModifyStateByTip10()
 		}
-		log.Info("impawn: MakeModifyStateByTip10")
+		log.Info("relayerCLI: MakeModifyStateByTip10")
 	}
 }
 
@@ -1444,7 +1444,7 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 		}
 		// cache = false
 	}
-	// log.Info("-----Load impawn---","len:",lenght,"count:",temp.Counts(),"cache",cache)
+	// log.Info("-----Load relayerCLI---","len:",lenght,"count:",temp.Counts(),"cache",cache)
 	i.curEpochID, i.accounts, i.lastReward = temp.curEpochID, temp.accounts, temp.lastReward
 	return nil
 }
@@ -1688,7 +1688,7 @@ func GetCurrentEpochID(evm *EVM) (uint64, error) {
 	impawn := NewRegisterImpl()
 	err := impawn.Load(evm.StateDB, SyncAddress)
 	if err != nil {
-		log.Error("impawn load error", "error", err)
+		log.Error("relayerCLI load error", "error", err)
 		return 0, err
 	}
 	return impawn.getCurrentEpoch(), nil

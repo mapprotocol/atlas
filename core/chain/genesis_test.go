@@ -23,11 +23,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {
@@ -173,22 +173,22 @@ func TestGenesisHashes(t *testing.T) {
 			genesis: DefaultGenesisBlock(),
 			hash:    params.MainnetGenesisHash,
 		},
-		{
-			genesis: DefaultGoerliGenesisBlock(),
-			hash:    params.GoerliGenesisHash,
-		},
+		//{
+		//	genesis: DefaultGoerliGenesisBlock(),
+		//	hash:    params.GoerliGenesisHash,
+		//},
 		{
 			genesis: DefaultRopstenGenesisBlock(),
 			hash:    params.RopstenGenesisHash,
 		},
-		{
-			genesis: DefaultRinkebyGenesisBlock(),
-			hash:    params.RinkebyGenesisHash,
-		},
-		{
-			genesis: DefaultYoloV3GenesisBlock(),
-			hash:    params.YoloV3GenesisHash,
-		},
+		//{
+		//	genesis: DefaultRinkebyGenesisBlock(),
+		//	hash:    params.RinkebyGenesisHash,
+		//},
+		//{
+		//	genesis: DefaultYoloV3GenesisBlock(),
+		//	hash:    params.YoloV3GenesisHash,
+		//},
 	}
 	for i, c := range cases {
 		b := c.genesis.MustCommit(rawdb.NewMemoryDatabase())
