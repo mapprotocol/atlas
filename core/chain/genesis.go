@@ -276,7 +276,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	var baseAllocamount *big.Int = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e18))
 	var ElectionMinLimitForStaking *big.Int = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
 	consensus.OnceInitImpawnState(statedb, new(big.Int).SetUint64(g.Number))
-	impl := vm.NewImpawnImpl()
+	impl := vm.NewRegisterImpl()
 	hh := g.Number
 	if hh != 0 {
 		hh = hh - 1
@@ -306,7 +306,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if err != nil {
 		log.Error("ToBlock Shift", "error", err)
 	}
-	err = impl.Save(statedb, params2.StakingAddress)
+	err = impl.Save(statedb, params2.RelayerAddress)
 	if err != nil {
 		log.Error("ToBlock IMPL Save", "error", err)
 	}

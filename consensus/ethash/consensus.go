@@ -583,27 +583,32 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// Accumulate any block and uncle rewards and commit the final state root
 	consensus.OnceInitImpawnState(state, new(big.Int).Set(header.Number))
-	ethash.finalizeRelayers(state, header.Number)
-	ethash.finalizeFastGas(state, header.Number, big.NewInt(0))
+	err := ethash.finalizeRelayers(state, header.Number)
+	if err != nil {
+		log.Debug("relayers' selection fail")
+	}
+	err = ethash.finalizeGas(state, header.Number, big.NewInt(0))
+	if err != nil {
+		log.Debug("relayers' gas issued fail")
+	}
 	accumulateRewards(chain.Config(), state, header, uncles)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 }
 
-func (ethash *Ethash) finalizeFastGas(state *state.StateDB, number *big.Int, feeAmount *big.Int) error {
+func (ethash *Ethash) finalizeGas(state *state.StateDB, number *big.Int, feeAmount *big.Int) error {
 	if feeAmount == nil || feeAmount.Uint64() == 0 {
 		return nil
 	}
 	epoch := vm.GetEpochFromHeight(number.Uint64())
-	committee := vm.GetValidatorsByEpoch(state, epoch.EpochID, number.Uint64())
-	//committee := params2.GetCommitteeMember()
-	committeeGas := big.NewInt(0)
-	if len(committee) == 0 {
-		return errors.New("not have committee")
+	relayer := vm.GetValidatorsByEpoch(state, epoch.EpochID, number.Uint64())
+	relayerGas := big.NewInt(0)
+	if len(relayer) == 0 {
+		return errors.New("not have relayerGas")
 	}
-	committeeGas = new(big.Int).Div(feeAmount, big.NewInt(int64(len(committee))))
-	for _, v := range committee {
-		state.AddBalance(v.Coinbase, committeeGas)
-		LogPrint("committee's gas award", v.Coinbase, committeeGas)
+	relayerGas = new(big.Int).Div(feeAmount, big.NewInt(int64(len(relayer))))
+	for _, v := range relayer {
+		state.AddBalance(v.Coinbase, relayerGas)
+		LogPrint("relayerGas's gas award", v.Coinbase, relayerGas)
 	}
 	return nil
 }
@@ -616,9 +621,9 @@ func LogPrint(info string, addr common.Address, amount *big.Int) {
 func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) error {
 	next := new(big.Int).Add(number, big1)
 	first := vm.GetFirstEpoch()
-	if first.BeginHeight == next.Uint64() {
-		i := vm.NewImpawnImpl()
-		if err := i.Load(state, params2.StakingAddress); err != nil {
+	if first.BeginHeight == next.Uint64() { //generate relayers after first block
+		i := vm.NewRegisterImpl()
+		if err := i.Load(state, params2.RelayerAddress); err != nil {
 			return err
 		}
 		if es, err := i.DoElections(state, first.EpochID, next.Uint64()); err != nil {
@@ -629,16 +634,16 @@ func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) er
 		if err := i.Shift(first.EpochID, 0); err != nil {
 			return err
 		}
-		if err := i.Save(state, params2.StakingAddress); err != nil {
+		if err := i.Save(state, params2.RelayerAddress); err != nil {
 			return err
 		}
 		log.Info("init in first forked,", "height", next, "epoch:", first.EpochID)
 	}
 
 	epoch := vm.GetEpochFromHeight(number.Uint64())
-	if number.Uint64() == epoch.EndHeight-params2.ElectionPoint {
-		i := vm.NewImpawnImpl()
-		if err := i.Load(state, params2.StakingAddress); err != nil {
+	if number.Uint64() == epoch.EndHeight-params2.ElectionPoint { //generate relayers in 100 block before end of epoch
+		i := vm.NewRegisterImpl()
+		if err := i.Load(state, params2.RelayerAddress); err != nil {
 			return err
 		}
 		if es, err := i.DoElections(state, epoch.EpochID+1, number.Uint64()); err != nil {
@@ -646,22 +651,22 @@ func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) er
 		} else {
 			log.Info("Do validators election", "height", number, "epoch:", epoch.EpochID+1, "len:", len(es), "err", err)
 		}
-		if err := i.Save(state, params2.StakingAddress); err != nil {
+		if err := i.Save(state, params2.RelayerAddress); err != nil {
 			return err
 		}
 	}
 
-	if number.Uint64() == epoch.EndHeight {
-		i := vm.NewImpawnImpl()
-		err := i.Load(state, params2.StakingAddress)
-		log.Info("Force new epoch", "height", number, "err", err)
-		if err := i.Shift(epoch.EpochID+1, 0); err != nil {
-			return err
-		}
-		if err := i.Save(state, params2.StakingAddress); err != nil {
-			return err
-		}
-	}
+	//if number.Uint64() == epoch.EndHeight {
+	//	i := vm.NewRegisterImpl()
+	//	err := i.Load(state, params2.RelayerAddress)
+	//	log.Info("Force new epoch", "height", number, "err", err)
+	//	if err := i.Shift(epoch.EpochID+1, 0); err != nil {
+	//		return err
+	//	}
+	//	if err := i.Save(state, params2.RelayerAddress); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 

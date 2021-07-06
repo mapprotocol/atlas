@@ -23,14 +23,14 @@ type SummayEpochInfo struct {
 	EndHeight   uint64
 	AllAmount   *big.Int
 }
-type ImpawnSummay struct {
+type RegisterSummay struct {
 	LastReward uint64
 	Accounts   uint64
 	AllAmount  *big.Int
 	Infos      []*SummayEpochInfo
 }
 
-func ToJSON(ii *ImpawnSummay) map[string]interface{} {
+func ToJSON(ii *RegisterSummay) map[string]interface{} {
 	item := make(map[string]interface{})
 	item["lastRewardHeight"] = ii.LastReward
 	item["AccountsCounts"] = ii.Accounts
@@ -408,7 +408,7 @@ func MinCalcRedeemHeight(eid uint64) uint64 {
 	return e.BeginHeight + params.MaxRedeemHeight + 1
 }
 func ForbidAddress(addr common.Address) error {
-	if bytes.Equal(addr[:], params.StakingAddress[:]) {
+	if bytes.Equal(addr[:], params.RelayerAddress[:]) {
 		return errors.New(fmt.Sprint("addr error:", addr, params.ErrForbidAddress))
 	}
 	return nil

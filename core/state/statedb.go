@@ -1053,12 +1053,12 @@ func (s *StateDB) GetUnlockedBalance(addr common.Address) *big.Int {
 
 func (s *StateDB) GetLockedBalance(addr common.Address) *big.Int {
 	key := lockedKey(addr)
-	return s.GetState(params.StakingAddress, key).Big()
+	return s.GetState(params.RelayerAddress, key).Big()
 }
 
 func (s *StateDB) SetLockedBalance(addr common.Address, value *big.Int) {
 	key := lockedKey(addr)
-	s.SetState(params.StakingAddress, key, common.BigToHash(value))
+	s.SetState(params.RelayerAddress, key, common.BigToHash(value))
 }
 
 func lockedKey(addr common.Address) (h common.Hash) {

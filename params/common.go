@@ -11,7 +11,7 @@ var (
 	FbaseUnit      = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
 	Base           = new(big.Int).SetUint64(10000)
 	InvalidFee     = big.NewInt(65535)
-	StakingAddress = common.BytesToAddress([]byte("truestaking"))
+	RelayerAddress = common.BytesToAddress([]byte("truestaking"))
 )
 
 var StakingGas = map[string]uint64{
@@ -25,13 +25,13 @@ var StakingGas = map[string]uint64{
 
 var (
 	CountInEpoch                      = 20
-	MaxRedeemHeight            uint64 = 250000 // about 15 days
-	NewEpochLength             uint64 = 25000  // about 1.5 days
-	ElectionPoint              uint64 = 200
+	MaxRedeemHeight            uint64 = 20000
+	NewEpochLength             uint64 = 10000
+	ElectionPoint              uint64 = 100
 	FirstNewEpochID            uint64 = 1
 	DposForkPoint              uint64 = 0
 	ElectionMinLimitForStaking        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	MinWorkEfficiency          uint64 = 100
+	MinWorkEfficiency          uint64 = 100 //every relayer generate 100 block at least
 )
 
 var (

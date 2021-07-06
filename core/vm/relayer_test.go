@@ -77,11 +77,11 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(params2.StakingAddress)
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
 
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "value", value)
-	impawn := NewImpawnImpl()
+	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 
 	impawn.InsertSAccount2(1000, 0, common.Address{}, pub, value, big.NewInt(0), true)
@@ -92,9 +92,9 @@ func TestAppend(t *testing.T) {
 	var h uint64 = 1000
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(params2.StakingAddress)
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
-	impawn := NewImpawnImpl()
+	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	impawn.AppendSAAmount(h, common.Address{'1'}, value)
 
@@ -104,39 +104,39 @@ func TestWithdraw(t *testing.T) {
 	var h uint64 = 1000
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(params2.StakingAddress)
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "value", value)
-	impawn := NewImpawnImpl()
+	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	impawn.RedeemSAccount(h, common.Address{'1'}, value)
 }
 func TestGetBalance(t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(params2.StakingAddress)
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
-	impawn := NewImpawnImpl()
+	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	fmt.Println(impawn.GetBalance(common.Address{'1'}))
 }
 func TestGetRelayer(t *testing.T) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	statedb.GetOrNewStateObject(params2.StakingAddress)
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
-	impawn := NewImpawnImpl()
+	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	impawn.GetAllStakingAccount()
 	impawn.GetCurrentEpochInfo()
 }
 func TestGetPeriodHeight(t *testing.T) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	statedb.GetOrNewStateObject(params2.StakingAddress)
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
-	impawn := NewImpawnImpl()
+	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	info, h := impawn.GetCurrentEpochInfo()
 	isRelayer, _ := impawn.GetStakingAccount(h, common.Address{'1'})

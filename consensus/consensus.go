@@ -131,11 +131,11 @@ type PoW interface {
 
 func makeImpawInitState(state *state.StateDB, blockNumber *big.Int) bool {
 	if blockNumber == big.NewInt(0) {
-		stateAddress := params2.StakingAddress
+		stateAddress := params2.RelayerAddress
 		key := common.BytesToHash(stateAddress[:])
 		obj := state.GetState(stateAddress, key)
 		if len(obj) == 0 {
-			i := vm.NewImpawnImpl()
+			i := vm.NewRegisterImpl()
 			i.Save(state, stateAddress)
 			state.SetNonce(stateAddress, 1)
 			state.SetCode(stateAddress, stateAddress[:])
