@@ -148,7 +148,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		// todo 查询 relayer 有效工作区间
 
 		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
-			headerStore.StoreAbnormalMsg(h.Number.Uint64(), syncLimit)
+			headerStore.StoreAbnormalMsg(contract.CallerAddress, h.Number.Uint64(), syncLimit)
 			continue
 		}
 		total++
@@ -198,7 +198,7 @@ func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 		return nil, err
 	}
 
-	msg := headerStore.LoadAbnormalMsg(args.height.Uint64())
+	msg := headerStore.LoadAbnormalMsg(contract.CallerAddress, args.height.Uint64())
 	if msg == "" {
 		msg = "not found abnormal msg"
 	}
