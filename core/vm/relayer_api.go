@@ -1686,7 +1686,7 @@ func (vs delegationItemByAmount) Swap(i, j int) {
 
 func GetCurrentEpochID(evm *EVM) (uint64, error) {
 	impawn := NewRegisterImpl()
-	err := impawn.Load(evm.StateDB, SyncAddress)
+	err := impawn.Load(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
 		log.Error("relayerCLI load error", "error", err)
 		return 0, err

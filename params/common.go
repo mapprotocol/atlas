@@ -3,7 +3,6 @@ package params
 import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 )
 
@@ -84,3 +83,12 @@ const (
 	TypeWorked = 0xa2
 	TypeBack   = 0xa3
 )
+
+var (
+	BaseBig       = big.NewInt(1e18)
+	NewRewardCoin = new(big.Int).Mul(big.NewInt(570), BaseBig)
+)
+
+func GetReward() *big.Int {
+	return new(big.Int).Set(NewRewardCoin)
+}

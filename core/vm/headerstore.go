@@ -13,6 +13,7 @@ import (
 	"github.com/mapprotocol/atlas/multiChain"
 	"github.com/mapprotocol/atlas/multiChain/chainDB"
 	"github.com/mapprotocol/atlas/multiChain/ethereum"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const ABI_JSON = `[
@@ -69,8 +70,8 @@ const TimesLimit = 3
 
 // Sync contract ABI
 var (
-	abiSync, _  = abi.JSON(strings.NewReader(ABI_JSON))
-	SyncAddress = common.BytesToAddress([]byte("atlas_sync"))
+	abiHeaderStore, _  = abi.JSON(strings.NewReader(ABI_JSON))
+	HeaderStoreAddress = common.BytesToAddress([]byte("headerstore"))
 )
 
 var (
@@ -79,12 +80,13 @@ var (
 
 // SyncGas defines all method gas
 var SyncGas = map[string]uint64{
-	"save": 0,
+	Save:           0,
+	GetAbnormalMsg: 0,
 }
 
-// RunSync execute atlas header store contract
-func RunSync(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	method, err := abiSync.MethodById(input)
+// RunHeaderStore execute atlas header store contract
+func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	method, err := abiHeaderStore.MethodById(input)
 	if err != nil {
 		log.Error("No method found")
 		return nil, ErrExecutionReverted
@@ -115,7 +117,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		Header []byte
 	}{}
 
-	err = abiSync.UnpackIntoInterface(args, Save, input)
+	err = abiHeaderStore.UnpackIntoInterface(args, Save, input)
 	if err != nil {
 		log.Error("save Unpack error", "err", err)
 		return nil, ErrSyncInvalidInput
@@ -137,7 +139,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	headerStore := NewHeaderStore()
-	err = headerStore.Load(evm.StateDB, SyncAddress)
+	err = headerStore.Load(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return nil, err
@@ -160,13 +162,19 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
 
-	err = headerStore.Store(evm.StateDB, SyncAddress)
+	err = headerStore.Store(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
-		log.Error("Staking save state error", "error", err)
+		log.Error("sync save state error", "error", err)
 		return nil, err
 	}
 
 	// reward
+	if evm.Context.BlockNumber.Uint64()%params.NewEpochLength == 0 {
+		rewards := headerStore.CalcReward(epochID, params.GetReward())
+		for addr, r := range rewards {
+			evm.StateDB.AddBalance(addr, r)
+		}
+	}
 
 	// store
 	store, err := chainDB.GetStoreMgr(multiChain.ChainTypeETH)
@@ -185,14 +193,14 @@ func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 		height big.Int
 	}{}
 
-	err = abiSync.UnpackIntoInterface(args, GetAbnormalMsg, input)
+	err = abiHeaderStore.UnpackIntoInterface(args, GetAbnormalMsg, input)
 	if err != nil {
 		log.Error("save Unpack error", "err", err)
 		return nil, ErrSyncInvalidInput
 	}
 
 	headerStore := NewHeaderStore()
-	err = headerStore.Load(evm.StateDB, SyncAddress)
+	err = headerStore.Load(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return nil, err
@@ -203,5 +211,5 @@ func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 		msg = "not found abnormal msg"
 	}
 
-	return abiSync.Methods[GetAbnormalMsg].Outputs.Pack(msg)
+	return abiHeaderStore.Methods[GetAbnormalMsg].Outputs.Pack(msg)
 }
