@@ -811,7 +811,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(RopstenFlag.Name):
 		urls = params.RopstenBootnodes
-	case cfg.BootstrapNodes != nil:
+	case cfg.BootstrapNodes != nil || ctx.GlobalBool(SingleFlag.Name):
 		return // already set, don't apply defaults.
 	}
 
@@ -893,6 +893,10 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 			cfg.HTTPHost = ctx.GlobalString(LegacyRPCListenAddrFlag.Name)
 			log.Warn("The flag --rpcaddr is deprecated and will be removed June 2021, please use --http.addr")
 		}
+	}
+	//when singlenode start, can point ipaddr
+	if ctx.GlobalBool(LegacyRPCListenAddrFlag.Name) && ctx.GlobalBool(SingleFlag.Name) {
+		cfg.HTTPHost = ctx.GlobalString(LegacyRPCListenAddrFlag.Name)
 	}
 	if ctx.GlobalBool(HTTPEnabledFlag.Name) && cfg.HTTPHost == "" {
 		cfg.HTTPHost = "127.0.0.1"
