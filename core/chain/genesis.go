@@ -425,7 +425,7 @@ func SingleGenesisBlock(period uint64, faucet common.Address) *Genesis {
 	params.AllCliqueProtocolChanges.ChainID = big.NewInt(1234)
 	config := *params.AllCliqueProtocolChanges
 	config.Clique.Period = period
-	dc := defaultCommitt()
+	dc := defaultRelayer()
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
 	return &Genesis{
