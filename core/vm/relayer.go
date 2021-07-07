@@ -242,7 +242,7 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	if err != nil {
 		return nil, err
 	}
-	//StakingAccount->relayers
+	//RegisterAccount->relayers
 	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, params.RelayerAddress)
 	relayers := impawn.GetAllStakingAccount()

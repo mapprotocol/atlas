@@ -582,7 +582,7 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 // setting the final state on the header
 func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// Accumulate any block and uncle rewards and commit the final state root
-	consensus.OnceInitImpawnState(state, new(big.Int).Set(header.Number))
+	consensus.OnceInitRegisterState(state, new(big.Int).Set(header.Number))
 	err := ethash.finalizeRelayers(state, header.Number)
 	if err != nil {
 		log.Debug("relayers' selection fail")
@@ -600,7 +600,7 @@ func (ethash *Ethash) finalizeGas(state *state.StateDB, number *big.Int, feeAmou
 		return nil
 	}
 	epoch := vm.GetEpochFromHeight(number.Uint64())
-	relayer := vm.GetValidatorsByEpoch(state, epoch.EpochID, number.Uint64())
+	relayer := vm.GetRelayersByEpoch(state, epoch.EpochID, number.Uint64())
 	relayerGas := big.NewInt(0)
 	if len(relayer) == 0 {
 		return errors.New("not have relayerGas")
@@ -656,17 +656,17 @@ func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) er
 		}
 	}
 
-	//if number.Uint64() == epoch.EndHeight {
-	//	i := vm.NewRegisterImpl()
-	//	err := i.Load(state, params2.RelayerAddress)
-	//	log.Info("Force new epoch", "height", number, "err", err)
-	//	if err := i.Shift(epoch.EpochID+1, 0); err != nil {
-	//		return err
-	//	}
-	//	if err := i.Save(state, params2.RelayerAddress); err != nil {
-	//		return err
-	//	}
-	//}
+	if number.Uint64() == epoch.EndHeight {
+		i := vm.NewRegisterImpl()
+		err := i.Load(state, params2.RelayerAddress)
+		log.Info("Force new epoch", "height", number, "err", err)
+		if err := i.Shift(epoch.EpochID+1, 0); err != nil {
+			return err
+		}
+		if err := i.Save(state, params2.RelayerAddress); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

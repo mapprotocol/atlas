@@ -8,31 +8,27 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-type CommitteeMember struct {
-	Coinbase      common.Address `json:"coinbase`
-	CommitteeBase common.Address `json:"committeebase`
-	Publickey     []byte
-	Flag          uint32
-	MType         uint32
+type RelayerMember struct {
+	Coinbase    common.Address `json:"coinbase`
+	RelayerBase common.Address `json:"relayerbase`
+	Publickey   []byte
+	Flag        uint32
+	MType       uint32
 }
 
-func GetCommitteeMember() []CommitteeMember {
-	return []CommitteeMember{}
-}
-
-func (c *CommitteeMember) Compared(d *CommitteeMember) bool {
-	if c.MType == d.MType && c.Coinbase == d.Coinbase && c.CommitteeBase == d.CommitteeBase && bytes.Equal(c.Publickey, d.Publickey) {
+func (c *RelayerMember) Compared(d *RelayerMember) bool {
+	if c.MType == d.MType && c.Coinbase == d.Coinbase && c.RelayerBase == d.RelayerBase && bytes.Equal(c.Publickey, d.Publickey) {
 		return true
 	}
 	return false
 }
 
-func (c *CommitteeMember) String() string {
+func (c *RelayerMember) String() string {
 	return fmt.Sprintf("F:%d,T:%d,C:%s,P:%s,A:%s", c.Flag, c.MType, hexutil.Encode(c.Coinbase[:]),
-		hexutil.Encode(c.Publickey), hexutil.Encode(c.CommitteeBase[:]))
+		hexutil.Encode(c.Publickey), hexutil.Encode(c.RelayerBase[:]))
 }
 
-func (c *CommitteeMember) UnmarshalJSON(input []byte) error {
+func (c *RelayerMember) UnmarshalJSON(input []byte) error {
 	type committee struct {
 		Address common.Address `json:"address,omitempty"`
 		PubKey  *hexutil.Bytes `json:"publickey,omitempty"`
