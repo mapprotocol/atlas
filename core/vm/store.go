@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"math/big"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -165,9 +166,34 @@ func (h *HeaderStore) GetSortedRelayers(epochID uint64) []common.Address {
 	return rs
 }
 
+func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.Address]*big.Int {
+	residualReward := allAmount
+	relayers := h.GetSortedRelayers(epochID)
+	rewards := make(map[common.Address]*big.Int, len(relayers))
+
+	for i, r := range relayers {
+		if i == len(relayers)-1 {
+			rewards[r] = residualReward
+			break
+		}
+
+		totalSyncTimes := uint64(0)
+		for _, t := range h.relayerSyncTimes[epochID] {
+			totalSyncTimes += t
+		}
+
+		times := h.LoadSyncTimes(epochID, r)
+		singleBlockReward := new(big.Int).Quo(allAmount, new(big.Int).SetUint64(totalSyncTimes))
+		relayerReward := new(big.Int).Mul(singleBlockReward, new(big.Int).SetUint64(times))
+		residualReward = new(big.Int).Sub(residualReward, relayerReward)
+		rewards[r] = relayerReward
+	}
+	return rewards
+}
+
 func HistoryWorkEfficiency(state StateDB, epochId uint64, relayer common.Address) (uint64, error) {
 	headerStore := NewHeaderStore()
-	err := headerStore.Load(state, SyncAddress)
+	err := headerStore.Load(state, HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return 0, err

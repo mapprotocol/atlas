@@ -3,6 +3,7 @@ package params
 import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
+
 	"math/big"
 )
 
@@ -24,14 +25,14 @@ var RelayerGas = map[string]uint64{
 }
 
 var (
-	CountInEpoch                       = 100
+	CountInEpoch                       = 10
 	MaxRedeemHeight             uint64 = 20000
 	NewEpochLength              uint64 = 10000
 	ElectionPoint               uint64 = 100
 	FirstNewEpochID             uint64 = 1
 	PowForkPoint                uint64 = 0
 	ElectionMinLimitForRegister        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	MinWorkEfficiency           uint64 = 100 //every relayer generate 100 block at least
+	MinWorkEfficiency           uint64 = 50 //every relayer generate 100 block at least
 )
 
 var (
@@ -83,3 +84,12 @@ const (
 	TypeWorked = 0xa2
 	TypeBack   = 0xa3
 )
+
+var (
+	BaseBig       = big.NewInt(1e18)
+	NewRewardCoin = new(big.Int).Mul(big.NewInt(570), BaseBig)
+)
+
+func GetReward() *big.Int {
+	return new(big.Int).Set(NewRewardCoin)
+}
