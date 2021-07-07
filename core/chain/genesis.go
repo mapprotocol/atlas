@@ -269,29 +269,20 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 
 	//////////////////////////////////pro compiled////////////////////////////////////
-	var baseAllocamount *big.Int = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e18))
-	var ElectionMinLimitForStaking *big.Int = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	consensus.OnceInitImpawnState(statedb, new(big.Int).SetUint64(g.Number))
+	consensus.OnceInitRegisterState(statedb, new(big.Int).SetUint64(g.Number))
 	impl := vm.NewRegisterImpl()
 	hh := g.Number
 	if hh != 0 {
 		hh = hh - 1
 	}
-	committee := defaultCommitt2()
-	for _, member := range committee {
+	relayer := defaultRelayer2()
+	for _, member := range relayer {
 		var err error
-		amount := big.NewInt(0)
-		if g.Config.ChainID.Uint64() == 1 {
-			// mainnet
-			amount = new(big.Int).Set(baseAllocamount)
-		} else {
-			amount = new(big.Int).Set(ElectionMinLimitForStaking)
-		}
-		err = impl.InsertSAccount2(hh, 0, member.Coinbase, member.Publickey, amount, big.NewInt(100), true)
+		err = impl.InsertSAccount2(hh, 0, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
 		if err != nil {
 			log.Error("ToBlock InsertSAccount", "error", err)
 		} else {
-			vm.GenesisAddLockedBalance(statedb, member.Coinbase, amount)
+			vm.GenesisAddLockedBalance(statedb, member.Coinbase, params2.ElectionMinLimitForRegister)
 		}
 	}
 	_, err := impl.DoElections(statedb, 1, 0)
@@ -382,7 +373,7 @@ func DefaultGenesisBlock() *Genesis {
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
 		GasLimit:   5000,
 		Difficulty: big.NewInt(17179869184),
-		Alloc:      defaultCommitt(),
+		Alloc:      defaultRelayer(),
 		//Alloc:      decodePrealloc(mainnetAllocData),
 	}
 }
@@ -395,7 +386,7 @@ func DefaultRopstenGenesisBlock() *Genesis {
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,
 		Difficulty: big.NewInt(1048576),
-		Alloc:      decodePrealloc(ropstenAllocData),
+		Alloc:      defaultRelayer(), //decodePrealloc(ropstenAllocData),
 	}
 }
 
@@ -404,7 +395,7 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
 	config := *params.AllCliqueProtocolChanges
 	config.Clique.Period = period
-	dc := defaultCommitt()
+	dc := defaultRelayer()
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
 	return &Genesis{
@@ -434,7 +425,7 @@ func SingleGenesisBlock(period uint64, faucet common.Address) *Genesis {
 	params.AllCliqueProtocolChanges.ChainID = big.NewInt(1234)
 	config := *params.AllCliqueProtocolChanges
 	config.Clique.Period = period
-	dc := defaultCommitt()
+	dc := defaultRelayer()
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
 	return &Genesis{
@@ -469,7 +460,7 @@ func decodePrealloc(data string) GenesisAlloc {
 	return ga
 }
 
-var committee []common.Address = []common.Address{
+var relayer []common.Address = []common.Address{
 	common.HexToAddress("0x3e3429F72450A39CE227026E8DdeF331E9973E4d"),
 	common.HexToAddress("0x1Cfe2A1D7B9CBfce14d06bAFfa338b2465216255"),
 	common.HexToAddress("0x1275db492b0d02855a38Bd3Cdf73C92137CD1691"),
@@ -482,18 +473,18 @@ var committee []common.Address = []common.Address{
 	common.HexToAddress("0xBa9779b7173099354630BD87b5b972441E3605bd"),
 }
 var balance, _ = new(big.Int).SetString("100000000000000000000000000", 10) //100 million
-func defaultCommitt() GenesisAlloc {
+func defaultRelayer() GenesisAlloc {
 	dc := make(GenesisAlloc, 10)
-	dc[committee[0]] = GenesisAccount{Balance: balance}
-	dc[committee[1]] = GenesisAccount{Balance: balance}
-	dc[committee[2]] = GenesisAccount{Balance: balance}
-	dc[committee[3]] = GenesisAccount{Balance: balance}
-	dc[committee[4]] = GenesisAccount{Balance: balance}
-	dc[committee[5]] = GenesisAccount{Balance: balance}
-	dc[committee[6]] = GenesisAccount{Balance: balance}
-	dc[committee[7]] = GenesisAccount{Balance: balance}
-	dc[committee[8]] = GenesisAccount{Balance: balance}
-	dc[committee[9]] = GenesisAccount{Balance: balance}
+	dc[relayer[0]] = GenesisAccount{Balance: balance}
+	dc[relayer[1]] = GenesisAccount{Balance: balance}
+	dc[relayer[2]] = GenesisAccount{Balance: balance}
+	dc[relayer[3]] = GenesisAccount{Balance: balance}
+	dc[relayer[4]] = GenesisAccount{Balance: balance}
+	dc[relayer[5]] = GenesisAccount{Balance: balance}
+	dc[relayer[6]] = GenesisAccount{Balance: balance}
+	dc[relayer[7]] = GenesisAccount{Balance: balance}
+	dc[relayer[8]] = GenesisAccount{Balance: balance}
+	dc[relayer[9]] = GenesisAccount{Balance: balance}
 	return dc
 }
 
@@ -502,7 +493,7 @@ type CommitteeMember struct {
 	Publickey []byte
 }
 
-func defaultCommitt2() []*CommitteeMember {
+func defaultRelayer2() []*CommitteeMember {
 	key1 := hexutil.MustDecode("0x04600254af4ce74276f54b4f9df193f2cb72ed76b7341cb144f4d6f1408402dc10719eebdcb947ced9ac6fe9a690e004692db6222de7867cbab712246eb23a50b7")
 	key2 := hexutil.MustDecode("0x04c042a428a7df304ac7ea81c1555da49310cebb079a905c8256080e8234af804dad4ad9995771f96fba8182b117f62d2f1a6643e27f5f272c293a8301b6a84442")
 	key3 := hexutil.MustDecode("0x04dc1da011509b6ea17527550cc480f6eb076a225da2bcc87ec7a24669375f229945d76e4f9dbb4bd26c72392050a18c3922bd7ef38c04e018192b253ef4fc9dcb")
@@ -514,16 +505,16 @@ func defaultCommitt2() []*CommitteeMember {
 	key9 := hexutil.MustDecode("0x042ec25823b375f655117d1a7003f9526e9adc0d6d50150812e0408fbfb3256810c912d7cd7e5441bc5e54ac143fb6274ac496548e1a2aaaf370e8aa8b5b1ced4d")
 	key10 := hexutil.MustDecode("0x043e3014c29e42015fe891ca3e97e5fb05961beca9e349b821c6738eadd17d9b784295638e26c1d7ca71beb8703ec8cf944c67f3835bf5119f78192b535ac6a5e0")
 	cm := []*CommitteeMember{
-		&CommitteeMember{Coinbase: committee[0], Publickey: key1},
-		&CommitteeMember{Coinbase: committee[1], Publickey: key2},
-		&CommitteeMember{Coinbase: committee[2], Publickey: key3},
-		&CommitteeMember{Coinbase: committee[3], Publickey: key4},
-		&CommitteeMember{Coinbase: committee[4], Publickey: key5},
-		&CommitteeMember{Coinbase: committee[5], Publickey: key6},
-		&CommitteeMember{Coinbase: committee[6], Publickey: key7},
-		&CommitteeMember{Coinbase: committee[7], Publickey: key8},
-		&CommitteeMember{Coinbase: committee[8], Publickey: key9},
-		&CommitteeMember{Coinbase: committee[9], Publickey: key10},
+		&CommitteeMember{Coinbase: relayer[0], Publickey: key1},
+		&CommitteeMember{Coinbase: relayer[1], Publickey: key2},
+		&CommitteeMember{Coinbase: relayer[2], Publickey: key3},
+		&CommitteeMember{Coinbase: relayer[3], Publickey: key4},
+		&CommitteeMember{Coinbase: relayer[4], Publickey: key5},
+		&CommitteeMember{Coinbase: relayer[5], Publickey: key6},
+		&CommitteeMember{Coinbase: relayer[6], Publickey: key7},
+		&CommitteeMember{Coinbase: relayer[7], Publickey: key8},
+		&CommitteeMember{Coinbase: relayer[8], Publickey: key9},
+		&CommitteeMember{Coinbase: relayer[9], Publickey: key10},
 	}
 	return cm
 }

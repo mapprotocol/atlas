@@ -129,7 +129,7 @@ type PoW interface {
 	Hashrate() float64
 }
 
-func makeImpawInitState(state *state.StateDB, blockNumber *big.Int) bool {
+func makeRegisterInitState(state *state.StateDB, blockNumber *big.Int) bool {
 	if blockNumber == big.NewInt(0) {
 		stateAddress := params2.RelayerAddress
 		key := common.BytesToHash(stateAddress[:])
@@ -139,12 +139,12 @@ func makeImpawInitState(state *state.StateDB, blockNumber *big.Int) bool {
 			i.Save(state, stateAddress)
 			state.SetNonce(stateAddress, 1)
 			state.SetCode(stateAddress, stateAddress[:])
-			log.Info("makeImpawInitState success")
+			log.Info("makeRegisterInitState success")
 			return true
 		}
 	}
 	return false
 }
-func OnceInitImpawnState(state *state.StateDB, fastNumber *big.Int) bool {
-	return makeImpawInitState(state, fastNumber)
+func OnceInitRegisterState(state *state.StateDB, fastNumber *big.Int) bool {
+	return makeRegisterInitState(state, fastNumber)
 }
