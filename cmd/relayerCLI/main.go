@@ -54,12 +54,12 @@ var (
 	}
 	PubKeyKeyFlag = cli.StringFlag{
 		Name:  "pubkey",
-		Usage: "Committee public key for BFT (no 0x prefix)",
+		Usage: "Relayer public key for BFT (no 0x prefix)",
 		Value: "",
 	}
 	BFTKeyKeyFlag = cli.StringFlag{
 		Name:  "bftkey",
-		Usage: "Committee bft key for BFT (no 0x prefix)",
+		Usage: "Relayer bft key for BFT (no 0x prefix)",
 		Value: "",
 	}
 	SnailNumberFlag = cli.Uint64Flag{

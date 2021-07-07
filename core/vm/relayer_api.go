@@ -385,7 +385,7 @@ type RegisterAccount struct {
 	Unit       *registerUnit
 	Votepubkey []byte
 	Fee        *big.Int
-	Committee  bool
+	Relayer    bool
 	Delegation []*DelegationAccount
 	Modify     *AlterableInfo
 }
@@ -394,8 +394,8 @@ type AlterableInfo struct {
 	VotePubkey []byte
 }
 
-func (s *RegisterAccount) isInCommittee() bool {
-	return s.Committee
+func (s *RegisterAccount) isInRelayer() bool {
+	return s.Relayer
 }
 func (s *RegisterAccount) addAmount(height uint64, amount *big.Int) {
 	unit := &registerUnit{
@@ -527,7 +527,7 @@ func (s *RegisterAccount) clone() *RegisterAccount {
 		Votepubkey: CopyVotePk(s.Votepubkey),
 		Unit:       s.Unit.clone(),
 		Fee:        new(big.Int).Set(s.Fee),
-		Committee:  s.Committee,
+		Relayer:    s.Relayer,
 		Delegation: make([]*DelegationAccount, 0),
 		Modify:     &AlterableInfo{},
 	}
@@ -727,7 +727,7 @@ func (i *RegisterImpl) getElections(epochid uint64) []common.Address {
 	} else {
 		var addrs []common.Address
 		for _, v := range accounts {
-			if v.isInCommittee() {
+			if v.isInRelayer() {
 				addrs = append(addrs, v.Unit.GetRewardAddress())
 			}
 		}
@@ -740,7 +740,7 @@ func (i *RegisterImpl) getElections2(epochid uint64) []*RegisterAccount {
 	} else {
 		var sas []*RegisterAccount
 		for _, v := range accounts {
-			if v.isInCommittee() {
+			if v.isInRelayer() {
 				sas = append(sas, v)
 			}
 		}
@@ -817,11 +817,11 @@ func (i *RegisterImpl) calcRewardInSa(target uint64, sa *RegisterAccount, allRew
 		left = left.Add(left, v1)
 		left2 = left2.Add(left2, daAll)
 		var ii RewardInfo
-		ii.Address, ii.Amount, ii.Staking = v.Unit.GetRewardAddress(), new(big.Int).Set(v1), new(big.Int).Set(daAll)
+		ii.Address, ii.Amount, ii.Register = v.Unit.GetRewardAddress(), new(big.Int).Set(v1), new(big.Int).Set(daAll)
 		items = append(items, &ii)
 	}
 	item.Amount = new(big.Int).Add(new(big.Int).Sub(all, left), fee)
-	item.Staking = new(big.Int).Sub(allStaking, left2)
+	item.Register = new(big.Int).Sub(allStaking, left2)
 	return items, nil
 }
 func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *EpochIDInfo) ([]*SARewardInfos, error) {
@@ -919,7 +919,7 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 		vv := v.clone()
 		vv.merge(prev, nextEpoch.BeginHeight, effectHeight)
 		if vv.isvalid() {
-			vv.Committee = false
+			vv.Relayer = false
 			nextInfos.update(vv, nextEpoch.BeginHeight, true, true, effectHeight)
 		}
 	}
@@ -953,7 +953,7 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 			if validStaking.Cmp(params.ElectionMinLimitForRegister) < 0 && num < params.MinWorkEfficiency && i.curEpochID > 1 {
 				continue
 			}
-			v.Committee = true
+			v.Relayer = true
 			ee = append(ee, v)
 			if len(ee) >= params.CountInEpoch {
 				break
@@ -1265,7 +1265,7 @@ func (i *RegisterImpl) GetAllStakingAccount() SARegister {
 }
 
 // GetStakingAsset returns a map for all staking amount of the address, the key is the SA address
-func (i *RegisterImpl) GetStakingAsset(addr common.Address) map[common.Address]*StakingValue {
+func (i *RegisterImpl) GetStakingAsset(addr common.Address) map[common.Address]*RelayerValue {
 	epochid := i.curEpochID
 	res, _, _, _ := i.getAsset(addr, epochid, params.OpQueryStaking)
 	return res
@@ -1273,7 +1273,7 @@ func (i *RegisterImpl) GetStakingAsset(addr common.Address) map[common.Address]*
 
 // GetLockedAsset returns a group canceled asset from the state of the addr,it includes redemption on
 // maturity and unmaturity asset
-func (i *RegisterImpl) GetLockedAsset(addr common.Address) map[common.Address]*StakingValue {
+func (i *RegisterImpl) GetLockedAsset(addr common.Address) map[common.Address]*RelayerValue {
 	epochid := i.curEpochID
 	res, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
 	return res
@@ -1332,11 +1332,11 @@ func (i *RegisterImpl) GetAllCancelableAsset(addr common.Address) map[common.Add
 	_, res, _, _ := i.getAsset(addr, epochid, params.OpQueryCancelable)
 	return res
 }
-func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*StakingValue, map[common.Address]*big.Int, map[common.Address]*RewardItem, map[common.Address]*FineItem) {
+func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*RelayerValue, map[common.Address]*big.Int, map[common.Address]*RewardItem, map[common.Address]*FineItem) {
 	epochid := epoch
 	end := GetEpochFromID(epochid).EndHeight
 	if val, ok := i.accounts[epochid]; ok {
-		res := make(map[common.Address]*StakingValue)
+		res := make(map[common.Address]*RelayerValue)
 		res2 := make(map[common.Address]*big.Int)
 		res3 := make(map[common.Address]*RewardItem)
 		res4 := make(map[common.Address]*FineItem)
@@ -1345,11 +1345,11 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 				if op&params.OpQueryStaking != 0 || op&params.OpQueryLocked != 0 {
 					if _, ok := res[addr]; !ok {
 						if op&params.OpQueryLocked != 0 {
-							res[addr] = &StakingValue{
+							res[addr] = &RelayerValue{
 								Value: v.Unit.redeemToMap(),
 							}
 						} else {
-							res[addr] = &StakingValue{
+							res[addr] = &RelayerValue{
 								Value: v.Unit.valueToMap(),
 							}
 						}

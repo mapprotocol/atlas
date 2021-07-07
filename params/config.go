@@ -42,4 +42,11 @@ var (
 		BerlinBlock:         big.NewInt(9_812_189),
 		Ethash:              new(params.EthashConfig),
 	}
+	MainnetNetWorkID uint64 = 112
+	RopstenNetWorkID uint64 = 115
+
+	//under params in cmd/node/defaults.go
+	//DefaultHTTPPort    = 7445
+	//DefaultWSPort      = 7446
+	//ListenAddr         = 20201
 )

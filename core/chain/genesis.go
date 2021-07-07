@@ -372,7 +372,7 @@ func DefaultGenesisBlock() *Genesis {
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
 		GasLimit:   5000,
-		Difficulty: big.NewInt(17179869184),
+		Difficulty: big.NewInt(1200000),
 		Alloc:      defaultRelayer(),
 		//Alloc:      decodePrealloc(mainnetAllocData),
 	}
@@ -385,7 +385,7 @@ func DefaultRopstenGenesisBlock() *Genesis {
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,
-		Difficulty: big.NewInt(1048576),
+		Difficulty: big.NewInt(1000000),
 		Alloc:      defaultRelayer(), //decodePrealloc(ropstenAllocData),
 	}
 }
@@ -488,12 +488,12 @@ func defaultRelayer() GenesisAlloc {
 	return dc
 }
 
-type CommitteeMember struct {
+type RelayerMember struct {
 	Coinbase  common.Address `json:"coinbase`
 	Publickey []byte
 }
 
-func defaultRelayer2() []*CommitteeMember {
+func defaultRelayer2() []*RelayerMember {
 	key1 := hexutil.MustDecode("0x04600254af4ce74276f54b4f9df193f2cb72ed76b7341cb144f4d6f1408402dc10719eebdcb947ced9ac6fe9a690e004692db6222de7867cbab712246eb23a50b7")
 	key2 := hexutil.MustDecode("0x04c042a428a7df304ac7ea81c1555da49310cebb079a905c8256080e8234af804dad4ad9995771f96fba8182b117f62d2f1a6643e27f5f272c293a8301b6a84442")
 	key3 := hexutil.MustDecode("0x04dc1da011509b6ea17527550cc480f6eb076a225da2bcc87ec7a24669375f229945d76e4f9dbb4bd26c72392050a18c3922bd7ef38c04e018192b253ef4fc9dcb")
@@ -504,17 +504,17 @@ func defaultRelayer2() []*CommitteeMember {
 	key8 := hexutil.MustDecode("0x04039dd0fb3869e7d2a1eeb95c9a6475771883614b289c604bf6fef2e1e9dd57340d888f59db0129d250394909d4a3b041bd66e6b83f345b38a397fdeb036b3e1c")
 	key9 := hexutil.MustDecode("0x042ec25823b375f655117d1a7003f9526e9adc0d6d50150812e0408fbfb3256810c912d7cd7e5441bc5e54ac143fb6274ac496548e1a2aaaf370e8aa8b5b1ced4d")
 	key10 := hexutil.MustDecode("0x043e3014c29e42015fe891ca3e97e5fb05961beca9e349b821c6738eadd17d9b784295638e26c1d7ca71beb8703ec8cf944c67f3835bf5119f78192b535ac6a5e0")
-	cm := []*CommitteeMember{
-		&CommitteeMember{Coinbase: relayer[0], Publickey: key1},
-		&CommitteeMember{Coinbase: relayer[1], Publickey: key2},
-		&CommitteeMember{Coinbase: relayer[2], Publickey: key3},
-		&CommitteeMember{Coinbase: relayer[3], Publickey: key4},
-		&CommitteeMember{Coinbase: relayer[4], Publickey: key5},
-		&CommitteeMember{Coinbase: relayer[5], Publickey: key6},
-		&CommitteeMember{Coinbase: relayer[6], Publickey: key7},
-		&CommitteeMember{Coinbase: relayer[7], Publickey: key8},
-		&CommitteeMember{Coinbase: relayer[8], Publickey: key9},
-		&CommitteeMember{Coinbase: relayer[9], Publickey: key10},
+	cm := []*RelayerMember{
+		&RelayerMember{Coinbase: relayer[0], Publickey: key1},
+		&RelayerMember{Coinbase: relayer[1], Publickey: key2},
+		&RelayerMember{Coinbase: relayer[2], Publickey: key3},
+		&RelayerMember{Coinbase: relayer[3], Publickey: key4},
+		&RelayerMember{Coinbase: relayer[4], Publickey: key5},
+		&RelayerMember{Coinbase: relayer[5], Publickey: key6},
+		&RelayerMember{Coinbase: relayer[6], Publickey: key7},
+		&RelayerMember{Coinbase: relayer[7], Publickey: key8},
+		&RelayerMember{Coinbase: relayer[8], Publickey: key9},
+		&RelayerMember{Coinbase: relayer[9], Publickey: key10},
 	}
 	return cm
 }

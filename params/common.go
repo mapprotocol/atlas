@@ -12,7 +12,7 @@ var (
 	FbaseUnit      = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
 	Base           = new(big.Int).SetUint64(10000)
 	InvalidFee     = big.NewInt(65535)
-	RelayerAddress = common.BytesToAddress([]byte("truestaking"))
+	RelayerAddress = common.BytesToAddress([]byte("RelayerAddress"))
 )
 
 var RelayerGas = map[string]uint64{

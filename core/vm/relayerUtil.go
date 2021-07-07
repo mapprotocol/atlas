@@ -34,7 +34,7 @@ func ToJSON(ii *RegisterSummay) map[string]interface{} {
 	item := make(map[string]interface{})
 	item["lastRewardHeight"] = ii.LastReward
 	item["AccountsCounts"] = ii.Accounts
-	item["currentAllStaking"] = (*hexutil.Big)(ii.AllAmount)
+	item["currentAllRegister"] = (*hexutil.Big)(ii.AllAmount)
 	items := make([]map[string]interface{}, 0, 0)
 	for _, val := range ii.Infos {
 		info := make(map[string]interface{})
@@ -51,16 +51,16 @@ func ToJSON(ii *RegisterSummay) map[string]interface{} {
 }
 
 type RewardInfo struct {
-	Address common.Address `json:"Address"`
-	Amount  *big.Int       `json:"Amount"`
-	Staking *big.Int       `json:"Staking"`
+	Address  common.Address `json:"Address"`
+	Amount   *big.Int       `json:"Amount"`
+	Register *big.Int       `json:"register"`
 }
 
 func (e *RewardInfo) clone() *RewardInfo {
 	return &RewardInfo{
-		Address: e.Address,
-		Amount:  new(big.Int).Set(e.Amount),
-		Staking: new(big.Int).Set(e.Staking),
+		Address:  e.Address,
+		Amount:   new(big.Int).Set(e.Amount),
+		Register: new(big.Int).Set(e.Register),
 	}
 }
 func (e *RewardInfo) String() string {
@@ -70,7 +70,7 @@ func (e *RewardInfo) ToJson() map[string]interface{} {
 	item := make(map[string]interface{})
 	item["Address"] = e.Address
 	item["Amount"] = (*hexutil.Big)(e.Amount)
-	item["Staking"] = (*hexutil.Big)(e.Staking)
+	item["Register"] = (*hexutil.Big)(e.Register)
 
 	return item
 }
@@ -145,11 +145,9 @@ type TimedChainReward struct {
 }
 
 type ChainReward struct {
-	Height        uint64
-	St            uint64
-	CoinBase      *RewardInfo      `json:"blockminer"`
-	FruitBase     []*RewardInfo    `json:"fruitminer"`
-	CommitteeBase []*SARewardInfos `json:"committeeReward"`
+	Height   uint64
+	St       uint64
+	CoinBase *RewardInfo `json:"blockminer"`
 }
 
 func (s *ChainReward) CoinRewardInfo() map[string]interface{} {
@@ -159,13 +157,10 @@ func (s *ChainReward) CoinRewardInfo() map[string]interface{} {
 	return feild
 }
 
-func (s *ChainReward) CommitteeRewardInfo() map[string]interface{} {
+func (s *ChainReward) RelayerRewardInfo() map[string]interface{} {
 	infos := make([]map[string]interface{}, 0, 0)
-	for _, v := range s.CommitteeBase {
-		infos = append(infos, v.StringToToken())
-	}
 	feild := map[string]interface{}{
-		"committeeReward": infos,
+		"RelayerReward": infos,
 	}
 	return feild
 }
@@ -174,12 +169,6 @@ func CloneChainReward(reward *ChainReward) *ChainReward {
 	var res ChainReward
 	res.Height, res.St = reward.Height, reward.St
 	res.CoinBase = reward.CoinBase.clone()
-	for _, v := range reward.FruitBase {
-		res.FruitBase = append(res.FruitBase, v.clone())
-	}
-	for _, v := range reward.CommitteeBase {
-		res.CommitteeBase = append(res.CommitteeBase, v.clone())
-	}
 	return &res
 }
 
@@ -213,13 +202,11 @@ func ToBalanceInfos(items map[common.Address]*BalanceInfo) []*BalanceInfo {
 	return infos
 }
 
-func NewChainReward(height, tt uint64, coin *RewardInfo, fruits []*RewardInfo, committee []*SARewardInfos) *ChainReward {
+func NewChainReward(height, tt uint64, coin *RewardInfo, fruits []*RewardInfo, relayer []*SARewardInfos) *ChainReward {
 	return &ChainReward{
-		Height:        height,
-		St:            tt,
-		CoinBase:      coin,
-		FruitBase:     fruits,
-		CommitteeBase: committee,
+		Height:   height,
+		St:       tt,
+		CoinBase: coin,
 	}
 }
 func ToRewardInfos1(items map[common.Address]*big.Int) []*RewardInfo {
@@ -279,8 +266,8 @@ func (e *EpochIDInfo) String() string {
 	return fmt.Sprintf("[id:%v,begin:%v,end:%v]", e.EpochID, e.BeginHeight, e.EndHeight)
 }
 
-// the key is epochid if StakingValue as a locked asset,otherwise key is block height if StakingValue as a staking asset
-type StakingValue struct {
+// the key is epochid if RelayerValue as a locked asset,otherwise key is block height if RelayerValue as a register asset
+type RelayerValue struct {
 	Value map[uint64]*big.Int
 }
 
@@ -294,7 +281,7 @@ type LockedValue struct {
 	Value map[uint64]*LockedItem
 }
 
-func (s *StakingValue) ToLockedValue(height uint64) *LockedValue {
+func (s *RelayerValue) ToLockedValue(height uint64) *LockedValue {
 	res := make(map[uint64]*LockedItem)
 	for k, v := range s.Value {
 		item := &LockedItem{

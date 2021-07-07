@@ -20,6 +20,7 @@ package ethconfig
 import (
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/txsdetails"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"os"
 	"os/user"
@@ -28,16 +29,16 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/atlas/downloader"
+	"github.com/mapprotocol/atlas/atlas/gasprice"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/clique"
 	"github.com/mapprotocol/atlas/consensus/ethash"
-	"github.com/mapprotocol/atlas/atlas/downloader"
-	"github.com/mapprotocol/atlas/atlas/gasprice"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/miner"
-	"github.com/mapprotocol/atlas/cmd/node"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // FullNodeGPO contains default gasprice oracle settings for full node.
@@ -66,7 +67,7 @@ var Defaults = Config{
 		DatasetsOnDisk:   2,
 		DatasetsLockMmap: false,
 	},
-	NetworkId:               1,
+	NetworkId:               params2.MainnetNetWorkID,
 	TxLookupLimit:           2350000,
 	LightPeers:              100,
 	UltraLightFraction:      75,
