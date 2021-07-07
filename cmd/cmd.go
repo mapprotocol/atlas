@@ -134,6 +134,7 @@ var (
 		utils.DNSDiscoveryFlag,
 		utils.MainnetFlag,
 		utils.DeveloperFlag,
+		utils.SingleFlag,
 		utils.DeveloperPeriodFlag,
 		utils.RopstenFlag,
 		utils.VMEnableDebugFlag,
@@ -275,6 +276,9 @@ func prepare(ctx *cli.Context) {
 	//	log.Info("Starting Atlas on YOLOv3 testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
+		log.Info("Starting Atlas in ephemeral dev mode...")
+
+	case ctx.GlobalIsSet(utils.SingleFlag.Name):
 		log.Info("Starting Atlas in ephemeral dev mode...")
 
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
