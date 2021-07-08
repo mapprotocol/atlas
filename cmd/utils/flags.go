@@ -22,7 +22,6 @@ import (
 	"fmt"
 	chain2 "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/txsdetails"
-	params2 "github.com/mapprotocol/atlas/params"
 	"io"
 	"io/ioutil"
 	"math"
@@ -161,6 +160,10 @@ var (
 	}
 	DeveloperPeriodFlag = cli.IntFlag{
 		Name:  "dev.period",
+		Usage: "Block period to use in developer mode (0 = mine only if transaction pending)",
+	}
+	SinglePeriodFlag = cli.IntFlag{
+		Name:  "single.period",
 		Usage: "Block period to use in developer mode (0 = mine only if transaction pending)",
 	}
 	IdentityFlag = cli.StringFlag{
@@ -1572,13 +1575,13 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	switch {
 	case ctx.GlobalBool(MainnetFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = params2.MainnetNetWorkID
+			cfg.NetworkId = 1
 		}
 		cfg.Genesis = chain2.DefaultGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
 	case ctx.GlobalBool(RopstenFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = params2.RopstenNetWorkID
+			cfg.NetworkId = 3
 		}
 		cfg.Genesis = chain2.DefaultRopstenGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.RopstenGenesisHash)
@@ -1661,7 +1664,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		log.Info("Using developer account", "address", developer.Address)
 
 		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = chain2.SingleGenesisBlock(uint64(ctx.GlobalInt(DeveloperPeriodFlag.Name)), developer.Address)
+		cfg.Genesis = chain2.SingleGenesisBlock(uint64(ctx.GlobalInt(SinglePeriodFlag.Name)), developer.Address)
 		if ctx.GlobalIsSet(DataDirFlag.Name) {
 			// Check if we have an already initialized chain and fall back to
 			// that if so. Otherwise we need to generate a new genesis spec.
