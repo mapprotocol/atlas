@@ -136,7 +136,6 @@ var (
 		utils.DeveloperFlag,
 		utils.SingleFlag,
 		utils.DeveloperPeriodFlag,
-		utils.SinglePeriodFlag,
 		utils.RopstenFlag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,

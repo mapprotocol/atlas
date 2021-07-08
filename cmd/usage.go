@@ -78,7 +78,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		Name: "SINGLE CHAIN",
 		Flags: []cli.Flag{
 			utils.SingleFlag,
-			utils.SinglePeriodFlag,
 		},
 	},
 	{

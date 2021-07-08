@@ -49,4 +49,6 @@ var (
 	//DefaultHTTPPort    = 7445
 	//DefaultWSPort      = 7446
 	//ListenAddr         = 20201
+	SingleChainID = big.NewInt(1234)
+	SingleNetCfg  = &params.ChainConfig{SingleChainID, big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, new(params.EthashConfig), nil}
 )

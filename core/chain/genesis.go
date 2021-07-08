@@ -420,11 +420,10 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 }
 
 // DeveloperGenesisBlock returns the 'geth --dev' genesis block.
-func SingleGenesisBlock(period uint64, faucet common.Address) *Genesis {
+func SingleGenesisBlock(faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
-	params.AllCliqueProtocolChanges.ChainID = big.NewInt(1234)
-	config := *params.AllCliqueProtocolChanges
-	config.Clique.Period = period
+	config := *params2.SingleNetCfg
+	//config.Ethash.Period = period
 	dc := defaultRelayer()
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
