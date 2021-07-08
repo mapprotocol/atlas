@@ -1,4 +1,4 @@
-package multiChain
+package chains
 
 import "github.com/mapprotocol/atlas/core/rawdb"
 

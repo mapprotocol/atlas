@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/mapprotocol/atlas/multiChain"
-	"github.com/mapprotocol/atlas/multiChain/chainDB"
-	"github.com/mapprotocol/atlas/multiChain/ethereum"
+	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/chains/chainsdb"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -177,7 +177,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	// store
-	store, err := chainDB.GetStoreMgr(multiChain.ChainTypeETH)
+	store, err := chainsdb.GetStoreMgr(chains.ChainTypeETH)
 	if err != nil {
 		return nil, err
 	}

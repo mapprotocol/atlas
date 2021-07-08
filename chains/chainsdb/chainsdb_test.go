@@ -1,4 +1,4 @@
-package chainDB
+package chainsdb
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	eth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/multiChain/ethereum"
 	"math/big"
 	"reflect"
 	"testing"
@@ -30,13 +30,13 @@ func TestHeaderInsertion01(t *testing.T) {
 		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
 	)
 
-	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
-	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
-	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
-	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
+	rawdb.WriteTdChains(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
+	rawdb.WriteReceiptsChains(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
+	rawdb.WriteCanonicalHashChains(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
+	rawdb.WriteHeadBlockHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadHeaderHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteChainConfigChains(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
 
 	hc, _ := GetStoreMgr(chainType)
 	// chain A: G->A1->A2...A128
@@ -284,13 +284,13 @@ func Test_thread_InsertHeaderChain(t *testing.T) {
 		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
 	)
 
-	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
-	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
-	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
-	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
+	rawdb.WriteTdChains(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
+	rawdb.WriteReceiptsChains(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
+	rawdb.WriteCanonicalHashChains(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
+	rawdb.WriteHeadBlockHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadHeaderHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteChainConfigChains(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
 
 	hc, _ := GetStoreMgr(chainType)
 	// chain A: G->A1->A2...A128
@@ -321,13 +321,13 @@ func Test_thread_WriteHeader(t *testing.T) {
 		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
 	)
 
-	rawdb.WriteTd_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
-	rawdb.WriteReceipts_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
-	rawdb.WriteCanonicalHash_multiChain(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
-	rawdb.WriteHeadBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadHeaderHash_multiChain(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteChainConfig_multiChain(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
+	rawdb.WriteTdChains(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
+	rawdb.WriteReceiptsChains(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
+	rawdb.WriteCanonicalHashChains(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
+	rawdb.WriteHeadBlockHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteHeadHeaderHashChains(chainDb0, genesis.Hash(), chainType)
+	rawdb.WriteChainConfigChains(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
 
 	hc, _ := GetStoreMgr(chainType)
 	// chain A: G->A1->A2...A128
