@@ -262,31 +262,31 @@ func (t ChainType) setTypeKeyNum(b []byte, n uint64) []byte {
 
 //--------------- mark ---------
 // headerKey = headerPrefix + num (uint64 big endian) + hash
-func headerKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+func headerKeyChains(t ChainType, number uint64, hash common.Hash) []byte {
 	return append(append(headerPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 }
 
 // headerTDKey = headerPrefix + num (uint64 big endian) + hash + headerTDSuffix
-func headerTDKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
-	return append(headerKey_multiChain(t, number, hash), headerTDSuffix...)
+func headerTDKeyChains(t ChainType, number uint64, hash common.Hash) []byte {
+	return append(headerKeyChains(t, number, hash), headerTDSuffix...)
 }
 
 // headerHashKey = headerPrefix + num (uint64 big endian) + headerHashSuffix
-func headerHashKey_multiChain(t ChainType, number uint64) []byte {
+func headerHashKeyChains(t ChainType, number uint64) []byte {
 	return append(append(headerPrefix, t.setTypeNumber(number)...), headerHashSuffix...)
 }
 
 // headerNumberKey = headerNumberPrefix + hash
-func headerNumberKey_multiChain(t ChainType, hash common.Hash) []byte {
+func headerNumberKeyChains(t ChainType, hash common.Hash) []byte {
 	return append(t.setTypeKey(headerNumberPrefix), hash.Bytes()...)
 }
 
 // blockBodyKey = blockBodyPrefix + num (uint64 big endian) + hash
-func blockBodyKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+func blockBodyKeyChains(t ChainType, number uint64, hash common.Hash) []byte {
 	return append(append(blockBodyPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 }
 
 // blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
-func blockReceiptsKey_multiChain(t ChainType, number uint64, hash common.Hash) []byte {
+func blockReceiptsKeyChains(t ChainType, number uint64, hash common.Hash) []byte {
 	return append(append(blockReceiptsPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
 }

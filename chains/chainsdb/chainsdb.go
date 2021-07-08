@@ -1,4 +1,4 @@
-package chainDB
+package chainsdb
 
 import (
 	"errors"
@@ -15,8 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/multiChain/ethereum"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -67,7 +67,7 @@ func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
 }
 
 func (db *HeaderChainStore) ReadHeader(Hash common.Hash, number uint64) *ethereum.Header {
-	return rawdb.ReadHeader_multiChain(db.chainDb, Hash, number, db.currentChainType)
+	return rawdb.ReadHeaderChains(db.chainDb, Hash, number, db.currentChainType)
 }
 
 func (db *HeaderChainStore) WriteHeader(header *ethereum.Header) {
@@ -76,10 +76,10 @@ func (db *HeaderChainStore) WriteHeader(header *ethereum.Header) {
 	if err := batch.Write(); err != nil {
 		log.Crit("Failed to rewind block", "error", err)
 	}
-	rawdb.WriteHeader_multiChain(db.chainDb, header, db.currentChainType)
+	rawdb.WriteHeaderChains(db.chainDb, header, db.currentChainType)
 }
 func (db *HeaderChainStore) DeleteHeader(hash common.Hash, number uint64) {
-	rawdb.DeleteHeader_multiChain(db.chainDb, hash, number, db.currentChainType)
+	rawdb.DeleteHeaderChains(db.chainDb, hash, number, db.currentChainType)
 }
 
 func (hc *HeaderChainStore) InsertHeaderChain(chains []*ethereum.Header, start time.Time) (WriteStatus, error) {
@@ -109,7 +109,7 @@ func (hc *HeaderChainStore) InsertHeaderChain(chains []*ethereum.Header, start t
 // GetBlockNumber retrieves the block number belonging to the given hash
 // from the cache or database
 func (hc *HeaderChainStore) GetBlockNumber(hash common.Hash) *uint64 {
-	number := rawdb.ReadHeaderNumber_multiChain(hc.chainDb, hash, hc.currentChainType)
+	number := rawdb.ReadHeaderNumberChains(hc.chainDb, hash, hc.currentChainType)
 	return number
 }
 
@@ -137,31 +137,31 @@ type numberHashInfo struct {
 }
 
 func (hc *HeaderChainStore) GetTd(hash common.Hash, number uint64) *big.Int {
-	td := rawdb.ReadTd_multiChain(hc.chainDb, hash, number, hc.currentChainType)
+	td := rawdb.ReadTdChains(hc.chainDb, hash, number, hc.currentChainType)
 	if td == nil {
 		return nil
 	}
 	return td
 }
 func (hc *HeaderChainStore) HasHeader(hash common.Hash, number uint64) bool {
-	return rawdb.HasHeader_multiChain(hc.chainDb, hash, number, hc.currentChainType)
+	return rawdb.HasHeaderChains(hc.chainDb, hash, number, hc.currentChainType)
 }
 func (hc *HeaderChainStore) CurrentHeaderNumber() uint64 {
 	currentHeaderHash := hc.CurrentHeaderHash()
-	currentNum := (rawdb.ReadHeaderNumber_multiChain(hc.chainDb, currentHeaderHash, hc.currentChainType))
+	currentNum := (rawdb.ReadHeaderNumberChains(hc.chainDb, currentHeaderHash, hc.currentChainType))
 	if currentNum == nil {
 		return uint64(0)
 	}
 	return *(currentNum)
 }
 func (hc *HeaderChainStore) CurrentHeaderHash() common.Hash {
-	return rawdb.ReadHeadHeaderHash_multiChain(hc.chainDb, hc.currentChainType)
+	return rawdb.ReadHeadHeaderHashChains(hc.chainDb, hc.currentChainType)
 }
 func (hc *HeaderChainStore) writeCurrentHeaderHash(hash common.Hash) {
-	rawdb.WriteHeadHeaderHash_multiChain(hc.chainDb, hash, hc.currentChainType)
+	rawdb.WriteHeadHeaderHashChains(hc.chainDb, hash, hc.currentChainType)
 }
 func (hc *HeaderChainStore) GetHeader(hash common.Hash, number uint64) *ethereum.Header {
-	header := rawdb.ReadHeader_multiChain(hc.chainDb, hash, number, hc.currentChainType)
+	header := rawdb.ReadHeaderChains(hc.chainDb, hash, number, hc.currentChainType)
 	if header == nil {
 		return nil
 	}
@@ -219,11 +219,11 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 		newTD.Add(newTD, header.Difficulty)
 
 		// If the header is already known, skip it, otherwise store
-		if !rawdb.HasHeader_multiChain(hc.chainDb, hash, number, hc.currentChainType) {
+		if !rawdb.HasHeaderChains(hc.chainDb, hash, number, hc.currentChainType) {
 			// Irrelevant of the canonical status, write the TD and header to the database.
-			rawdb.WriteTd_multiChain(batch, hash, number, newTD, hc.currentChainType)
+			rawdb.WriteTdChains(batch, hash, number, newTD, hc.currentChainType)
 
-			rawdb.WriteHeader_multiChain(batch, header, hc.currentChainType)
+			rawdb.WriteHeaderChains(batch, header, hc.currentChainType)
 			inserted = append(inserted, numberHashInfo{number, hash})
 
 			if firstInserted < 0 {
@@ -269,11 +269,11 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 		if !chainAlreadyCanon {
 			// Delete any canonical number assignments above the new head
 			for i := lastNumber + 1; ; i++ {
-				hash := rawdb.ReadCanonicalHash_multiChain(hc.chainDb, i, hc.currentChainType)
+				hash := rawdb.ReadCanonicalHashChains(hc.chainDb, i, hc.currentChainType)
 				if hash == (common.Hash{}) {
 					break
 				}
-				rawdb.DeleteCanonicalHash_multiChain(markerBatch, i, hc.currentChainType)
+				rawdb.DeleteCanonicalHashChains(markerBatch, i, hc.currentChainType)
 			}
 			// Overwrite any stale canonical number assignments, going
 			// backwards from the first header in this import
@@ -282,8 +282,8 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 				headNumber = headers[0].Number.Uint64() - 1 // inserted[0].num-1 ?
 				headHeader = hc.GetHeader(headHash, headNumber)
 			)
-			for rawdb.ReadCanonicalHash_multiChain(hc.chainDb, headNumber, hc.currentChainType) != headHash {
-				rawdb.WriteCanonicalHash_multiChain(markerBatch, headHash, headNumber, hc.currentChainType)
+			for rawdb.ReadCanonicalHashChains(hc.chainDb, headNumber, hc.currentChainType) != headHash {
+				rawdb.WriteCanonicalHashChains(markerBatch, headHash, headNumber, hc.currentChainType)
 				headHash = headHeader.ParentHash
 				headNumber = headHeader.Number.Uint64() - 1
 				headHeader = hc.GetHeader(headHash, headNumber)
@@ -295,14 +295,14 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 			for i := 0; i < firstInserted; i++ {
 				hash := headers[i].Hash()
 				num := headers[i].Number.Uint64()
-				rawdb.WriteCanonicalHash_multiChain(markerBatch, hash, num, hc.currentChainType)
-				rawdb.WriteHeadHeaderHash_multiChain(markerBatch, hash, hc.currentChainType)
+				rawdb.WriteCanonicalHashChains(markerBatch, hash, num, hc.currentChainType)
+				rawdb.WriteHeadHeaderHashChains(markerBatch, hash, hc.currentChainType)
 			}
 		}
 		// Extend the canonical chain with the new headers
 		for _, hn := range inserted {
-			rawdb.WriteCanonicalHash_multiChain(markerBatch, hn.hash, hn.number, hc.currentChainType)
-			rawdb.WriteHeadHeaderHash_multiChain(markerBatch, hn.hash, hc.currentChainType)
+			rawdb.WriteCanonicalHashChains(markerBatch, hn.hash, hn.number, hc.currentChainType)
+			rawdb.WriteHeadHeaderHashChains(markerBatch, hn.hash, hc.currentChainType)
 		}
 		if err := markerBatch.Write(); err != nil {
 			log.Crit("Failed to write header markers into disk", "err", err)
@@ -410,7 +410,7 @@ func (hc *HeaderChainStore) GetHeaderByHash(hash common.Hash) *ethereum.Header {
 // GetHeaderByNumber retrieves a block header from the database by number,
 // caching it (associated with its hash) if found.
 func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *ethereum.Header {
-	hash := rawdb.ReadCanonicalHash_multiChain(hc.chainDb, number, hc.currentChainType)
+	hash := rawdb.ReadCanonicalHashChains(hc.chainDb, number, hc.currentChainType)
 	if hash == (common.Hash{}) {
 		return nil
 	}
@@ -418,5 +418,5 @@ func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *ethereum.Header {
 }
 
 func (hc *HeaderChainStore) ReadCanonicalHash(number uint64) common.Hash {
-	return rawdb.ReadCanonicalHash_multiChain(hc.chainDb, number, hc.currentChainType)
+	return rawdb.ReadCanonicalHashChains(hc.chainDb, number, hc.currentChainType)
 }
