@@ -30,16 +30,16 @@ var (
 	RPCPortFlag = cli.IntFlag{
 		Name:  "rpcport",
 		Usage: "HTTP-RPC server listening port",
-		Value: 8545,
+		Value: 7445,
 	}
-	TrueValueFlag = cli.Uint64Flag{
+	ValueFlag = cli.Uint64Flag{
 		Name:  "value",
-		Usage: "Staking value units one true",
+		Usage: "value units one eth",
 		Value: 0,
 	}
 	FeeFlag = cli.Uint64Flag{
 		Name:  "fee",
-		Usage: "Staking fee",
+		Usage: "work fee",
 		Value: 0,
 	}
 	AddressFlag = cli.StringFlag{
@@ -62,16 +62,16 @@ var (
 		Usage: "Relayer bft key for BFT (no 0x prefix)",
 		Value: "",
 	}
-	SnailNumberFlag = cli.Uint64Flag{
+	NumberFlag = cli.Uint64Flag{
 		Name:  "blocknumber",
 		Usage: "Query reward use block number,please current block number -14",
 	}
-	ImpawnFlags = []cli.Flag{
+	RegisterFlags = []cli.Flag{
 		KeyFlag,
 		KeyStoreFlag,
 		RPCListenAddrFlag,
 		RPCPortFlag,
-		TrueValueFlag,
+		ValueFlag,
 		FeeFlag,
 		PubKeyKeyFlag,
 		BFTKeyKeyFlag,
@@ -80,24 +80,24 @@ var (
 
 func init() {
 	app = cli.NewApp()
-	app.Usage = "AbeyChain Impawn tool"
+	app.Usage = "Atlas Register Tool"
 	app.Name = filepath.Base(os.Args[0])
 	app.Version = "1.0.0"
-	app.Copyright = "Copyright 2019-2020 The AbeyChain Authors"
+	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
 	app.Flags = []cli.Flag{
 		KeyFlag,
 		KeyStoreFlag,
 		RPCListenAddrFlag,
 		RPCPortFlag,
-		TrueValueFlag,
+		ValueFlag,
 		FeeFlag,
 		AddressFlag,
 		TxHashFlag,
 		PubKeyKeyFlag,
-		SnailNumberFlag,
+		NumberFlag,
 		BFTKeyKeyFlag,
 	}
-	app.Action = MigrateFlags(impawn)
+	app.Action = MigrateFlags(register)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
@@ -105,15 +105,12 @@ func init() {
 	// Add subcommands.
 	app.Commands = []cli.Command{
 		AppendCommand,
-		UpdateFeeCommand,
 		UpdatePKCommand,
-		cancelCommand,
 		withdrawCommand,
-		queryStakingCommand,
+		queryRegisterCommand,
 		sendCommand,
-		delegateCommand,
 		queryTxCommand,
-		queryRewardCommand,
+		queryBalanceCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))

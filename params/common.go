@@ -41,9 +41,9 @@ var (
 	ErrNotSequential     = errors.New("epoch id not sequential")
 	ErrInvalidEpochInfo  = errors.New("Invalid epoch info")
 	ErrNotFoundEpoch     = errors.New("cann't found the epoch info")
-	ErrInvalidStaking    = errors.New("Invalid staking account")
+	ErrInvalidRegister   = errors.New("Invalid register account")
 	ErrMatchEpochID      = errors.New("wrong match epoch id in a reward block")
-	ErrNotStaking        = errors.New("Not match the staking account")
+	ErrNotRegister       = errors.New("Not match the register account")
 	ErrNotDelegation     = errors.New("Not match the delegation account")
 	ErrNotMatchEpochInfo = errors.New("the epoch info is not match with accounts")
 	ErrNotElectionTime   = errors.New("not time to election the next committee")
@@ -59,14 +59,13 @@ const (
 	StateRegisterOnce uint8 = 1 << iota
 	// StateResgisterAuto can be election in every epoch
 	StateResgisterAuto
-	StateStakingCancel
 	// StateRedeem can be redeem real time (after MaxRedeemHeight block)
 	StateRedeem
 	// StateRedeemed flag the asset which is staking in the height is redeemed
 	StateRedeemed
 )
 const (
-	OpQueryStaking uint8 = 1 << iota
+	OpQueryRegister uint8 = 1 << iota
 	OpQueryLocked
 	OpQueryCancelable
 	OpQueryReward

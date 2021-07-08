@@ -38,13 +38,13 @@ func newRelayerCache() *RelayerCache {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-type PairstakingValue struct {
+type PairRegisterValue struct {
 	Amount *big.Int
 	Height *big.Int
 	State  uint8
 }
 
-func (v *PairstakingValue) isElection() bool {
+func (v *PairRegisterValue) isElection() bool {
 	return (v.State&params.StateRegisterOnce != 0 || v.State&params.StateResgisterAuto != 0)
 }
 
@@ -92,7 +92,7 @@ func newRedeemItem(eid uint64, amount *big.Int) *RedeemItem {
 
 type registerUnit struct {
 	Address    common.Address
-	Value      []*PairstakingValue // sort by height
+	Value      []*PairRegisterValue // sort by height
 	RedeemInof []*RedeemItem
 	Reward     []*RewardItem
 	Fine       []*FineItem
@@ -115,7 +115,7 @@ func (s *registerUnit) getFine(epochID uint64) *big.Int {
 	return nil
 }
 
-func (s *registerUnit) getAllStaking(hh uint64) *big.Int {
+func (s *registerUnit) getAllRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, v := range s.Value {
 		if v.Height.Uint64() <= hh {
@@ -126,7 +126,7 @@ func (s *registerUnit) getAllStaking(hh uint64) *big.Int {
 	}
 	return all
 }
-func (s *registerUnit) getValidStaking(hh uint64) *big.Int {
+func (s *registerUnit) getValidRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, v := range s.Value {
 		if v.Height.Uint64() <= hh {
@@ -144,7 +144,7 @@ func (s *registerUnit) getValidStaking(hh uint64) *big.Int {
 		if res.Sign() >= 0 {
 			return res
 		} else {
-			log.Error("getValidStaking error", "all amount", all, "redeem amount", r.Amount, "height", hh)
+			log.Error("getValidRegister error", "all amount", all, "redeem amount", r.Amount, "height", hh)
 			return big.NewInt(0)
 		}
 	}
@@ -172,9 +172,9 @@ func (s *registerUnit) getRedeemItem(epochID uint64) *RedeemItem {
 	return nil
 }
 
-// stopStakingInfo redeem delay in next epoch + MaxRedeemHeight
-func (s *registerUnit) stopStakingInfo(amount, lastHeight *big.Int) error {
-	all := s.getValidStaking(lastHeight.Uint64())
+// stopRegisterInfo redeem delay in next epoch + MaxRedeemHeight
+func (s *registerUnit) stopRegisterInfo(amount, lastHeight *big.Int) error {
+	all := s.getValidRegister(lastHeight.Uint64())
 	if all.Cmp(amount) < 0 {
 		return params.ErrAmountOver
 	}
@@ -225,7 +225,7 @@ func (s *registerUnit) redeeming(hh uint64, amount *big.Int) (common.Address, *b
 	}
 }
 
-// called by user input and it will be execute without wait for the staking be rewarded
+// called by user input and it will be execute without wait for the relayer be rewarded
 func (s *registerUnit) finishRedeemed() {
 	pos := -1
 	for i, v := range s.RedeemInof {
@@ -245,9 +245,9 @@ func (s *registerUnit) sortRedeemItems() {
 	sort.Sort(redeemByID(s.RedeemInof))
 }
 
-// merge for move from prev to next epoch,move the staking who was to be voted.
-// merge all staking to one staking with the new height(the beginning of next epoch).
-// it will remove the staking which was canceled in the prev epoch
+// merge for move from prev to next epoch,move the register who was to be voted.
+// merge all register to one register with the new height(the beginning of next epoch).
+// it will remove the register which was canceled in the prev epoch
 // called by move function.
 func (s *registerUnit) merge(epochid, hh uint64) {
 
@@ -255,12 +255,12 @@ func (s *registerUnit) merge(epochid, hh uint64) {
 	for _, v := range s.Value {
 		all = all.Add(all, v.Amount)
 	}
-	tmp := &PairstakingValue{
+	tmp := &PairRegisterValue{
 		Amount: all,
 		Height: new(big.Int).SetUint64(hh),
 		State:  params.StateResgisterAuto,
 	}
-	var val []*PairstakingValue
+	var val []*PairRegisterValue
 	redeem := s.getRedeemItem(epochid)
 	if redeem != nil {
 		left := all.Sub(all, redeem.Amount)
@@ -292,11 +292,11 @@ func (s *registerUnit) update(unit *registerUnit, move bool) {
 func (s *registerUnit) clone() *registerUnit {
 	tmp := &registerUnit{
 		Address:    s.Address,
-		Value:      make([]*PairstakingValue, 0),
+		Value:      make([]*PairRegisterValue, 0),
 		RedeemInof: make([]*RedeemItem, 0),
 	}
 	for _, v := range s.Value {
-		tmp.Value = append(tmp.Value, &PairstakingValue{
+		tmp.Value = append(tmp.Value, &PairRegisterValue{
 			Amount: new(big.Int).Set(v.Amount),
 			Height: new(big.Int).Set(v.Height),
 			State:  v.State,
@@ -354,13 +354,13 @@ func (d *DelegationAccount) update(da *DelegationAccount, move bool) {
 	d.Unit.update(da.Unit, move)
 }
 func (s *DelegationAccount) getAllStaking(hh uint64) *big.Int {
-	return s.Unit.getAllStaking(hh)
+	return s.Unit.getAllRegister(hh)
 }
 func (s *DelegationAccount) getValidStaking(hh uint64) *big.Int {
-	return s.Unit.getValidStaking(hh)
+	return s.Unit.getValidRegister(hh)
 }
 func (s *DelegationAccount) stopStakingInfo(amount, lastHeight *big.Int) error {
-	return s.Unit.stopStakingInfo(amount, lastHeight)
+	return s.Unit.stopRegisterInfo(amount, lastHeight)
 }
 func (s *DelegationAccount) redeeming(hh uint64, amount *big.Int) (common.Address, *big.Int, error) {
 	return s.Unit.redeeming(hh, amount)
@@ -400,7 +400,7 @@ func (s *RegisterAccount) isInRelayer() bool {
 func (s *RegisterAccount) addAmount(height uint64, amount *big.Int) {
 	unit := &registerUnit{
 		Address: s.Unit.Address,
-		Value: []*PairstakingValue{&PairstakingValue{
+		Value: []*PairRegisterValue{&PairRegisterValue{
 			Amount: new(big.Int).Set(amount),
 			Height: new(big.Int).SetUint64(height),
 			State:  params.StateResgisterAuto,
@@ -449,8 +449,8 @@ func (s *RegisterAccount) update(sa *RegisterAccount, hh uint64, next, move bool
 		s.Delegation, _ = fromDelegationByAmount(tmp)
 	}
 }
-func (s *RegisterAccount) stopStakingInfo(amount, lastHeight *big.Int) error {
-	return s.Unit.stopStakingInfo(amount, lastHeight)
+func (s *RegisterAccount) stopRegisterInfo(amount, lastHeight *big.Int) error {
+	return s.Unit.stopRegisterInfo(amount, lastHeight)
 }
 func (s *RegisterAccount) redeeming(hh uint64, amount *big.Int) (common.Address, *big.Int, error) {
 	return s.Unit.redeeming(hh, amount)
@@ -458,22 +458,22 @@ func (s *RegisterAccount) redeeming(hh uint64, amount *big.Int) (common.Address,
 func (s *RegisterAccount) finishRedeemed() {
 	s.Unit.finishRedeemed()
 }
-func (s *RegisterAccount) getAllStaking(hh uint64) *big.Int {
-	all := s.Unit.getAllStaking(hh)
+func (s *RegisterAccount) getAllRegister(hh uint64) *big.Int {
+	all := s.Unit.getAllRegister(hh)
 	for _, v := range s.Delegation {
 		all = all.Add(all, v.getAllStaking(hh))
 	}
 	return all
 }
-func (s *RegisterAccount) getValidStaking(hh uint64) *big.Int {
-	all := s.Unit.getValidStaking(hh)
+func (s *RegisterAccount) getValidRegister(hh uint64) *big.Int {
+	all := s.Unit.getValidRegister(hh)
 	for _, v := range s.Delegation {
 		all = all.Add(all, v.getValidStaking(hh))
 	}
 	return all
 }
-func (s *RegisterAccount) getValidStakingOnly(hh uint64) *big.Int {
-	return s.Unit.getValidStaking(hh)
+func (s *RegisterAccount) getValidRegisterOnly(hh uint64) *big.Int {
+	return s.Unit.getValidRegister(hh)
 }
 func (s *RegisterAccount) merge(epochid, hh, effectHeight uint64) {
 	s.Unit.merge(epochid, hh)
@@ -570,17 +570,17 @@ func (s *RegisterAccount) makeModifyStateByTip10() {
 
 type SARegister []*RegisterAccount
 
-func (s *SARegister) getAllStaking(hh uint64) *big.Int {
+func (s *SARegister) getAllRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, val := range *s {
-		all = all.Add(all, val.getAllStaking(hh))
+		all = all.Add(all, val.getAllRegister(hh))
 	}
 	return all
 }
-func (s *SARegister) getValidStaking(hh uint64) *big.Int {
+func (s *SARegister) getValidRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, val := range *s {
-		all = all.Add(all, val.getValidStaking(hh))
+		all = all.Add(all, val.getValidRegister(hh))
 	}
 	return all
 }
@@ -590,9 +590,9 @@ func (s *SARegister) sort(hh uint64, valid bool) {
 		sort.Sort(tmp)
 		v.Delegation, _ = fromDelegationByAmount(tmp)
 	}
-	tmp := toStakingByAmount(hh, valid, *s)
+	tmp := toRegisterByAmount(hh, valid, *s)
 	sort.Sort(tmp)
-	*s, _ = fromStakingByAmount(tmp)
+	*s, _ = fromRegisterByAmount(tmp)
 }
 func (s *SARegister) getSA(addr common.Address) *RegisterAccount {
 	for _, val := range *s {
@@ -701,9 +701,9 @@ func (i *RegisterImpl) repeatPK(addr common.Address, pk []byte) bool {
 	}
 	return false
 }
-func (i *RegisterImpl) GetStakingAccount(epochid uint64, addr common.Address) (*RegisterAccount, error) {
+func (i *RegisterImpl) GetRegisterAccount(epochid uint64, addr common.Address) (*RegisterAccount, error) {
 	if v, ok := i.accounts[epochid]; !ok {
-		return nil, params.ErrInvalidStaking
+		return nil, params.ErrInvalidRegister
 	} else {
 		for _, val := range v {
 			if bytes.Equal(val.Unit.Address.Bytes(), addr.Bytes()) {
@@ -711,7 +711,7 @@ func (i *RegisterImpl) GetStakingAccount(epochid uint64, addr common.Address) (*
 			}
 		}
 	}
-	return nil, params.ErrInvalidStaking
+	return nil, params.ErrInvalidRegister
 }
 func (i *RegisterImpl) getDAfromSA(sa *RegisterAccount, addr common.Address) (*DelegationAccount, error) {
 	for _, ii := range sa.Delegation {
@@ -839,7 +839,7 @@ func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, e
 		impawns := SARegister(sas)
 		impawns.sort(target, false)
 		var res []*SARewardInfos
-		allValidatorStaking := impawns.getAllStaking(target)
+		allValidatorStaking := impawns.getAllRegister(target)
 		sum := len(impawns)
 		left := big.NewInt(0)
 
@@ -847,7 +847,7 @@ func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, e
 			var info SARewardInfos
 			var item RewardInfo
 			item.Address = v.Unit.GetRewardAddress()
-			allStaking := v.getAllStaking(target)
+			allStaking := v.getAllRegister(target)
 			if allStaking.Sign() <= 0 {
 				continue
 			}
@@ -948,7 +948,7 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 		val.sort(height, true)
 		var ee []*RegisterAccount
 		for _, v := range val {
-			validStaking := v.getValidStakingOnly(height)
+			validStaking := v.getValidRegisterOnly(height)
 			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
 			if validStaking.Cmp(params.ElectionMinLimitForRegister) < 0 && num < params.MinWorkEfficiency && i.curEpochID > 1 {
 				continue
@@ -965,7 +965,7 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 	}
 }
 
-// Shift will move the staking account which has election flag to the next epoch
+// Shift will move the register account which has election flag to the next epoch
 // it will be save the whole state in the current epoch end block after it called by consensus
 func (i *RegisterImpl) Shift(epochid, effectHeight uint64) error {
 	lastReward := i.lastReward
@@ -985,7 +985,7 @@ func (i *RegisterImpl) Shift(epochid, effectHeight uint64) error {
 	return i.move(prev, epochid, effectHeight)
 }
 
-// CancelSAccount cancel amount of asset for staking account,it will be work in next epoch
+// CancelSAccount cancel amount of asset for register account,it will be work in next epoch
 func (i *RegisterImpl) CancelSAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
 		return params.ErrInvalidParam
@@ -994,11 +994,11 @@ func (i *RegisterImpl) CancelSAccount(curHeight uint64, addr common.Address, amo
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
 		return params.ErrInvalidParam
 	}
-	sa, err := i.GetStakingAccount(curEpoch.EpochID, addr)
+	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addr)
 	if err != nil {
 		return err
 	}
-	err2 := sa.stopStakingInfo(amount, new(big.Int).SetUint64(curHeight))
+	err2 := sa.stopRegisterInfo(amount, new(big.Int).SetUint64(curHeight))
 	// fmt.Println("[SA]insert a redeem,address:[", addr.String(), "],amount:[", amount.String(), "],height:", curHeight, "]err:", err2)
 	return err2
 }
@@ -1012,7 +1012,7 @@ func (i *RegisterImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Ad
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
 		return params.ErrInvalidParam
 	}
-	sa, err := i.GetStakingAccount(curEpoch.EpochID, addrSA)
+	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addrSA)
 	if err != nil {
 		return err
 	}
@@ -1029,7 +1029,7 @@ func (i *RegisterImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Ad
 	return err3
 }
 
-// RedeemSAccount redeem amount of asset for staking account,it will locked for a certain time
+// RedeemSAccount redeem amount of asset for register account,it will locked for a certain time
 func (i *RegisterImpl) RedeemSAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
 		return params.ErrInvalidParam
@@ -1038,7 +1038,7 @@ func (i *RegisterImpl) RedeemSAccount(curHeight uint64, addr common.Address, amo
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
 		return params.ErrInvalidParam
 	}
-	sa, err := i.GetStakingAccount(curEpoch.EpochID, addr)
+	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addr)
 	if err != nil {
 		return err
 	}
@@ -1054,7 +1054,7 @@ func (i *RegisterImpl) RedeemDAccount(curHeight uint64, addrSA, addrDA common.Ad
 	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
 		return params.ErrInvalidParam
 	}
-	sa, err := i.GetStakingAccount(curEpoch.EpochID, addrSA)
+	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addrSA)
 	if err != nil {
 		return err
 	}
@@ -1077,7 +1077,7 @@ func (i *RegisterImpl) insertDAccount(height uint64, da *DelegationAccount) erro
 	if epochInfo == nil || epochInfo.EpochID > i.getCurrentEpoch() {
 		return params.ErrOverEpochID
 	}
-	sa, err := i.GetStakingAccount(epochInfo.EpochID, da.SaAddress)
+	sa, err := i.GetRegisterAccount(epochInfo.EpochID, da.SaAddress)
 	if err != nil {
 		return err
 	}
@@ -1086,10 +1086,10 @@ func (i *RegisterImpl) insertDAccount(height uint64, da *DelegationAccount) erro
 	} else {
 		if ds == nil {
 			sa.Delegation = append(sa.Delegation, da)
-			log.Debug("Insert delegation account", "staking account", sa.Unit.GetRewardAddress(), "account", da.Unit.GetRewardAddress())
+			log.Debug("Insert delegation account", "register account", sa.Unit.GetRewardAddress(), "account", da.Unit.GetRewardAddress())
 		} else {
 			ds.update(da, false)
-			log.Debug("Update delegation account", "staking account", sa.Unit.GetRewardAddress(), "account", da.Unit.GetRewardAddress())
+			log.Debug("Update delegation account", "register account", sa.Unit.GetRewardAddress(), "account", da.Unit.GetRewardAddress())
 		}
 	}
 	return nil
@@ -1107,7 +1107,7 @@ func (i *RegisterImpl) InsertDAccount2(height uint64, addrSA, addrDA common.Addr
 		SaAddress: addrSA,
 		Unit: &registerUnit{
 			Address: addrDA,
-			Value: []*PairstakingValue{&PairstakingValue{
+			Value: []*PairRegisterValue{&PairRegisterValue{
 				Amount: new(big.Int).Set(val),
 				Height: new(big.Int).SetUint64(height),
 				State:  state,
@@ -1130,17 +1130,17 @@ func (i *RegisterImpl) insertSAccount(height uint64, sa *RegisterAccount) error 
 		var accounts []*RegisterAccount
 		accounts = append(accounts, sa)
 		i.accounts[epochInfo.EpochID] = SARegister(accounts)
-		log.Debug("Insert staking account", "epoch", epochInfo, "account", sa.Unit.GetRewardAddress())
+		log.Debug("Insert register account", "epoch", epochInfo, "account", sa.Unit.GetRewardAddress())
 	} else {
 		for _, ii := range val {
 			if bytes.Equal(ii.Unit.Address.Bytes(), sa.Unit.Address.Bytes()) {
 				ii.update(sa, height, false, false)
-				log.Debug("Update staking account", "account", sa.Unit.GetRewardAddress())
+				log.Debug("Update register account", "account", sa.Unit.GetRewardAddress())
 				return nil
 			}
 		}
 		i.accounts[epochInfo.EpochID] = append(val, sa)
-		log.Debug("Insert staking account", "epoch", epochInfo, "account", sa.Unit.GetRewardAddress())
+		log.Debug("Insert register account", "epoch", epochInfo, "account", sa.Unit.GetRewardAddress())
 	}
 	return nil
 }
@@ -1164,7 +1164,7 @@ func (i *RegisterImpl) InsertSAccount2(height, effectHeight uint64, addr common.
 		Fee:        new(big.Int).Set(fee),
 		Unit: &registerUnit{
 			Address: addr,
-			Value: []*PairstakingValue{&PairstakingValue{
+			Value: []*PairRegisterValue{&PairRegisterValue{
 				Amount: new(big.Int).Set(val),
 				Height: new(big.Int).SetUint64(height),
 				State:  state,
@@ -1190,7 +1190,7 @@ func (i *RegisterImpl) AppendSAAmount(height uint64, addr common.Address, val *b
 		log.Debug("insertSAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
 		return params.ErrOverEpochID
 	}
-	sa, err := i.GetStakingAccount(epochInfo.EpochID, addr)
+	sa, err := i.GetRegisterAccount(epochInfo.EpochID, addr)
 	if err != nil {
 		return err
 	}
@@ -1206,7 +1206,7 @@ func (i *RegisterImpl) UpdateSAFee(height uint64, addr common.Address, fee *big.
 		log.Info("UpdateSAFee", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
 		return params.ErrOverEpochID
 	}
-	sa, err := i.GetStakingAccount(epochInfo.EpochID, addr)
+	sa, err := i.GetRegisterAccount(epochInfo.EpochID, addr)
 	if err != nil {
 		return err
 	}
@@ -1229,7 +1229,7 @@ func (i *RegisterImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte)
 		log.Info("UpdateSAPK", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
 		return params.ErrOverEpochID
 	}
-	sa, err := i.GetStakingAccount(epochInfo.EpochID, addr)
+	sa, err := i.GetRegisterAccount(epochInfo.EpochID, addr)
 	if err != nil {
 		return err
 	}
@@ -1255,7 +1255,7 @@ func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) 
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// GetStakings return all staking accounts of the current epoch
+// GetStakings return all register accounts of the current epoch
 func (i *RegisterImpl) GetAllStakingAccount() SARegister {
 	if val, ok := i.accounts[i.curEpochID]; ok {
 		return val
@@ -1264,10 +1264,10 @@ func (i *RegisterImpl) GetAllStakingAccount() SARegister {
 	}
 }
 
-// GetStakingAsset returns a map for all staking amount of the address, the key is the SA address
+// GetStakingAsset returns a map for all register amount of the address, the key is the SA address
 func (i *RegisterImpl) GetStakingAsset(addr common.Address) map[common.Address]*RelayerValue {
 	epochid := i.curEpochID
-	res, _, _, _ := i.getAsset(addr, epochid, params.OpQueryStaking)
+	res, _, _, _ := i.getAsset(addr, epochid, params.OpQueryRegister)
 	return res
 }
 
@@ -1291,7 +1291,7 @@ func (i *RegisterImpl) GetLockedAsset2(addr common.Address, height uint64) map[c
 func (i *RegisterImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	epochid := i.curEpochID
 	locked, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
-	staked, _, _, _ := i.getAsset(addr, epochid, params.OpQueryStaking)
+	staked, _, _, _ := i.getAsset(addr, epochid, params.OpQueryRegister)
 	_, unlock, _, _ := i.getAsset(addr, epochid, params.OpQueryCancelable)
 	_, _, reward, _ := i.getAsset(addr, epochid, params.OpQueryReward)
 	_, _, _, fine := i.getAsset(addr, epochid, params.OpQueryFine)
@@ -1342,7 +1342,7 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 		res4 := make(map[common.Address]*FineItem)
 		for _, v := range val {
 			if bytes.Equal(v.Unit.Address.Bytes(), addr.Bytes()) {
-				if op&params.OpQueryStaking != 0 || op&params.OpQueryLocked != 0 {
+				if op&params.OpQueryRegister != 0 || op&params.OpQueryLocked != 0 {
 					if _, ok := res[addr]; !ok {
 						if op&params.OpQueryLocked != 0 {
 							res[addr] = &RelayerValue{
@@ -1355,11 +1355,11 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 						}
 
 					} else {
-						log.Error("getAsset", "repeat staking account", addr, "epochid", epochid, "op", op)
+						log.Error("getAsset", "repeat register account", addr, "epochid", epochid, "op", op)
 					}
 				}
 				if op&params.OpQueryCancelable != 0 {
-					all := v.Unit.getValidStaking(end)
+					all := v.Unit.getValidRegister(end)
 					if all.Sign() >= 0 {
 						res2[addr] = all
 					}
@@ -1430,8 +1430,8 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	//hash := RlpHash(data)
 	var temp RegisterImpl
 	if cc, ok := IC.Cache.Get(hash); ok {
-		impawn := cc.(*RegisterImpl)
-		temp = *(CloneRegisterImpl(impawn))
+		register := cc.(*RegisterImpl)
+		temp = *(CloneRegisterImpl(register))
 	} else {
 		if err := rlp.DecodeBytes(data, &temp); err != nil {
 			log.Error("Invalid RegisterImpl entry RLP", "err", err)
@@ -1511,7 +1511,7 @@ func (i *RegisterImpl) Summay() *RegisterSummay {
 			BeginHeight: info.BeginHeight,
 			EndHeight:   info.EndHeight,
 		}
-		item.AllAmount = val.getValidStaking(info.EndHeight)
+		item.AllAmount = val.getValidRegister(info.EndHeight)
 		daSum, saSum := 0, len(val)
 		for _, vv := range val {
 			daSum = daSum + len(vv.Delegation)
@@ -1528,7 +1528,7 @@ func (i *RegisterImpl) Summay() *RegisterSummay {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-type valuesByHeight []*PairstakingValue
+type valuesByHeight []*PairRegisterValue
 
 func (vs valuesByHeight) Len() int {
 	return len(vs)
@@ -1541,7 +1541,7 @@ func (vs valuesByHeight) Swap(i, j int) {
 	vs[i] = vs[j]
 	vs[j] = it
 }
-func (vs valuesByHeight) find(hh uint64) (*PairstakingValue, int) {
+func (vs valuesByHeight) find(hh uint64) (*PairRegisterValue, int) {
 	low, height := 0, len(vs)-1
 	mid := 0
 	for low <= height {
@@ -1559,13 +1559,13 @@ func (vs valuesByHeight) find(hh uint64) (*PairstakingValue, int) {
 	}
 	return nil, mid
 }
-func (vs valuesByHeight) update(val *PairstakingValue) valuesByHeight {
+func (vs valuesByHeight) update(val *PairRegisterValue) valuesByHeight {
 	item, pos := vs.find(val.Height.Uint64())
 	if item != nil {
 		item.Amount = item.Amount.Add(item.Amount, val.Amount)
 		item.State |= val.State
 	} else {
-		rear := append([]*PairstakingValue{}, vs[pos:]...)
+		rear := append([]*PairRegisterValue{}, vs[pos:]...)
 		vs = append(append(vs[:pos], val), rear...)
 	}
 	return vs
@@ -1585,35 +1585,35 @@ func (vs redeemByID) Swap(i, j int) {
 	vs[j] = it
 }
 
-type stakingItem struct {
+type registerItem struct {
 	item   *RegisterAccount
 	height uint64
 	valid  bool
 }
 
-func (s *stakingItem) getAll() *big.Int {
+func (s *registerItem) getAll() *big.Int {
 	if s.valid {
-		return s.item.getValidStaking(s.height)
+		return s.item.getValidRegister(s.height)
 	} else {
-		return s.item.getAllStaking(s.height)
+		return s.item.getAllRegister(s.height)
 	}
 }
 
-type stakingByAmount []*stakingItem
+type registerByAmount []*registerItem
 
-func toStakingByAmount(hh uint64, valid bool, items []*RegisterAccount) stakingByAmount {
-	var tmp []*stakingItem
+func toRegisterByAmount(hh uint64, valid bool, items []*RegisterAccount) registerByAmount {
+	var tmp []*registerItem
 	for _, v := range items {
 		v.Unit.sort()
-		tmp = append(tmp, &stakingItem{
+		tmp = append(tmp, &registerItem{
 			item:   v,
 			height: hh,
 			valid:  valid,
 		})
 	}
-	return stakingByAmount(tmp)
+	return registerByAmount(tmp)
 }
-func fromStakingByAmount(items stakingByAmount) ([]*RegisterAccount, uint64) {
+func fromRegisterByAmount(items registerByAmount) ([]*RegisterAccount, uint64) {
 	var tmp []*RegisterAccount
 	var vv uint64
 	for _, v := range items {
@@ -1622,13 +1622,13 @@ func fromStakingByAmount(items stakingByAmount) ([]*RegisterAccount, uint64) {
 	}
 	return tmp, vv
 }
-func (vs stakingByAmount) Len() int {
+func (vs registerByAmount) Len() int {
 	return len(vs)
 }
-func (vs stakingByAmount) Less(i, j int) bool {
+func (vs registerByAmount) Less(i, j int) bool {
 	return vs[i].getAll().Cmp(vs[j].getAll()) > 0
 }
-func (vs stakingByAmount) Swap(i, j int) {
+func (vs registerByAmount) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
 	vs[j] = it
@@ -1684,11 +1684,11 @@ func (vs delegationItemByAmount) Swap(i, j int) {
 }
 
 func GetCurrentEpochID(evm *EVM) (uint64, error) {
-	impawn := NewRegisterImpl()
-	err := impawn.Load(evm.StateDB, HeaderStoreAddress)
+	register := NewRegisterImpl()
+	err := register.Load(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
 		log.Error("relayer_cli load error", "error", err)
 		return 0, err
 	}
-	return impawn.getCurrentEpoch(), nil
+	return register.getCurrentEpoch(), nil
 }

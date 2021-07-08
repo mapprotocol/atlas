@@ -139,7 +139,7 @@ func TestGetPeriodHeight(t *testing.T) {
 	impawn := NewRegisterImpl()
 	impawn.Load(evm.StateDB, common.Address{'1'})
 	info, h := impawn.GetCurrentEpochInfo()
-	isRelayer, _ := impawn.GetStakingAccount(h, common.Address{'1'})
+	isRelayer, _ := impawn.GetRegisterAccount(h, common.Address{'1'})
 
 	for _, v := range info {
 		if h == v.EpochID {

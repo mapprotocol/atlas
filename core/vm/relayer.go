@@ -275,8 +275,8 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 		return nil, err
 	}
 	//stakingAccount->relayer
-	impawn.GetStakingAccount(h, args.relayer)
-	isRelayer, _ := impawn.GetStakingAccount(h, args.relayer)
+	impawn.GetRegisterAccount(h, args.relayer)
+	isRelayer, _ := impawn.GetRegisterAccount(h, args.relayer)
 	if isRelayer == nil {
 		ret, err = method.Outputs.Pack(nil, nil, nil, false)
 		return ret, err

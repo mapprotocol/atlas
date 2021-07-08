@@ -33,25 +33,25 @@ var (
 )
 
 var (
-	abiStaking, _ = abi.JSON(strings.NewReader(vm.RelayerABIJSON))
+	abiRelayer, _ = abi.JSON(strings.NewReader(vm.RelayerABIJSON))
 	priKey        *ecdsa.PrivateKey
 	from          common.Address
-	trueValue     uint64
+	Value         uint64
 	fee           uint64
 	holder        common.Address
 	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	StakingAddress common.Address = common.BytesToAddress([]byte("truestaking"))
+	RelayerAddress common.Address = common.BytesToAddress([]byte("relayeraddress"))
 	Base                          = new(big.Int).SetUint64(10000)
 )
 
 const (
 	datadirPrivateKey      = "key"
 	datadirDefaultKeyStore = "keystore"
-	ImpawnAmount           = 20000
+	RegisterAmount         = 100000
 	RewardInterval         = 14
 )
 
-func impawn(ctx *cli.Context) error {
+func register(ctx *cli.Context) error {
 
 	loadPrivate(ctx)
 
@@ -61,20 +61,20 @@ func impawn(ctx *cli.Context) error {
 
 	PrintBalance(conn, from)
 
-	value := trueToWei(ctx, false)
+	value := ethToWei(ctx, false)
 
-	if trueValue < ImpawnAmount {
-		printError("Impawn value must bigger than ", ImpawnAmount)
+	if Value < RegisterAmount {
+		printError("Amount must bigger than ", RegisterAmount)
 	}
 
 	fee = ctx.GlobalUint64(FeeFlag.Name)
 	checkFee(new(big.Int).SetUint64(fee))
 
-	pubkey, pk, _ := getPubKey(ctx, conn)
+	pubkey, pk, _ := getPubKey(ctx)
 
 	fmt.Println("Fee", fee, " Pubkey ", pubkey, " value ", value)
-	input := packInput("deposit", pk, new(big.Int).SetUint64(fee), value)
-	txHash := sendContractTransaction(conn, from, StakingAddress, nil, priKey, input)
+	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
+	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
 	getResult(conn, txHash, true, false)
 
@@ -87,7 +87,7 @@ func checkFee(fee *big.Int) {
 	}
 }
 
-func getPubKey(ctx *cli.Context, conn *ethclient.Client) (string, []byte, error) {
+func getPubKey(ctx *cli.Context) (string, []byte, error) {
 	var (
 		pubkey string
 		err    error
@@ -161,41 +161,6 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	return signedTx.Hash()
 }
 
-func createKs() {
-	ks := keystore.NewKeyStore("./createKs", keystore.StandardScryptN, keystore.StandardScryptP)
-	password := "secret"
-	account, err := ks.NewAccount(password)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(account.Address.Hex()) // 0x20F8D42FB0F667F2E53930fed426f225752453b3
-}
-
-func importKs(password string) common.Address {
-	file, err := getAllFile(datadirDefaultKeyStore)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cks, _ := filepath.Abs(datadirDefaultKeyStore)
-
-	jsonBytes, err := ioutil.ReadFile(filepath.Join(cks, file))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//password := "secret"
-	key, err := keystore.DecryptKey(jsonBytes, password)
-	if err != nil {
-		log.Fatal(err)
-	}
-	priKey = key.PrivateKey
-	from = crypto.PubkeyToAddress(priKey.PublicKey)
-
-	fmt.Println("address ", from.Hex())
-	return from
-}
-
 func loadPrivateKey(path string) common.Address {
 	var err error
 	if path == "" {
@@ -236,17 +201,17 @@ func printError(error ...interface{}) {
 	log.Fatal(error)
 }
 
-func trueToWei(ctx *cli.Context, zero bool) *big.Int {
-	trueValue = ctx.GlobalUint64(TrueValueFlag.Name)
-	if !zero && trueValue <= 0 {
+func ethToWei(ctx *cli.Context, zero bool) *big.Int {
+	Value = ctx.GlobalUint64(ValueFlag.Name)
+	if !zero && Value <= 0 {
 		printError("Value must bigger than 0")
 	}
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	value := new(big.Int).Mul(big.NewInt(int64(trueValue)), baseUnit)
+	value := new(big.Int).Mul(big.NewInt(int64(Value)), baseUnit)
 	return value
 }
 
-func weiToTrue(value *big.Int) uint64 {
+func weiToEth(value *big.Int) uint64 {
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	valueT := new(big.Int).Div(value, baseUnit).Uint64()
 	return valueT
@@ -301,7 +266,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 		fmt.Println("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		if contract && common.IsHexAddress(from.Hex()) {
-			queryStakingInfo(conn, false, delegate)
+			queryRegisterInfo(conn, false, delegate)
 		}
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		fmt.Println("Transaction Failed ", " Block Number", receipt.BlockNumber.Uint64())
@@ -309,7 +274,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 }
 
 func packInput(abiMethod string, params ...interface{}) []byte {
-	input, err := abiStaking.Pack(abiMethod, params...)
+	input, err := abiRelayer.Pack(abiMethod, params...)
 	if err != nil {
 		printError(abiMethod, " error ", err)
 	}
@@ -418,7 +383,7 @@ func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
 	}
 }
 
-func queryStakingInfo(conn *ethclient.Client, query bool, delegate bool) {
+func queryRegisterInfo(conn *ethclient.Client, query bool, delegate bool) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -429,7 +394,7 @@ func queryStakingInfo(conn *ethclient.Client, query bool, delegate bool) {
 	} else {
 		input = packInput("getDeposit", from)
 	}
-	msg := ethchain.CallMsg{From: from, To: &StakingAddress, Data: input}
+	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		printError("method CallContract error", err)
@@ -440,13 +405,13 @@ func queryStakingInfo(conn *ethclient.Client, query bool, delegate bool) {
 			Locked   *big.Int
 			Unlocked *big.Int
 		}{}
-		err = abiStaking.UnpackIntoInterface(&args, "getDeposit", output)
+		err = abiRelayer.UnpackIntoInterface(&args, "getDeposit", output)
 		if err != nil {
 			printError("abi error", err)
 		}
-		fmt.Println("Staked ", args.Staked.String(), "wei =", weiToTrue(args.Staked), "true Locked ",
-			args.Locked.String(), " wei =", weiToTrue(args.Locked), "true",
-			"Unlocked ", args.Unlocked.String(), " wei =", weiToTrue(args.Unlocked), "true")
+		fmt.Println("Staked ", args.Staked.String(), "wei =", weiToEth(args.Staked), "true Locked ",
+			args.Locked.String(), " wei =", weiToEth(args.Locked), "true",
+			"Unlocked ", args.Unlocked.String(), " wei =", weiToEth(args.Unlocked), "true")
 		if query && args.Locked.Sign() > 0 {
 			lockAssets, err := conn.GetLockedAsset(context.Background(), from, header.Number)
 			if err != nil {

@@ -371,10 +371,9 @@ func DefaultGenesisBlock() *Genesis {
 		Config:     params2.MainnetChainConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   5000,
+		GasLimit:   50000000,
 		Difficulty: big.NewInt(1200000),
 		Alloc:      defaultRelayer(),
-		//Alloc:      decodePrealloc(mainnetAllocData),
 	}
 }
 
@@ -386,7 +385,7 @@ func DefaultRopstenGenesisBlock() *Genesis {
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,
 		Difficulty: big.NewInt(1000000),
-		Alloc:      defaultRelayer(), //decodePrealloc(ropstenAllocData),
+		Alloc:      defaultRelayer(),
 	}
 }
 
@@ -404,18 +403,6 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 		GasLimit:   11500000,
 		Difficulty: big.NewInt(1),
 		Alloc:      dc,
-		//	map[common.Address]GenesisAccount{
-		//	common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
-		//	common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
-		//	common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
-		//	common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
-		//	common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
-		//	common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
-		//	common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
-		//	common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-		//	common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
-		//	faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
-		//},
 	}
 }
 
@@ -434,18 +421,6 @@ func SingleGenesisBlock(period uint64, faucet common.Address) *Genesis {
 		GasLimit:   11500000,
 		Difficulty: big.NewInt(1),
 		Alloc:      dc,
-		//	map[common.Address]GenesisAccount{
-		//	common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
-		//	common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
-		//	common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
-		//	common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
-		//	common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
-		//	common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
-		//	common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
-		//	common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-		//	common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
-		//	faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
-		//},
 	}
 }
 func decodePrealloc(data string) GenesisAlloc {

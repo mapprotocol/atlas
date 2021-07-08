@@ -27,25 +27,25 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/mapprotocol/atlas/accounts"
-	"github.com/mapprotocol/atlas/accounts/abi"
-	"github.com/mapprotocol/atlas/accounts/keystore"
-	"github.com/mapprotocol/atlas/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/mapprotocol/atlas/consensus/clique"
-	"github.com/mapprotocol/atlas/consensus/ethash"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/accounts/keystore"
+	"github.com/mapprotocol/atlas/accounts/scwallet"
+	"github.com/mapprotocol/atlas/consensus/clique"
+	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/tyler-smith/go-bip39"
 )
 
@@ -2110,4 +2110,21 @@ func toHexSlice(b [][]byte) []string {
 		r[i] = hexutil.Encode(b[i])
 	}
 	return r
+}
+
+type PublicRelayerAPI struct {
+	b Backend
+}
+
+func (s *PublicRelayerAPI) GetRelayers(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]common.Address, error) {
+	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	if state == nil || err != nil {
+		return nil, err
+	}
+	re := vm.GetCurrentRelayer(state)
+	addr := make([]common.Address, 0)
+	for i := 0; i < len(re); i++ {
+		addr = append(addr, re[i].Coinbase)
+	}
+	return addr, nil
 }
