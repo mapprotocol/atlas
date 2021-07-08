@@ -22,6 +22,7 @@ import (
 	"fmt"
 	chain2 "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/txsdetails"
+	params2 "github.com/mapprotocol/atlas/params"
 	"io"
 	"io/ioutil"
 	"math"
@@ -1575,13 +1576,13 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	switch {
 	case ctx.GlobalBool(MainnetFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 1
+			cfg.NetworkId = params2.MainnetNetWorkID
 		}
 		cfg.Genesis = chain2.DefaultGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
 	case ctx.GlobalBool(RopstenFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 3
+			cfg.NetworkId = params2.RopstenNetWorkID
 		}
 		cfg.Genesis = chain2.DefaultRopstenGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.RopstenGenesisHash)
