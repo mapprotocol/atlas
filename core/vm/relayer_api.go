@@ -1389,7 +1389,7 @@ func (i *RegisterImpl) MakeModifyStateByTip10() {
 		for _, v := range val {
 			v.makeModifyStateByTip10()
 		}
-		log.Info("relayerCLI: MakeModifyStateByTip10")
+		log.Info("relayer_cli: MakeModifyStateByTip10")
 	}
 }
 
@@ -1443,7 +1443,7 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 		}
 		// cache = false
 	}
-	// log.Info("-----Load relayerCLI---","len:",lenght,"count:",temp.Counts(),"cache",cache)
+	// log.Info("-----Load relayer_cli---","len:",lenght,"count:",temp.Counts(),"cache",cache)
 	i.curEpochID, i.accounts, i.lastReward = temp.curEpochID, temp.accounts, temp.lastReward
 	return nil
 }
@@ -1687,7 +1687,7 @@ func GetCurrentEpochID(evm *EVM) (uint64, error) {
 	impawn := NewRegisterImpl()
 	err := impawn.Load(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
-		log.Error("relayerCLI load error", "error", err)
+		log.Error("relayer_cli load error", "error", err)
 		return 0, err
 	}
 	return impawn.getCurrentEpoch(), nil
