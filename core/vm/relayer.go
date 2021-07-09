@@ -68,11 +68,6 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	}
 	//
 	impawn := NewRegisterImpl()
-	err = impawn.Load(evm.StateDB, params.RelayerAddress)
-	if err != nil {
-		log.Error("Staking load error", "error", err)
-		return nil, err
-	}
 	//
 	effectHeight := uint64(0)
 	err = impawn.InsertSAccount2(evm.Context.BlockNumber.Uint64(), effectHeight, from, args.Pubkey, args.Value, args.Fee, true)
@@ -114,11 +109,6 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 	}
 	//
 	impawn := NewRegisterImpl()
-	err = impawn.Load(evm.StateDB, params.RelayerAddress)
-	if err != nil {
-		log.Error("Staking load error", "error", err)
-		return nil, err
-	}
 	//
 	err = impawn.AppendSAAmount(evm.Context.BlockNumber.Uint64(), from, amount)
 	if err != nil {
@@ -159,11 +149,6 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	}
 
 	impawn := NewRegisterImpl()
-	err = impawn.Load(evm.StateDB, params.RelayerAddress)
-	if err != nil {
-		log.Error("Staking load error", "error", err)
-		return nil, err
-	}
 
 	log.Info("Staking withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "value", amount)
 	err = impawn.RedeemSAccount(evm.Context.BlockNumber.Uint64(), from, amount)
@@ -210,6 +195,11 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		log.Error("Staking load error", "error", err)
 		return nil, err
 	}
+	err = impawn.Load(evm.StateDB, params.RelayerAddress)
+	if err != nil {
+		log.Error("Staking load error", "error", err)
+		return nil, err
+	}
 
 	asset := impawn.GetAllCancelableAsset(registerAddr)
 	if stake, ok := asset[registerAddr]; ok {
@@ -244,8 +234,12 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	}
 	//RegisterAccount->relayers
 	impawn := NewRegisterImpl()
-	impawn.Load(evm.StateDB, params.RelayerAddress)
-	relayers := impawn.GetAllStakingAccount()
+	err = impawn.Load(evm.StateDB, params.RelayerAddress)
+	if err != nil {
+		log.Error("Staking load error", "error", err)
+		return nil, err
+	}
+	relayers := impawn.GetAllRegisterAccount()
 	_, h := impawn.GetCurrentEpochInfo()
 	if relayers == nil {
 		ret, err = method.Outputs.Pack(h, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -265,7 +259,11 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 		relayer common.Address
 	}{}
 	impawn := NewRegisterImpl()
-	impawn.Load(evm.StateDB, params.RelayerAddress)
+	err = impawn.Load(evm.StateDB, params.RelayerAddress)
+	if err != nil {
+		log.Error("Staking load error", "error", err)
+		return nil, err
+	}
 
 	info, h := impawn.GetCurrentEpochInfo()
 	method, _ := relayerABI.Methods["getPeriodHeight"]

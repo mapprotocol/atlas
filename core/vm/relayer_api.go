@@ -1256,7 +1256,7 @@ func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) 
 
 /////////////////////////////////////////////////////////////////////////////////
 // GetStakings return all register accounts of the current epoch
-func (i *RegisterImpl) GetAllStakingAccount() SARegister {
+func (i *RegisterImpl) GetAllRegisterAccount() SARegister {
 	if val, ok := i.accounts[i.curEpochID]; ok {
 		return val
 	} else {

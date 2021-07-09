@@ -52,7 +52,7 @@ func TestRegister(t *testing.T) {
 	//query money
 	fmt.Println(register.GetBalance(from))
 	//query relayer
-	//register.GetAllStakingAccount()
+	//register.GetAllRegisterAccount()
 	//register.GetCurrentEpochInfo()
 	//query epoch
 	info, h := register.GetCurrentEpochInfo()
