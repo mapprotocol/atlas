@@ -1256,7 +1256,7 @@ func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) 
 
 /////////////////////////////////////////////////////////////////////////////////
 // GetStakings return all register accounts of the current epoch
-func (i *RegisterImpl) GetAllStakingAccount() SARegister {
+func (i *RegisterImpl) GetAllRegisterAccount() SARegister {
 	if val, ok := i.accounts[i.curEpochID]; ok {
 		return val
 	} else {
@@ -1395,13 +1395,11 @@ func (i *RegisterImpl) MakeModifyStateByTip10() {
 
 /////////////////////////////////////////////////////////////////////////////////
 // storage layer
-func (i *RegisterImpl) GetRoot() common.Hash {
-	return common.Hash{}
-}
+
 func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data, err := rlp.EncodeToBytes(i)
-
+	fmt.Println("data:", data)
 	if err != nil {
 		log.Crit("Failed to RLP encode RegisterImpl", "err", err)
 	}
@@ -1419,15 +1417,18 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	//data := state.GetPOSState(preAddress, key)
 	hash := state.GetState(preAddress, key)
 	data, err := rlp.EncodeToBytes(hash)
+	fmt.Println("data", hash, data)
 	if err != nil {
 		return errors.New("EncodeToBytes failed")
 	}
+	//key := common.BytesToHash(preAddress[:])
+	//data := state.GetPOSState(preAddress, key)
 	//lenght := len(data)
 	//if lenght == 0 {
 	//	return errors.New("Load data = 0")
 	//}
-	// cache := true
-	//hash := RlpHash(data)
+	//// cache := true
+	//hash := types.RlpHash(data)
 	var temp RegisterImpl
 	if cc, ok := IC.Cache.Get(hash); ok {
 		register := cc.(*RegisterImpl)

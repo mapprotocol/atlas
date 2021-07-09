@@ -13,7 +13,6 @@ import (
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/ethereum"
-	"github.com/mapprotocol/atlas/params"
 )
 
 const ABI_JSON = `[
@@ -150,7 +149,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		// todo 查询 relayer 有效工作区间
 
 		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
-			headerStore.StoreAbnormalMsg(contract.CallerAddress, h.Number.Uint64(), syncLimit)
+			headerStore.StoreAbnormalMsg(contract.CallerAddress, h.Number, syncLimit)
 			continue
 		}
 		total++
@@ -168,14 +167,6 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	// reward
-	if evm.Context.BlockNumber.Uint64()%params.NewEpochLength == 0 {
-		rewards := headerStore.CalcReward(epochID, params.GetReward())
-		for addr, r := range rewards {
-			evm.StateDB.AddBalance(addr, r)
-		}
-	}
-
 	// store
 	store, err := chainsdb.GetStoreMgr(chains.ChainTypeETH)
 	if err != nil {
@@ -190,7 +181,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		height big.Int
+		height *big.Int
 	}{}
 
 	err = abiHeaderStore.UnpackIntoInterface(args, GetAbnormalMsg, input)
@@ -206,7 +197,7 @@ func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 		return nil, err
 	}
 
-	msg := headerStore.LoadAbnormalMsg(contract.CallerAddress, args.height.Uint64())
+	msg := headerStore.LoadAbnormalMsg(contract.CallerAddress, args.height)
 	if msg == "" {
 		msg = "not found abnormal msg"
 	}

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core/processor"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
 	"time"
@@ -1865,6 +1866,27 @@ func (s *PublicTransactionPoolAPI) SignTransaction(ctx context.Context, args Sen
 	return &SignTransactionResult{data, tx}, nil
 }
 
+func (s *PublicTransactionPoolAPI) GetRelayers(ctx context.Context, blockNr rpc.BlockNumber) (map[string]interface{}, error) {
+	//re := vm.GetCurrentRelayer(state)
+	//addr := make([]common.Address, 0)
+	//for i := 0; i < len(re); i++ {
+	//	addr = append(addr, re[i].Coinbase)
+	//}
+	//return addr, nil
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, blockNr)
+	if state == nil || err != nil {
+		return nil, err
+	}
+	relayer := vm.NewRegisterImpl()
+	err = relayer.Load(state, params2.RelayerAddress)
+	if err != nil {
+		log.Error("Staking load error", "error", err)
+		return nil, err
+	}
+
+	return relayer.GetAllRegisterAccountRPC(uint64(blockNr)), nil
+}
+
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
 func (s *PublicTransactionPoolAPI) PendingTransactions() ([]*RPCTransaction, error) {
@@ -2114,6 +2136,12 @@ func toHexSlice(b [][]byte) []string {
 
 type PublicRelayerAPI struct {
 	b Backend
+}
+
+func NewPublicRelayerAPI(b Backend) *PublicRelayerAPI {
+	return &PublicRelayerAPI{
+		b: b,
+	}
 }
 
 func (s *PublicRelayerAPI) GetRelayers(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]common.Address, error) {

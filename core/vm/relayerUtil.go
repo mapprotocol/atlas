@@ -413,3 +413,110 @@ func RlpHash(x interface{}) (h common.Hash) {
 	hw.Sum(h[:0])
 	return h
 }
+
+func (i *RegisterImpl) GetAllRegisterAccountRPC(height uint64) map[string]interface{} {
+	sas := i.GetAllRegisterAccount()
+	sasRPC := make(map[string]interface{}, len(sas))
+	var attrs []map[string]interface{}
+	count := 0
+	countCommittee := 0
+	for index, sa := range sas {
+		attr := make(map[string]interface{})
+		attr["id"] = index
+		attr["unit"] = unitDisplay(sa.Unit)
+		attr["votePubKey"] = hexutil.Bytes(sa.Votepubkey)
+		attr["fee"] = sa.Fee.Uint64()
+		if countCommittee <= params.CountInEpoch && isRelayerMember(i, sa.Unit.Address) {
+			attr["committee"] = true
+			countCommittee++
+		} else {
+			attr["committee"] = false
+		}
+		attr["delegation"] = daSDisplay(sa.Delegation, height)
+		if sa.Modify != nil {
+			ai := make(map[string]interface{})
+			if sa.Modify.Fee != nil {
+				ai["fee"] = sa.Modify.Fee.Uint64()
+			}
+			if sa.Modify.VotePubkey != nil {
+				ai["votePubKey"] = hexutil.Bytes(sa.Modify.VotePubkey)
+			}
+			attr["modify"] = ai
+		}
+		attr["staking"] = weiToEth(sa.getAllRegister(height))
+		attr["validStaking"] = weiToEth(sa.getValidRegister(height))
+		attrs = append(attrs, attr)
+		count = count + len(sa.Delegation)
+	}
+	sasRPC["stakers"] = attrs
+	sasRPC["stakerCount"] = len(sas)
+	sasRPC["delegateCount"] = count
+	return sasRPC
+}
+
+func unitDisplay(uint *registerUnit) map[string]interface{} {
+	attr := make(map[string]interface{})
+	attr["address"] = uint.Address
+	attr["value"] = pvSDisplay(uint.Value)
+	attr["redeemInfo"] = riSDisplay(uint.RedeemInof)
+	return attr
+}
+
+func pvSDisplay(pvs []*PairRegisterValue) []map[string]interface{} {
+	var attrs []map[string]interface{}
+	for _, pv := range pvs {
+		attr := make(map[string]interface{})
+		attr["amount"] = weiToEth(pv.Amount)
+		attr["height"] = pv.Height
+		attr["state"] = uint64(pv.State)
+		attrs = append(attrs, attr)
+	}
+	return attrs
+}
+
+func riSDisplay(ris []*RedeemItem) []map[string]interface{} {
+	var attrs []map[string]interface{}
+	for _, ri := range ris {
+		attr := make(map[string]interface{})
+		attr["amount"] = weiToEth(ri.Amount)
+		attr["epochID"] = ri.EpochID
+		attr["state"] = uint64(ri.State)
+		attrs = append(attrs, attr)
+	}
+	return attrs
+}
+
+var (
+	baseUnit  = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	fbaseUnit = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
+)
+
+func weiToEth(val *big.Int) string {
+	return new(big.Float).Quo(new(big.Float).SetInt(val), fbaseUnit).Text('f', 8)
+}
+
+func isRelayerMember(i *RegisterImpl, address common.Address) bool {
+	sas := i.getElections3(i.curEpochID)
+	if sas == nil {
+		return false
+	}
+	relayer := SARegister(sas)
+	sa := relayer.getSA(address)
+	if sa == nil {
+		return false
+	}
+	return true
+}
+
+func daSDisplay(das []*DelegationAccount, height uint64) []map[string]interface{} {
+	var attrs []map[string]interface{}
+	for _, da := range das {
+		attr := make(map[string]interface{})
+		attr["saAddress"] = da.SaAddress
+		attr["delegate"] = weiToEth(da.getAllStaking(height))
+		attr["validDelegate"] = weiToEth(da.getValidStaking(height))
+		attr["unit"] = unitDisplay(da.Unit)
+		attrs = append(attrs, attr)
+	}
+	return attrs
+}

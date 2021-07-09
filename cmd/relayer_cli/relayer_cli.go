@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	ethchain "github.com/ethereum/go-ethereum"
@@ -103,10 +104,8 @@ func getPubKey(ctx *cli.Context) (string, []byte, error) {
 		pk := crypto.FromECDSAPub(&bftKey.PublicKey)
 		pubkey = common.Bytes2Hex(pk)
 	} else {
-		//pubkey, err = conn.Pubkey(context.Background())
-		//if err != nil {
-		printError("get pubkey error", err)
-		//}
+		pk := crypto.FromECDSAPub(&priKey.PublicKey)
+		pubkey = hex.EncodeToString(pk)
 	}
 
 	pk := common.Hex2Bytes(pubkey)

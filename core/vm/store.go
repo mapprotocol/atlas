@@ -34,44 +34,66 @@ type HeaderStoreCache struct {
 	size  int
 }
 
-type storeInfo struct {
-	abnormalMsg  string
-	receiveTimes uint8
+//type HeaderStore struct {
+//	height2receiveTimes map[uint64]uint8
+//	// the first layer key is the epoch id
+//	// the second layer key is the relayer address
+//	// the value is the number of times the repeater has been synchronized
+//	relayerSyncTimes map[uint64]map[common.Address]uint64
+//	// the first layer key is the relayer address
+//	// the second layer key is the height of the block
+//	// the value is abnormal msg
+//	abnormalMsg map[common.Address]map[uint64]string
+//}
+
+type AbnormalInfo struct {
+	Height *big.Int
+	Msg    string
+}
+
+type RelayerSyncInfo struct {
+	Relayer        common.Address
+	Times          uint64
+	InvalidHeaders []*AbnormalInfo
 }
 
 type HeaderStore struct {
-	height2receiveTimes map[uint64]uint8
-	// the first layer key is the epoch id
-	// the second layer key is the relayer address
-	// the value is the number of times the repeater has been synchronized
-	relayerSyncTimes map[uint64]map[common.Address]uint64
-	// the first layer key is the relayer address
-	// the second layer key is the height of the block
-	// the value is abnormal msg
-	abnormalMsg map[common.Address]map[uint64]string
+	epoch2reward        map[uint64]*big.Int
+	height2receiveTimes map[uint64]uint64
+	epoch2syncInfo      map[uint64][]*RelayerSyncInfo
 }
 
 func NewHeaderStore() *HeaderStore {
-	return &HeaderStore{}
+	return &HeaderStore{
+		epoch2reward:        make(map[uint64]*big.Int),
+		height2receiveTimes: make(map[uint64]uint64),
+		epoch2syncInfo:      make(map[uint64][]*RelayerSyncInfo),
+	}
 }
 
 func CloneHeaderStore(src *HeaderStore) (dst *HeaderStore, err error) {
-	cp, err := DeepCopy(src)
+	dst = NewHeaderStore()
+	err = DeepCopy(src.epoch2reward, dst.epoch2reward)
 	if err != nil {
 		return nil, err
 	}
-	return cp.(*HeaderStore), nil
-}
-
-func DeepCopy(src interface{}) (dst interface{}, err error) {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
+	err = DeepCopy(src.height2receiveTimes, dst.height2receiveTimes)
+	if err != nil {
 		return nil, err
 	}
-	if err := gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst); err != nil {
+	err = DeepCopy(src.epoch2syncInfo, dst.epoch2syncInfo)
+	if err != nil {
 		return nil, err
 	}
 	return dst, nil
+}
+
+func DeepCopy(src, dst interface{}) error {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
+		return err
+	}
+	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
 func (h *HeaderStore) Store(state StateDB, address common.Address) error {
@@ -109,7 +131,7 @@ func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 			return err
 		}
 		hs = *cp
-		h.height2receiveTimes, h.relayerSyncTimes, h.abnormalMsg = hs.height2receiveTimes, hs.relayerSyncTimes, hs.abnormalMsg
+		h.epoch2reward, h.height2receiveTimes, h.epoch2syncInfo = hs.epoch2reward, hs.height2receiveTimes, hs.epoch2syncInfo
 		return nil
 	}
 
@@ -123,11 +145,28 @@ func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 		return err
 	}
 	hsCache.Cache.Add(hash, clone)
-	h.height2receiveTimes, h.relayerSyncTimes, h.abnormalMsg = hs.height2receiveTimes, hs.relayerSyncTimes, hs.abnormalMsg
+	h.epoch2reward, h.height2receiveTimes, h.epoch2syncInfo = hs.epoch2reward, hs.height2receiveTimes, hs.epoch2syncInfo
 	return nil
 }
 
-func (h *HeaderStore) GetReceiveTimes(height uint64) uint8 {
+func (h *HeaderStore) AddEpochReward(epochID uint64, reward *big.Int) {
+	r := h.epoch2reward[epochID]
+	if r == nil {
+		new(big.Int).Add(big.NewInt(0), reward)
+		return
+	}
+	new(big.Int).Add(h.epoch2reward[epochID], reward)
+}
+
+func (h *HeaderStore) GetEpochReward(epochID uint64) *big.Int {
+	r := h.epoch2reward[epochID]
+	if r == nil {
+		return big.NewInt(0)
+	}
+	return h.epoch2reward[epochID]
+}
+
+func (h *HeaderStore) GetReceiveTimes(height uint64) uint64 {
 	return h.height2receiveTimes[height]
 }
 
@@ -135,28 +174,57 @@ func (h *HeaderStore) IncrReceiveTimes(height uint64) {
 	h.height2receiveTimes[height]++
 }
 
-func (h *HeaderStore) StoreAbnormalMsg(relayer common.Address, height uint64, msg string) {
-	h.abnormalMsg[relayer][height] = msg
+func (h *HeaderStore) StoreAbnormalMsg(relayer common.Address, height *big.Int, msg string) {
+	epoch := GetEpochFromHeight(height.Uint64())
+	for i, rsi := range h.epoch2syncInfo[epoch.EpochID] {
+		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
+			h.epoch2syncInfo[epoch.EpochID][i].InvalidHeaders = append(
+				h.epoch2syncInfo[epoch.EpochID][i].InvalidHeaders,
+				&AbnormalInfo{
+					Height: height,
+					Msg:    msg,
+				})
+		}
+	}
 }
 
-func (h *HeaderStore) LoadAbnormalMsg(relayer common.Address, height uint64) string {
-	return h.abnormalMsg[relayer][height]
+func (h *HeaderStore) LoadAbnormalMsg(relayer common.Address, height *big.Int) string {
+	epoch := GetEpochFromHeight(height.Uint64())
+	for _, rsi := range h.epoch2syncInfo[epoch.EpochID] {
+		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
+			for _, h := range rsi.InvalidHeaders {
+				if h.Height.Cmp(height) == 0 {
+					return h.Msg
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func (h *HeaderStore) AddSyncTimes(epochID, amount uint64, relayer common.Address) {
-	h.relayerSyncTimes[epochID][relayer] += amount
+	for i, rsi := range h.epoch2syncInfo[epochID] {
+		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
+			h.epoch2syncInfo[epochID][i].Times += amount
+		}
+	}
 }
 
 func (h *HeaderStore) LoadSyncTimes(epochID uint64, relayer common.Address) uint64 {
-	return h.relayerSyncTimes[epochID][relayer]
+	for i, rsi := range h.epoch2syncInfo[epochID] {
+		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
+			return h.epoch2syncInfo[epochID][i].Times
+		}
+	}
+	return 0
 }
 
 func (h *HeaderStore) GetSortedRelayers(epochID uint64) []common.Address {
-	m := h.relayerSyncTimes[epochID]
-	rss := make([]string, 0, len(m))
-	rs := make([]common.Address, 0, len(m))
-	for addr := range m {
-		rss = append(rss, addr.String())
+	rsis := h.epoch2syncInfo[epochID]
+	rss := make([]string, 0, len(rsis))
+	rs := make([]common.Address, 0, len(rsis))
+	for _, rsi := range rsis {
+		rss = append(rss, rsi.Relayer.String())
 	}
 
 	sort.Strings(rss)
@@ -178,8 +246,8 @@ func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.
 		}
 
 		totalSyncTimes := uint64(0)
-		for _, t := range h.relayerSyncTimes[epochID] {
-			totalSyncTimes += t
+		for _, s := range h.epoch2syncInfo[epochID] {
+			totalSyncTimes += s.Times
 		}
 
 		times := h.LoadSyncTimes(epochID, r)
