@@ -22,19 +22,19 @@ import (
 	"github.com/mapprotocol/atlas/core/processor"
 	"math/big"
 
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/bloombits"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/mapprotocol/atlas/atlas/downloader"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -133,6 +133,11 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Version:   "1.0",
 			Service:   NewPrivateAccountAPI(apiBackend, nonceLock),
 			Public:    false,
+		}, {
+			Namespace: "relayer",
+			Version:   "1.0",
+			Service:   NewPublicRelayerAPI(apiBackend),
+			Public:    true,
 		},
 	}
 }

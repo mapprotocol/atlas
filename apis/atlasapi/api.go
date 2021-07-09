@@ -2116,6 +2116,12 @@ type PublicRelayerAPI struct {
 	b Backend
 }
 
+func NewPublicRelayerAPI(b Backend) *PublicRelayerAPI {
+	return &PublicRelayerAPI{
+		b: b,
+	}
+}
+
 func (s *PublicRelayerAPI) GetRelayers(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]common.Address, error) {
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
