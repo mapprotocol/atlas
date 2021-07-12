@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"encoding/binary"
+
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -15,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"github.com/mapprotocol/atlas/core/vm"
 	"gopkg.in/urfave/cli.v1"
@@ -58,7 +55,7 @@ const (
 	RewardInterval         = 14
 )
 
-func register(ctx *cli.Context) error {
+func register(ctx *cli.Context) *ethclient.Client {
 
 	loadPrivate(ctx)
 
@@ -84,12 +81,8 @@ func register(ctx *cli.Context) error {
 	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
 	getResult(conn, txHash, true, false)
-	//  getchains
-	chains, _ := getChains(ctx)
-	ret, _ := rlp.EncodeToBytes(chains)
-	input = packInputStore("save", "", "", ret)
-	sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
-	return nil
+
+	return conn
 }
 
 func checkFee(fee *big.Int) {
@@ -170,7 +163,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	return signedTx.Hash()
 }
 
-func loadPrivateKey(path string) common.Address {
+func loadPrivateKey(ctx *cli.Context, path string) common.Address {
 	var err error
 	if path == "" {
 		file, err := getAllFile(datadirPrivateKey)
@@ -185,6 +178,9 @@ func loadPrivateKey(path string) common.Address {
 		printError("LoadECDSA error", err)
 	}
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
+	if ctx.IsSet(PublicAdressFlag.Name) {
+		ctx.GlobalSet(PublicAdressFlag.Name, ctx.String(from.String()))
+	}
 	return from
 }
 
@@ -226,7 +222,7 @@ func weiToEth(value *big.Int) uint64 {
 	return valueT
 }
 
-func getResult(conn *ethclient.Client, txHash common.Hash, contract bool, delegate bool) {
+func getResult(conn *ethclient.Client, txHash common.Hash, contract bool, delegate bool) bool {
 	fmt.Println("Please waiting ", " txHash ", txHash.String())
 
 	count := 0
@@ -247,6 +243,7 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool, delega
 	}
 
 	queryTx(conn, txHash, contract, false, delegate)
+	return true
 }
 
 func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending bool, delegate bool) {
@@ -314,9 +311,9 @@ func loadPrivate(ctx *cli.Context) {
 	key = ctx.GlobalString(KeyFlag.Name)
 	store = ctx.GlobalString(KeyStoreFlag.Name)
 	if key != "" {
-		loadPrivateKey(key)
+		loadPrivateKey(ctx, key)
 	} else if store != "" {
-		loadSigningKey(store)
+		loadSigningKey(ctx, store)
 	} else {
 		printError("Must specify --key or --keystore")
 	}
@@ -356,7 +353,7 @@ func printBaseInfo(conn *ethclient.Client, url string) *types.Header {
 }
 
 // loadSigningKey loads a private key in Ethereum keystore format.
-func loadSigningKey(keyfile string) common.Address {
+func loadSigningKey(ctx *cli.Context, keyfile string) common.Address {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
 		printError(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
@@ -370,6 +367,7 @@ func loadSigningKey(keyfile string) common.Address {
 	priKey = key.PrivateKey
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
 	//fmt.Println("address ", from.Hex(), "key", hex.EncodeToString(crypto.FromECDSA(priKey)))
+	ctx.GlobalSet(PublicAdressFlag.Name, ctx.String(from.String()))
 	return from
 }
 
@@ -449,71 +447,7 @@ func queryRegisterInfo(conn *ethclient.Client, query bool, delegate bool) {
 		fmt.Println("Contract query failed result len == 0")
 	}
 }
-func getChains(ctx *cli.Context) ([]ethereum.Header, []bytes.Buffer) {
-	conn, _ := dialEthConn(ctx)
-	currentNum_, _ := conn.BlockNumber(context.Background())
-	currentNum := int(currentNum_)
-	if currentNum == 0 {
-		fmt.Println("currentNum ==0")
-	}
-	num := 10
 
-	first := Max(1, (currentNum - num))
-	Headers := make([]ethereum.Header, currentNum-first+1)
-	HeaderBytes := make([]bytes.Buffer, currentNum-first+1)
-	j := 0
-	for i := first; i <= currentNum; i++ {
-		Header, _ := conn.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
-		convertChain(&Headers[j], &HeaderBytes[j], Header)
-		j++
-	}
-	return Headers, HeaderBytes
-}
-
-func Max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-func convertChain(header *ethereum.Header, headerbyte *bytes.Buffer, e *types.Header) (*ethereum.Header, *bytes.Buffer) {
-	header.ParentHash = e.ParentHash
-	header.UncleHash = e.UncleHash
-	header.Coinbase = e.Coinbase
-	header.Root = e.Root
-	header.TxHash = e.TxHash
-	header.ReceiptHash = e.ReceiptHash
-	header.GasLimit = e.GasLimit
-	header.GasUsed = e.GasUsed
-	header.Time = e.Time
-	header.MixDigest = e.MixDigest
-	header.Nonce = types.EncodeNonce(e.Nonce.Uint64())
-	header.Bloom.SetBytes(e.Bloom.Bytes())
-	if header.Difficulty = new(big.Int); e.Difficulty != nil {
-		header.Difficulty.Set(e.Difficulty)
-	}
-	if header.Number = new(big.Int); e.Number != nil {
-		header.Number.Set(e.Number)
-	}
-	if len(e.Extra) > 0 {
-		header.Extra = make([]byte, len(e.Extra))
-		copy(header.Extra, e.Extra)
-	}
-	binary.Write(headerbyte, binary.BigEndian, header)
-	// test rlp
-	//fmt.Println(e.Hash(), "/n", header.Hash())
-	return header, headerbyte
-}
-func dialEthConn(ctx *cli.Context) (*ethclient.Client, string) {
-	ip = ctx.GlobalString(EthRPCListenAddrFlag.Name) //utils.RPCListenAddrFlag.Name)
-	port = ctx.GlobalInt(EthRPCPortFlag.Name)        //utils.RPCPortFlag.Name)
-
-	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
-	// Create an IPC based RPC connection to a remote node
-	// "http://39.100.97.129:8545"
-	conn, err := ethclient.Dial(url)
-	if err != nil {
-		log.Fatalf("Failed to connect to the Abeychain client: %v", err)
-	}
-	return conn, url
+func getRelayerRange() (a, b uint64) {
+	return 1, 100
 }

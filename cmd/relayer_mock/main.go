@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 )
 
 var (
@@ -78,17 +83,11 @@ var (
 		Name:  "blocknumber",
 		Usage: "Query reward use block number,please current block number -14",
 	}
-	RegisterFlags = []cli.Flag{
-		KeyFlag,
-		KeyStoreFlag,
-		RPCListenAddrFlag,
-		RPCPortFlag,
-		EthRPCListenAddrFlag,
-		EthRPCPortFlag,
-		ValueFlag,
-		FeeFlag,
-		PubKeyKeyFlag,
-		BFTKeyKeyFlag,
+
+	PublicAdressFlag = cli.StringFlag{
+		Name:  "PkAdress",
+		Usage: "Relayer bft key for BFT (no 0x prefix)",
+		Value: "",
 	}
 )
 
@@ -112,22 +111,15 @@ func init() {
 		PubKeyKeyFlag,
 		NumberFlag,
 		BFTKeyKeyFlag,
+		PublicAdressFlag,
 	}
-	app.Action = MigrateFlags(register)
+	app.Action = MigrateFlags(start)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
 	// Add subcommands.
-	app.Commands = []cli.Command{
-		AppendCommand,
-		UpdatePKCommand,
-		withdrawCommand,
-		queryRegisterCommand,
-		sendCommand,
-		queryTxCommand,
-		queryBalanceCommand,
-	}
+	app.Commands = []cli.Command{}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
@@ -149,5 +141,69 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 			}
 		}
 		return action(ctx)
+	}
+}
+
+func start(ctx *cli.Context) error {
+	//register
+	conn := register(ctx)
+	syncloop(ctx, conn)
+	return nil
+}
+
+//single node start
+func syncloop(ctx *cli.Context, conn *ethclient.Client) {
+
+	//myId := ctx.GlobalString(PublicAdressFlag.Name)
+	for {
+		value, _ := prompt.Stdin.PromptInput("is continue ? yes|no ")
+		if value != "yes" {
+			break
+		}
+		for {
+			time.Sleep(time.Second * 1)
+			// 1.now Number
+			//num, err := conn.BlockNumber(context.Background())
+			//if err != nil {
+			//	printError("BlockNumber err")
+			//}
+			//2. get relayers
+			//relayers, err1 := conn.GetRelayers(context.Background(), num)
+			//if err1 != nil {
+			//	printError("GetRelayers err")
+			//	time.Sleep(time.Second)
+			//	continue
+			//}
+			//3. judge is member
+			//if relayers[myId] == nil {
+			//	printError("not relayer err")
+			//	continue
+			//}
+			//4. get relayer range
+			//a, b := getRelayerRange()
+			////5. judge number at range
+			//if num < a || num > b {
+			//	printError("wrong range !")
+			//	continue
+			//}
+			break
+
+		}
+		// 1.get current num
+		chainNum, err2 := conn.GetCurrentNumberByChainType(context.Background(), "Eth")
+		if err2 != nil {
+			printError("GetCurrentNumberByChainType err")
+		}
+		// 2. get chains
+		chains, _ := getChains(ctx, chainNum)
+		// 3.store
+		ret, _ := rlp.EncodeToBytes(chains)
+		input := packInputStore("save", "Eth", "Map", ret)
+		txHash := sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
+		ret2 := getResult(conn, txHash, true, false)
+		if !ret2 {
+			printError("store err")
+			break
+		}
 	}
 }
