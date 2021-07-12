@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"log"
@@ -41,7 +42,7 @@ var (
 	fee           uint64
 	holder        common.Address
 	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	RelayerAddress common.Address = common.BytesToAddress([]byte("relayeraddress"))
+	RelayerAddress common.Address = params2.RelayerAddress
 	Base                          = new(big.Int).SetUint64(10000)
 )
 
@@ -77,7 +78,7 @@ func register(ctx *cli.Context) error {
 	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
 	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
-	getResult(conn, txHash, true, false)
+	getResult(conn, txHash, true)
 
 	return nil
 }
@@ -216,7 +217,7 @@ func weiToEth(value *big.Int) uint64 {
 	return valueT
 }
 
-func getResult(conn *ethclient.Client, txHash common.Hash, contract bool, delegate bool) {
+func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 	fmt.Println("Please waiting ", " txHash ", txHash.String())
 
 	count := 0
@@ -236,10 +237,10 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool, delega
 		}
 	}
 
-	queryTx(conn, txHash, contract, false, delegate)
+	queryTx(conn, txHash, contract, false)
 }
 
-func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending bool, delegate bool) {
+func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending bool) {
 
 	if pending {
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
@@ -265,7 +266,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 		fmt.Println("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		if contract && common.IsHexAddress(from.Hex()) {
-			queryRegisterInfo(conn, false, delegate)
+			queryRegisterInfo(conn, false)
 		}
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		fmt.Println("Transaction Failed ", " Block Number", receipt.BlockNumber.Uint64())
@@ -382,17 +383,13 @@ func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
 	}
 }
 
-func queryRegisterInfo(conn *ethclient.Client, query bool, delegate bool) {
+func queryRegisterInfo(conn *ethclient.Client, query bool) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var input []byte
-	if delegate {
-		input = packInput("getDelegate", from, holder)
-	} else {
-		input = packInput("getDeposit", from)
-	}
+	input = packInput("getBlance", from)
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {

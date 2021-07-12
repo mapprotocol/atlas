@@ -25,7 +25,7 @@ func Append(ctx *cli.Context) error {
 	input := packInput("append", value)
 	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
-	getResult(conn, txHash, true, false)
+	getResult(conn, txHash, true)
 
 	return nil
 }
@@ -49,7 +49,7 @@ func UpdatePKRegister(ctx *cli.Context) error {
 	input := packInput("setPubkey", pk)
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 
-	getResult(conn, txHash, true, false)
+	getResult(conn, txHash, true)
 	return nil
 }
 
@@ -72,7 +72,7 @@ func withdraw(ctx *cli.Context) error {
 
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 
-	getResult(conn, txHash, true, false)
+	getResult(conn, txHash, true)
 	PrintBalance(conn, from)
 	return nil
 }
@@ -89,7 +89,7 @@ func queryRegister(ctx *cli.Context) error {
 	conn, url := dialConn(ctx)
 	printBaseInfo(conn, url)
 
-	queryRegisterInfo(conn, true, false)
+	queryRegisterInfo(conn, true)
 	return nil
 }
 
@@ -138,7 +138,7 @@ func sendTX(ctx *cli.Context) error {
 
 	value := ethToWei(ctx, false)
 	txHash := sendContractTransaction(conn, from, common.HexToAddress(address), value, priKey, nil)
-	getResult(conn, txHash, false, false)
+	getResult(conn, txHash, false)
 	return nil
 }
 
@@ -157,7 +157,7 @@ func queryTxRegister(ctx *cli.Context) error {
 	if txhash == "" {
 		printError("Must input tx hash")
 	}
-	queryTx(conn, common.HexToHash(txhash), false, true, false)
+	queryTx(conn, common.HexToHash(txhash), false, true)
 	return nil
 }
 
@@ -176,6 +176,6 @@ func queryEpoch(ctx *cli.Context) error {
 	if txhash == "" {
 		printError("Must input tx hash")
 	}
-	queryTx(conn, common.HexToHash(txhash), false, true, false)
+	queryTx(conn, common.HexToHash(txhash), false, true)
 	return nil
 }
