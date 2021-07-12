@@ -136,7 +136,7 @@ var (
 		utils.DeveloperFlag,
 		utils.SingleFlag,
 		utils.DeveloperPeriodFlag,
-		utils.RopstenFlag,
+		utils.TestnetFlag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
@@ -263,17 +263,8 @@ func Execute() {
 func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
 	switch {
-	case ctx.GlobalIsSet(utils.RopstenFlag.Name):
+	case ctx.GlobalIsSet(utils.TestnetFlag.Name):
 		log.Info("Starting Atlas on Ropsten testnet...")
-
-	//case ctx.GlobalIsSet(utils.RinkebyFlag.Name):
-	//	log.Info("Starting Atlas on Rinkeby testnet...")
-	//
-	//case ctx.GlobalIsSet(utils.GoerliFlag.Name):
-	//	log.Info("Starting Atlas on Görli testnet...")
-	//
-	//case ctx.GlobalIsSet(utils.YoloV3Flag.Name):
-	//	log.Info("Starting Atlas on YOLOv3 testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Atlas in ephemeral dev mode...")
@@ -287,7 +278,7 @@ func prepare(ctx *cli.Context) {
 	// If we're a full node on mainnet without --cache specified, bump default cache allowance
 	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
 		// Make sure we're not on any supported preconfigured testnet either
-		if !ctx.GlobalIsSet(utils.RopstenFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
+		if !ctx.GlobalIsSet(utils.TestnetFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
 			// Nope, we're really on mainnet. Bump that cache up!
 			log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
 			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))
