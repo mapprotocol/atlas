@@ -109,9 +109,8 @@ func (h *HeaderStore) Store(state StateDB, address common.Address) error {
 		log.Error("Failed to RLP encode HeaderStore", "err", err, "HeaderStore", h)
 		return err
 	}
-
 	hash := RlpHash(data)
-	state.SetState(address, key, hash)
+	state.SetPOWState(address, key, data)
 
 	clone, err := CloneHeaderStore(h)
 	if err != nil {
@@ -123,14 +122,9 @@ func (h *HeaderStore) Store(state StateDB, address common.Address) error {
 
 func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 	key := common.BytesToHash(address[:])
-	hash := state.GetState(address, key)
-	data, err := rlp.EncodeToBytes(hash)
-	if err != nil {
-		log.Error("Failed to RLP encode HeaderStore", "err", err, "HeaderStore", h)
-		return err
-	}
-
+	data := state.GetPOWState(address, key)
 	var hs HeaderStore
+	hash := RlpHash(data)
 	if cc, ok := hsCache.Cache.Get(hash); ok {
 		cp, err := CloneHeaderStore(cc.(*HeaderStore))
 		if err != nil {

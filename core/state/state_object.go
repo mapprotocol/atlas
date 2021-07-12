@@ -56,6 +56,25 @@ func (s Storage) Copy() Storage {
 	return cpy
 }
 
+type POWStorage map[common.Hash][]byte
+
+func (ps POWStorage) String() (str string) {
+	for key, value := range ps {
+		str += fmt.Sprintf("%X : %X\n", key, value)
+	}
+
+	return
+}
+
+func (ps POWStorage) Copy() POWStorage {
+	cpy := make(POWStorage)
+	for key, value := range ps {
+		cpy[key] = value
+	}
+
+	return cpy
+}
+
 // stateObject represents an Ethereum account which is being modified.
 //
 // The usage pattern is as follows:
@@ -83,6 +102,9 @@ type stateObject struct {
 	pendingStorage Storage // Storage entries that need to be flushed to disk, at the end of an entire block
 	dirtyStorage   Storage // Storage entries that have been modified in the current transaction execution
 	fakeStorage    Storage // Fake storage which constructed by caller for debugging purpose.
+
+	originPOWStorage POWStorage
+	dirtyPOWStorage  POWStorage
 
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
@@ -118,13 +140,15 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 		data.Root = emptyRoot
 	}
 	return &stateObject{
-		db:             db,
-		address:        address,
-		addrHash:       crypto.Keccak256Hash(address[:]),
-		data:           data,
-		originStorage:  make(Storage),
-		pendingStorage: make(Storage),
-		dirtyStorage:   make(Storage),
+		db:               db,
+		address:          address,
+		addrHash:         crypto.Keccak256Hash(address[:]),
+		data:             data,
+		originStorage:    make(Storage),
+		pendingStorage:   make(Storage),
+		dirtyStorage:     make(Storage),
+		originPOWStorage: make(POWStorage),
+		dirtyPOWStorage:  make(POWStorage),
 	}
 }
 
@@ -189,6 +213,19 @@ func (s *stateObject) GetState(db Database, key common.Hash) common.Hash {
 	}
 	// Otherwise return the entry's original value
 	return s.GetCommittedState(db, key)
+}
+
+func (s *stateObject) GetPOWState(db Database, key common.Hash) []byte {
+	value, exists := s.originPOWStorage[key]
+	if exists {
+		return value
+	}
+	// Load from DB in case it is missing.
+	value, err := s.getTrie(db).TryGet(key[:])
+	if err == nil && len(value) != 0 {
+		s.originPOWStorage[key] = value
+	}
+	return value
 }
 
 // GetCommittedState retrieves a value from the committed account storage trie.
@@ -283,6 +320,21 @@ func (s *stateObject) SetState(db Database, key, value common.Hash) {
 		prevalue: prev,
 	})
 	s.setState(key, value)
+}
+
+func (s *stateObject) SetPOWState(db Database, key common.Hash, value []byte) {
+	s.db.journal.append(powStorageChange{
+		account:  &s.address,
+		key:      key,
+		prevalue: s.GetPOWState(db, key),
+	})
+	s.setStateByteArray(key, value)
+
+}
+
+func (s *stateObject) setStateByteArray(key common.Hash, value []byte) {
+	s.originPOWStorage[key] = value
+	s.dirtyPOWStorage[key] = value
 }
 
 // SetStorage replaces the entire state storage with the given one.

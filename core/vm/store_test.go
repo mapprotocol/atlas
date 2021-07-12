@@ -600,15 +600,16 @@ func TestHeaderStore_Load(t *testing.T) {
 		hs      *HeaderStore
 		args    args
 		before  func(hs *HeaderStore, state StateDB)
+		after   func(hs *HeaderStore)
 		wantErr bool
 	}{
 		{
 			name: "cache-exist",
 			hs: &HeaderStore{
 				epoch2reward: map[uint64]*big.Int{
-					1: big.NewInt(111),
-					2: big.NewInt(222),
-					3: big.NewInt(333),
+					1: big.NewInt(1111111111111111),
+					2: big.NewInt(2222222222222222),
+					3: big.NewInt(3333333333333333),
 				},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
@@ -622,10 +623,11 @@ func TestHeaderStore_Load(t *testing.T) {
 			},
 			before: func(hs *HeaderStore, state StateDB) {
 				_ = hs.Store(state, HeaderStoreAddress)
-				// ecc576bca7281967aa094c822e08a70c31596a06c0b02314245ddbc49e8417b1
-				// d8c3020301c681de82014d6fc66581ca82012fc3010203c0c0
-				// d8c3010203c66f81de82014dc66581ca82012fc3010203c0c0
-				// d8c3020301c681de82014d6fc682012f6581cac3030102c0c0
+			},
+			after: func(hs *HeaderStore) {
+				for e, r := range hs.epoch2reward {
+					fmt.Printf("epoch: %v, reward: %v\n", e, r)
+				}
 			},
 			wantErr: false,
 		},
@@ -633,9 +635,9 @@ func TestHeaderStore_Load(t *testing.T) {
 			name: "cache-not-exist",
 			hs: &HeaderStore{
 				epoch2reward: map[uint64]*big.Int{
-					1: big.NewInt(111),
-					2: big.NewInt(222),
-					3: big.NewInt(333),
+					1: big.NewInt(1111111111111111),
+					2: big.NewInt(2222222222222222),
+					3: big.NewInt(3333333333333333),
 				},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
@@ -649,12 +651,17 @@ func TestHeaderStore_Load(t *testing.T) {
 			},
 			before: func(hs *HeaderStore, state StateDB) {
 				_ = hs.Store(state, HeaderStoreAddress)
-				// ecc576bca7281967aa094c822e08a70c31596a06c0b02314245ddbc49e8417b1
 				// remove cache
 				key := common.BytesToHash(HeaderStoreAddress[:])
-				hash := state.GetState(HeaderStoreAddress, key)
+				data := state.GetPOWState(HeaderStoreAddress, key)
+				hash := RlpHash(data)
 				hsCache.Cache.Remove(hash)
 
+			},
+			after: func(hs *HeaderStore) {
+				for e, r := range hs.epoch2reward {
+					fmt.Printf("epoch: %v, reward: %v\n", e, r)
+				}
 			},
 			wantErr: false,
 		},
@@ -665,6 +672,7 @@ func TestHeaderStore_Load(t *testing.T) {
 			if err := tt.hs.Load(tt.args.state, tt.args.address); (err != nil) != tt.wantErr {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			tt.after(tt.hs)
 		})
 	}
 }
