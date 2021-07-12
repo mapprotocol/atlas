@@ -6,6 +6,13 @@ import (
 	"math/big"
 )
 
+// Genesis hashes to enforce below configs on.
+var (
+	MainnetGenesisHash = common.HexToHash("0xe9f6bb6cf0660cbbb1be839a9d8dda51116ab0577033d0bd77278f1044a674c0")
+	TestnetGenesisHash = common.HexToHash("0x367cf53562c26325cfe1a827547f806d94bf891a8e70c222f3b66c89d31a1df0")
+	DevnetGenesisHash = common.HexToHash("0x1c00a47a70d32300cf336207d290ccc2838d3ea03b2ba73c07bafdd6070ff23a")
+)
+
 var (
 	MainnetChainConfig = &params.ChainConfig{
 		ChainID:             big.NewInt(211),

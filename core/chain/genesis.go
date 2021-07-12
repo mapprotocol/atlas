@@ -241,12 +241,12 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	switch {
 	case g != nil:
 		return g.Config
-	case ghash == params.MainnetGenesisHash:
-		return params.MainnetChainConfig
-	case ghash == params.RopstenGenesisHash:
+	case ghash == params2.MainnetGenesisHash:
+		return params2.MainnetChainConfig
+	case ghash == params2.TestnetGenesisHash:
 		return params2.TestnetConfig
-	case ghash == params.RinkebyGenesisHash:
-		return params.RinkebyChainConfig
+	case ghash == params2.DevnetGenesisHash:
+		return params2.DevnetConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}

@@ -17,6 +17,7 @@
 package chain
 
 import (
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
 	"testing"
@@ -32,11 +33,11 @@ import (
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesisBlock().ToBlock(nil)
-	if block.Hash() != params.MainnetGenesisHash {
+	if block.Hash() != params2.MainnetGenesisHash {
 		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash(), params.MainnetGenesisHash)
 	}
 	block = DefaultTestnetGenesisBlock().ToBlock(nil)
-	if block.Hash() != params.RopstenGenesisHash {
+	if block.Hash() != params2.TestnetGenesisHash {
 		t.Errorf("wrong ropsten genesis hash, got %v, want %v", block.Hash(), params.RopstenGenesisHash)
 	}
 }
@@ -102,7 +103,7 @@ func TestSetupGenesis(t *testing.T) {
 			},
 			wantErr:    &GenesisMismatchError{Stored: customghash, New: params.RopstenGenesisHash},
 			wantHash:   params.RopstenGenesisHash,
-			wantConfig: params.TestnetConfig,
+			wantConfig: params2.TestnetConfig,
 		},
 		{
 			name: "compatible config in DB",
@@ -171,24 +172,16 @@ func TestGenesisHashes(t *testing.T) {
 	}{
 		{
 			genesis: DefaultGenesisBlock(),
-			hash:    params.MainnetGenesisHash,
+			hash:    params2.MainnetGenesisHash,
 		},
-		//{
-		//	genesis: DefaultGoerliGenesisBlock(),
-		//	hash:    params.GoerliGenesisHash,
-		//},
 		{
 			genesis: DefaultTestnetGenesisBlock(),
-			hash:    params.RopstenGenesisHash,
+			hash:    params2.TestnetGenesisHash,
 		},
-		//{
-		//	genesis: DefaultRinkebyGenesisBlock(),
-		//	hash:    params.RinkebyGenesisHash,
-		//},
-		//{
-		//	genesis: DefaultYoloV3GenesisBlock(),
-		//	hash:    params.YoloV3GenesisHash,
-		//},
+		{
+			genesis: DevnetGenesisBlock(),
+			hash:    params2.DevnetGenesisHash,
+		},
 	}
 	for i, c := range cases {
 		b := c.genesis.MustCommit(rawdb.NewMemoryDatabase())
