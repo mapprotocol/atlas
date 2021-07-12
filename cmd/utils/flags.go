@@ -145,7 +145,7 @@ var (
 	}
 	MainnetFlag = cli.BoolFlag{
 		Name:  "mainnet",
-		Usage: "Ethereum mainnet",
+		Usage: "map protocol atlas mainnet",
 	}
 	RopstenFlag = cli.BoolFlag{
 		Name:  "ropsten",
