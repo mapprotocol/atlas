@@ -74,7 +74,7 @@ var (
 )
 
 var (
-	syncLimit = "sync limit exceeded"
+	syncLimit = "sync times limit exceeded"
 )
 
 // SyncGas defines all method gas
