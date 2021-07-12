@@ -67,7 +67,7 @@ func TestCreation(t *testing.T) {
 		},
 		// Ropsten test cases
 		{
-			params.RopstenChainConfig,
+			params.TestnetConfig,
 			params.RopstenGenesisHash,
 			[]testcase{
 				{0, ID{Hash: checksumToBytes(0x30c7ddbc), Next: 10}},            // Unsynced, last Frontier, Homestead and first Tangerine block

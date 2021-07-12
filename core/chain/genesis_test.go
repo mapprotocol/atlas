@@ -102,7 +102,7 @@ func TestSetupGenesis(t *testing.T) {
 			},
 			wantErr:    &GenesisMismatchError{Stored: customghash, New: params.RopstenGenesisHash},
 			wantHash:   params.RopstenGenesisHash,
-			wantConfig: params.RopstenChainConfig,
+			wantConfig: params.TestnetConfig,
 		},
 		{
 			name: "compatible config in DB",

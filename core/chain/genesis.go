@@ -244,7 +244,7 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case ghash == params.MainnetGenesisHash:
 		return params.MainnetChainConfig
 	case ghash == params.RopstenGenesisHash:
-		return params.RopstenChainConfig
+		return params2.TestnetConfig
 	case ghash == params.RinkebyGenesisHash:
 		return params.RinkebyChainConfig
 	default:
@@ -380,7 +380,7 @@ func DefaultGenesisBlock() *Genesis {
 // DefaultRopstenGenesisBlock returns the Ropsten network genesis block.
 func DefaultRopstenGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     params2.RopstenChainConfig,
+		Config:     params2.TestnetConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,
