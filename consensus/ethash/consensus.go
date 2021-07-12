@@ -588,6 +588,7 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// Accumulate any block and uncle rewards and commit the final state root
 	consensus.OnceInitRegisterState(state, new(big.Int).Set(header.Number))
+	consensus.InitHeaderStore(state, header.Number)
 	err := ethash.finalizeRelayers(state, header.Number)
 	if err != nil {
 		log.Debug("relayers' selection fail")
