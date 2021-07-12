@@ -150,7 +150,7 @@ func OnceInitRegisterState(state *state.StateDB, fastNumber *big.Int) bool {
 }
 
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
-	if blockNumber.Cmp(big.NewInt(1)) == 0 {
+	if blockNumber.Cmp(big.NewInt(0)) == 0 || blockNumber.Cmp(big.NewInt(1)) == 0 {
 		key := common.BytesToHash(vm.HeaderStoreAddress[:])
 		getState := state.GetPOWState(vm.HeaderStoreAddress, key)
 		if len(getState) == 0 {
