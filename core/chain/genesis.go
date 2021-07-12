@@ -377,8 +377,8 @@ func DefaultGenesisBlock() *Genesis {
 	}
 }
 
-// DefaultRopstenGenesisBlock returns the Ropsten network genesis block.
-func DefaultRopstenGenesisBlock() *Genesis {
+// DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
+func DefaultTestnetGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params2.TestnetConfig,
 		Nonce:      66,
@@ -389,24 +389,18 @@ func DefaultRopstenGenesisBlock() *Genesis {
 	}
 }
 
-// DeveloperGenesisBlock returns the 'geth --dev' genesis block.
-func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
-	// Override the default period to the user requested one
-	config := *params.AllCliqueProtocolChanges
-	config.Clique.Period = period
-	dc := defaultRelayer()
-	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
-	// Assemble and return the genesis with the precompiles and faucet pre-funded
+// DevnetGenesisBlock returns the 'geth --dev' genesis block.
+func DevnetGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     &config,
-		ExtraData:  append(append(make([]byte, 32), faucet[:]...), make([]byte, crypto.SignatureLength)...),
+		Config:     params2.DevnetConfig,
+		ExtraData:  []byte{1,2,3},
 		GasLimit:   11500000,
 		Difficulty: big.NewInt(1),
-		Alloc:      dc,
+		Alloc:      defaultRelayer(),
 	}
 }
 
-// DeveloperGenesisBlock returns the 'geth --dev' genesis block.
+// SingleGenesisBlock returns the 'geth --dev' genesis block.
 func SingleGenesisBlock(faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
 	config := *params2.SingleNetCfg

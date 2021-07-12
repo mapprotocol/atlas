@@ -135,7 +135,6 @@ var (
 		utils.MainnetFlag,
 		utils.DeveloperFlag,
 		utils.SingleFlag,
-		utils.DeveloperPeriodFlag,
 		utils.TestnetFlag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,

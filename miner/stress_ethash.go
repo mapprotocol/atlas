@@ -127,7 +127,7 @@ func main() {
 // makeGenesis creates a custom Ethash genesis block based on some pre-defined
 // faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey) *chain.Genesis {
-	genesis := chain.DefaultRopstenGenesisBlock()
+	genesis := chain.DefaultTestnetGenesisBlock()
 	genesis.Difficulty = params.MinimumDifficulty
 	genesis.GasLimit = 25000000
 
