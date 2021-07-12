@@ -71,7 +71,6 @@ func (e *RewardInfo) ToJson() map[string]interface{} {
 	item["Address"] = e.Address
 	item["Amount"] = (*hexutil.Big)(e.Amount)
 	item["Register"] = (*hexutil.Big)(e.Register)
-
 	return item
 }
 func FetchOne(sas []*SARewardInfos, addr common.Address) []*RewardInfo {
