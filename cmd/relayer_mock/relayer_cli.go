@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -84,8 +85,9 @@ func register(ctx *cli.Context) error {
 
 	getResult(conn, txHash, true, false)
 	//  getchains
-	_, chainBytes := getChains(ctx)
-	input = packInputStore("save", "", "", chainBytes[0].Bytes())
+	chains, _ := getChains(ctx)
+	ret, _ := rlp.EncodeToBytes(chains)
+	input = packInputStore("save", "", "", ret)
 	sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
 	return nil
 }
