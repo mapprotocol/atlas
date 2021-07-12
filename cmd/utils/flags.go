@@ -153,7 +153,7 @@ var (
 	}
 	DeveloperFlag = cli.BoolFlag{
 		Name:  "dev",
-		Usage: "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
+		Usage: "map protocol atlas developer network: pre-configured proof-of-work developer network",
 	}
 	SingleFlag = cli.BoolFlag{
 		Name:  "singlenet",
