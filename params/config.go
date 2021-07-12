@@ -42,8 +42,8 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		Ethash:              new(params.EthashConfig),
 	}
-	MainnetNetWorkID uint64 = 112
-	RopstenNetWorkID uint64 = 115
+	MainnetNetWorkID uint64 = 211
+	TestnetWorkID uint64 = 212
 
 	//under params in cmd/node/defaults.go
 	//DefaultHTTPPort    = 7445
