@@ -2,6 +2,7 @@ package vm
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strings"
 	"time"
@@ -109,23 +110,31 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 }
 
 func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	// check if the current epoch is registered
+	if !IsInCurrentEpoch(evm.StateDB, contract.CallerAddress) {
+		return nil, errors.New("invalid work epoch, please register first")
+	}
+
 	// decode
 	args := struct {
-		From   string
-		To     string
-		Header []byte
+		From    string
+		To      string
+		Headers []byte
 	}{}
 
-	err = abiHeaderStore.UnpackIntoInterface(args, Save, input)
+	method, _ := abiHeaderStore.Methods[Save]
+	unpack, err := method.Inputs.Unpack(input)
 	if err != nil {
-		log.Error("save Unpack error", "err", err)
-		return nil, ErrSyncInvalidInput
+		return nil, err
+	}
+	if err := method.Inputs.Copy(&args, unpack); err != nil {
+		return nil, err
 	}
 
 	var hs []*ethereum.Header
-	err = json.Unmarshal(args.Header, &hs)
+	err = json.Unmarshal(args.Headers, &hs)
 	if err != nil {
-		log.Error("args.Header json unmarshal failed.", "args.Header", args.Header, "err", err)
+		log.Error("args.Header json unmarshal failed.", "args.Header", args.Headers, "err", err)
 		return nil, ErrJSONUnmarshal
 	}
 
@@ -137,6 +146,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
+	// store synchronization information
 	headerStore := NewHeaderStore()
 	err = headerStore.Load(evm.StateDB, HeaderStoreAddress)
 	if err != nil {
@@ -146,8 +156,6 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 	var total uint64
 	for _, h := range hs {
-		// todo 查询 relayer 有效工作区间
-
 		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
 			headerStore.StoreAbnormalMsg(contract.CallerAddress, h.Number, syncLimit)
 			continue
@@ -167,7 +175,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	// store
+	// store block header
 	store, err := chainsdb.GetStoreMgr(chains.ChainTypeETH)
 	if err != nil {
 		return nil, err
