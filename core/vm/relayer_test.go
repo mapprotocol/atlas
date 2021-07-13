@@ -14,11 +14,13 @@ import (
 )
 
 var (
+	//relayerABI,_       = abi.JSON(strings.NewReader(RelayerABIJSON))
 	priKey, _        = crypto.GenerateKey()
 	from             = crypto.PubkeyToAddress(priKey.PublicKey)
 	pub              = crypto.FromECDSAPub(&priKey.PublicKey)
 	value            = big.NewInt(1000)
 	h         uint64 = 0
+	fee       uint64 = 1000000
 )
 
 func TestRegister(t *testing.T) {
@@ -73,4 +75,70 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestPack(t *testing.T) {
+	//getBalance
+	//input, err := relayerABI.Pack("getBalance", common.Address{'1'})
+	//if err != nil {
+	//	fmt.Println("----------pack----------", err)
+	//}
+	//err = relayerABI.UnpackIntoInterface(&input, "getBalance", input)
+	//if err != nil {
+	//	fmt.Println("----------unpack--------------", err)
+	//}
+
+	//register
+	type reg struct {
+		Pubkey []byte
+		Fee    *big.Int
+		Value  *big.Int
+	}
+	var args reg
+	priKey, _ := crypto.GenerateKey()
+	pk := crypto.FromECDSAPub(&priKey.PublicKey)
+	input2, err := relayerABI.Pack("register", pk, new(big.Int).SetUint64(2), big.NewInt(100))
+	if err != nil {
+		fmt.Println("----------pack----------", err)
+	}
+	fmt.Println("input", input2)
+	err = relayerABI.UnpackIntoInterface(&args, "register", input2)
+	if err != nil {
+		fmt.Println("----------unpack1--------------")
+		fmt.Println(err)
+	}
+	output, err := relayerABI.Unpack("register", input2)
+	if err != nil {
+		fmt.Println("----------unpack2--------------", err)
+		fmt.Println(err)
+	}
+
+	fmt.Println("ouput1", args)
+	fmt.Println("ouput2", output)
+}
+
+func TestPack2(t *testing.T) {
+	input, err := relayerABI.Pack("register", pub, new(big.Int).SetUint64(fee), value)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	args := struct {
+		Pubkey []byte
+		Fee    *big.Int
+		Value  *big.Int
+	}{}
+	err = params2.UnpackRegister(&args, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("unpack ==> ", args)
+	//method, _ := relayerABI.Methods["register"]
+	//fmt.Println("input",input)
+	//output,err := method.Inputs.Unpack(input)
+	//
+	//if err != nil {
+	//	fmt.Println( "err", err)
+	//}
+	//fmt.Println("output",output)
 }
