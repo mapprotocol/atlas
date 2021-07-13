@@ -117,21 +117,24 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 	// decode
 	args := struct {
-		From   string
-		To     string
-		Header []byte
+		From    string
+		To      string
+		Headers []byte
 	}{}
 
-	err = abiHeaderStore.UnpackIntoInterface(args, Save, input)
+	method, _ := abiHeaderStore.Methods[Save]
+	unpack, err := method.Inputs.Unpack(input)
 	if err != nil {
-		log.Error("save Unpack error", "err", err)
-		return nil, ErrSyncInvalidInput
+		return nil, err
+	}
+	if err := method.Inputs.Copy(&args, unpack); err != nil {
+		return nil, err
 	}
 
 	var hs []*ethereum.Header
-	err = json.Unmarshal(args.Header, &hs)
+	err = json.Unmarshal(args.Headers, &hs)
 	if err != nil {
-		log.Error("args.Header json unmarshal failed.", "args.Header", args.Header, "err", err)
+		log.Error("args.Header json unmarshal failed.", "args.Header", args.Headers, "err", err)
 		return nil, ErrJSONUnmarshal
 	}
 
