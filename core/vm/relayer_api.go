@@ -1029,8 +1029,8 @@ func (i *RegisterImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Ad
 	return err3
 }
 
-// RedeemSAccount redeem amount of asset for register account,it will locked for a certain time
-func (i *RegisterImpl) RedeemSAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
+// RedeemAccount redeem amount of asset for register account,it will locked for a certain time
+func (i *RegisterImpl) RedeemAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
 		return params.ErrInvalidParam
 	}
@@ -1181,7 +1181,7 @@ func (i *RegisterImpl) InsertSAccount2(height, effectHeight uint64, addr common.
 	}
 	return i.insertSAccount(height, sa)
 }
-func (i *RegisterImpl) AppendSAAmount(height uint64, addr common.Address, val *big.Int) error {
+func (i *RegisterImpl) AppendAmount(height uint64, addr common.Address, val *big.Int) error {
 	if val.Sign() <= 0 || height < 0 {
 		return params.ErrInvalidParam
 	}

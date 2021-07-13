@@ -49,21 +49,21 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 }
 
 func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	type reg struct {
+	method, _ := relayerABI.Methods["register"]
+	output, err := method.Inputs.Unpack(input)
+	args := struct {
 		Pubkey []byte
 		Fee    *big.Int
 		Value  *big.Int
+	}{
+		output[0].([]byte),
+		output[1].(*big.Int),
+		output[2].(*big.Int),
 	}
-	var args reg
-	//output,err := relayerABI.Unpack("register", input)
-	err = relayerABI.UnpackIntoInterface(&args, "register", input)
-	if err != nil {
-		log.Error("Unpack register pubkey error", "err", err)
-		return nil, errors.New("invalid input for register")
-	}
+
 	from := contract.CallerAddress
 	if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0 { //if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0
-		log.Error("register balance insufficient", "address", contract.CallerAddress, "value", args.Value)
+		log.Error("register balance insufficient", "address", contract.CallerAddress, "Value", args.Value)
 		return nil, errors.New("invalid input for register")
 	}
 	register := NewRegisterImpl()
@@ -71,7 +71,7 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	effectHeight := uint64(0)
 	err = register.InsertSAccount2(evm.Context.BlockNumber.Uint64(), effectHeight, from, args.Pubkey, args.Value, args.Fee, true)
 	if err != nil {
-		log.Error("register", "address", contract.CallerAddress, "value", args.Value, "error", err)
+		log.Error("register", "address", contract.CallerAddress, "Value", args.Value, "error", err)
 		return nil, err
 	}
 	err = register.Save(evm.StateDB, params.RelayerAddress)
@@ -90,26 +90,27 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	return nil, nil
 }
 func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	from := contract.CallerAddress
-	amount := big.NewInt(0)
-
-	//method, _ := relayerABI.Methods["append"]
-	//err = method.Inputs.Unpack(&amount, input)
-	err = relayerABI.UnpackIntoInterface(&amount, "append", input)
-	if err != nil {
-		log.Error("Unpack append value error", "err", err)
-		return nil, errors.New("invalid input for register")
+	//from := contract.CallerAddress
+	method, _ := relayerABI.Methods["append"]
+	output, err := method.Inputs.Unpack(input)
+	args := struct {
+		Addr  common.Address
+		Value *big.Int
+	}{
+		output[0].(common.Address),
+		output[1].(*big.Int),
 	}
-	if evm.StateDB.GetUnlockedBalance(from).Cmp(amount) < 0 {
-		log.Error("register balance insufficient", "address", contract.CallerAddress, "value", amount)
+
+	if evm.StateDB.GetUnlockedBalance(args.Addr).Cmp(args.Value) < 0 {
+		log.Error("register balance insufficient", "address", contract.CallerAddress, "Value", args.Value)
 		return nil, errors.New("invalid input for register")
 	}
 	//
 	register := NewRegisterImpl()
 	//
-	err = register.AppendSAAmount(evm.Context.BlockNumber.Uint64(), from, amount)
+	err = register.AppendAmount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
 	if err != nil {
-		log.Error("register extra", "address", contract.CallerAddress, "value", amount, "error", err)
+		log.Error("register extra", "address", contract.CallerAddress, "Value", args.Value, "error", err)
 		return nil, err
 	}
 	//
@@ -118,10 +119,10 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 		log.Error("register save state error", "error", err)
 		return nil, err
 	}
-	addLockedBalance(evm.StateDB, from, amount)
+	addLockedBalance(evm.StateDB, args.Addr, args.Value)
 	//
 	event := relayerABI.Events["Append"]
-	logData, err := event.Inputs.Pack(amount)
+	logData, err := event.Inputs.Pack(args.Value)
 	if err != nil {
 		log.Error("Pack register log error", "error", err)
 		return nil, err
@@ -130,27 +131,27 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 	return nil, nil
 }
 func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	from := contract.CallerAddress
-	amount := new(big.Int)
-
-	//method, _ := relayerABI.Methods["withdraw"]
-	//err = method.Inputs.Unpack(&amount, input)
-	err = relayerABI.UnpackIntoInterface(&amount, "withdraw", input)
-	if err != nil {
-		log.Error("Unpack withdraw input error")
-		return nil, errors.New("invalid input for register")
+	method, _ := relayerABI.Methods["withdraw"]
+	output, err := method.Inputs.Unpack(input)
+	args := struct {
+		Addr  common.Address
+		Value *big.Int
+	}{
+		output[0].(common.Address),
+		output[1].(*big.Int),
 	}
-	if evm.StateDB.GetLockedBalance(from).Cmp(amount) < 0 {
-		log.Error("register balance insufficient", "address", contract.CallerAddress, "value", amount)
+
+	if evm.StateDB.GetLockedBalance(args.Addr).Cmp(args.Value) < 0 {
+		log.Error("register balance insufficient", "address", contract.CallerAddress, "Value", args.Value)
 		return nil, errors.New("insufficient balance for register transfer")
 	}
 
 	register := NewRegisterImpl()
 
-	log.Info("register withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "value", amount)
-	err = register.RedeemSAccount(evm.Context.BlockNumber.Uint64(), from, amount)
+	log.Info("register withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
+	err = register.RedeemAccount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
 	if err != nil {
-		log.Error("register withdraw error", "address", from, "value", amount, "err", err)
+		log.Error("register withdraw error", "address", args.Addr, "Value", args.Value, "err", err)
 		return nil, err
 	}
 
@@ -159,10 +160,10 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		log.Error("register save state error", "error", err)
 		return nil, err
 	}
-	subLockedBalance(evm.StateDB, from, amount)
+	subLockedBalance(evm.StateDB, args.Addr, args.Value)
 
 	event := relayerABI.Events["Withdraw"]
-	logData, err := event.Inputs.Pack(amount)
+	logData, err := event.Inputs.Pack(args.Value)
 	if err != nil {
 		log.Error("Pack register log error", "error", err)
 		return nil, err
@@ -171,19 +172,17 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	return nil, nil
 }
 func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	var registerAddr common.Address
-	method, _ := relayerABI.Methods["getBalance"]
 	var (
 		staked   = big.NewInt(0)
 		locked   = big.NewInt(0)
 		unlocked = big.NewInt(0)
 	)
-
-	//err = method.Inputs.Unpack(&registerAddr, input)
-	err = relayerABI.UnpackIntoInterface(&registerAddr, "getBalance", input)
-	if err != nil {
-		log.Error("Unpack getBalance input error")
-		return nil, errors.New("invalid input for register")
+	method, _ := relayerABI.Methods["getBalance"]
+	output, err := method.Inputs.Unpack(input)
+	args := struct {
+		Addr common.Address
+	}{
+		output[0].(common.Address),
 	}
 
 	register := NewRegisterImpl()
@@ -193,13 +192,13 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		return nil, err
 	}
 
-	asset := register.GetAllCancelableAsset(registerAddr)
-	if stake, ok := asset[registerAddr]; ok {
+	asset := register.GetAllCancelableAsset(args.Addr)
+	if stake, ok := asset[args.Addr]; ok {
 		staked.Add(staked, stake)
 	}
 
-	lockedAsset := register.GetLockedAsset2(registerAddr, evm.Context.BlockNumber.Uint64())
-	if stake, ok := lockedAsset[registerAddr]; ok {
+	lockedAsset := register.GetLockedAsset2(args.Addr, evm.Context.BlockNumber.Uint64())
+	if stake, ok := lockedAsset[args.Addr]; ok {
 		for _, item := range stake.Value {
 			if item.Locked {
 				locked.Add(locked, item.Amount)
@@ -209,20 +208,18 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		}
 	}
 
-	log.Info("Get register getBalance", "address", registerAddr, "register", staked, "locked", locked, "unlocked", unlocked)
-
-	ret, err = method.Outputs.Pack(staked, locked, unlocked)
+	log.Info("Get register getBalance", "address", args.Addr, "register", staked, "locked", locked, "unlocked", unlocked)
+	ret, err = method.Outputs.Pack(staked, locked, unlocked, 0, 0)
 	return ret, err
 }
 func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	args := struct {
-		relayer big.Int
-	}{}
+
 	method, _ := relayerABI.Methods["getRelayers"]
-	//err = method.Inputs.Unpack(&args, input)
-	err = relayerABI.UnpackIntoInterface(&args, "getRelays", input)
-	if err != nil {
-		return nil, err
+	output, err := method.Inputs.Unpack(input)
+	args := struct {
+		epoch uint64
+	}{
+		output[0].(uint64),
 	}
 	//RegisterAccount->relayers
 	register := NewRegisterImpl()
@@ -232,7 +229,12 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 		return nil, err
 	}
 	relayers := register.GetAllRegisterAccount()
-	_, h := register.GetCurrentEpochInfo()
+	var h uint64
+	if args.epoch == 0 { //latest
+		_, h = register.GetCurrentEpochInfo()
+	} else {
+		GetRelayersByEpoch(evm.StateDB, args.epoch, evm.Context.BlockNumber.Uint64())
+	}
 	if relayers == nil {
 		ret, err = method.Outputs.Pack(h, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
@@ -247,9 +249,13 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	return ret, nil
 }
 func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	method, _ := relayerABI.Methods["getPeriodHeight"]
+	output, err := method.Inputs.Unpack(input)
 	args := struct {
-		relayer common.Address
-	}{}
+		Addr common.Address
+	}{
+		output[0].(common.Address),
+	}
 	register := NewRegisterImpl()
 	err = register.Load(evm.StateDB, params.RelayerAddress)
 	if err != nil {
@@ -258,15 +264,10 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	}
 
 	info, h := register.GetCurrentEpochInfo()
-	method, _ := relayerABI.Methods["getPeriodHeight"]
-	//err = method.Inputs.Unpack(&args, input)
-	err = relayerABI.UnpackIntoInterface(&args, "getPeriodHeight", input)
-	if err != nil {
-		return nil, err
-	}
+
 	//stakingAccount->relayer
-	register.GetRegisterAccount(h, args.relayer)
-	isRelayer, _ := register.GetRegisterAccount(h, args.relayer)
+	register.GetRegisterAccount(h, args.Addr)
+	isRelayer, _ := register.GetRegisterAccount(h, args.Addr)
 	if isRelayer == nil {
 		ret, err = method.Outputs.Pack(nil, nil, nil, false)
 		return ret, err
@@ -274,7 +275,7 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	//
 	for _, v := range info {
 		if h == v.EpochID {
-			ret, err = method.Outputs.Pack(big.NewInt(int64(v.BeginHeight)), big.NewInt(int64(v.EndHeight)), big.NewInt(int64(v.BeginHeight-v.EndHeight)), true)
+			ret, err = method.Outputs.Pack(big.NewInt(int64(v.BeginHeight)), big.NewInt(int64(v.EndHeight)), big.NewInt(int64(v.EndHeight-evm.Context.BlockNumber.Uint64())), true)
 			if err != nil {
 				return nil, err
 			}

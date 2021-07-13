@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	ethchain "github.com/ethereum/go-ethereum"
@@ -43,6 +42,7 @@ var (
 	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	RelayerAddress common.Address = params2.RelayerAddress
 	Base                          = new(big.Int).SetUint64(10000)
+	chainID                       = big.NewInt(212)
 )
 
 const (
@@ -103,9 +103,6 @@ func getPubKey(ctx *cli.Context) (string, []byte, error) {
 		}
 		pk := crypto.FromECDSAPub(&bftKey.PublicKey)
 		pubkey = common.Bytes2Hex(pk)
-	} else {
-		pk := crypto.FromECDSAPub(&priKey.PublicKey)
-		pubkey = hex.EncodeToString(pk)
 	}
 
 	pk := common.Hex2Bytes(pubkey)
@@ -141,7 +138,6 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
-	chainID := big.NewInt(211)
 	fmt.Println("TX data nonce ", nonce, " transfer value ", value, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)
@@ -200,7 +196,7 @@ func printError(error ...interface{}) {
 func ethToWei(ctx *cli.Context, zero bool) *big.Int {
 	Value = ctx.GlobalUint64(ValueFlag.Name)
 	if !zero && Value <= 0 {
-		printError("Value must bigger than 0")
+		printError("value must bigger than 0")
 	}
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	value := new(big.Int).Mul(big.NewInt(int64(Value)), baseUnit)
