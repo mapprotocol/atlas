@@ -2,9 +2,9 @@ package vm
 
 import (
 	"errors"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
@@ -13,7 +13,7 @@ import (
 var relayerABI abi.ABI
 
 func init() {
-	relayerABI, _ = abi.JSON(strings.NewReader(RelayerABIJSON))
+	relayerABI, _ = abi.JSON(strings.NewReader(params.RelayerABIJSON))
 }
 
 //
@@ -44,7 +44,6 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	}
 	if err != nil {
 		log.Warn("PreCompiledContract error code", "code", err)
-		err = errors.New("execution reverted")
 	}
 	return ret, err
 }
@@ -56,17 +55,17 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		Value  *big.Int
 	}
 	var args reg
-	err = relayerABI.UnpackIntoInterface(&args, "received", input)
+	//output,err := relayerABI.Unpack("register", input)
+	err = relayerABI.UnpackIntoInterface(&args, "register", input)
 	if err != nil {
 		log.Error("Unpack register pubkey error", "err", err)
 		return nil, errors.New("invalid input for register")
 	}
 	from := contract.CallerAddress
 	if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0 { //if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0
-		log.Error("Staking balance insufficient", "address", contract.CallerAddress, "value", args.Value)
+		log.Error("register balance insufficient", "address", contract.CallerAddress, "value", args.Value)
 		return nil, errors.New("invalid input for register")
 	}
-	//
 	register := NewRegisterImpl()
 	//
 	effectHeight := uint64(0)
@@ -75,14 +74,12 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		log.Error("register", "address", contract.CallerAddress, "value", args.Value, "error", err)
 		return nil, err
 	}
-	//
 	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
 		log.Error("register save state error", "error", err)
 		return nil, err
 	}
 	addLockedBalance(evm.StateDB, from, args.Value)
-	//
 	event := relayerABI.Events["Register"]
 	logData, err := event.Inputs.Pack(args.Pubkey, args.Value, args.Fee)
 	if err != nil {
@@ -98,7 +95,7 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 
 	//method, _ := relayerABI.Methods["append"]
 	//err = method.Inputs.Unpack(&amount, input)
-	err = relayerABI.UnpackIntoInterface(&amount, "received", input)
+	err = relayerABI.UnpackIntoInterface(&amount, "append", input)
 	if err != nil {
 		log.Error("Unpack append value error", "err", err)
 		return nil, errors.New("invalid input for register")
@@ -138,7 +135,7 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 
 	//method, _ := relayerABI.Methods["withdraw"]
 	//err = method.Inputs.Unpack(&amount, input)
-	err = relayerABI.UnpackIntoInterface(&amount, "received", input)
+	err = relayerABI.UnpackIntoInterface(&amount, "withdraw", input)
 	if err != nil {
 		log.Error("Unpack withdraw input error")
 		return nil, errors.New("invalid input for register")
@@ -153,7 +150,7 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	log.Info("register withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "value", amount)
 	err = register.RedeemSAccount(evm.Context.BlockNumber.Uint64(), from, amount)
 	if err != nil {
-		log.Error("Staking withdraw error", "address", from, "value", amount, "err", err)
+		log.Error("register withdraw error", "address", from, "value", amount, "err", err)
 		return nil, err
 	}
 
@@ -183,18 +180,13 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 	)
 
 	//err = method.Inputs.Unpack(&registerAddr, input)
-	err = relayerABI.UnpackIntoInterface(&registerAddr, "received", input)
+	err = relayerABI.UnpackIntoInterface(&registerAddr, "getBalance", input)
 	if err != nil {
 		log.Error("Unpack getBalance input error")
 		return nil, errors.New("invalid input for register")
 	}
 
 	register := NewRegisterImpl()
-	err = register.Load(evm.StateDB, params.RelayerAddress)
-	if err != nil {
-		log.Error("register load error", "error", err)
-		return nil, err
-	}
 	err = register.Load(evm.StateDB, params.RelayerAddress)
 	if err != nil {
 		log.Error("register load error", "error", err)
@@ -228,7 +220,7 @@ func getRelayers(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	}{}
 	method, _ := relayerABI.Methods["getRelayers"]
 	//err = method.Inputs.Unpack(&args, input)
-	err = relayerABI.UnpackIntoInterface(&args, "received", input)
+	err = relayerABI.UnpackIntoInterface(&args, "getRelays", input)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +260,7 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	info, h := register.GetCurrentEpochInfo()
 	method, _ := relayerABI.Methods["getPeriodHeight"]
 	//err = method.Inputs.Unpack(&args, input)
-	err = relayerABI.UnpackIntoInterface(&args, "received", input)
+	err = relayerABI.UnpackIntoInterface(&args, "getPeriodHeight", input)
 	if err != nil {
 		return nil, err
 	}
@@ -303,250 +295,3 @@ func subLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
 func GenesisAddLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
 	db.SetLockedBalance(addr, new(big.Int).Add(db.GetLockedBalance(addr), amount))
 }
-
-const RelayerABIJSON = `[
-  {
-    "name": "Register",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "bytes",
-        "name": "pubkey",
-        "indexed": false
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      },
-      {
-        "type": "uint256",
-        "name": "fee",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Withdraw",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Append",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "register",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "bytes",
-        "name": "pubkey"
-      },
-      {
-        "type": "uint256",
-        "name": "fee"
-      },
-      {
-        "type": "uint256",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "append",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "holder"
-      },
-      {
-        "type": "uint256",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getBalance",
-    "outputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "staked"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "locked"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "unlocked"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "reward"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "fine"
-      }
-    ],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "holder"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "withdraw",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "holder"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getPeriodHeight",
-    "outputs": [
-      {
-        "type": "uint256",
-        "name": "start"
-      },
-      {
-        "type": "uint256",
-        "name": "end"
-      },  
-      {
-        "type": "uint256",
-        "name": "remain"
-      },
-      {
-        "type": "bool",
-        "name": "relayer"
-      }
-    ],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "holder"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getRelayers",
-    "inputs": [
-      {
-        "type": "uint256",
-        "name": "period"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "address",
-        "name": "relayer0"
-      },
-      {
-        "type": "address",
-        "name": "relayer1"
-      },
-      {
-        "type": "address",
-        "name": "relayer2"
-      },
-      {
-        "type": "address",
-        "name": "relayer3"
-      },
-      {
-        "type": "address",
-        "name": "relayer4"
-      },
-      {
-        "type": "address",
-        "name": "relayer5"
-      },
-      {
-        "type": "address",
-        "name": "relayer6"
-      },
-      {
-        "type": "address",
-        "name": "relayer7"
-      },
-      {
-        "type": "address",
-        "name": "relayer8"
-      },
-      {
-        "type": "address",
-        "name": "relayer9"
-      },
-      {
-        "type": "uint256",
-        "name": "total"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  }
-]`

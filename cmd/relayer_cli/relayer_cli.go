@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
-	"github.com/mapprotocol/atlas/core/vm"
 	params2 "github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
@@ -35,7 +34,7 @@ var (
 )
 
 var (
-	abiRelayer, _ = abi.JSON(strings.NewReader(vm.RelayerABIJSON))
+	abiRelayer, _ = abi.JSON(strings.NewReader(params2.RelayerABIJSON))
 	priKey        *ecdsa.PrivateKey
 	from          common.Address
 	Value         uint64
@@ -142,10 +141,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
-	chainID, err := client.ChainID(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
+	chainID := big.NewInt(211)
 	fmt.Println("TX data nonce ", nonce, " transfer value ", value, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)

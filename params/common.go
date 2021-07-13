@@ -83,3 +83,250 @@ const (
 	TypeWorked = 0xa2
 	TypeBack   = 0xa3
 )
+
+const RelayerABIJSON = `[
+  {
+    "name": "Register",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "from",
+        "indexed": true
+      },
+      {
+        "type": "bytes",
+        "name": "pubkey",
+        "indexed": false
+      },
+      {
+        "type": "uint256",
+        "name": "value",
+        "indexed": false
+      },
+      {
+        "type": "uint256",
+        "name": "fee",
+        "indexed": false
+      }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "Withdraw",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "from",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "value",
+        "indexed": false
+      }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "Append",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "from",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "value",
+        "indexed": false
+      }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "register",
+    "outputs": [],
+    "inputs": [
+      {
+        "type": "bytes",
+        "name": "pubkey"
+      },
+      {
+        "type": "uint256",
+        "name": "fee"
+      },
+      {
+        "type": "uint256",
+        "name": "value"
+      }
+    ],
+    "constant": false,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "append",
+    "outputs": [],
+    "inputs": [
+      {
+        "type": "address",
+        "name": "holder"
+      },
+      {
+        "type": "uint256",
+        "name": "value"
+      }
+    ],
+    "constant": false,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "getBalance",
+    "outputs": [
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "staked"
+      },
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "locked"
+      },
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "unlocked"
+      },
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "reward"
+      },
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "fine"
+      }
+    ],
+    "inputs": [
+      {
+        "type": "address",
+        "name": "holder"
+      }
+    ],
+    "constant": true,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "withdraw",
+    "outputs": [],
+    "inputs": [
+      {
+        "type": "address",
+        "name": "holder"
+      },
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "value"
+      }
+    ],
+    "constant": false,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "getPeriodHeight",
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "start"
+      },
+      {
+        "type": "uint256",
+        "name": "end"
+      },  
+      {
+        "type": "uint256",
+        "name": "remain"
+      },
+      {
+        "type": "bool",
+        "name": "relayer"
+      }
+    ],
+    "inputs": [
+      {
+        "type": "address",
+        "name": "holder"
+      }
+    ],
+    "constant": true,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "getRelayers",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "period"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "relayer0"
+      },
+      {
+        "type": "address",
+        "name": "relayer1"
+      },
+      {
+        "type": "address",
+        "name": "relayer2"
+      },
+      {
+        "type": "address",
+        "name": "relayer3"
+      },
+      {
+        "type": "address",
+        "name": "relayer4"
+      },
+      {
+        "type": "address",
+        "name": "relayer5"
+      },
+      {
+        "type": "address",
+        "name": "relayer6"
+      },
+      {
+        "type": "address",
+        "name": "relayer7"
+      },
+      {
+        "type": "address",
+        "name": "relayer8"
+      },
+      {
+        "type": "address",
+        "name": "relayer9"
+      },
+      {
+        "type": "uint256",
+        "name": "total"
+      }
+    ],
+    "constant": true,
+    "payable": false,
+    "type": "function"
+  }
+]`
