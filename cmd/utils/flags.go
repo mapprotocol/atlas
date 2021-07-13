@@ -148,12 +148,12 @@ var (
 		Usage: "map protocol atlas mainnet",
 	}
 	TestnetFlag = cli.BoolFlag{
-		Name:  "ropsten",
-		Usage: "Ropsten network: pre-configured proof-of-work test network",
+		Name:  "testnet",
+		Usage: "test network: pre-configured proof-of-work test network",
 	}
 	DeveloperFlag = cli.BoolFlag{
 		Name:  "dev",
-		Usage: "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
+		Usage: "map protocol atlas developer network: pre-configured proof-of-work developer network",
 	}
 	SingleFlag = cli.BoolFlag{
 		Name:  "singlenet",

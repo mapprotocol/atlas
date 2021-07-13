@@ -150,14 +150,12 @@ func OnceInitRegisterState(state *state.StateDB, fastNumber *big.Int) bool {
 }
 
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
-	if blockNumber.Cmp(big.NewInt(1)) == 0 {
-		key := common.BytesToHash(vm.HeaderStoreAddress[:])
-		getState := state.GetPOWState(vm.HeaderStoreAddress, key)
-		if len(getState) == 0 {
-			hs := vm.NewHeaderStore()
-			if err := hs.Store(state, vm.HeaderStoreAddress); err != nil {
-				log.Crit("store failed, ", "err", err)
-			}
+	key := common.BytesToHash(vm.HeaderStoreAddress[:])
+	getState := state.GetPOWState(vm.HeaderStoreAddress, key)
+	if len(getState) == 0 {
+		hs := vm.NewHeaderStore()
+		if err := hs.Store(state, vm.HeaderStoreAddress); err != nil {
+			log.Crit("store failed, ", "err", err)
 		}
 	}
 }

@@ -560,6 +560,22 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 	return ec.c.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
 }
 
+// getRelayers
+func (ec *Client) GetRelayers(ctx context.Context, num uint64) (map[string]interface{}, error) {
+	//var relayers map[string]interface{}
+	//err := ec.c.CallContext(ctx, &relayers, "eth_getRelayers", num)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return relayers, nil
+	m := map[string]interface{}{}
+	return m, nil
+}
+
+// get current number by chainType
+func (ec *Client) GetCurrentNumberByChainType(ctx context.Context, chainType string) (uint64, error) {
+	return 2, nil
+}
 func toCallArg(msg ethereum.CallMsg) interface{} {
 	arg := map[string]interface{}{
 		"from": msg.From,

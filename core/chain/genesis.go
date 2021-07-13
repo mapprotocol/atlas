@@ -270,6 +270,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 
 	//////////////////////////////////pro compiled////////////////////////////////////
 	consensus.OnceInitRegisterState(statedb, new(big.Int).SetUint64(g.Number))
+	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	impl := vm.NewRegisterImpl()
 	hh := g.Number
 	if hh != 0 {
@@ -393,7 +394,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 func DevnetGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params2.DevnetConfig,
-		ExtraData:  []byte{1,2,3},
+		ExtraData:  []byte{1, 2, 3},
 		GasLimit:   11500000,
 		Difficulty: big.NewInt(1),
 		Alloc:      defaultRelayer(),
