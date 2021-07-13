@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"gopkg.in/urfave/cli.v1"
 	"os"
@@ -38,22 +37,6 @@ var (
 		Value: 7445,
 	}
 
-	EthRPCListenAddrFlag = cli.StringFlag{
-		Name:  "ethrpcaddr",
-		Usage: "HTTP-RPC server listening interface",
-		Value: "localhost",
-	}
-	EthRPCPortFlag = cli.IntFlag{
-		Name:  "ethrpcport",
-		Usage: "HTTP-RPC server listening port",
-		Value: 8082,
-	}
-
-	ValueFlag = cli.Uint64Flag{
-		Name:  "value",
-		Usage: "value units one eth",
-		Value: 0,
-	}
 	FeeFlag = cli.Uint64Flag{
 		Name:  "fee",
 		Usage: "work fee",
@@ -79,10 +62,6 @@ var (
 		Usage: "Relayer bft key for BFT (no 0x prefix)",
 		Value: "",
 	}
-	NumberFlag = cli.Uint64Flag{
-		Name:  "blocknumber",
-		Usage: "Query reward use block number,please current block number -14",
-	}
 
 	PublicAdressFlag = cli.StringFlag{
 		Name:  "PkAdress",
@@ -102,14 +81,11 @@ func init() {
 		KeyStoreFlag,
 		RPCListenAddrFlag,
 		RPCPortFlag,
-		EthRPCListenAddrFlag,
-		EthRPCPortFlag,
-		ValueFlag,
+
 		FeeFlag,
 		AddressFlag,
 		TxHashFlag,
 		PubKeyKeyFlag,
-		NumberFlag,
 		BFTKeyKeyFlag,
 		PublicAdressFlag,
 	}
@@ -156,30 +132,26 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 
 	//myId := ctx.GlobalString(PublicAdressFlag.Name)
 	for {
-		value, _ := prompt.Stdin.PromptInput("is continue ? yes|no ")
-		if value != "yes" {
-			break
-		}
 		for {
 			time.Sleep(time.Second * 1)
-			// 1.now Number
+			////1.now Number
 			//num, err := conn.BlockNumber(context.Background())
 			//if err != nil {
 			//	printError("BlockNumber err")
 			//}
-			//2. get relayers
+			////2. get relayers
 			//relayers, err1 := conn.GetRelayers(context.Background(), num)
 			//if err1 != nil {
 			//	printError("GetRelayers err")
 			//	time.Sleep(time.Second)
 			//	continue
 			//}
-			//3. judge is member
+			////3. judge is member
 			//if relayers[myId] == nil {
 			//	printError("not relayer err")
 			//	continue
 			//}
-			//4. get relayer range
+			////4. get relayer range
 			//a, b := getRelayerRange()
 			////5. judge number at range
 			//if num < a || num > b {
@@ -197,8 +169,13 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 		// 2. get chains
 		chains, _ := getChains(ctx, chainNum)
 		// 3.store
-		ret, _ := rlp.EncodeToBytes(chains)
-		input := packInputStore("save", "Eth", "Map", ret)
+		marshal, err2 := json.Marshal(chains)
+
+		if err2 != nil {
+			printError("marshal err")
+		}
+		//ret, _ := rlp.EncodeToBytes(chains)
+		input := packInputStore("save", "ETH", "MAP", marshal)
 		txHash := sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
 		ret2 := getResult(conn, txHash, true, false)
 		if !ret2 {

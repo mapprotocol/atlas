@@ -14,21 +14,31 @@ import (
 )
 
 const (
-	syncNumber = 10
+	syncNumber       = 10
+	EthRPCListenAddr = "localhost"
+	EthRPCPortFlag   = 8082
 )
 
 func getChains(ctx *cli.Context, startNum uint64) ([]ethereum.Header, []bytes.Buffer) {
 	conn, _ := dialEthConn(ctx)
 	currentNum_, _ := conn.BlockNumber(context.Background())
+	if startNum == currentNum_ {
+		log.Fatalf("startNum == currentNum ")
+	}
+	if startNum > currentNum_ {
+		log.Fatalf("startNum > currentNum ")
+	}
 	currentNum := int(currentNum_)
 	if currentNum == 0 {
 		fmt.Println("currentNum ==0")
 	}
-	first := Max(int(startNum), (currentNum - syncNumber))
-	Headers := make([]ethereum.Header, currentNum-first+1)
-	HeaderBytes := make([]bytes.Buffer, currentNum-first+1)
+	startNum01 := int(startNum)
+	end := Min(startNum01+syncNumber, currentNum)
+
+	Headers := make([]ethereum.Header, end-startNum01+1)
+	HeaderBytes := make([]bytes.Buffer, end-startNum01+1)
 	j := 0
-	for i := first; i <= currentNum; i++ {
+	for i := startNum01; i <= end; i++ {
 		Header, _ := conn.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
 		convertChain(&Headers[j], &HeaderBytes[j], Header)
 		j++
@@ -36,8 +46,8 @@ func getChains(ctx *cli.Context, startNum uint64) ([]ethereum.Header, []bytes.Bu
 	return Headers, HeaderBytes
 }
 func dialEthConn(ctx *cli.Context) (*ethclient.Client, string) {
-	ip = ctx.GlobalString(EthRPCListenAddrFlag.Name) //utils.RPCListenAddrFlag.Name)
-	port = ctx.GlobalInt(EthRPCPortFlag.Name)        //utils.RPCPortFlag.Name)
+	ip = EthRPCListenAddr //utils.RPCListenAddrFlag.Name)
+	port = EthRPCPortFlag //utils.RPCPortFlag.Name)
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	// Create an IPC based RPC connection to a remote node
 	// "http://39.100.97.129:8545"
@@ -49,6 +59,12 @@ func dialEthConn(ctx *cli.Context) (*ethclient.Client, string) {
 }
 func Max(x, y int) int {
 	if x > y {
+		return x
+	}
+	return y
+}
+func Min(x, y int) int {
+	if x < y {
 		return x
 	}
 	return y

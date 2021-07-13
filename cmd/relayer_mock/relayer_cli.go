@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
+	params2 "github.com/mapprotocol/atlas/params"
 
 	"encoding/hex"
 	"errors"
@@ -35,7 +36,7 @@ var (
 )
 
 var (
-	abiRelayer, _     = abi.JSON(strings.NewReader(vm.RelayerABIJSON))
+	abiRelayer, _     = abi.JSON(strings.NewReader(params2.RelayerABIJSON))
 	abiHeaderStore, _ = abi.JSON(strings.NewReader(vm.ABI_JSON))
 	priKey            *ecdsa.PrivateKey
 	from              common.Address
@@ -49,10 +50,11 @@ var (
 )
 
 const (
-	datadirPrivateKey      = "key"
-	datadirDefaultKeyStore = "keystore"
-	RegisterAmount         = 100000
-	RewardInterval         = 14
+	datadirPrivateKey            = "key"
+	datadirDefaultKeyStore       = "keystore"
+	RegisterAmount               = 100000
+	RewardInterval               = 14
+	impawnValue            int64 = 100000
 )
 
 func register(ctx *cli.Context) *ethclient.Client {
@@ -67,7 +69,7 @@ func register(ctx *cli.Context) *ethclient.Client {
 
 	value := ethToWei(ctx, false)
 
-	if Value < RegisterAmount {
+	if impawnValue < RegisterAmount {
 		printError("Amount must bigger than ", RegisterAmount)
 	}
 
@@ -207,12 +209,11 @@ func printError(error ...interface{}) {
 }
 
 func ethToWei(ctx *cli.Context, zero bool) *big.Int {
-	Value = ctx.GlobalUint64(ValueFlag.Name)
-	if !zero && Value <= 0 {
+	if !zero && int(impawnValue) <= 0 {
 		printError("Value must bigger than 0")
 	}
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	value := new(big.Int).Mul(big.NewInt(int64(Value)), baseUnit)
+	value := new(big.Int).Mul(big.NewInt(impawnValue), baseUnit)
 	return value
 }
 
