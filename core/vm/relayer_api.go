@@ -1468,6 +1468,16 @@ func GetCurrentRelayer(state StateDB) []*params.RelayerMember {
 	return vv
 }
 
+func IsInCurrentEpoch(state StateDB, relayer common.Address) bool {
+	relayers := GetCurrentRelayer(state)
+	for _, r := range relayers {
+		if bytes.Equal(r.Coinbase.Bytes(), relayer.Bytes()) {
+			return true
+		}
+	}
+	return false
+}
+
 func GetRelayersByEpoch(state StateDB, eid, hh uint64) []*params.RelayerMember {
 	i := NewRegisterImpl()
 	err := i.Load(state, params.RelayerAddress)
