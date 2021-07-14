@@ -13,7 +13,8 @@ import (
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/chains/ethereum"
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
 )
 
 const ABI_JSON = `[
@@ -139,7 +140,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	// validate header
-	header := new(ethereum.Header)
+	header := new(ve.Validate)
 	start := time.Now()
 	if _, err := header.ValidateHeaderChain(hs); err != nil {
 		log.Error("ValidateHeaderChain failed.", "err", err)

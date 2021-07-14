@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/mapprotocol/atlas/chains/ethereum"
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"math/big"
 	"sort"
 

@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/mapprotocol/atlas/chains/ethereum"
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"gopkg.in/urfave/cli.v1"
 	"log"

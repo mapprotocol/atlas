@@ -6,6 +6,10 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/chains/chainsdb"
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -30,29 +34,9 @@ var (
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
 )
 
-type Header struct {
-	ParentHash  common.Hash      `json:"parentHash"       gencodec:"required"`
-	UncleHash   common.Hash      `json:"sha3Uncles"       gencodec:"required"`
-	Coinbase    common.Address   `json:"miner"            gencodec:"required"`
-	Root        common.Hash      `json:"stateRoot"        gencodec:"required"`
-	TxHash      common.Hash      `json:"transactionsRoot" gencodec:"required"`
-	ReceiptHash common.Hash      `json:"receiptsRoot"     gencodec:"required"`
-	Bloom       types.Bloom      `json:"logsBloom"        gencodec:"required"`
-	Difficulty  *big.Int         `json:"difficulty"       gencodec:"required"`
-	Number      *big.Int         `json:"number"           gencodec:"required"`
-	GasLimit    uint64           `json:"gasLimit"         gencodec:"required"`
-	GasUsed     uint64           `json:"gasUsed"          gencodec:"required"`
-	Time        uint64           `json:"timestamp"        gencodec:"required"`
-	Extra       []byte           `json:"extraData"        gencodec:"required"`
-	MixDigest   common.Hash      `json:"mixHash"`
-	Nonce       types.BlockNonce `json:"nonce"`
-}
+type Validate struct{}
 
-func (eh *Header) Hash() common.Hash {
-	return rlpHash(eh)
-}
-
-func (eh *Header) ValidateHeaderChain(chain []*Header) (int, error) {
+func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 1; i < len(chain); i++ {
 		if chain[i].Number.Uint64() != chain[i-1].Number.Uint64()+1 {
@@ -68,7 +52,7 @@ func (eh *Header) ValidateHeaderChain(chain []*Header) (int, error) {
 		// todo bad hash
 	}
 
-	abort, results := eh.VerifyHeaders(chain)
+	abort, results := v.VerifyHeaders(chain)
 	defer close(abort)
 
 	for i := range chain {
@@ -80,14 +64,14 @@ func (eh *Header) ValidateHeaderChain(chain []*Header) (int, error) {
 	return 0, nil
 }
 
-func (eh *Header) VerifyHeaders(headers []*Header) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(headers []*ethereum.Header) (chan<- struct{}, <-chan error) {
 	// todo 优化？
 	abort := make(chan struct{})
 	results := make(chan error, len(headers))
 
 	go func() {
 		for i, header := range headers {
-			err := eh.verifyHeader(header, headers[:i])
+			err := v.verifyHeader(header, headers[:i])
 
 			select {
 			case <-abort:
@@ -99,7 +83,7 @@ func (eh *Header) VerifyHeaders(headers []*Header) (chan<- struct{}, <-chan erro
 	return abort, results
 }
 
-func (eh *Header) verifyHeader(header *Header, parents []*Header) error {
+func (v *Validate) verifyHeader(header *ethereum.Header, parents []*ethereum.Header) error {
 	if header.Number == nil {
 		return errUnknownBlock
 	}
@@ -155,22 +139,26 @@ func (eh *Header) verifyHeader(header *Header, parents []*Header) error {
 	}
 
 	// All basic checks passed, verify cascading fields
-	return eh.verifyCascadingFields(header, parents)
+	return v.verifyCascadingFields(header, parents)
 }
 
-func (eh *Header) verifyCascadingFields(header *Header, parents []*Header) error {
+func (v *Validate) verifyCascadingFields(header *ethereum.Header, parents []*ethereum.Header) error {
 	// The genesis block is the always valid dead-end
 	number := header.Number.Uint64()
 	if number == 0 {
 		return nil
 	}
 	// Ensure that the block's timestamp isn't too close to its parent
-	var parent *Header
+	var parent *ethereum.Header
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
-		// todo ReadHeader
-		//parent = chain.GetHeader(header.ParentHash, number-1)
+		s, err := chainsdb.GetStoreMgr(chains.ChainTypeETH)
+		if err != nil {
+			return err
+		}
+		parent = s.ReadHeader(header.ParentHash, number-1)
+
 	}
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor

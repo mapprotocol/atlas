@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	eth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/chains/ethereum"
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"math/big"
 	"reflect"
