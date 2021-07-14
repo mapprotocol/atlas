@@ -2,13 +2,12 @@ package vm
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/mapprotocol/atlas/chains"
@@ -17,62 +16,16 @@ import (
 	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
 )
 
-const ABI_JSON = `[
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "height",
-				"type": "uint256"
-			}
-		],
-		"name": "getAbnormalMsg",
-		"outputs": [
-			{
-				"internalType": "bytes",
-				"name": "abnormalMsg",
-				"type": "bytes"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "from",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "to",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes",
-				"name": "headers",
-				"type": "bytes"
-			}
-		],
-		"name": "save",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	}
-]`
-
 const (
-	Save           = "save"
-	GetAbnormalMsg = "getAbnormalMsg"
+	Save                = "save"
+	CurrentHeaderNumber = "currentHeaderNumber"
 )
 
 const TimesLimit = 3
 
-// Sync contract ABI
+// HeaderStore contract ABI
 var (
-	abiHeaderStore, _  = abi.JSON(strings.NewReader(ABI_JSON))
-	HeaderStoreAddress = common.BytesToAddress([]byte("headerstore"))
+	abiHeaderStore, _ = abi.JSON(strings.NewReader(params.HeaderStoreABIJSON))
 )
 
 var (
@@ -81,8 +34,8 @@ var (
 
 // SyncGas defines all method gas
 var SyncGas = map[string]uint64{
-	Save:           0,
-	GetAbnormalMsg: 0,
+	Save:                0,
+	CurrentHeaderNumber: 0,
 }
 
 // RunHeaderStore execute atlas header store contract
@@ -111,11 +64,6 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 }
 
 func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	// check if the current epoch is registered
-	if !IsInCurrentEpoch(evm.StateDB, contract.CallerAddress) {
-		return nil, errors.New("invalid work epoch, please register first")
-	}
-
 	// decode
 	args := struct {
 		From    string
@@ -149,7 +97,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 	// store synchronization information
 	headerStore := NewHeaderStore()
-	err = headerStore.Load(evm.StateDB, HeaderStoreAddress)
+	err = headerStore.Load(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return nil, err
@@ -170,14 +118,19 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
 
-	err = headerStore.Store(evm.StateDB, HeaderStoreAddress)
+	err = headerStore.Store(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("sync save state error", "error", err)
 		return nil, err
 	}
 
+	chainType, err := chains.ChainNameToChainType(args.To)
+	if err != nil {
+		return nil, err
+	}
+
 	// store block header
-	store, err := chainsdb.GetStoreMgr(chains.ChainTypeETH)
+	store, err := chainsdb.GetStoreMgr(chainType)
 	if err != nil {
 		return nil, err
 	}
@@ -188,28 +141,28 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	return nil, nil
 }
 
-func getAbnormalMsg(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+func currentHeaderNumber(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		height *big.Int
+		ChainType string
 	}{}
-
-	err = abiHeaderStore.UnpackIntoInterface(args, GetAbnormalMsg, input)
+	method, _ := abiHeaderStore.Methods[CurrentHeaderNumber]
+	unpack, err := method.Inputs.Unpack(input)
 	if err != nil {
-		log.Error("save Unpack error", "err", err)
-		return nil, ErrSyncInvalidInput
+		return nil, err
 	}
-
-	headerStore := NewHeaderStore()
-	err = headerStore.Load(evm.StateDB, HeaderStoreAddress)
-	if err != nil {
-		log.Error("header store load error", "error", err)
+	if err := method.Inputs.Copy(&args, unpack); err != nil {
 		return nil, err
 	}
 
-	msg := headerStore.LoadAbnormalMsg(contract.CallerAddress, args.height)
-	if msg == "" {
-		msg = "not found abnormal msg"
+	chainType, err := chains.ChainNameToChainType(args.ChainType)
+	if err != nil {
+		return nil, err
 	}
 
-	return abiHeaderStore.Methods[GetAbnormalMsg].Outputs.Pack(msg)
+	store, err := chainsdb.GetStoreMgr(chainType)
+	if err != nil {
+		return nil, err
+	}
+	number := store.CurrentHeaderNumber()
+	return method.Outputs.Pack(new(big.Int).SetUint64(number))
 }

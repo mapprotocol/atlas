@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/mapprotocol/atlas/params"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -312,7 +314,7 @@ func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.
 
 func HistoryWorkEfficiency(state StateDB, epochId uint64, relayer common.Address) (uint64, error) {
 	headerStore := NewHeaderStore()
-	err := headerStore.Load(state, HeaderStoreAddress)
+	err := headerStore.Load(state, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return 0, err

@@ -8,11 +8,12 @@ import (
 )
 
 var (
-	baseUnit       = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	FbaseUnit      = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	Base           = new(big.Int).SetUint64(10000)
-	InvalidFee     = big.NewInt(65535)
-	RelayerAddress = common.BytesToAddress([]byte("RelayerAddress"))
+	baseUnit           = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	FbaseUnit          = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
+	Base               = new(big.Int).SetUint64(10000)
+	InvalidFee         = big.NewInt(65535)
+	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
+	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
 )
 
 var RelayerGas = map[string]uint64{

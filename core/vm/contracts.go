@@ -52,7 +52,7 @@ var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{3}): &ripemd160hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 	params2.RelayerAddress:           &relayer{},
-	HeaderStoreAddress:               &store{},
+	params2.HeaderStoreAddress:       &store{},
 }
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
@@ -67,7 +67,7 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulByzantium{},
 	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
 	params2.RelayerAddress:           &relayer{},
-	HeaderStoreAddress:               &store{},
+	params2.HeaderStoreAddress:       &store{},
 }
 
 // PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum
@@ -83,7 +83,7 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}): &blake2F{},
 	params2.RelayerAddress:           &relayer{},
-	HeaderStoreAddress:               &store{},
+	params2.HeaderStoreAddress:       &store{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
@@ -99,7 +99,7 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}): &blake2F{},
 	params2.RelayerAddress:           &relayer{},
-	HeaderStoreAddress:               &store{},
+	params2.HeaderStoreAddress:       &store{},
 }
 
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
@@ -115,7 +115,7 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{17}): &bls12381MapG1{},
 	common.BytesToAddress([]byte{18}): &bls12381MapG2{},
 	params2.RelayerAddress:            &relayer{},
-	HeaderStoreAddress:                &store{},
+	params2.HeaderStoreAddress:        &store{},
 }
 
 var (

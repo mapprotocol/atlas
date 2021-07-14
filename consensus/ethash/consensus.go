@@ -735,7 +735,7 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 	height := header.Number.Uint64()
 	epoch := vm.GetEpochFromHeight(height)
 	hs := vm.NewHeaderStore()
-	if err := hs.Load(state, vm.HeaderStoreAddress); err != nil {
+	if err := hs.Load(state, params2.HeaderStoreAddress); err != nil {
 		log.Error("accumulateRewards load header store failed", "err", err)
 	}
 

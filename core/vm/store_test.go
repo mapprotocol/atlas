@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
 	"testing"
@@ -576,7 +577,7 @@ func TestHeaderStore_Store(t *testing.T) {
 			},
 			args: args{
 				state:   getStateDB(),
-				address: HeaderStoreAddress,
+				address: params.HeaderStoreAddress,
 			},
 			wantErr: false,
 		},
@@ -619,10 +620,10 @@ func TestHeaderStore_Load(t *testing.T) {
 			},
 			args: args{
 				state:   getStateDB(),
-				address: HeaderStoreAddress,
+				address: params.HeaderStoreAddress,
 			},
 			before: func(hs *HeaderStore, state StateDB) {
-				_ = hs.Store(state, HeaderStoreAddress)
+				_ = hs.Store(state, params.HeaderStoreAddress)
 			},
 			after: func(hs *HeaderStore) {
 				for e, r := range hs.epoch2reward {
@@ -647,13 +648,13 @@ func TestHeaderStore_Load(t *testing.T) {
 			},
 			args: args{
 				state:   getStateDB(),
-				address: HeaderStoreAddress,
+				address: params.HeaderStoreAddress,
 			},
 			before: func(hs *HeaderStore, state StateDB) {
-				_ = hs.Store(state, HeaderStoreAddress)
+				_ = hs.Store(state, params.HeaderStoreAddress)
 				// remove cache
-				key := common.BytesToHash(HeaderStoreAddress[:])
-				data := state.GetPOWState(HeaderStoreAddress, key)
+				key := common.BytesToHash(params.HeaderStoreAddress[:])
+				data := state.GetPOWState(params.HeaderStoreAddress, key)
 				hash := RlpHash(data)
 				hsCache.Cache.Remove(hash)
 
