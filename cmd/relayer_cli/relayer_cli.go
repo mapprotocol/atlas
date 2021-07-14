@@ -381,42 +381,29 @@ func queryRegisterInfo(conn *ethclient.Client, query bool) {
 		log.Fatal(err)
 	}
 	var input []byte
-	input = packInput("getBlance", from)
+	input = packInput("getRelayer", from)
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		printError("method CallContract error", err)
 	}
-	if len(output) != 0 {
+
+	method, _ := abiRelayer.Methods["getRelayer"]
+	ret, err := method.Outputs.Unpack(output)
+	if len(ret) != 0 {
 		args := struct {
-			Staked   *big.Int
-			Locked   *big.Int
-			Unlocked *big.Int
-		}{}
-		err = abiRelayer.UnpackIntoInterface(&args, "getDeposit", output)
-		if err != nil {
-			printError("abi error", err)
+			register bool
+			relayer  bool
+			epoch    *big.Int
+		}{
+			ret[0].(bool),
+			ret[1].(bool),
+			ret[2].(*big.Int),
 		}
-		fmt.Println("Staked ", args.Staked.String(), "wei =", weiToEth(args.Staked), "true Locked ",
-			args.Locked.String(), " wei =", weiToEth(args.Locked), "true",
-			"Unlocked ", args.Unlocked.String(), " wei =", weiToEth(args.Unlocked), "true")
-		if query && args.Locked.Sign() > 0 {
-			lockAssets, err := conn.GetLockedAsset(context.Background(), from, header.Number)
-			if err != nil {
-				printError("GetLockedAsset error", err)
-			}
-			for k, v := range lockAssets {
-				for m, n := range v.LockValue {
-					if !n.Locked {
-						fmt.Println("Your can instant withdraw", " count value ", n.Amount, " true")
-					} else {
-						if n.EpochID > 0 || n.Amount != "0" {
-							fmt.Println("Your can withdraw after height", n.Height.Uint64(), " count value ", n.Amount, " true  index", k+m, " lock ", n.Locked)
-						}
-					}
-				}
-			}
-		}
+		fmt.Println("query successfully,your account:")
+		fmt.Println("register: ", args.register)
+		fmt.Println("relayer:", args.relayer)
+		fmt.Println("current epoch:", args.epoch)
 	} else {
 		fmt.Println("Contract query failed result len == 0")
 	}

@@ -317,7 +317,7 @@ func GetFirstEpoch() *EpochIDInfo {
 }
 func GetPreFirstEpoch() *EpochIDInfo {
 	return &EpochIDInfo{
-		EpochID:     params.FirstNewEpochID - 1,
+		EpochID:     params.FirstNewEpochID,
 		BeginHeight: 0,
 		EndHeight:   params.PowForkPoint,
 	}
@@ -499,7 +499,7 @@ func isRelayerMember(i *RegisterImpl, address common.Address) bool {
 	if sas == nil {
 		return false
 	}
-	relayer := SARegister(sas)
+	relayer := Register(sas)
 	sa := relayer.getSA(address)
 	if sa == nil {
 		return false

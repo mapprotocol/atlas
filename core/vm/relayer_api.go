@@ -568,23 +568,23 @@ func (s *RegisterAccount) makeModifyStateByTip10() {
 	}
 }
 
-type SARegister []*RegisterAccount
+type Register []*RegisterAccount
 
-func (s *SARegister) getAllRegister(hh uint64) *big.Int {
+func (s *Register) getAllRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, val := range *s {
 		all = all.Add(all, val.getAllRegister(hh))
 	}
 	return all
 }
-func (s *SARegister) getValidRegister(hh uint64) *big.Int {
+func (s *Register) getValidRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, val := range *s {
 		all = all.Add(all, val.getValidRegister(hh))
 	}
 	return all
 }
-func (s *SARegister) sort(hh uint64, valid bool) {
+func (s *Register) sort(hh uint64, valid bool) {
 	for _, v := range *s {
 		tmp := toDelegationByAmount(hh, valid, v.Delegation)
 		sort.Sort(tmp)
@@ -594,7 +594,7 @@ func (s *SARegister) sort(hh uint64, valid bool) {
 	sort.Sort(tmp)
 	*s, _ = fromRegisterByAmount(tmp)
 }
-func (s *SARegister) getSA(addr common.Address) *RegisterAccount {
+func (s *Register) getSA(addr common.Address) *RegisterAccount {
 	for _, val := range *s {
 		if bytes.Equal(val.Unit.Address.Bytes(), addr.Bytes()) {
 			return val
@@ -602,7 +602,7 @@ func (s *SARegister) getSA(addr common.Address) *RegisterAccount {
 	}
 	return nil
 }
-func (s *SARegister) update(sa1 *RegisterAccount, hh uint64, next, move bool, effectHeight uint64) {
+func (s *Register) update(sa1 *RegisterAccount, hh uint64, next, move bool, effectHeight uint64) {
 	sa := s.getSA(sa1.Unit.Address)
 	if sa == nil {
 		if hh >= effectHeight {
@@ -618,9 +618,9 @@ func (s *SARegister) update(sa1 *RegisterAccount, hh uint64, next, move bool, ef
 /////////////////////////////////////////////////////////////////////////////////
 // be thread-safe for caller locked
 type RegisterImpl struct {
-	accounts   map[uint64]SARegister // key is epoch id,value is SA set
-	curEpochID uint64                // the new epochid of the current state
-	lastReward uint64                // the curnent reward height block
+	accounts   map[uint64]Register // key is epoch id,value is SA set
+	curEpochID uint64              // the new epochid of the current state
+	lastReward uint64              // the curnent reward height block
 }
 
 func NewRegisterImpl() *RegisterImpl {
@@ -628,7 +628,7 @@ func NewRegisterImpl() *RegisterImpl {
 	return &RegisterImpl{
 		curEpochID: pre.EpochID,
 		lastReward: 0,
-		accounts:   make(map[uint64]SARegister),
+		accounts:   make(map[uint64]Register),
 	}
 }
 func CloneRegisterImpl(ori *RegisterImpl) *RegisterImpl {
@@ -638,10 +638,10 @@ func CloneRegisterImpl(ori *RegisterImpl) *RegisterImpl {
 	tmp := &RegisterImpl{
 		curEpochID: ori.curEpochID,
 		lastReward: ori.lastReward,
-		accounts:   make(map[uint64]SARegister),
+		accounts:   make(map[uint64]Register),
 	}
 	for k, val := range ori.accounts {
-		items := SARegister{}
+		items := Register{}
 		for _, v := range val {
 			vv := v.clone()
 			items = append(items, vv)
@@ -836,7 +836,7 @@ func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, e
 		if len(sas) == 0 {
 			return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "epochid:", einfo.EpochID, "sas=0"))
 		}
-		impawns := SARegister(sas)
+		impawns := Register(sas)
 		impawns.sort(target, false)
 		var res []*SARewardInfos
 		allValidatorStaking := impawns.getAllRegister(target)
@@ -913,7 +913,7 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 		return errors.New(fmt.Sprintln("the epoch is nil", prev, "err:", params.ErrNotMatchEpochInfo))
 	}
 	if !ok2 {
-		nextInfos = SARegister{}
+		nextInfos = Register{}
 	}
 	for _, v := range prevInfos {
 		vv := v.clone()
@@ -985,8 +985,8 @@ func (i *RegisterImpl) Shift(epochid, effectHeight uint64) error {
 	return i.move(prev, epochid, effectHeight)
 }
 
-// CancelSAccount cancel amount of asset for register account,it will be work in next epoch
-func (i *RegisterImpl) CancelSAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
+// CancelAccount cancel amount of asset for register account,it will be work in next epoch
+func (i *RegisterImpl) CancelAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
 		return params.ErrInvalidParam
 	}
@@ -1117,19 +1117,19 @@ func (i *RegisterImpl) InsertDAccount2(height uint64, addrSA, addrDA common.Addr
 	}
 	return i.insertDAccount(height, da)
 }
-func (i *RegisterImpl) insertSAccount(height uint64, sa *RegisterAccount) error {
+func (i *RegisterImpl) insertAccount(height uint64, sa *RegisterAccount) error {
 	if sa == nil {
 		return params.ErrInvalidParam
 	}
 	epochInfo := GetEpochFromHeight(height)
 	if epochInfo == nil || epochInfo.EpochID > i.getCurrentEpoch() {
-		log.Error("insertSAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
+		log.Error("insertAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
 		return params.ErrOverEpochID
 	}
 	if val, ok := i.accounts[epochInfo.EpochID]; !ok {
 		var accounts []*RegisterAccount
 		accounts = append(accounts, sa)
-		i.accounts[epochInfo.EpochID] = SARegister(accounts)
+		i.accounts[epochInfo.EpochID] = Register(accounts)
 		log.Debug("Insert register account", "epoch", epochInfo, "account", sa.Unit.GetRewardAddress())
 	} else {
 		for _, ii := range val {
@@ -1144,7 +1144,7 @@ func (i *RegisterImpl) insertSAccount(height uint64, sa *RegisterAccount) error 
 	}
 	return nil
 }
-func (i *RegisterImpl) InsertSAccount2(height, effectHeight uint64, addr common.Address, pk []byte, val *big.Int, fee *big.Int, auto bool) error {
+func (i *RegisterImpl) InsertAccount2(height, effectHeight uint64, addr common.Address, pk []byte, val *big.Int, fee *big.Int, auto bool) error {
 	if val.Sign() <= 0 || height < 0 || fee.Sign() < 0 || fee.Cmp(params.Base) > 0 {
 		return params.ErrInvalidParam
 	}
@@ -1179,7 +1179,7 @@ func (i *RegisterImpl) InsertSAccount2(height, effectHeight uint64, addr common.
 			VotePubkey: []byte{},
 		}
 	}
-	return i.insertSAccount(height, sa)
+	return i.insertAccount(height, sa)
 }
 func (i *RegisterImpl) AppendAmount(height uint64, addr common.Address, val *big.Int) error {
 	if val.Sign() <= 0 || height < 0 {
@@ -1187,7 +1187,7 @@ func (i *RegisterImpl) AppendAmount(height uint64, addr common.Address, val *big
 	}
 	epochInfo := GetEpochFromHeight(height)
 	if epochInfo.EpochID > i.getCurrentEpoch() {
-		log.Debug("insertSAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
+		log.Debug("insertAccount", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
 		return params.ErrOverEpochID
 	}
 	sa, err := i.GetRegisterAccount(epochInfo.EpochID, addr)
@@ -1256,7 +1256,7 @@ func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) 
 
 /////////////////////////////////////////////////////////////////////////////////
 // GetStakings return all register accounts of the current epoch
-func (i *RegisterImpl) GetAllRegisterAccount() SARegister {
+func (i *RegisterImpl) GetAllRegisterAccount() Register {
 	if val, ok := i.accounts[i.curEpochID]; ok {
 		return val
 	} else {
@@ -1399,7 +1399,6 @@ func (i *RegisterImpl) MakeModifyStateByTip10() {
 func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data, err := rlp.EncodeToBytes(i)
-	fmt.Println("data:", data)
 	if err != nil {
 		log.Crit("Failed to RLP encode RegisterImpl", "err", err)
 	}
@@ -1417,7 +1416,6 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	//data := state.GetPOSState(preAddress, key)
 	hash := state.GetState(preAddress, key)
 	data, err := rlp.EncodeToBytes(hash)
-	fmt.Println("data", hash, data)
 	if err != nil {
 		return errors.New("EncodeToBytes failed")
 	}

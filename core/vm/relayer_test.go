@@ -39,7 +39,7 @@ func TestRegister(t *testing.T) {
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "Value", Value)
 	register := NewRegisterImpl()
 	// join selection
-	err = register.InsertSAccount2(0, 0, from, pub, value, big.NewInt(0), true)
+	err = register.InsertAccount2(0, 0, from, pub, value, big.NewInt(0), true)
 	if err != nil {
 		t.Fatal(err)
 	}

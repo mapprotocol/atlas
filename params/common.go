@@ -272,57 +272,25 @@ const RelayerABIJSON = `[
     "type": "function"
   },
   {
-    "name": "getRelayers",
+    "name": "getRelayer",
     "inputs": [
       {
-        "type": "uint256",
-        "name": "period"
+        "type": "address",
+        "name": "holder"
       }
     ],
     "outputs": [
       {
-        "type": "address",
-        "name": "relayer0"
+        "type": "bool",
+        "name": "relayer"
       },
       {
-        "type": "address",
-        "name": "relayer1"
-      },
-      {
-        "type": "address",
-        "name": "relayer2"
-      },
-      {
-        "type": "address",
-        "name": "relayer3"
-      },
-      {
-        "type": "address",
-        "name": "relayer4"
-      },
-      {
-        "type": "address",
-        "name": "relayer5"
-      },
-      {
-        "type": "address",
-        "name": "relayer6"
-      },
-      {
-        "type": "address",
-        "name": "relayer7"
-      },
-      {
-        "type": "address",
-        "name": "relayer8"
-      },
-      {
-        "type": "address",
-        "name": "relayer9"
+        "type": "bool",
+        "name": "register"
       },
       {
         "type": "uint256",
-        "name": "total"
+        "name": "epoch"
       }
     ],
     "constant": true,
