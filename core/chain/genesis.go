@@ -271,7 +271,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	//////////////////////////////////pro compiled////////////////////////////////////
 	consensus.OnceInitRegisterState(statedb, new(big.Int).SetUint64(g.Number))
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
-	impl := vm.NewRegisterImpl()
+	register := vm.NewRegisterImpl()
 	hh := g.Number
 	if hh != 0 {
 		hh = hh - 1
@@ -279,22 +279,22 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	relayer := defaultRelayer2()
 	for _, member := range relayer {
 		var err error
-		err = impl.InsertAccount2(hh, 0, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
+		err = register.InsertAccount2(hh, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
 		if err != nil {
 			log.Error("ToBlock InsertSAccount", "error", err)
 		} else {
 			vm.GenesisAddLockedBalance(statedb, member.Coinbase, params2.ElectionMinLimitForRegister)
 		}
 	}
-	_, err := impl.DoElections(statedb, 1, 0)
+	_, err := register.DoElections(statedb, 1, 0)
 	if err != nil {
 		log.Error("ToBlock DoElections", "error", err)
 	}
-	err = impl.Shift(1, 0)
+	err = register.Shift(1, 0)
 	if err != nil {
 		log.Error("ToBlock Shift", "error", err)
 	}
-	err = impl.Save(statedb, params2.RelayerAddress)
+	err = register.Save(statedb, params2.RelayerAddress)
 	if err != nil {
 		log.Error("ToBlock IMPL Save", "error", err)
 	}

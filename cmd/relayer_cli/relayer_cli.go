@@ -33,16 +33,13 @@ var (
 )
 
 var (
-	abiRelayer, _ = abi.JSON(strings.NewReader(params2.RelayerABIJSON))
-	priKey        *ecdsa.PrivateKey
-	from          common.Address
-	Value         uint64
-	fee           uint64
-	holder        common.Address
-	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	abiRelayer, _  = abi.JSON(strings.NewReader(params2.RelayerABIJSON))
+	priKey         *ecdsa.PrivateKey
+	from           common.Address
+	Value          uint64
+	fee            uint64
 	RelayerAddress common.Address = params2.RelayerAddress
 	Base                          = new(big.Int).SetUint64(10000)
-	chainID                       = big.NewInt(212)
 )
 
 const (
@@ -126,18 +123,19 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 
 	gasLimit := uint64(2100000) // in units
 	// If the contract surely has code (or code is not needed), estimate the transaction
-	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	gasLimit, err = client.EstimateGas(context.Background(), msg)
-	if err != nil {
-		fmt.Println("Contract exec failed", err)
-	}
-	if gasLimit < 1 {
-		gasLimit = 866328
-	}
+	//msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	//gasLimit, err = client.EstimateGas(context.Background(), msg)
+	//if err != nil {
+	//	fmt.Println("Contract exec failed", err)
+	//}
+	//if gasLimit < 1 {
+	//	gasLimit = 866328
+	//}
 
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
+	chainID, _ := client.ChainID(context.Background())
 	fmt.Println("TX data nonce ", nonce, " transfer value ", value, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)
@@ -258,7 +256,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 		fmt.Println("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		if contract && common.IsHexAddress(from.Hex()) {
-			queryRegisterInfo(conn, false)
+			queryRegisterInfo(conn)
 		}
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		fmt.Println("Transaction Failed ", " Block Number", receipt.BlockNumber.Uint64())
@@ -278,12 +276,12 @@ func PrintBalance(conn *ethclient.Client, from common.Address) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fbalance := new(big.Float)
-	fbalance.SetString(balance.String())
-	trueValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+	balance2 := new(big.Float)
+	balance2.SetString(balance.String())
+	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
 
-	sbalance, err := conn.LockBalanceAt(context.Background(), from, nil)
-	fmt.Println("Your wallet valid balance is ", trueValue, "'true ", " lock balance is ", sbalance, "'true ")
+	lockBalance, err := conn.LockBalanceAt(context.Background(), from, nil)
+	fmt.Println("Your wallet valid balance is ", Value, "'rth ", " lock balance is ", lockBalance, "'eth ")
 }
 
 func loadPrivate(ctx *cli.Context) {
@@ -349,33 +347,33 @@ func loadSigningKey(keyfile string) common.Address {
 	return from
 }
 
-func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
-	sheader, err := conn.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		printError("get snail block error", err)
-	}
-	queryReward := uint64(0)
-	currentReward := sheader.Number.Uint64() - RewardInterval
-	if number > currentReward {
-		printError("reward no release current reward height ", currentReward)
-	} else if number > 0 || start {
-		queryReward = number
-	} else {
-		queryReward = currentReward
-	}
-	var crc map[string]interface{}
-	crc, err = conn.GetChainRewardContent(context.Background(), from, new(big.Int).SetUint64(queryReward))
-	if err != nil {
-		printError("get chain reward content error", err)
-	}
-	if info, ok := crc["stakingReward"]; ok {
-		if info, ok := info.([]interface{}); ok {
-			fmt.Println("queryRewardInfo", info)
-		}
-	}
-}
+//func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
+//	header, err := conn.HeaderByNumber(context.Background(), nil)
+//	if err != nil {
+//		printError("get block error", err)
+//	}
+//	queryReward := uint64(0)
+//	currentReward := header.Number.Uint64() - RewardInterval
+//	if number > currentReward {
+//		printError("reward no release current reward height ", currentReward)
+//	} else if number > 0 || start {
+//		queryReward = number
+//	} else {
+//		queryReward = currentReward
+//	}
+//	var crc map[string]interface{}
+//	crc, err = conn.GetChainRewardContent(context.Background(), from, new(big.Int).SetUint64(queryReward))
+//	if err != nil {
+//		printError("get chain reward content error", err)
+//	}
+//	if info, ok := crc["stakingReward"]; ok {
+//		if info, ok := info.([]interface{}); ok {
+//			fmt.Println("queryRewardInfo", info)
+//		}
+//	}
+//}
 
-func queryRegisterInfo(conn *ethclient.Client, query bool) {
+func queryRegisterInfo(conn *ethclient.Client) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -404,6 +402,85 @@ func queryRegisterInfo(conn *ethclient.Client, query bool) {
 		fmt.Println("register: ", args.register)
 		fmt.Println("relayer:", args.relayer)
 		fmt.Println("current epoch:", args.epoch)
+	} else {
+		fmt.Println("Contract query failed result len == 0")
+	}
+}
+
+func queryAccountBalance(conn *ethclient.Client) {
+	header, err := conn.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	input := packInput("getBalance", from)
+	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
+	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		printError("method CallContract error", err)
+	}
+
+	method, _ := abiRelayer.Methods["getBalance"]
+	ret, err := method.Outputs.Unpack(output)
+	if len(ret) != 0 {
+		args := struct {
+			register *big.Int
+			locked   *big.Int
+			unlocked *big.Int
+			reward   *big.Int
+			fine     *big.Int
+		}{
+			ret[0].(*big.Int),
+			ret[1].(*big.Int),
+			ret[2].(*big.Int),
+			ret[3].(*big.Int),
+			ret[4].(*big.Int),
+		}
+		fmt.Println("query successfully,your account:")
+		fmt.Println("register amount: ", args.register)
+		fmt.Println("locked amount:", args.locked)
+		fmt.Println("unlocked amount:", args.unlocked)
+		fmt.Println("reward amount:", args.reward)
+		fmt.Println("fine amount:", args.fine)
+	} else {
+		fmt.Println("Contract query failed result len == 0")
+	}
+}
+
+func queryRelayerEpoch(conn *ethclient.Client) {
+	header, err := conn.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	input := packInput("getPeriodHeight", from)
+	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
+	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		printError("method CallContract error", err)
+	}
+
+	method, _ := abiRelayer.Methods["getPeriodHeight"]
+	ret, err := method.Outputs.Unpack(output)
+	if len(ret) != 0 {
+		args := struct {
+			start   *big.Int
+			end     *big.Int
+			remain  *big.Int
+			relayer bool
+		}{
+			ret[0].(*big.Int),
+			ret[1].(*big.Int),
+			ret[2].(*big.Int),
+			ret[3].(bool),
+		}
+		if args.relayer {
+			fmt.Println("query successfully,your account is relayer")
+			fmt.Println("start height in epoch: ", args.start)
+			fmt.Println("end height in epoch:   ", args.end)
+			fmt.Println("remain height in epoch:", args.remain)
+		} else {
+			fmt.Println("query successfully,your account is not relayer")
+		}
+
 	} else {
 		fmt.Println("Contract query failed result len == 0")
 	}

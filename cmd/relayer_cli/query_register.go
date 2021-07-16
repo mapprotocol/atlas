@@ -1,15 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
 )
 
 var AppendCommand = cli.Command{
 	Name:   "append",
-	Usage:  "Append validator deposit staking count",
+	Usage:  "Append validator registered fund ",
 	Action: MigrateFlags(Append),
 	Flags:  RegisterFlags,
 }
@@ -22,7 +20,7 @@ func Append(ctx *cli.Context) error {
 
 	value := ethToWei(ctx, false)
 
-	input := packInput("append", value)
+	input := packInput("append", from, value)
 	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
 	getResult(conn, txHash, true)
@@ -30,32 +28,9 @@ func Append(ctx *cli.Context) error {
 	return nil
 }
 
-var UpdatePKCommand = cli.Command{
-	Name:   "updatepk",
-	Usage:  "Update user pk will take effect in next epoch",
-	Action: MigrateFlags(UpdatePKRegister),
-	Flags:  RegisterFlags,
-}
-
-func UpdatePKRegister(ctx *cli.Context) error {
-	loadPrivate(ctx)
-
-	conn, url := dialConn(ctx)
-	printBaseInfo(conn, url)
-
-	pubkey, pk, _ := getPubKey(ctx)
-	fmt.Println(" Pubkey ", pubkey)
-
-	input := packInput("setPubkey", pk)
-	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
-
-	getResult(conn, txHash, true)
-	return nil
-}
-
 var withdrawCommand = cli.Command{
 	Name:   "withdraw",
-	Usage:  "Call this will instant receive your deposit money",
+	Usage:  "Call this will instant receive your registered fund ",
 	Action: MigrateFlags(withdraw),
 	Flags:  RegisterFlags,
 }
@@ -68,7 +43,7 @@ func withdraw(ctx *cli.Context) error {
 
 	value := ethToWei(ctx, false)
 
-	input := packInput("withdraw", value)
+	input := packInput("withdraw", from, value)
 
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 
@@ -78,10 +53,10 @@ func withdraw(ctx *cli.Context) error {
 }
 
 var queryRegisterCommand = cli.Command{
-	Name:   "queryrelayer",
-	Usage:  "Query relayer info, can cancel info and can withdraw info",
+	Name:   "queryRelayer",
+	Usage:  "Query relayer info, get transaction result",
 	Action: MigrateFlags(queryRegister),
-	Flags:  append(RegisterFlags, AddressFlag),
+	Flags:  RegisterFlags,
 }
 
 func queryRegister(ctx *cli.Context) error {
@@ -89,15 +64,15 @@ func queryRegister(ctx *cli.Context) error {
 	conn, url := dialConn(ctx)
 	printBaseInfo(conn, url)
 
-	queryRegisterInfo(conn, true)
+	queryRegisterInfo(conn)
 	return nil
 }
 
 var queryBalanceCommand = cli.Command{
-	Name:   "querybalance",
-	Usage:  "Query reward info, contain deposit and delegate reward",
+	Name:   "queryBalance",
+	Usage:  "Query reward info, contain reward,fine,unlocked,locked and registered",
 	Action: MigrateFlags(queryBalance),
-	Flags:  append(RegisterFlags, AddressFlag),
+	Flags:  RegisterFlags,
 }
 
 func queryBalance(ctx *cli.Context) error {
@@ -105,59 +80,7 @@ func queryBalance(ctx *cli.Context) error {
 	conn, url := dialConn(ctx)
 
 	printBaseInfo(conn, url)
-
-	PrintBalance(conn, from)
-
-	start := false
-	snailNumber := uint64(0)
-	if ctx.GlobalIsSet(NumberFlag.Name) {
-		snailNumber = ctx.GlobalUint64(NumberFlag.Name)
-		start = true
-	}
-	queryRewardInfo(conn, snailNumber, start)
-	return nil
-}
-
-var sendCommand = cli.Command{
-	Name:   "send",
-	Usage:  "Send general transaction",
-	Action: MigrateFlags(sendTX),
-	Flags:  append(RegisterFlags, AddressFlag),
-}
-
-func sendTX(ctx *cli.Context) error {
-	loadPrivate(ctx)
-	conn, url := dialConn(ctx)
-	printBaseInfo(conn, url)
-	PrintBalance(conn, from)
-
-	address := ctx.GlobalString(AddressFlag.Name)
-	if !common.IsHexAddress(address) {
-		printError("Must input correct address")
-	}
-
-	value := ethToWei(ctx, false)
-	txHash := sendContractTransaction(conn, from, common.HexToAddress(address), value, priKey, nil)
-	getResult(conn, txHash, false)
-	return nil
-}
-
-var queryTxCommand = cli.Command{
-	Name:   "querytx",
-	Usage:  "Query tx hash, get transaction result",
-	Action: MigrateFlags(queryTxRegister),
-	Flags:  append(RegisterFlags, TxHashFlag),
-}
-
-func queryTxRegister(ctx *cli.Context) error {
-	conn, url := dialConn(ctx)
-	printBaseInfo(conn, url)
-
-	txhash := ctx.GlobalString(TxHashFlag.Name)
-	if txhash == "" {
-		printError("Must input tx hash")
-	}
-	queryTx(conn, common.HexToHash(txhash), false, true)
+	queryAccountBalance(conn)
 	return nil
 }
 
@@ -165,17 +88,14 @@ var queryEpochCommand = cli.Command{
 	Name:   "queryEpoch",
 	Usage:  "Query Epoch, get transaction result",
 	Action: MigrateFlags(queryEpoch),
-	Flags:  append(RegisterFlags, TxHashFlag),
+	Flags:  RegisterFlags,
 }
 
 func queryEpoch(ctx *cli.Context) error {
+	loadPrivate(ctx)
 	conn, url := dialConn(ctx)
-	printBaseInfo(conn, url)
 
-	txhash := ctx.GlobalString(TxHashFlag.Name)
-	if txhash == "" {
-		printError("Must input tx hash")
-	}
-	queryTx(conn, common.HexToHash(txhash), false, true)
+	printBaseInfo(conn, url)
+	queryRelayerEpoch(conn)
 	return nil
 }
