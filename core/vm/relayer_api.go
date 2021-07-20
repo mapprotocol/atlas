@@ -17,9 +17,6 @@ import (
 /////////////////////////////////////////////////////////////////////////////////
 var IC *RelayerCache
 
-//var OpQueryReward uint8 = 5
-//var OpQueryFine uint8 = 6
-
 func init() {
 	IC = newRelayerCache()
 }
@@ -51,12 +48,12 @@ func (v *PairRegisterValue) isElection() bool {
 type RewardItem struct {
 	EpochID uint64
 	Amount  *big.Int
-	//Height *big.Int
+	Height  *big.Int
 }
 type FineItem struct {
 	EpochID uint64
 	Amount  *big.Int
-	//Height *big.Int
+	Height  *big.Int
 }
 type RedeemItem struct {
 	Amount  *big.Int
@@ -343,51 +340,13 @@ func (s *registerUnit) redeemToMap() map[uint64]*big.Int {
 	return res
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-
-type DelegationAccount struct {
-	SaAddress common.Address
-	Unit      *registerUnit
-}
-
-func (d *DelegationAccount) update(da *DelegationAccount, move bool) {
-	d.Unit.update(da.Unit, move)
-}
-func (s *DelegationAccount) getAllStaking(hh uint64) *big.Int {
-	return s.Unit.getAllRegister(hh)
-}
-func (s *DelegationAccount) getValidStaking(hh uint64) *big.Int {
-	return s.Unit.getValidRegister(hh)
-}
-func (s *DelegationAccount) stopStakingInfo(amount, lastHeight *big.Int) error {
-	return s.Unit.stopRegisterInfo(amount, lastHeight)
-}
-func (s *DelegationAccount) redeeming(hh uint64, amount *big.Int) (common.Address, *big.Int, error) {
-	return s.Unit.redeeming(hh, amount)
-}
-func (s *DelegationAccount) finishRedeemed() {
-	s.Unit.finishRedeemed()
-}
-func (s *DelegationAccount) merge(epochid, hh uint64) {
-	s.Unit.merge(epochid, hh)
-}
-func (s *DelegationAccount) clone() *DelegationAccount {
-	return &DelegationAccount{
-		SaAddress: s.SaAddress,
-		Unit:      s.Unit.clone(),
-	}
-}
-func (s *DelegationAccount) isValid() bool {
-	return s.Unit.isValid()
-}
-
 type RegisterAccount struct {
 	Unit       *registerUnit
 	Votepubkey []byte
 	Fee        *big.Int
 	Relayer    bool
-	Delegation []*DelegationAccount
-	Modify     *AlterableInfo
+	//Delegation []*DelegationAccount
+	Modify *AlterableInfo
 }
 type AlterableInfo struct {
 	Fee        *big.Int
@@ -421,16 +380,16 @@ func (s *RegisterAccount) updatePk(height uint64, pk []byte) {
 }
 func (s *RegisterAccount) update(sa *RegisterAccount, hh uint64, next, move bool) {
 	s.Unit.update(sa.Unit, move)
-	dirty := false
-	for _, v := range sa.Delegation {
-		da := s.getDA(v.Unit.GetRewardAddress())
-		if da == nil {
-			s.Delegation = append(s.Delegation, v)
-			dirty = true
-		} else {
-			da.update(v, move)
-		}
-	}
+	//dirty := false
+	//for _, v := range sa.Delegation {
+	//	da := s.getDA(v.Unit.GetRewardAddress())
+	//	if da == nil {
+	//		s.Delegation = append(s.Delegation, v)
+	//		dirty = true
+	//	} else {
+	//		da.update(v, move)
+	//	}
+	//}
 	// ignore the pk param
 	if hh > s.getMaxHeight() && s.Modify != nil && sa.Modify != nil {
 		if sa.Modify.Fee != nil {
@@ -443,11 +402,11 @@ func (s *RegisterAccount) update(sa *RegisterAccount, hh uint64, next, move bool
 	if next {
 		s.changeAlterableInfo()
 	}
-	if dirty && hh != 0 {
-		tmp := toDelegationByAmount(hh, false, s.Delegation)
-		sort.Sort(tmp)
-		s.Delegation, _ = fromDelegationByAmount(tmp)
-	}
+	//if dirty && hh != 0 {
+	//	tmp := toDelegationByAmount(hh, false, s.Delegation)
+	//	sort.Sort(tmp)
+	//	s.Delegation, _ = fromDelegationByAmount(tmp)
+	//}
 }
 func (s *RegisterAccount) stopRegisterInfo(amount, lastHeight *big.Int) error {
 	return s.Unit.stopRegisterInfo(amount, lastHeight)
@@ -460,16 +419,10 @@ func (s *RegisterAccount) finishRedeemed() {
 }
 func (s *RegisterAccount) getAllRegister(hh uint64) *big.Int {
 	all := s.Unit.getAllRegister(hh)
-	for _, v := range s.Delegation {
-		all = all.Add(all, v.getAllStaking(hh))
-	}
 	return all
 }
 func (s *RegisterAccount) getValidRegister(hh uint64) *big.Int {
 	all := s.Unit.getValidRegister(hh)
-	for _, v := range s.Delegation {
-		all = all.Add(all, v.getValidStaking(hh))
-	}
 	return all
 }
 func (s *RegisterAccount) getValidRegisterOnly(hh uint64) *big.Int {
@@ -477,29 +430,8 @@ func (s *RegisterAccount) getValidRegisterOnly(hh uint64) *big.Int {
 }
 func (s *RegisterAccount) merge(epochid, hh, effectHeight uint64) {
 	s.Unit.merge(epochid, hh)
-	if hh >= effectHeight {
-		das := make([]*DelegationAccount, 0, 0)
-		for _, v := range s.Delegation {
-			v.merge(epochid, hh)
-			if v.isValid() {
-				das = append(das, v)
-			}
-		}
-		s.Delegation = das
-	} else {
-		for _, v := range s.Delegation {
-			v.merge(epochid, hh)
-		}
-	}
 }
-func (s *RegisterAccount) getDA(addr common.Address) *DelegationAccount {
-	for _, v := range s.Delegation {
-		if bytes.Equal(v.Unit.Address.Bytes(), addr.Bytes()) {
-			return v
-		}
-	}
-	return nil
-}
+
 func (s *RegisterAccount) getMaxHeight() uint64 {
 	l := len(s.Unit.Value)
 	return s.Unit.Value[l-1].Height.Uint64()
@@ -528,12 +460,12 @@ func (s *RegisterAccount) clone() *RegisterAccount {
 		Unit:       s.Unit.clone(),
 		Fee:        new(big.Int).Set(s.Fee),
 		Relayer:    s.Relayer,
-		Delegation: make([]*DelegationAccount, 0),
-		Modify:     &AlterableInfo{},
+		//Delegation: make([]*DelegationAccount, 0),
+		Modify: &AlterableInfo{},
 	}
-	for _, v := range s.Delegation {
-		ss.Delegation = append(ss.Delegation, v.clone())
-	}
+	//for _, v := range s.Delegation {
+	//	ss.Delegation = append(ss.Delegation, v.clone())
+	//}
 	if s.Modify != nil {
 		if s.Modify.Fee != nil {
 			ss.Modify.Fee = new(big.Int).Set(s.Modify.Fee)
@@ -545,11 +477,11 @@ func (s *RegisterAccount) clone() *RegisterAccount {
 	return ss
 }
 func (s *RegisterAccount) isvalid() bool {
-	for _, v := range s.Delegation {
-		if v.isValid() {
-			return true
-		}
-	}
+	//for _, v := range s.Delegation {
+	//	if v.isValid() {
+	//		return true
+	//	}
+	//}
 	return s.Unit.isValid()
 }
 
@@ -585,11 +517,11 @@ func (s *Register) getValidRegister(hh uint64) *big.Int {
 	return all
 }
 func (s *Register) sort(hh uint64, valid bool) {
-	for _, v := range *s {
-		tmp := toDelegationByAmount(hh, valid, v.Delegation)
-		sort.Sort(tmp)
-		v.Delegation, _ = fromDelegationByAmount(tmp)
-	}
+	//for _, v := range *s {
+	//	tmp := toDelegationByAmount(hh, valid, v.Delegation)
+	//	sort.Sort(tmp)
+	//	v.Delegation, _ = fromDelegationByAmount(tmp)
+	//}
 	tmp := toRegisterByAmount(hh, valid, *s)
 	sort.Sort(tmp)
 	*s, _ = fromRegisterByAmount(tmp)
@@ -712,14 +644,7 @@ func (i *RegisterImpl) GetRegisterAccount(epochid uint64, addr common.Address) (
 	}
 	return nil, params.ErrInvalidRegister
 }
-func (i *RegisterImpl) getDAfromSA(sa *RegisterAccount, addr common.Address) (*DelegationAccount, error) {
-	for _, ii := range sa.Delegation {
-		if bytes.Equal(ii.Unit.Address.Bytes(), addr.Bytes()) {
-			return ii, nil
-		}
-	}
-	return nil, nil
-}
+
 func (i *RegisterImpl) getElections(epochid uint64) []common.Address {
 	if accounts, ok := i.accounts[epochid]; !ok {
 		return nil
@@ -768,7 +693,7 @@ func (i *RegisterImpl) fetchAccountsInEpoch(epochid uint64, addrs []*RegisterAcc
 		return items
 	}
 }
-func (i *RegisterImpl) redeemBySa(sa *RegisterAccount, height uint64, amount *big.Int) error {
+func (i *RegisterImpl) redeem(sa *RegisterAccount, height uint64, amount *big.Int) error {
 	// can be redeem in the SA
 	_, all, err1 := sa.redeeming(height, amount)
 	if err1 != nil {
@@ -781,77 +706,53 @@ func (i *RegisterImpl) redeemBySa(sa *RegisterAccount, height uint64, amount *bi
 	// fmt.Println("SA redeemed amount:[", all.String(), "],addr:[", addr.String())
 	return nil
 }
-func (i *RegisterImpl) redeemByDa(da *DelegationAccount, height uint64, amount *big.Int) error {
-	// can be redeem in the DA
-	_, all, err1 := da.redeeming(height, amount)
-	if err1 != nil {
-		return err1
-	}
-	if all.Cmp(amount) != 0 {
-		return errors.New(fmt.Sprint(params.ErrRedeemAmount, "request amount", amount, "redeem amount", all))
-	}
-	da.finishRedeemed()
-	// fmt.Println("DA redeemed amount:[", all.String(), "],addr:[", addr.String())
-	return nil
-}
-func (i *RegisterImpl) calcRewardInSa(target uint64, sa *RegisterAccount, allReward, allStaking *big.Int, item *RewardInfo) ([]*RewardInfo, error) {
-	if sa == nil || allReward == nil || item == nil || allStaking == nil {
+
+func (i *RegisterImpl) calcRewardInReg(target uint64, sa *RegisterAccount, allReward, allRegister *big.Int, item *RewardInfo) ([]*RewardInfo, error) {
+	if sa == nil || allReward == nil || item == nil || allRegister == nil {
 		return nil, params.ErrInvalidParam
 	}
 	var items []*RewardInfo
 	fee := new(big.Int).Quo(new(big.Int).Mul(allReward, sa.Fee), params.Base)
 	all, left, left2 := new(big.Int).Sub(allReward, fee), big.NewInt(0), big.NewInt(0)
-	for _, v := range sa.Delegation {
-		daAll := v.getAllStaking(target)
-		if daAll.Sign() <= 0 {
-			continue
-		}
-		v1 := new(big.Int).Quo(new(big.Int).Mul(all, daAll), allStaking)
-		left = left.Add(left, v1)
-		left2 = left2.Add(left2, daAll)
-		var ii RewardInfo
-		ii.Address, ii.Amount, ii.Register = v.Unit.GetRewardAddress(), new(big.Int).Set(v1), new(big.Int).Set(daAll)
-		items = append(items, &ii)
-	}
 	item.Amount = new(big.Int).Add(new(big.Int).Sub(all, left), fee)
-	item.Register = new(big.Int).Sub(allStaking, left2)
+	item.Register = new(big.Int).Sub(allRegister, left2)
 	return items, nil
 }
 func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *EpochIDInfo) ([]*SARewardInfos, error) {
 	if _, ok := i.accounts[einfo.EpochID]; !ok {
 		return nil, params.ErrInvalidParam
 	} else {
-		sas := i.getElections2(einfo.EpochID)
-		if sas == nil {
+		el := i.getElections2(einfo.EpochID)
+		if el == nil {
 			return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "epochid:", einfo.EpochID))
 		}
-		sas = i.fetchAccountsInEpoch(einfo.EpochID, sas)
-		if len(sas) == 0 {
+		el = i.fetchAccountsInEpoch(einfo.EpochID, el)
+		if len(el) == 0 {
 			return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "epochid:", einfo.EpochID, "sas=0"))
 		}
-		impawns := Register(sas)
-		impawns.sort(target, false)
+		reg := Register(el)
+		reg.sort(target, false)
 		var res []*SARewardInfos
-		allValidatorStaking := impawns.getAllRegister(target)
-		sum := len(impawns)
+		allValidatorRegister := reg.getAllRegister(target)
+		sum := len(reg)
 		left := big.NewInt(0)
 
-		for pos, v := range impawns {
+		for pos, v := range reg {
 			var info SARewardInfos
 			var item RewardInfo
 			item.Address = v.Unit.GetRewardAddress()
-			allStaking := v.getAllRegister(target)
-			if allStaking.Sign() <= 0 {
+			allRegiater := v.getAllRegister(target)
+			if allRegiater.Sign() <= 0 {
 				continue
 			}
 
-			v2 := new(big.Int).Quo(new(big.Int).Mul(allStaking, allAmount), allValidatorStaking)
+			v2 := new(big.Int).Quo(new(big.Int).Mul(allRegiater, allAmount), allValidatorRegister)
 			if pos == sum-1 {
 				v2 = new(big.Int).Sub(allAmount, left)
 			}
 			left = left.Add(left, v2)
 
-			if ii, err := i.calcRewardInSa(target, v, v2, allStaking, &item); err != nil {
+			if ii, err := i.calcRewardInReg(target, v, v2, allRegiater, &item); err != nil {
 				return nil, err
 			} else {
 				info.Items = append(info.Items, &item)
@@ -888,9 +789,6 @@ func (i *RegisterImpl) reward(begin, end, effectid uint64, allAmount *big.Int) (
 	}
 }
 
-//func (i *RegisterImpl) Reward(begin, end, effectid uint64, allAmount *big.Int) ([]*types.SARewardInfos, error) {
-//	return i.reward(begin,effectid,abiStaking)
-//}
 ///////////auxiliary function ////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1009,120 +907,22 @@ func (i *RegisterImpl) CancelAccount(curHeight uint64, addr common.Address, amou
 	return err2
 }
 
-// CancelDAccount cancel amount of asset for delegation account,it will be work in next epoch
-func (i *RegisterImpl) CancelDAccount(curHeight uint64, addrSA, addrDA common.Address, amount *big.Int) error {
-	if amount.Sign() <= 0 || curHeight <= 0 {
-		return params.ErrInvalidParam
-	}
-	curEpoch := GetEpochFromHeight(curHeight)
-	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
-		return params.ErrInvalidParam
-	}
-	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addrSA)
-	if err != nil {
-		return err
-	}
-	da, err2 := i.getDAfromSA(sa, addrDA)
-	if err2 != nil {
-		return err
-	}
-	if da == nil {
-		log.Error("CancelDAccount error", "height", curHeight, "SA", addrSA, "DA", addrDA)
-		return params.ErrNotDelegation
-	}
-	err3 := da.stopStakingInfo(amount, new(big.Int).SetUint64(curHeight))
-	// fmt.Println("[DA]insert a redeem,address:[", addrSA.String(), "],DA address:[", addrDA.String(), "],amount:[", amount.String(), "],height:", curHeight, "]err:", err3)
-	return err3
-}
-
 // RedeemAccount redeem amount of asset for register account,it will locked for a certain time
 func (i *RegisterImpl) RedeemAccount(curHeight uint64, addr common.Address, amount *big.Int) error {
 	if amount.Sign() <= 0 || curHeight <= 0 {
 		return params.ErrInvalidParam
 	}
 	curEpoch := GetEpochFromHeight(curHeight)
-	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
+	if curEpoch == nil || curEpoch.EpochID < i.curEpochID {
 		return params.ErrInvalidParam
 	}
 	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addr)
 	if err != nil {
 		return err
 	}
-	return i.redeemBySa(sa, curHeight, amount)
+	return i.redeem(sa, curHeight, amount)
 }
 
-// RedeemDAccount redeem amount of asset for delegation account,it will locked for a certain time
-func (i *RegisterImpl) RedeemDAccount(curHeight uint64, addrSA, addrDA common.Address, amount *big.Int) error {
-	if amount.Sign() <= 0 || curHeight <= 0 {
-		return params.ErrInvalidParam
-	}
-	curEpoch := GetEpochFromHeight(curHeight)
-	if curEpoch == nil || curEpoch.EpochID != i.curEpochID {
-		return params.ErrInvalidParam
-	}
-	sa, err := i.GetRegisterAccount(curEpoch.EpochID, addrSA)
-	if err != nil {
-		return err
-	}
-	da, err2 := i.getDAfromSA(sa, addrDA)
-	if err2 != nil {
-		return err
-	}
-	if da == nil {
-		log.Error("RedeemDAccount error", "height", curHeight, "SA", addrSA, "DA", addrDA)
-		return params.ErrNotDelegation
-	}
-	return i.redeemByDa(da, curHeight, amount)
-}
-
-func (i *RegisterImpl) insertDAccount(height uint64, da *DelegationAccount) error {
-	if da == nil {
-		return params.ErrInvalidParam
-	}
-	epochInfo := GetEpochFromHeight(height)
-	if epochInfo == nil || epochInfo.EpochID > i.getCurrentEpoch() {
-		return params.ErrOverEpochID
-	}
-	sa, err := i.GetRegisterAccount(epochInfo.EpochID, da.SaAddress)
-	if err != nil {
-		return err
-	}
-	if ds, err := i.getDAfromSA(sa, da.Unit.Address); err != nil {
-		return err
-	} else {
-		if ds == nil {
-			sa.Delegation = append(sa.Delegation, da)
-			log.Debug("Insert delegation account", "register account", sa.Unit.GetRewardAddress(), "account", da.Unit.GetRewardAddress())
-		} else {
-			ds.update(da, false)
-			log.Debug("Update delegation account", "register account", sa.Unit.GetRewardAddress(), "account", da.Unit.GetRewardAddress())
-		}
-	}
-	return nil
-}
-func (i *RegisterImpl) InsertDAccount2(height uint64, addrSA, addrDA common.Address, val *big.Int) error {
-	if val.Sign() <= 0 || height < 0 {
-		return params.ErrInvalidParam
-	}
-	if bytes.Equal(addrSA.Bytes(), addrDA.Bytes()) {
-		return params.ErrDelegationSelf
-	}
-	state := uint8(0)
-	state |= params.StateResgisterAuto
-	da := &DelegationAccount{
-		SaAddress: addrSA,
-		Unit: &registerUnit{
-			Address: addrDA,
-			Value: []*PairRegisterValue{&PairRegisterValue{
-				Amount: new(big.Int).Set(val),
-				Height: new(big.Int).SetUint64(height),
-				State:  state,
-			}},
-			RedeemInof: make([]*RedeemItem, 0),
-		},
-	}
-	return i.insertDAccount(height, da)
-}
 func (i *RegisterImpl) insertAccount(height uint64, sa *RegisterAccount) error {
 	if sa == nil {
 		return params.ErrInvalidParam
@@ -1200,7 +1000,7 @@ func (i *RegisterImpl) AppendAmount(height uint64, addr common.Address, val *big
 	sa.addAmount(height, val)
 	return nil
 }
-func (i *RegisterImpl) UpdateSAFee(height uint64, addr common.Address, fee *big.Int) error {
+func (i *RegisterImpl) UpdateFee(height uint64, addr common.Address, fee *big.Int) error {
 	if height < 0 || fee.Sign() < 0 || fee.Cmp(params.Base) > 0 {
 		return params.ErrInvalidParam
 	}
@@ -1240,14 +1040,6 @@ func (i *RegisterImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte)
 	return nil
 }
 
-//func (i *RegisterImpl) Reward(block *types.SnailBlock, allAmount *big.Int, effectid uint64) ([]*SARewardInfos, error) {
-//	begin, end := types.FromBlock(block)
-//	res, err := i.reward(begin, end, effectid, allAmount)
-//	if err == nil {
-//		i.lastReward = end
-//	}
-//	return res, err
-//}
 func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) ([]*SARewardInfos, error) {
 
 	res, err := i.reward(begin, end, effectid, allAmount)
@@ -1258,7 +1050,7 @@ func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) 
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-// GetStakings return all register accounts of the current epoch
+//return all register accounts of the current epoch
 func (i *RegisterImpl) GetAllRegisterAccount() Register {
 	if val, ok := i.accounts[i.curEpochID]; ok {
 		return val
@@ -1267,20 +1059,6 @@ func (i *RegisterImpl) GetAllRegisterAccount() Register {
 	}
 }
 
-// GetStakingAsset returns a map for all register amount of the address, the key is the SA address
-func (i *RegisterImpl) GetStakingAsset(addr common.Address) map[common.Address]*RelayerValue {
-	epochid := i.curEpochID
-	res, _, _, _ := i.getAsset(addr, epochid, params.OpQueryRegister)
-	return res
-}
-
-// GetLockedAsset returns a group canceled asset from the state of the addr,it includes redemption on
-// maturity and unmaturity asset
-func (i *RegisterImpl) GetLockedAsset(addr common.Address) map[common.Address]*RelayerValue {
-	epochid := i.curEpochID
-	res, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
-	return res
-}
 func (i *RegisterImpl) GetLockedAsset2(addr common.Address, height uint64) map[common.Address]*LockedValue {
 	epochid := i.curEpochID
 	items, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
@@ -1294,19 +1072,19 @@ func (i *RegisterImpl) GetLockedAsset2(addr common.Address, height uint64) map[c
 func (i *RegisterImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	epochid := i.curEpochID
 	locked, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
-	staked, _, _, _ := i.getAsset(addr, epochid, params.OpQueryRegister)
+	register, _, _, _ := i.getAsset(addr, epochid, params.OpQueryRegister)
 	_, unlock, _, _ := i.getAsset(addr, epochid, params.OpQueryCancelable)
 	_, _, reward, _ := i.getAsset(addr, epochid, params.OpQueryReward)
 	_, _, _, fine := i.getAsset(addr, epochid, params.OpQueryFine)
 	var l *big.Int
-	var s *big.Int
+	var b *big.Int
 	var r *big.Int
 	var f *big.Int
 	if locked[addr] != nil {
 		l = locked[addr].Value[epochid]
 	}
-	if staked[addr] != nil {
-		s = staked[addr].Value[epochid]
+	if register[addr] != nil {
+		b = register[addr].Value[epochid]
 	}
 	if reward[addr] != nil {
 		r = reward[addr].Amount
@@ -1314,19 +1092,8 @@ func (i *RegisterImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big
 	if fine[addr] != nil {
 		f = fine[addr].Amount
 	}
-	return l, s, unlock[addr], r, f
-}
-
-func (i *RegisterImpl) GetReward(addr common.Address) map[common.Address]*RewardItem {
-	epochid := i.curEpochID
-	_, _, res, _ := i.getAsset(addr, epochid, params.OpQueryReward) //types.OpQueryRewarded
-	return res
-}
-
-func (i *RegisterImpl) GetFine(addr common.Address) map[common.Address]*FineItem {
-	epochid := i.curEpochID
-	_, _, _, res := i.getAsset(addr, epochid, params.OpQueryFine) //types.OpQueryFine
-	return res
+	//locked,registered,unlocked,reward,fine
+	return l, b, unlock[addr], r, f
 }
 
 // GetAllCancelableAsset returns all asset on addr it can be canceled
@@ -1406,7 +1173,7 @@ func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 		log.Crit("Failed to RLP encode RegisterImpl", "err", err)
 	}
 	hash := RlpHash(data)
-	fmt.Println("save data", data)
+	//fmt.Println("save data", data)
 	state.SetPOWState(preAddress, key, data)
 	state.SetState(preAddress, key, hash)
 	tmp := CloneRegisterImpl(i)
@@ -1419,7 +1186,7 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	var temp RegisterImpl
 	key := common.BytesToHash(preAddress[:])
 	data := state.GetPOWState(preAddress, key)
-	fmt.Println("load data", data)
+	//fmt.Println("load data", data)
 	//hash := RlpHash(data)
 	hash := state.GetState(preAddress, key)
 	if cc, ok := IC.Cache.Get(hash); ok {
@@ -1495,9 +1262,6 @@ func GetRelayersByEpoch(state StateDB, eid, hh uint64) []*params.RelayerMember {
 func (i *RegisterImpl) Counts() int {
 	pos := 0
 	for _, val := range i.accounts {
-		for _, vv := range val {
-			pos = pos + len(vv.Delegation)
-		}
 		pos = pos + len(val)
 	}
 	return pos
@@ -1517,9 +1281,6 @@ func (i *RegisterImpl) Summay() *RegisterSummay {
 		}
 		item.AllAmount = val.getValidRegister(info.EndHeight)
 		daSum, saSum := 0, len(val)
-		for _, vv := range val {
-			daSum = daSum + len(vv.Delegation)
-		}
 		item.DaCount, item.SaCount = uint64(daSum), uint64(saSum)
 		summay.Infos = append(summay.Infos, item)
 		sumAccount = sumAccount + daSum + saSum
@@ -1633,55 +1394,6 @@ func (vs registerByAmount) Less(i, j int) bool {
 	return vs[i].getAll().Cmp(vs[j].getAll()) > 0
 }
 func (vs registerByAmount) Swap(i, j int) {
-	it := vs[i]
-	vs[i] = vs[j]
-	vs[j] = it
-}
-
-type delegationItem struct {
-	item   *DelegationAccount
-	height uint64
-	valid  bool
-}
-
-func (d *delegationItem) getAll() *big.Int {
-	if d.valid {
-		return d.item.getValidStaking(d.height)
-	} else {
-		return d.item.getAllStaking(d.height)
-	}
-}
-
-type delegationItemByAmount []*delegationItem
-
-func toDelegationByAmount(hh uint64, valid bool, items []*DelegationAccount) delegationItemByAmount {
-	var tmp []*delegationItem
-	for _, v := range items {
-		v.Unit.sort()
-		tmp = append(tmp, &delegationItem{
-			item:   v,
-			height: hh,
-			valid:  valid,
-		})
-	}
-	return delegationItemByAmount(tmp)
-}
-func fromDelegationByAmount(items delegationItemByAmount) ([]*DelegationAccount, uint64) {
-	var tmp []*DelegationAccount
-	var vv uint64
-	for _, v := range items {
-		tmp = append(tmp, v.item)
-		vv = v.height
-	}
-	return tmp, vv
-}
-func (vs delegationItemByAmount) Len() int {
-	return len(vs)
-}
-func (vs delegationItemByAmount) Less(i, j int) bool {
-	return vs[i].getAll().Cmp(vs[j].getAll()) > 0
-}
-func (vs delegationItemByAmount) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
 	vs[j] = it

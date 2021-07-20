@@ -68,7 +68,8 @@ func register(ctx *cli.Context) error {
 	fee = ctx.GlobalUint64(FeeFlag.Name)
 	checkFee(new(big.Int).SetUint64(fee))
 
-	pubkey, pk, _ := getPubKey(ctx)
+	pk := crypto.FromECDSAPub(&priKey.PublicKey)
+	pubkey := crypto.PubkeyToAddress(priKey.PublicKey).String()
 
 	fmt.Println("Fee", fee, " Pubkey ", pubkey, " value ", value)
 	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
@@ -83,30 +84,6 @@ func checkFee(fee *big.Int) {
 	if fee.Sign() < 0 || fee.Cmp(Base) > 0 {
 		printError("Please set correct fee value")
 	}
-}
-
-func getPubKey(ctx *cli.Context) (string, []byte, error) {
-	var (
-		pubkey string
-		err    error
-	)
-
-	if ctx.GlobalIsSet(PubKeyKeyFlag.Name) {
-		pubkey = ctx.GlobalString(PubKeyKeyFlag.Name)
-	} else if ctx.GlobalIsSet(BFTKeyKeyFlag.Name) {
-		bftKey, err := crypto.HexToECDSA(ctx.GlobalString(BFTKeyKeyFlag.Name))
-		if err != nil {
-			printError("bft key error", err)
-		}
-		pk := crypto.FromECDSAPub(&bftKey.PublicKey)
-		pubkey = common.Bytes2Hex(pk)
-	}
-
-	pk := common.Hex2Bytes(pubkey)
-	if _, err := crypto.UnmarshalPubkey(pk); err != nil {
-		printError("ValidPk error", err)
-	}
-	return pubkey, pk, err
 }
 
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
@@ -188,7 +165,7 @@ func getAllFile(path string) (string, error) {
 }
 
 func printError(error ...interface{}) {
-	log.Fatal(error)
+	log.Fatal("!", error)
 }
 
 func ethToWei(ctx *cli.Context, zero bool) *big.Int {
@@ -281,7 +258,7 @@ func PrintBalance(conn *ethclient.Client, from common.Address) {
 	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
 
 	lockBalance, err := conn.LockBalanceAt(context.Background(), from, nil)
-	fmt.Println("Your wallet valid balance is ", Value, "'rth ", " lock balance is ", lockBalance, "'eth ")
+	fmt.Println("Your wallet valid balance is ", Value, "'eth ", " lock balance is ", lockBalance, "'eth ")
 }
 
 func loadPrivate(ctx *cli.Context) {

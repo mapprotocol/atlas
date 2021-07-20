@@ -269,7 +269,17 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 
 	//////////////////////////////////pro compiled////////////////////////////////////
-	consensus.OnceInitRegisterState(statedb, new(big.Int).SetUint64(g.Number))
+	if new(big.Int).SetUint64(g.Number) == big.NewInt(0) {
+		key := common.BytesToHash(params2.RelayerAddress[:])
+		obj := statedb.GetPOWState(params2.RelayerAddress, key)
+		if len(obj) == 0 {
+			i := vm.NewRegisterImpl()
+			i.Save(statedb, params2.RelayerAddress)
+			statedb.SetNonce(params2.RelayerAddress, 1)
+			statedb.SetCode(params2.RelayerAddress, params2.RelayerAddress[:])
+			log.Info("makeRegisterInitState success")
+		}
+	}
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	register := vm.NewRegisterImpl()
 	hh := g.Number

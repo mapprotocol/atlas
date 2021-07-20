@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -26,8 +25,31 @@ var (
 	fee         uint64 = 100
 )
 
+func TestContract(t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+
+	input, err := relayerABI.Pack("register", pub, new(big.Int).SetUint64(fee), value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := input[4:]
+	ret, _ := register(evm, &Contract{}, data)
+	method, _ := relayerABI.Methods["register"]
+	output, err := method.Inputs.Unpack(ret)
+	if err != nil {
+		fmt.Println("err", err)
+	}
+	fmt.Println(output)
+}
+
 func TestRegister(t *testing.T) {
-	fmt.Println(from, "|", priKey, "|", hex.EncodeToString(pub))
+	//fmt.Println(from, "|", priKey, "|", hex.EncodeToString(pub))
 	db := rawdb.NewMemoryDatabase()
 
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
@@ -49,25 +71,13 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//Redeem money
-	err = register.RedeemAccount(h+1, from, value)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	//query money
 	fmt.Println(register.GetBalance(from))
 	//query relayer
-	//register.GetAllRegisterAccount()
-	//register.GetCurrentEpochInfo()
+	fmt.Println()
 	//query epoch
-	info, h := register.GetCurrentEpochInfo()
-	for _, v := range info {
-		if h == v.EpochID {
-			fmt.Println(v.EpochID, v.BeginHeight, v.EndHeight)
-		}
-	}
-	isRelayer, _ := register.GetRegisterAccount(h, from)
-	fmt.Println(isRelayer)
+	fmt.Println()
 	//save data
 	err = register.Save(evm.StateDB, params2.RelayerAddress)
 	if err != nil {
@@ -180,6 +190,7 @@ func TestRegisterDoElections(t *testing.T) {
 	fmt.Println(" epoch 3 ", GetEpochFromID(3))
 	fmt.Println("------------------ready epoch----------------------")
 	fmt.Printf("\n")
+	var testacc common.Address
 	// register accounts in epoch 1
 	for i := uint64(0); i < 5; i++ {
 		value := big.NewInt(100)
@@ -189,6 +200,10 @@ func TestRegisterDoElections(t *testing.T) {
 		if i%2 == 0 {
 			amount := new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18))
 			impl.InsertAccount2(0, from, pub, amount, big.NewInt(50), true)
+			//used to redeem
+			testacc = from
+			addLockedBalance(statedb, from, amount)
+			impl.CancelAccount(100, from, big.NewInt(10))
 		} else {
 			impl.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
 		}
@@ -245,5 +260,52 @@ func TestRegisterDoElections(t *testing.T) {
 	if err != nil {
 		fmt.Println("error : ", err)
 	}
+	err = impl.Shift(3, 0)
 	fmt.Println(" relayer number:", len(relayer), " getElection 1:", len(impl.getElections2(1)), " getElection 2:", len(impl.getElections2(2)))
+
+	//Redeem test
+	fmt.Println()
+	fmt.Println("--------------------redeem test-------------------------------")
+	c2 := impl.GetAllCancelableAsset(testacc)[testacc]
+	fmt.Println("cancelable", c2)
+	err = impl.RedeemAccount(21000, testacc, big.NewInt(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, balance, _, _ := impl.GetBalance(testacc)
+	fmt.Println("after redeem", balance)
+}
+
+func TestGetBalance(t *testing.T) {
+	value := big.NewInt(100)
+	priKey, _ := crypto.GenerateKey()
+	from := crypto.PubkeyToAddress(priKey.PublicKey)
+	pub := crypto.FromECDSAPub(&priKey.PublicKey)
+
+	db := rawdb.NewMemoryDatabase()
+	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	//evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+
+	register := NewRegisterImpl()
+	register.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
+	v1, v2, v3, v4, v5 := register.GetBalance(from)
+	fmt.Println("getBalance0", v1, v2, v3, v4, v5)
+	//addLockedBalance(statedb, from, value)
+	register.CancelAccount(1, from, value)
+	v1, v2, v3, v4, v5 = register.GetBalance(from)
+	fmt.Println("getBalance1", v1, v2, v3, v4, v5)
+	////save data
+	//err = register.Save(evm.StateDB, params2.RelayerAddress)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	////load data
+	//err = register.Load(evm.StateDB, params2.RelayerAddress)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
 }

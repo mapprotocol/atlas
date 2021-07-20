@@ -27,7 +27,7 @@ var RelayerGas = map[string]uint64{
 
 var (
 	CountInEpoch                       = 10
-	MaxRedeemHeight             uint64 = 20000
+	MaxRedeemHeight             uint64 = 10000
 	NewEpochLength              uint64 = 10000
 	ElectionPoint               uint64 = 100
 	FirstNewEpochID             uint64 = 1

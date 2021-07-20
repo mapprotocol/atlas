@@ -47,11 +47,6 @@ var (
 		Usage: "Transfer address",
 		Value: "",
 	}
-	PubKeyKeyFlag = cli.StringFlag{
-		Name:  "pubkey",
-		Usage: "Relayer public key for BFT (no 0x prefix)",
-		Value: "",
-	}
 	BFTKeyKeyFlag = cli.StringFlag{
 		Name:  "bftkey",
 		Usage: "Relayer bft key for BFT (no 0x prefix)",
@@ -64,7 +59,6 @@ var (
 		RPCPortFlag,
 		ValueFlag,
 		FeeFlag,
-		PubKeyKeyFlag,
 		BFTKeyKeyFlag,
 	}
 )
@@ -83,7 +77,6 @@ func init() {
 		ValueFlag,
 		FeeFlag,
 		AddressFlag,
-		PubKeyKeyFlag,
 		BFTKeyKeyFlag,
 	}
 	app.Action = MigrateFlags(register)

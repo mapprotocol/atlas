@@ -125,12 +125,12 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 		return nil, err
 	}
 
+	addLockedBalance(evm.StateDB, args.Addr, args.Value)
 	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
 		log.Error("register save state error", "error", err)
 		return nil, err
 	}
-	addLockedBalance(evm.StateDB, args.Addr, args.Value)
 
 	event := relayerABI.Events["Append"]
 	logData, err := event.Inputs.Pack(args.Addr, args.Value)
@@ -191,6 +191,8 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		registered = big.NewInt(0)
 		locked     = big.NewInt(0)
 		unlocked   = big.NewInt(0)
+		reward     = big.NewInt(0)
+		fine       = big.NewInt(0)
 	)
 	method, _ := relayerABI.Methods["getBalance"]
 	output, err := method.Inputs.Unpack(input)
@@ -207,24 +209,25 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		return nil, err
 	}
 
-	asset := register.GetAllCancelableAsset(args.Addr)
-	if balance, ok := asset[args.Addr]; ok {
-		registered.Add(registered, balance)
+	locked, registered, unlocked, reward, fine = register.GetBalance(args.Addr)
+	if locked == nil {
+		locked = big.NewInt(0)
 	}
-
-	lockedAsset := register.GetLockedAsset2(args.Addr, evm.Context.BlockNumber.Uint64())
-	if balance, ok := lockedAsset[args.Addr]; ok {
-		for _, item := range balance.Value {
-			if item.Locked {
-				locked.Add(locked, item.Amount)
-			} else {
-				unlocked.Add(unlocked, item.Amount)
-			}
-		}
+	if registered == nil {
+		registered = big.NewInt(0)
+	}
+	if unlocked == nil {
+		unlocked = big.NewInt(0)
+	}
+	if reward == nil {
+		reward = big.NewInt(0)
+	}
+	if fine == nil {
+		fine = big.NewInt(0)
 	}
 
 	log.Info("Get register getBalance", "address", args.Addr, "register", registered, "locked", locked, "unlocked", unlocked)
-	ret, err = method.Outputs.Pack(registered, locked, unlocked, big.NewInt(0), big.NewInt(0))
+	ret, err = method.Outputs.Pack(registered, locked, unlocked, reward, fine)
 	return ret, err
 }
 func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {

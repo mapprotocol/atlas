@@ -129,26 +129,6 @@ type PoW interface {
 	Hashrate() float64
 }
 
-func makeRegisterInitState(state *state.StateDB, blockNumber *big.Int) bool {
-	if blockNumber == big.NewInt(0) {
-		stateAddress := params2.RelayerAddress
-		key := common.BytesToHash(stateAddress[:])
-		obj := state.GetPOWState(stateAddress, key)
-		if len(obj) == 0 {
-			i := vm.NewRegisterImpl()
-			i.Save(state, stateAddress)
-			state.SetNonce(stateAddress, 1)
-			state.SetCode(stateAddress, stateAddress[:])
-			log.Info("makeRegisterInitState success")
-			return true
-		}
-	}
-	return false
-}
-func OnceInitRegisterState(state *state.StateDB, fastNumber *big.Int) bool {
-	return makeRegisterInitState(state, fastNumber)
-}
-
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 	key := common.BytesToHash(params2.HeaderStoreAddress[:])
 	getState := state.GetPOWState(params2.HeaderStoreAddress, key)
