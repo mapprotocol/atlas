@@ -339,18 +339,15 @@ func GetEpochFromHeight(hh uint64) *EpochIDInfo {
 	return GetEpochFromID(eid)
 }
 func GetEpochFromID(eid uint64) *EpochIDInfo {
-	preFirst := GetPreFirstEpoch()
-	if preFirst.EpochID == eid {
-		return preFirst
-	}
+
 	first := GetFirstEpoch()
 	if first.EpochID >= eid {
 		return first
 	}
 	return &EpochIDInfo{
 		EpochID:     eid,
-		BeginHeight: first.EndHeight + (eid-first.EpochID-1)*params.NewEpochLength + 1,
-		EndHeight:   first.EndHeight + (eid-first.EpochID)*params.NewEpochLength,
+		BeginHeight: (eid-first.EpochID)*params.NewEpochLength + 1,
+		EndHeight:   (eid - first.EpochID + 1) * params.NewEpochLength,
 	}
 }
 func GetEpochFromRange(begin, end uint64) []*EpochIDInfo {
@@ -495,7 +492,7 @@ func weiToEth(val *big.Int) string {
 }
 
 func isRelayerMember(i *RegisterImpl, address common.Address) bool {
-	sas := i.getElections3(i.curEpochID)
+	sas := i.getElections2(i.curEpochID)
 	if sas == nil {
 		return false
 	}

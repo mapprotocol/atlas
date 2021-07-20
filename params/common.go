@@ -45,11 +45,11 @@ var (
 	ErrInvalidRegister   = errors.New("Invalid register account")
 	ErrMatchEpochID      = errors.New("wrong match epoch id in a reward block")
 	ErrNotRegister       = errors.New("Not match the register account")
-	ErrNotDelegation     = errors.New("Not match the delegation account")
+	ErrNotDelegation     = errors.New("Not match the account")
 	ErrNotMatchEpochInfo = errors.New("the epoch info is not match with accounts")
-	ErrNotElectionTime   = errors.New("not time to election the next committee")
-	ErrAmountOver        = errors.New("the amount more than staking amount")
-	ErrDelegationSelf    = errors.New("Cann't delegation myself")
+	ErrNotElectionTime   = errors.New("not time to election the next relayer")
+	ErrAmountOver        = errors.New("the amount more than register amount")
+	ErrDelegationSelf    = errors.New("wrong")
 	ErrRedeemAmount      = errors.New("wrong redeem amount")
 	ErrForbidAddress     = errors.New("Forbidding Address")
 	ErrRepeatPk          = errors.New("repeat PK on staking tx")
@@ -191,7 +191,7 @@ const RelayerABIJSON = `[
       {
         "type": "uint256",
         "unit": "wei",
-        "name": "staked"
+        "name": "register"
       },
       {
         "type": "uint256",

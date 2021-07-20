@@ -624,9 +624,8 @@ type RegisterImpl struct {
 }
 
 func NewRegisterImpl() *RegisterImpl {
-	pre := GetPreFirstEpoch()
 	return &RegisterImpl{
-		curEpochID: pre.EpochID,
+		curEpochID: params.FirstNewEpochID,
 		lastReward: 0,
 		accounts:   make(map[uint64]Register),
 	}
@@ -738,22 +737,16 @@ func (i *RegisterImpl) getElections2(epochid uint64) []*RegisterAccount {
 	if accounts, ok := i.accounts[epochid]; !ok {
 		return nil
 	} else {
-		var sas []*RegisterAccount
+		var ra []*RegisterAccount
 		for _, v := range accounts {
 			if v.isInRelayer() {
-				sas = append(sas, v)
+				ra = append(ra, v)
 			}
 		}
-		return sas
+		return ra
 	}
 }
-func (i *RegisterImpl) getElections3(epochid uint64) []*RegisterAccount {
-	eid := epochid
-	if eid >= params.FirstNewEpochID {
-		eid = eid - 1
-	}
-	return i.getElections2(eid)
-}
+
 func (i *RegisterImpl) fetchAccountsInEpoch(epochid uint64, addrs []*RegisterAccount) []*RegisterAccount {
 	if accounts, ok := i.accounts[epochid]; !ok {
 		return addrs
@@ -828,7 +821,7 @@ func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, e
 	if _, ok := i.accounts[einfo.EpochID]; !ok {
 		return nil, params.ErrInvalidParam
 	} else {
-		sas := i.getElections3(einfo.EpochID)
+		sas := i.getElections2(einfo.EpochID)
 		if sas == nil {
 			return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "epochid:", einfo.EpochID))
 		}
@@ -930,27 +923,40 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 /////////////////////////////////////////////////////////////////////////////////
 ////////////// external function //////////////////////////////////////////
 
-// DoElections called by consensus while it closer the end of epoch,have 500~1000 fast block
+// DoElections called by consensus while it closer the end of epoch
 func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*RegisterAccount, error) {
-	if epochid < params.FirstNewEpochID && epochid != i.getCurrentEpoch()+1 {
-		return nil, params.ErrOverEpochID
-	}
+
 	cur := GetEpochFromID(i.curEpochID)
+	// Epoch = 1 and height = 0
+	if i.curEpochID == params.FirstNewEpochID && height == 0 {
+		if val, ok := i.accounts[1]; ok {
+			var ee []*RegisterAccount
+			for _, v := range val {
+				v.Relayer = true
+				ee = append(ee, v)
+				if len(ee) >= params.CountInEpoch {
+					break
+				}
+			}
+			return ee, nil
+		} else {
+			return nil, params.ErrMatchEpochID
+		}
+	}
+	//height = 10000x + 9900 and Epoch > 1
 	if cur.EndHeight != height+params.ElectionPoint && i.curEpochID >= params.FirstNewEpochID {
 		return nil, params.ErrNotElectionTime
 	}
-	// e := types.GetEpochFromID(epochid)
-	eid := epochid
-	if eid >= params.FirstNewEpochID {
-		eid = eid - 1
-	}
-	if val, ok := i.accounts[eid]; ok {
+
+	//num is test data
+	var num uint64 = 1000
+	if val, ok := i.accounts[epochid]; ok {
 		val.sort(height, true)
 		var ee []*RegisterAccount
 		for _, v := range val {
-			validStaking := v.getValidRegisterOnly(height)
-			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
-			if validStaking.Cmp(params.ElectionMinLimitForRegister) < 0 && num < params.MinWorkEfficiency && i.curEpochID > 1 {
+			validRegister := v.getValidRegisterOnly(height)
+			//num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
+			if validRegister.Cmp(params.ElectionMinLimitForRegister) < 0 || num < params.MinWorkEfficiency {
 				continue
 			}
 			v.Relayer = true
@@ -1144,7 +1150,7 @@ func (i *RegisterImpl) insertAccount(height uint64, sa *RegisterAccount) error {
 	}
 	return nil
 }
-func (i *RegisterImpl) InsertAccount2(height, effectHeight uint64, addr common.Address, pk []byte, val *big.Int, fee *big.Int, auto bool) error {
+func (i *RegisterImpl) InsertAccount2(height uint64, addr common.Address, pk []byte, val *big.Int, fee *big.Int, auto bool) error {
 	if val.Sign() <= 0 || height < 0 || fee.Sign() < 0 || fee.Cmp(params.Base) > 0 {
 		return params.ErrInvalidParam
 	}
@@ -1152,14 +1158,14 @@ func (i *RegisterImpl) InsertAccount2(height, effectHeight uint64, addr common.A
 		return err
 	}
 	if i.repeatPK(addr, pk) {
-		log.Error("Insert SA account repeat pk", "addr", addr, "pk", pk)
+		log.Error("Insert account repeat pk", "addr", addr, "pk", pk)
 		return params.ErrRepeatPk
 	}
 	state := uint8(0)
 	if auto {
 		state |= params.StateResgisterAuto
 	}
-	sa := &RegisterAccount{
+	ra := &RegisterAccount{
 		Votepubkey: append([]byte{}, pk...),
 		Fee:        new(big.Int).Set(fee),
 		Unit: &registerUnit{
@@ -1171,15 +1177,12 @@ func (i *RegisterImpl) InsertAccount2(height, effectHeight uint64, addr common.A
 			}},
 			RedeemInof: make([]*RedeemItem, 0),
 		},
-		Modify: &AlterableInfo{},
-	}
-	if height >= effectHeight {
-		sa.Modify = &AlterableInfo{
+		Modify: &AlterableInfo{
 			Fee:        new(big.Int).Set(params.InvalidFee),
 			VotePubkey: []byte{},
-		}
+		},
 	}
-	return i.insertAccount(height, sa)
+	return i.insertAccount(height, ra)
 }
 func (i *RegisterImpl) AppendAmount(height uint64, addr common.Address, val *big.Int) error {
 	if val.Sign() <= 0 || height < 0 {
@@ -1203,7 +1206,7 @@ func (i *RegisterImpl) UpdateSAFee(height uint64, addr common.Address, fee *big.
 	}
 	epochInfo := GetEpochFromHeight(height)
 	if epochInfo.EpochID > i.getCurrentEpoch() {
-		log.Info("UpdateSAFee", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
+		log.Info("UpdateFee", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
 		return params.ErrOverEpochID
 	}
 	sa, err := i.GetRegisterAccount(epochInfo.EpochID, addr)
@@ -1403,7 +1406,8 @@ func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 		log.Crit("Failed to RLP encode RegisterImpl", "err", err)
 	}
 	hash := RlpHash(data)
-	//state.SetPOSState(preAddress, key, data)
+	fmt.Println("save data", data)
+	state.SetPOWState(preAddress, key, data)
 	state.SetState(preAddress, key, hash)
 	tmp := CloneRegisterImpl(i)
 	if tmp != nil {
@@ -1412,22 +1416,12 @@ func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 	return err
 }
 func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
-	key := common.BytesToHash(preAddress[:])
-	//data := state.GetPOSState(preAddress, key)
-	hash := state.GetState(preAddress, key)
-	data, err := rlp.EncodeToBytes(hash)
-	if err != nil {
-		return errors.New("EncodeToBytes failed")
-	}
-	//key := common.BytesToHash(preAddress[:])
-	//data := state.GetPOSState(preAddress, key)
-	//lenght := len(data)
-	//if lenght == 0 {
-	//	return errors.New("Load data = 0")
-	//}
-	//// cache := true
-	//hash := types.RlpHash(data)
 	var temp RegisterImpl
+	key := common.BytesToHash(preAddress[:])
+	data := state.GetPOWState(preAddress, key)
+	fmt.Println("load data", data)
+	//hash := RlpHash(data)
+	hash := state.GetState(preAddress, key)
 	if cc, ok := IC.Cache.Get(hash); ok {
 		register := cc.(*RegisterImpl)
 		temp = *(CloneRegisterImpl(register))
@@ -1440,6 +1434,7 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 		if tmp != nil {
 			IC.Cache.Add(hash, tmp)
 		}
+		fmt.Println("temp")
 		// cache = false
 	}
 	// log.Info("-----Load relayer_cli---","len:",lenght,"count:",temp.Counts(),"cache",cache)
@@ -1451,16 +1446,16 @@ func GetCurrentRelayer(state StateDB) []*params.RelayerMember {
 	i := NewRegisterImpl()
 	i.Load(state, params.RelayerAddress)
 	eid := i.getCurrentEpoch()
-	accs := i.getElections3(eid)
+	accs := i.getElections2(eid)
 	var vv []*params.RelayerMember
 	for _, v := range accs {
-		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
+		//pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
 		vv = append(vv, &params.RelayerMember{
-			RelayerBase: crypto.PubkeyToAddress(*pubkey),
-			Coinbase:    v.Unit.GetRewardAddress(),
-			Publickey:   CopyVotePk(v.Votepubkey),
-			Flag:        params.StateUsedFlag,
-			MType:       params.TypeWorked,
+			//RelayerBase: crypto.PubkeyToAddress(*pubkey),
+			Coinbase:  v.Unit.GetRewardAddress(),
+			Publickey: CopyVotePk(v.Votepubkey),
+			Flag:      params.StateUsedFlag,
+			MType:     params.TypeWorked,
 		})
 	}
 	return vv
@@ -1479,7 +1474,7 @@ func IsInCurrentEpoch(state StateDB, relayer common.Address) bool {
 func GetRelayersByEpoch(state StateDB, eid, hh uint64) []*params.RelayerMember {
 	i := NewRegisterImpl()
 	err := i.Load(state, params.RelayerAddress)
-	accs := i.getElections3(eid)
+	accs := i.getElections2(eid)
 	first := GetFirstEpoch()
 	if hh == first.EndHeight-params.ElectionPoint {
 		fmt.Println("****** accounts len:", len(i.accounts), "election:", len(accs), " err ", err)

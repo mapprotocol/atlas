@@ -133,7 +133,7 @@ func makeRegisterInitState(state *state.StateDB, blockNumber *big.Int) bool {
 	if blockNumber == big.NewInt(0) {
 		stateAddress := params2.RelayerAddress
 		key := common.BytesToHash(stateAddress[:])
-		obj := state.GetState(stateAddress, key)
+		obj := state.GetPOWState(stateAddress, key)
 		if len(obj) == 0 {
 			i := vm.NewRegisterImpl()
 			i.Save(state, stateAddress)

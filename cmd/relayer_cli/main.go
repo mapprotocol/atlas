@@ -47,11 +47,6 @@ var (
 		Usage: "Transfer address",
 		Value: "",
 	}
-	TxHashFlag = cli.StringFlag{
-		Name:  "txhash",
-		Usage: "Input transaction hash",
-		Value: "",
-	}
 	PubKeyKeyFlag = cli.StringFlag{
 		Name:  "pubkey",
 		Usage: "Relayer public key for BFT (no 0x prefix)",
@@ -61,10 +56,6 @@ var (
 		Name:  "bftkey",
 		Usage: "Relayer bft key for BFT (no 0x prefix)",
 		Value: "",
-	}
-	NumberFlag = cli.Uint64Flag{
-		Name:  "blocknumber",
-		Usage: "Query reward use block number,please current block number -14",
 	}
 	RegisterFlags = []cli.Flag{
 		KeyFlag,
@@ -92,9 +83,7 @@ func init() {
 		ValueFlag,
 		FeeFlag,
 		AddressFlag,
-		TxHashFlag,
 		PubKeyKeyFlag,
-		NumberFlag,
 		BFTKeyKeyFlag,
 	}
 	app.Action = MigrateFlags(register)
@@ -105,12 +94,10 @@ func init() {
 	// Add subcommands.
 	app.Commands = []cli.Command{
 		AppendCommand,
-		UpdatePKCommand,
 		withdrawCommand,
 		queryRegisterCommand,
-		sendCommand,
-		queryTxCommand,
 		queryBalanceCommand,
+		queryEpochCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
