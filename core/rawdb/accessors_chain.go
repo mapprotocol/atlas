@@ -972,7 +972,10 @@ func WriteFastTrieProgressChains(db DatabaseWriter, count uint64, m ChainType) {
 
 // ReadHeaderRLP retrieves a block header in its raw RLP database encoding.
 func ReadHeaderRLPChains(db DatabaseReader, hash common.Hash, number uint64, m ChainType) rlp.RawValue {
-	data, _ := db.Get(headerKeyChains(m, number, hash))
+	data, err := db.Get(headerKeyChains(m, number, hash))
+	if err != nil {
+		return rlp.RawValue{}
+	}
 	return data
 }
 

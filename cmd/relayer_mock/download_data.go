@@ -16,7 +16,7 @@ import (
 const (
 	syncNumber       = 10
 	EthRPCListenAddr = "localhost"
-	EthRPCPortFlag   = 8082
+	EthRPCPortFlag   = 8083
 )
 
 func getChains(ctx *cli.Context, startNum uint64) ([]ethereum.Header, []bytes.Buffer) {

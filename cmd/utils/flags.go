@@ -1630,7 +1630,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		// Create new developer account or reuse existing one
 		var (
-			developer  accounts.Account
+			singler    accounts.Account
 			passphrase string
 			err        error
 		)
@@ -1642,22 +1642,22 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		// setEtherbase has been called above, configuring the miner address from command line flags.
 		if cfg.Miner.Etherbase != (common.Address{}) {
-			developer = accounts.Account{Address: cfg.Miner.Etherbase}
+			singler = accounts.Account{Address: cfg.Miner.Etherbase}
 		} else if accs := ks.Accounts(); len(accs) > 0 {
-			developer = ks.Accounts()[0]
+			singler = ks.Accounts()[0]
 		} else {
-			developer, err = ks.NewAccount(passphrase)
+			singler, err = ks.NewAccount(passphrase)
 			if err != nil {
 				Fatalf("Failed to create developer account: %v", err)
 			}
 		}
-		if err := ks.Unlock(developer, passphrase); err != nil {
+		if err := ks.Unlock(singler, passphrase); err != nil {
 			Fatalf("Failed to unlock developer account: %v", err)
 		}
-		log.Info("Using developer account", "address", developer.Address)
+		log.Info("Using singler account", "address", singler.Address)
 
 		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = chain2.SingleGenesisBlock(developer.Address)
+		cfg.Genesis = chain2.SingleGenesisBlock(singler.Address)
 		if ctx.GlobalIsSet(DataDirFlag.Name) {
 			// Check if we have an already initialized chain and fall back to
 			// that if so. Otherwise we need to generate a new genesis spec.

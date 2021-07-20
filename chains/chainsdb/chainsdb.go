@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/ethdb"
 
-	"math/big"
-	mrand "math/rand"
-	"sync"
-	"time"
-
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -18,6 +13,10 @@ import (
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"gopkg.in/urfave/cli.v1"
+	"math/big"
+	mrand "math/rand"
+	"sync"
+	"time"
 )
 
 var error01 = errors.New("no storedb")
@@ -28,6 +27,9 @@ var (
 
 func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
 	if storeMgr == nil {
+		return nil, error01
+	}
+	if storeMgr.chainDb == nil {
 		return nil, error01
 	}
 	storeMgr.currentChainType = chainType
@@ -84,7 +86,6 @@ func (db *HeaderChainStore) DeleteHeader(hash common.Hash, number uint64) {
 
 func (hc *HeaderChainStore) InsertHeaderChain(chains []*ethereum.Header, start time.Time) (WriteStatus, error) {
 	res, err := hc.writeHeaders(chains)
-
 	// Report some public statistics so the user has a clue what's going on
 	context := []interface{}{
 		"count", res.imported,

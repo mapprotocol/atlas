@@ -42,26 +42,6 @@ var (
 		Usage: "work fee",
 		Value: 0,
 	}
-	AddressFlag = cli.StringFlag{
-		Name:  "address",
-		Usage: "Transfer address",
-		Value: "",
-	}
-	TxHashFlag = cli.StringFlag{
-		Name:  "txhash",
-		Usage: "Input transaction hash",
-		Value: "",
-	}
-	PubKeyKeyFlag = cli.StringFlag{
-		Name:  "pubkey",
-		Usage: "Relayer public key for BFT (no 0x prefix)",
-		Value: "",
-	}
-	BFTKeyKeyFlag = cli.StringFlag{
-		Name:  "bftkey",
-		Usage: "Relayer bft key for BFT (no 0x prefix)",
-		Value: "",
-	}
 
 	PublicAdressFlag = cli.StringFlag{
 		Name:  "PkAdress",
@@ -81,12 +61,7 @@ func init() {
 		KeyStoreFlag,
 		RPCListenAddrFlag,
 		RPCPortFlag,
-
 		FeeFlag,
-		AddressFlag,
-		TxHashFlag,
-		PubKeyKeyFlag,
-		BFTKeyKeyFlag,
 		PublicAdressFlag,
 	}
 	app.Action = MigrateFlags(start)
@@ -123,48 +98,40 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 func start(ctx *cli.Context) error {
 	//register
 	conn := register(ctx)
+
 	syncloop(ctx, conn)
 	return nil
 }
 
 //single node start
 func syncloop(ctx *cli.Context, conn *ethclient.Client) {
-
 	//myId := ctx.GlobalString(PublicAdressFlag.Name)
 	for {
 		for {
 			time.Sleep(time.Second * 1)
-			////1.now Number
-			//num, err := conn.BlockNumber(context.Background())
-			//if err != nil {
-			//	printError("BlockNumber err")
-			//}
-			////2. get relayers
-			//relayers, err1 := conn.GetRelayers(context.Background(), num)
-			//if err1 != nil {
-			//	printError("GetRelayers err")
-			//	time.Sleep(time.Second)
-			//	continue
-			//}
-			////3. judge is member
-			//if relayers[myId] == nil {
-			//	printError("not relayer err")
-			//	continue
-			//}
-			////4. get relayer range
-			//a, b := getRelayerRange()
-			////5. judge number at range
-			//if num < a || num > b {
-			//	printError("wrong range !")
-			//	continue
-			//}
+			//1.now Number
+			num, err := conn.BlockNumber(context.Background())
+			if err != nil {
+				printError("BlockNumber err")
+			}
+			//2. isrelayers
+			isrelayers := queryIsRegister(conn)
+			if !isrelayers {
+				printError("not Relayers")
+				time.Sleep(time.Second)
+				continue
+			}
+			//3.judge number at range
+			if !queryRelayerEpoch(conn, num) {
+				printError("wrong range !")
+				continue
+			}
 			break
-
 		}
 		// 1.get current num
-		chainNum, err2 := conn.GetCurrentNumberByChainType(context.Background(), "Eth")
-		if err2 != nil {
-			printError("GetCurrentNumberByChainType err")
+		chainNum, err := getCurrentNumberRpc(conn, "ETH")
+		if err != nil {
+			printError("getCurrentNumberRpc err")
 		}
 		// 2. get chains
 		chains, _ := getChains(ctx, chainNum)

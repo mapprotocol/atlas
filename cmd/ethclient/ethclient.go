@@ -127,6 +127,13 @@ func (ec *Client) BlockNumber(ctx context.Context) (uint64, error) {
 	return uint64(result), err
 }
 
+// BlockNumber returns the most recent block number
+func (ec *Client) BlockNumberChains(ctx context.Context, chainType string) (uint64, error) {
+	var result hexutil.Uint64
+	err := ec.c.CallContext(ctx, &result, "eth_currentHeaderNumber", chainType)
+	return uint64(result), err
+}
+
 type rpcBlock struct {
 	Hash         common.Hash      `json:"hash"`
 	Transactions []rpcTransaction `json:"transactions"`
@@ -562,19 +569,19 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 
 // getRelayers
 func (ec *Client) GetRelayers(ctx context.Context, num uint64) (map[string]interface{}, error) {
-	//var relayers map[string]interface{}
-	//err := ec.c.CallContext(ctx, &relayers, "eth_getRelayers", num)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//return relayers, nil
-	m := map[string]interface{}{}
-	return m, nil
+	var relayers map[string]interface{}
+	err := ec.c.CallContext(ctx, &relayers, "eth_getRelayers", num)
+	if err != nil {
+		return nil, err
+	}
+	return relayers, nil
+	//m := map[string]interface{}{}
+	//return m, nil
 }
 
 // get current number by chainType
 func (ec *Client) GetCurrentNumberByChainType(ctx context.Context, chainType string) (uint64, error) {
-	return 2, nil
+	return 1, nil
 }
 func toCallArg(msg ethereum.CallMsg) interface{} {
 	arg := map[string]interface{}{

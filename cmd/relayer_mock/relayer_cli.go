@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
 	params2 "github.com/mapprotocol/atlas/params"
 
-	"encoding/hex"
 	"errors"
 	"fmt"
 	ethchain "github.com/ethereum/go-ethereum"
@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
-	"github.com/mapprotocol/atlas/core/vm"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"log"
@@ -37,15 +36,15 @@ var (
 
 var (
 	abiRelayer, _     = abi.JSON(strings.NewReader(params2.RelayerABIJSON))
-	abiHeaderStore, _ = abi.JSON(strings.NewReader(vm.ABI_JSON))
+	abiHeaderStore, _ = abi.JSON(strings.NewReader(params2.HeaderStoreABIJSON))
 	priKey            *ecdsa.PrivateKey
 	from              common.Address
 	Value             uint64
 	fee               uint64
 	holder            common.Address
 	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	RelayerAddress     common.Address = common.BytesToAddress([]byte("relayeraddress"))
-	HeaderStoreAddress common.Address = common.BytesToAddress([]byte("headerstore"))
+	RelayerAddress     common.Address = params2.RelayerAddress
+	HeaderStoreAddress common.Address = params2.HeaderStoreAddress
 	Base                              = new(big.Int).SetUint64(10000)
 )
 
@@ -99,21 +98,9 @@ func getPubKey(ctx *cli.Context) (string, []byte, error) {
 		err    error
 	)
 
-	if ctx.GlobalIsSet(PubKeyKeyFlag.Name) {
-		pubkey = ctx.GlobalString(PubKeyKeyFlag.Name)
-	} else if ctx.GlobalIsSet(BFTKeyKeyFlag.Name) {
-		bftKey, err := crypto.HexToECDSA(ctx.GlobalString(BFTKeyKeyFlag.Name))
-		if err != nil {
-			printError("bft key error", err)
-		}
-		pk := crypto.FromECDSAPub(&bftKey.PublicKey)
-		pubkey = common.Bytes2Hex(pk)
-	} else {
-		pk := crypto.FromECDSAPub(&priKey.PublicKey)
-		pubkey = hex.EncodeToString(pk)
-	}
-
-	pk := common.Hex2Bytes(pubkey)
+	pk := crypto.FromECDSAPub(&priKey.PublicKey)
+	pubkey = hex.EncodeToString(pk)
+	pk = common.Hex2Bytes(pubkey)
 	if _, err := crypto.UnmarshalPubkey(pk); err != nil {
 		printError("ValidPk error", err)
 	}
@@ -273,7 +260,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 		fmt.Println("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		if contract && common.IsHexAddress(from.Hex()) {
-			queryRegisterInfo(conn, false, delegate)
+			queryRegisterInfo(conn)
 		}
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		fmt.Println("Transaction Failed ", " Block Number", receipt.BlockNumber.Uint64())
@@ -282,13 +269,6 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 func packInput(abiMethod string, params ...interface{}) []byte {
 	input, err := abiRelayer.Pack(abiMethod, params...)
-	if err != nil {
-		printError(abiMethod, " error ", err)
-	}
-	return input
-}
-func packInputStore(abiMethod string, params ...interface{}) []byte {
-	input, err := abiHeaderStore.Pack(abiMethod, params...)
 	if err != nil {
 		printError(abiMethod, " error ", err)
 	}
@@ -398,52 +378,35 @@ func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
 	}
 }
 
-func queryRegisterInfo(conn *ethclient.Client, query bool, delegate bool) {
+func queryRegisterInfo(conn *ethclient.Client) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var input []byte
-	//if delegate {
-	//	input = packInput("getDelegate", from, holder)
-	//} else {
-	//	input = packInput("getDeposit", from)
-	//}
+	input = packInput("getRelayer", from)
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		printError("method CallContract error", err)
 	}
-	if len(output) != 0 {
+
+	method, _ := abiRelayer.Methods["getRelayer"]
+	ret, err := method.Outputs.Unpack(output)
+	if len(ret) != 0 {
 		args := struct {
-			Staked   *big.Int
-			Locked   *big.Int
-			Unlocked *big.Int
-		}{}
-		err = abiRelayer.UnpackIntoInterface(&args, "getDeposit", output)
-		if err != nil {
-			printError("abi error", err)
+			register bool
+			relayer  bool
+			epoch    *big.Int
+		}{
+			ret[0].(bool),
+			ret[1].(bool),
+			ret[2].(*big.Int),
 		}
-		fmt.Println("Staked ", args.Staked.String(), "wei =", weiToEth(args.Staked), "true Locked ",
-			args.Locked.String(), " wei =", weiToEth(args.Locked), "true",
-			"Unlocked ", args.Unlocked.String(), " wei =", weiToEth(args.Unlocked), "true")
-		if query && args.Locked.Sign() > 0 {
-			lockAssets, err := conn.GetLockedAsset(context.Background(), from, header.Number)
-			if err != nil {
-				printError("GetLockedAsset error", err)
-			}
-			for k, v := range lockAssets {
-				for m, n := range v.LockValue {
-					if !n.Locked {
-						fmt.Println("Your can instant withdraw", " count value ", n.Amount, " true")
-					} else {
-						if n.EpochID > 0 || n.Amount != "0" {
-							fmt.Println("Your can withdraw after height", n.Height.Uint64(), " count value ", n.Amount, " true  index", k+m, " lock ", n.Locked)
-						}
-					}
-				}
-			}
-		}
+		fmt.Println("query successfully,your account:")
+		fmt.Println("register: ", args.register)
+		fmt.Println("relayer:", args.relayer)
+		fmt.Println("current epoch:", args.epoch)
 	} else {
 		fmt.Println("Contract query failed result len == 0")
 	}
@@ -451,4 +414,63 @@ func queryRegisterInfo(conn *ethclient.Client, query bool, delegate bool) {
 
 func getRelayerRange() (a, b uint64) {
 	return 1, 100
+}
+func queryIsRegister(conn *ethclient.Client) bool {
+	header, err := conn.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var input []byte
+	input = packInput("getRelayer", from)
+	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
+	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		printError("method CallContract error", err)
+	}
+	method, _ := abiRelayer.Methods["getRelayer"]
+	ret, err := method.Outputs.Unpack(output)
+	if len(ret) != 0 {
+		return ret[1].(bool)
+	} else {
+		return false
+	}
+}
+func queryRelayerEpoch(conn *ethclient.Client, currentNum uint64) bool {
+	header, err := conn.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	input := packInput("getPeriodHeight", from)
+	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
+	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		printError("method CallContract error", err)
+	}
+
+	method, _ := abiRelayer.Methods["getPeriodHeight"]
+	ret, err := method.Outputs.Unpack(output)
+	start := ret[0].(*big.Int).Uint64()
+	end := ret[1].(*big.Int).Uint64()
+	remain := ret[2].(*big.Int).Uint64()
+	relayer := ret[3].(bool)
+
+	if len(ret) != 0 {
+		if relayer {
+			fmt.Println("query successfully,your account is relayer")
+			fmt.Println("start height in epoch: ", start)
+			fmt.Println("end height in epoch:   ", end)
+			fmt.Println("remain height in epoch:", remain)
+			if start <= currentNum && currentNum <= end {
+				return true
+			} else {
+				return false
+			}
+		} else {
+			fmt.Println("query successfully,your account is not relayer")
+			return false
+		}
+	} else {
+		fmt.Println("Contract query failed result len == 0")
+		return false
+	}
 }
