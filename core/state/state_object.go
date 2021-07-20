@@ -103,8 +103,9 @@ type stateObject struct {
 	dirtyStorage   Storage // Storage entries that have been modified in the current transaction execution
 	fakeStorage    Storage // Fake storage which constructed by caller for debugging purpose.
 
-	originPOWStorage POWStorage
-	dirtyPOWStorage  POWStorage
+	originPOWStorage  POWStorage
+	pendingPOWStorage POWStorage
+	dirtyPOWStorage   POWStorage
 
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
@@ -140,15 +141,16 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 		data.Root = emptyRoot
 	}
 	return &stateObject{
-		db:               db,
-		address:          address,
-		addrHash:         crypto.Keccak256Hash(address[:]),
-		data:             data,
-		originStorage:    make(Storage),
-		pendingStorage:   make(Storage),
-		dirtyStorage:     make(Storage),
-		originPOWStorage: make(POWStorage),
-		dirtyPOWStorage:  make(POWStorage),
+		db:                db,
+		address:           address,
+		addrHash:          crypto.Keccak256Hash(address[:]),
+		data:              data,
+		originStorage:     make(Storage),
+		pendingStorage:    make(Storage),
+		dirtyStorage:      make(Storage),
+		originPOWStorage:  make(POWStorage),
+		pendingPOWStorage: make(POWStorage),
+		dirtyPOWStorage:   make(POWStorage),
 	}
 }
 
@@ -369,11 +371,20 @@ func (s *stateObject) finalise(prefetch bool) {
 			slotsToPrefetch = append(slotsToPrefetch, common.CopyBytes(key[:])) // Copy needed for closure
 		}
 	}
+	for key, value := range s.dirtyPOWStorage {
+		s.pendingPOWStorage[key] = value
+		//if bytes.Equal(value, s.originPOWStorage[key]) {
+		//	slotsToPrefetch = append(slotsToPrefetch, common.CopyBytes(key[:])) // Copy needed for closure
+		//}
+	}
 	if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && s.data.Root != emptyRoot {
 		s.db.prefetcher.prefetch(s.data.Root, slotsToPrefetch)
 	}
 	if len(s.dirtyStorage) > 0 {
 		s.dirtyStorage = make(Storage)
+	}
+	if len(s.dirtyPOWStorage) > 0 {
+		s.dirtyPOWStorage = make(POWStorage)
 	}
 }
 
@@ -382,7 +393,7 @@ func (s *stateObject) finalise(prefetch bool) {
 func (s *stateObject) updateTrie(db Database) Trie {
 	// Make sure all dirty slots are finalized into the pending storage area
 	s.finalise(false) // Don't prefetch any more, pull directly if need be
-	if len(s.pendingStorage) == 0 {
+	if len(s.pendingStorage) == 0 && len(s.pendingPOWStorage) == 0 {
 		return s.trie
 	}
 	// Track the amount of time wasted on updating the storage trie
@@ -431,13 +442,16 @@ func (s *stateObject) updateTrie(db Database) Trie {
 		s.pendingStorage = make(Storage)
 	}
 
-	for key, value := range s.dirtyPOWStorage {
+	for key, value := range s.pendingPOWStorage {
 		delete(s.dirtyPOWStorage, key)
 		if len(value) == 0 {
 			s.setError(tr.TryDelete(key[:]))
 			continue
 		}
 		s.setError(tr.TryUpdate(key[:], value))
+	}
+	if len(s.pendingPOWStorage) > 0 {
+		s.pendingPOWStorage = make(POWStorage)
 	}
 
 	return tr
@@ -523,9 +537,10 @@ func (s *stateObject) deepCopy(db *StateDB) *stateObject {
 	stateObject.code = s.code
 	stateObject.dirtyStorage = s.dirtyStorage.Copy()
 	stateObject.originStorage = s.originStorage.Copy()
+	stateObject.pendingStorage = s.pendingStorage.Copy()
 	stateObject.dirtyPOWStorage = s.dirtyPOWStorage.Copy()
 	stateObject.originPOWStorage = s.originPOWStorage.Copy()
-	stateObject.pendingStorage = s.pendingStorage.Copy()
+	stateObject.pendingPOWStorage = s.pendingPOWStorage.Copy()
 	stateObject.suicided = s.suicided
 	stateObject.dirtyCode = s.dirtyCode
 	stateObject.deleted = s.deleted
