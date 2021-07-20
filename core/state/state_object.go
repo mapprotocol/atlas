@@ -373,9 +373,9 @@ func (s *stateObject) finalise(prefetch bool) {
 	}
 	for key, value := range s.dirtyPOWStorage {
 		s.pendingPOWStorage[key] = value
-		//if bytes.Equal(value, s.originPOWStorage[key]) {
-		//	slotsToPrefetch = append(slotsToPrefetch, common.CopyBytes(key[:])) // Copy needed for closure
-		//}
+		if bytes.Equal(value, s.originPOWStorage[key]) {
+			slotsToPrefetch = append(slotsToPrefetch, common.CopyBytes(key[:])) // Copy needed for closure
+		}
 	}
 	if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && s.data.Root != emptyRoot {
 		s.db.prefetcher.prefetch(s.data.Root, slotsToPrefetch)
@@ -406,7 +406,7 @@ func (s *stateObject) updateTrie(db Database) Trie {
 	tr := s.getTrie(db)
 	hasher := s.db.hasher
 
-	usedStorage := make([][]byte, 0, len(s.pendingStorage))
+	usedStorage := make([][]byte, 0, len(s.pendingStorage)+len(s.pendingPOWStorage))
 	for key, value := range s.pendingStorage {
 		// Skip noop changes, persist actual changes
 		if value == s.originStorage[key] {
@@ -435,20 +435,30 @@ func (s *stateObject) updateTrie(db Database) Trie {
 		}
 		usedStorage = append(usedStorage, common.CopyBytes(key[:])) // Copy needed for closure
 	}
-	if s.db.prefetcher != nil {
-		s.db.prefetcher.used(s.data.Root, usedStorage)
-	}
-	if len(s.pendingStorage) > 0 {
-		s.pendingStorage = make(Storage)
-	}
-
 	for key, value := range s.pendingPOWStorage {
-		delete(s.dirtyPOWStorage, key)
 		if len(value) == 0 {
 			s.setError(tr.TryDelete(key[:]))
 			continue
 		}
 		s.setError(tr.TryUpdate(key[:], value))
+
+		if s.db.snap != nil {
+			if storage == nil {
+				// Retrieve the old storage map, if available, create a new one otherwise
+				if storage = s.db.snapStorage[s.addrHash]; storage == nil {
+					storage = make(map[common.Hash][]byte)
+					s.db.snapStorage[s.addrHash] = storage
+				}
+			}
+			storage[crypto.HashData(hasher, key[:])] = value
+		}
+		usedStorage = append(usedStorage, common.CopyBytes(key[:])) // Copy needed for closure
+	}
+	if s.db.prefetcher != nil {
+		s.db.prefetcher.used(s.data.Root, usedStorage)
+	}
+	if len(s.pendingStorage) > 0 {
+		s.pendingStorage = make(Storage)
 	}
 	if len(s.pendingPOWStorage) > 0 {
 		s.pendingPOWStorage = make(POWStorage)
