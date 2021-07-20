@@ -116,7 +116,7 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
+	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash) && len(s.dirtyPOWStorage) == 0
 }
 
 // Account is the Ethereum consensus representation of accounts.
@@ -430,6 +430,16 @@ func (s *stateObject) updateTrie(db Database) Trie {
 	if len(s.pendingStorage) > 0 {
 		s.pendingStorage = make(Storage)
 	}
+
+	for key, value := range s.dirtyPOWStorage {
+		delete(s.dirtyPOWStorage, key)
+		if len(value) == 0 {
+			s.setError(tr.TryDelete(key[:]))
+			continue
+		}
+		s.setError(tr.TryUpdate(key[:], value))
+	}
+
 	return tr
 }
 
@@ -513,6 +523,8 @@ func (s *stateObject) deepCopy(db *StateDB) *stateObject {
 	stateObject.code = s.code
 	stateObject.dirtyStorage = s.dirtyStorage.Copy()
 	stateObject.originStorage = s.originStorage.Copy()
+	stateObject.dirtyPOWStorage = s.dirtyPOWStorage.Copy()
+	stateObject.originPOWStorage = s.originPOWStorage.Copy()
 	stateObject.pendingStorage = s.pendingStorage.Copy()
 	stateObject.suicided = s.suicided
 	stateObject.dirtyCode = s.dirtyCode

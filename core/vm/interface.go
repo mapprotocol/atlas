@@ -77,6 +77,7 @@ type StateDB interface {
 	AddPreimage(common.Hash, []byte)
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
+	ForEachPOWStorage(common.Address, func(common.Hash, []byte) bool)
 
 	GetUnlockedBalance(addr common.Address) *big.Int
 	GetLockedBalance(addr common.Address) *big.Int

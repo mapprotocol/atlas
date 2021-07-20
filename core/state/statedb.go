@@ -672,6 +672,28 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 	return nil
 }
 
+// ForEachPOWStorage is callback function. cb return true indicating like to continue, return false indicating stop
+func (self *StateDB) ForEachPOWStorage(addr common.Address, cb func(key common.Hash, value []byte) bool) {
+	stateObject := self.getStateObject(addr)
+	if stateObject == nil {
+		return
+	}
+	it := trie.NewIterator(stateObject.getTrie(self.db).NodeIterator(nil))
+	for it.Next() {
+		// ignore cached values
+		key := common.BytesToHash(self.trie.GetKey(it.Key))
+		if value, dirty := stateObject.originPOWStorage[key]; dirty {
+			if !cb(key, value) {
+				return
+			}
+			continue
+		}
+		if !cb(key, it.Value) {
+			return
+		}
+	}
+}
+
 // Copy creates a deep, independent copy of the state.
 // Snapshots of the copied state cannot be applied to the copy.
 func (s *StateDB) Copy() *StateDB {
