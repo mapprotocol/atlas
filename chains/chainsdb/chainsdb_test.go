@@ -345,19 +345,46 @@ func Test_thread_WriteHeader(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 }
-func Test_GetStoreMgr(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data333", 20, 20)
+
+func TestGenesis1(t *testing.T) {
+	chainDb0, _ := OpenDatabase("data222", 20, 20)
 
 	db := HeaderChainStore{
 		chainDb: chainDb0,
 	}
 	storeMgr = &db
-	for i := 0; i < 1000; i++ {
+	var (
+		db001   = rawdb.NewMemoryDatabase()
+		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
+	)
 
-		go func() {
-			GetStoreMgr(rawdb.ChainType(i))
-		}()
+	// chain A: G->A1->A2...A128
+	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
+
+	// chain B: G->A1->B2...B128
+	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db001, 10)
+	chainB001 := converChainList(chainB)
+
+	type args struct {
+		header    *ethereum.Header
+		chainType rawdb.ChainType
 	}
-	time.Sleep(5 * time.Second)
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "",
+			args: args{
+				header:    chainB001[0],
+				chainType: 1001,
+			},
+		},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			Genesis(tt.args.header, tt.args.chainType)
+		})
+	}
 }

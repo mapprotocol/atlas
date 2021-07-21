@@ -3,6 +3,7 @@ package chainsdb
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/ethdb"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -190,14 +191,10 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 	if len(headers) == 0 {
 		return &headerWriteResultState{}, nil
 	}
-	PreNumber := headers[0].Number.Uint64()
-	ptd := hc.GetTd(headers[0].ParentHash, PreNumber-1)
+	Number := headers[0].Number.Uint64()
+	ptd := hc.GetTd(headers[0].ParentHash, Number-1)
 	if ptd == nil {
-		if PreNumber <= 0 {
-			ptd = headers[0].Difficulty
-		} else {
-			return &headerWriteResultState{}, consensus.ErrUnknownAncestor
-		}
+		return &headerWriteResultState{}, consensus.ErrUnknownAncestor
 	}
 	var (
 		lastNumber = headers[0].Number.Uint64() - 1 // Last successfully imported number
@@ -420,4 +417,18 @@ func (hc *HeaderChainStore) GetHeaderByNumber(number uint64) *ethereum.Header {
 
 func (hc *HeaderChainStore) ReadCanonicalHash(number uint64) common.Hash {
 	return rawdb.ReadCanonicalHashChains(hc.chainDb, number, hc.currentChainType)
+}
+
+func (hc *HeaderChainStore) ReadFistBlock(number uint64) common.Hash {
+	return rawdb.ReadCanonicalHashChains(hc.chainDb, number, hc.currentChainType)
+}
+
+func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
+	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
+	rawdb.WriteReceiptsChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), nil, chainType)
+	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
+	rawdb.WriteHeadBlockHashChains(storeMgr.chainDb, header.Hash(), chainType)
+	rawdb.WriteHeadFastBlockHashChains(storeMgr.chainDb, header.Hash(), chainType)
+	rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
+	rawdb.WriteChainConfigChains(storeMgr.chainDb, header.Hash(), (&core.Genesis{}).Config, chainType)
 }
