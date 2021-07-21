@@ -2139,3 +2139,15 @@ func (s *PublicRelayerAPI) GetRelayers(ctx context.Context, blockNrOrHash rpc.Bl
 	}
 	return addr, nil
 }
+
+type PublicHeaderStoreAPI struct {
+	b Backend
+}
+
+func NewPublicHeaderStoreAPI(b Backend) *PublicHeaderStoreAPI {
+	return &PublicHeaderStoreAPI{b: b}
+}
+
+func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chain string) (uint64, error) {
+	return vm.GetCurrentHeaderNumber(chain)
+}

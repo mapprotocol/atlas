@@ -130,12 +130,14 @@ type PoW interface {
 }
 
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
-	key := common.BytesToHash(params2.HeaderStoreAddress[:])
-	getState := state.GetPOWState(params2.HeaderStoreAddress, key)
-	if len(getState) == 0 {
-		hs := vm.NewHeaderStore()
-		if err := hs.Store(state, params2.HeaderStoreAddress); err != nil {
-			log.Crit("store failed, ", "err", err)
+	if blockNumber.Cmp(big.NewInt(0)) == 0 {
+		key := common.BytesToHash(params2.HeaderStoreAddress[:])
+		getState := state.GetPOWState(params2.HeaderStoreAddress, key)
+		if len(getState) == 0 {
+			hs := vm.NewHeaderStore()
+			if err := hs.Store(state, params2.HeaderStoreAddress); err != nil {
+				log.Crit("store failed, ", "err", err)
+			}
 		}
 	}
 }

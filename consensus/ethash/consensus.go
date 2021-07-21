@@ -746,6 +746,9 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 			state.AddBalance(addr, r)
 		}
 	}
+	if err := hs.Store(state, params2.HeaderStoreAddress); err != nil {
+		log.Crit("store failed, ", "err", err)
+	}
 
 	r := new(big.Int)
 	for _, uncle := range uncles {

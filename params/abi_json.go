@@ -5,7 +5,7 @@ const HeaderStoreABIJSON = `[
 		"inputs": [
 			{
 				"internalType": "string",
-				"name": "chainType",
+				"name": "chain",
 				"type": "string"
 			}
 		],

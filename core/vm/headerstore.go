@@ -2,7 +2,6 @@ package vm
 
 import (
 	"encoding/json"
-	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -50,6 +50,8 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	switch method.Name {
 	case Save:
 		ret, err = save(evm, contract, data)
+	case CurrentHeaderNumber:
+		ret, err = currentHeaderNumber(evm, contract, data)
 	default:
 		log.Warn("sync contract failed, invalid method name", "methodName", method.Name)
 		err = ErrSyncInvalidInput
@@ -83,7 +85,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	var hs []*ethereum.Header
 	err = json.Unmarshal(args.Headers, &hs)
 	if err != nil {
-		log.Error("args.Header json unmarshal failed.", "args.Header", args.Headers, "err", err)
+		log.Error("args.Header json unmarshal failed.", "err", err, "args.Header", string(args.Headers))
 		return nil, ErrJSONUnmarshal
 	}
 
@@ -143,7 +145,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 func currentHeaderNumber(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		ChainType string
+		Chain string
 	}{}
 	method, _ := abiHeaderStore.Methods[CurrentHeaderNumber]
 	unpack, err := method.Inputs.Unpack(input)
@@ -154,15 +156,22 @@ func currentHeaderNumber(evm *EVM, contract *Contract, input []byte) (ret []byte
 		return nil, err
 	}
 
-	chainType, err := chains.ChainNameToChainType(args.ChainType)
+	number, err := GetCurrentHeaderNumber(args.Chain)
 	if err != nil {
 		return nil, err
+	}
+	return method.Outputs.Pack(new(big.Int).SetUint64(number))
+}
+
+func GetCurrentHeaderNumber(chain string) (uint64, error) {
+	chainType, err := chains.ChainNameToChainType(chain)
+	if err != nil {
+		return 0, err
 	}
 
 	store, err := chainsdb.GetStoreMgr(chainType)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	number := store.CurrentHeaderNumber()
-	return method.Outputs.Pack(new(big.Int).SetUint64(number))
+	return store.CurrentHeaderNumber(), nil
 }

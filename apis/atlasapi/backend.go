@@ -138,6 +138,11 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Version:   "1.0",
 			Service:   NewPublicRelayerAPI(apiBackend),
 			Public:    true,
+		}, {
+			Namespace: "header",
+			Version:   "1.0",
+			Service:   NewPublicHeaderStoreAPI(apiBackend),
+			Public:    true,
 		},
 	}
 }
