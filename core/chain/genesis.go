@@ -427,16 +427,16 @@ func decodePrealloc(data string) GenesisAlloc {
 }
 
 var relayer []common.Address = []common.Address{
+	common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+	common.HexToAddress("0x32CD75ca677e9C37FD989272afA8504CB8F6eB52"),
 	common.HexToAddress("0x3e3429F72450A39CE227026E8DdeF331E9973E4d"),
-	common.HexToAddress("0x1Cfe2A1D7B9CBfce14d06bAFfa338b2465216255"),
-	common.HexToAddress("0x1275db492b0d02855a38Bd3Cdf73C92137CD1691"),
-	common.HexToAddress("0xF11A544F74a2F4Faa2AF8Aa38F9388A4Cc2F3ACC"),
-	common.HexToAddress("0xc30E75016F5a82EE6f0A7989F9DCD5F030c83B3A"),
-	common.HexToAddress("0x1e2E48Fa3cC3417474EC264DE53D6305109af1b9"),
-	common.HexToAddress("0x7AdC129C637f93C9392c59e9C4d406FDC28aAB43"),
-	common.HexToAddress("0xf9621AEa3d6492d43dC96b5472C4680021793109"),
-	common.HexToAddress("0x5552FAC84cD38DEdAf8c80a195591CBCED1f4A8D"),
-	common.HexToAddress("0xBa9779b7173099354630BD87b5b972441E3605bd"),
+	common.HexToAddress("0x81f02Fd21657DF80783755874a92c996749777Bf"),
+	common.HexToAddress("0x84D46B3055454646a419D023f73472561B6cF20F"),
+	common.HexToAddress("0x480fB8301D0d357956FB8dB06988d4e5650c5Fc7"),
+	common.HexToAddress("0x85273B522f9e17A57CEc59f31f24A49a60C54e17"),
+	common.HexToAddress("0xF058b45Ed9A2b781558c0b9ef8C63c79D615c3bB"),
+	common.HexToAddress("0x8ee567bE17fB027cBB107Ff70fC02DC475Ce3F3e"),
+	common.HexToAddress("0xB5Ac31a4a887e9F773B5Fd0aba3FC0FE95c2a750"),
 }
 var balance, _ = new(big.Int).SetString("100000000000000000000000000", 10) //100 million
 func defaultRelayer() GenesisAlloc {
@@ -460,16 +460,16 @@ type RelayerMember struct {
 }
 
 func defaultRelayer2() []*RelayerMember {
-	key1 := hexutil.MustDecode("0x04600254af4ce74276f54b4f9df193f2cb72ed76b7341cb144f4d6f1408402dc10719eebdcb947ced9ac6fe9a690e004692db6222de7867cbab712246eb23a50b7")
-	key2 := hexutil.MustDecode("0x04c042a428a7df304ac7ea81c1555da49310cebb079a905c8256080e8234af804dad4ad9995771f96fba8182b117f62d2f1a6643e27f5f272c293a8301b6a84442")
-	key3 := hexutil.MustDecode("0x04dc1da011509b6ea17527550cc480f6eb076a225da2bcc87ec7a24669375f229945d76e4f9dbb4bd26c72392050a18c3922bd7ef38c04e018192b253ef4fc9dcb")
-	key4 := hexutil.MustDecode("0x04952af3d04c0b0ba3d16eea8ca0ab6529f5c6e2d08f4aa954ae2296d4ded9f04c8a9e1d52be72e6cebb86b4524645fafac04ac8633c4b33638254b2eb64a89c6a")
-	key5 := hexutil.MustDecode("0x04290cdc7fe53df0f93d43264302337751a58bcf67ee56799abea93b0a6205be8b3c8f1c9dac281f4d759475076596d30aa360d0c3b160dc28ea300b7e4925fb32")
-	key6 := hexutil.MustDecode("0x04427e32084f7565970d74a3df317b68de59e62f28b86700c8a5e3ae83a781ec163c4c83544bd8f88b8d70c4d71f2827b7b279bfc25481453dd35533cf234b2dfe")
-	key7 := hexutil.MustDecode("0x04dd9980aac0edead2de77cc6cde74875c14ac21d95a1cb49d36b810246b50420f1dc7c19f5296d739fcfceb454a18f250fa7802280f5298e5e2b2a591faa15cf9")
-	key8 := hexutil.MustDecode("0x04039dd0fb3869e7d2a1eeb95c9a6475771883614b289c604bf6fef2e1e9dd57340d888f59db0129d250394909d4a3b041bd66e6b83f345b38a397fdeb036b3e1c")
-	key9 := hexutil.MustDecode("0x042ec25823b375f655117d1a7003f9526e9adc0d6d50150812e0408fbfb3256810c912d7cd7e5441bc5e54ac143fb6274ac496548e1a2aaaf370e8aa8b5b1ced4d")
-	key10 := hexutil.MustDecode("0x043e3014c29e42015fe891ca3e97e5fb05961beca9e349b821c6738eadd17d9b784295638e26c1d7ca71beb8703ec8cf944c67f3835bf5119f78192b535ac6a5e0")
+	key1 := hexutil.MustDecode("0x0499ea9aab0498007f662ca5122e39e7353db3f69b9f1aebd96fcd33bd1a098c4cdb41b97c479d7eecd9d5def59ce7e9f0c6534ccca95811b480e39db37f424215")
+	key2 := hexutil.MustDecode("0x041ca456b13aeac67364c1a05effe3ea45479d7aa37337ab62600e32b3875ad3deeadbf4f7d2dbfabf86534daa55de19ac31411757cec9bb6674bd556d4fcee0d6")
+	key3 := hexutil.MustDecode("0x04600254af4ce74276f54b4f9df193f2cb72ed76b7341cb144f4d6f1408402dc10719eebdcb947ced9ac6fe9a690e004692db6222de7867cbab712246eb23a50b7")
+	key4 := hexutil.MustDecode("0x04290ef09419dc28a367a93a4266c646e379ba4dd0bd2fae7f86277d3d4c330179ee2d70b282de4a5d0d8cc1130c36a88b8fe61baa1726dc41f16e192a3d6af8e4")
+	key5 := hexutil.MustDecode("0x040aab611fa2df95180df61677900351659f1feb740e650d7496ae3c887553f13fe304a61a3e9a49bb4e68bd846bf8150a866284ea0b404f0b9ecc0cf23fef6cf1")
+	key6 := hexutil.MustDecode("0x0403df1c7ca9dfd7af387f29e0d04bb4440d092f1915ee0d446721f36c70dd4e2ee3651647601ec79052aeeb8f85231d191b521278e7fccb2ff4cbc232f55b0f76")
+	key7 := hexutil.MustDecode("0x044fffeb7bc8112b82f97f16a42ff13cd6c0d45400654768e200ddae090d4c61e576925faa0f6aa87cef4be1c16012a5462b1599c75ff620984a0bbe6d434c5e54")
+	key8 := hexutil.MustDecode("0x042b635e9e33692cfbb52331811ebc937760aeb2e9cafa1e1caeacdc7aad00aad6b6757c4f38da19a0af98499f084e7d17634b3cd09b431d2cfa64df2662ac58bb")
+	key9 := hexutil.MustDecode("0x04068f90a637a5de1830203f02fe9b197b0db9ae6d5bf71cc3668b5f5f9e8da09c432949f0e0e9746579ee6c49346b65ccf275924f1ab0909dadc27a479385b284")
+	key10 := hexutil.MustDecode("0x04242019bb0969a3de7adcef74012e76dbb6830b244589551488ca36cbe6e1782c68a1d87d29eac3b29d78b5c45b9f04b31d978957a94e65ddd9208fe9c638abe7")
 	cm := []*RelayerMember{
 		&RelayerMember{Coinbase: relayer[0], Publickey: key1},
 		&RelayerMember{Coinbase: relayer[1], Publickey: key2},

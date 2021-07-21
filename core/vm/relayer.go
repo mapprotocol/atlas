@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -288,6 +289,8 @@ func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 			}
 		}
 	}
+	we, e := HistoryWorkEfficiency(evm.StateDB, register.getCurrentEpoch(), args.register)
+	fmt.Println("WorkEfficiency", we, "err", e)
 	_, h := register.GetCurrentEpochInfo()
 	epoch := new(big.Int).SetUint64(h)
 	ret, err = method.Outputs.Pack(acc, rel, epoch)

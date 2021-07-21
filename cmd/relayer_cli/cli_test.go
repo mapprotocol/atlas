@@ -11,7 +11,7 @@ import (
 )
 
 func TestJsonTransferKey(t *testing.T) {
-	keyfile := "../../data/keystore/UTC--2021-07-19T02-04-57.993791200Z--df945e6ffd840ed5787d367708307bd1fa3d40f4"
+	keyfile := "../../data/keystore/UTC--2021-07-21T10-18-19.019189000Z--b5ac31a4a887e9f773b5fd0aba3fc0fe95c2a750"
 	password := "111111"
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {

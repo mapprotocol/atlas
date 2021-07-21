@@ -847,14 +847,12 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 		return nil, params.ErrNotElectionTime
 	}
 
-	//num is test data
-	var num uint64 = 1000
 	if val, ok := i.accounts[epochid]; ok {
 		val.sort(height, true)
 		var ee []*RegisterAccount
 		for _, v := range val {
 			validRegister := v.getValidRegisterOnly(height)
-			//num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
+			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
 			if validRegister.Cmp(params.ElectionMinLimitForRegister) < 0 || num < params.MinWorkEfficiency {
 				continue
 			}
