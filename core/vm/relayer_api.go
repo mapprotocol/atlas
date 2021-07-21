@@ -1084,7 +1084,11 @@ func (i *RegisterImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big
 		l = locked[addr].Value[epochid]
 	}
 	if register[addr] != nil {
-		b = register[addr].Value[epochid]
+		sum := big.NewInt(0)
+		for _, v := range register[addr].Value {
+			sum.Add(sum, v)
+		}
+		b = sum
 	}
 	if reward[addr] != nil {
 		r = reward[addr].Amount
@@ -1174,8 +1178,9 @@ func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 	}
 	hash := RlpHash(data)
 	//fmt.Println("save data", data)
+	//fmt.Println("load hash", hash)
+	//fmt.Println("save Impl",i)
 	state.SetPOWState(preAddress, key, data)
-	state.SetState(preAddress, key, hash)
 	tmp := CloneRegisterImpl(i)
 	if tmp != nil {
 		IC.Cache.Add(hash, tmp)
@@ -1187,8 +1192,8 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data := state.GetPOWState(preAddress, key)
 	//fmt.Println("load data", data)
-	//hash := RlpHash(data)
-	hash := state.GetState(preAddress, key)
+	hash := RlpHash(data)
+	//fmt.Println("load hash", hash)
 	if cc, ok := IC.Cache.Get(hash); ok {
 		register := cc.(*RegisterImpl)
 		temp = *(CloneRegisterImpl(register))
@@ -1197,14 +1202,12 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 			log.Error("Invalid RegisterImpl entry RLP", "err", err)
 			return errors.New(fmt.Sprintf("Invalid RegisterImpl entry RLP %s", err.Error()))
 		}
+		//fmt.Println("load Impl", temp)
 		tmp := CloneRegisterImpl(&temp)
 		if tmp != nil {
 			IC.Cache.Add(hash, tmp)
 		}
-		fmt.Println("temp")
-		// cache = false
 	}
-	// log.Info("-----Load relayer_cli---","len:",lenght,"count:",temp.Counts(),"cache",cache)
 	i.curEpochID, i.accounts, i.lastReward = temp.curEpochID, temp.accounts, temp.lastReward
 	return nil
 }

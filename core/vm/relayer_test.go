@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -115,7 +116,7 @@ func TestSaveAndLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	statedb.GetOrNewStateObject(params2.RelayerAddress)
-	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+	//evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	//register := NewRegisterImpl()
 	register := RegisterImpl{
 		curEpochID: 565,
@@ -123,12 +124,12 @@ func TestSaveAndLoad(t *testing.T) {
 		accounts:   make(map[uint64]Register),
 	}
 	//save data
-	err = register.Save(evm.StateDB, params2.RelayerAddress)
+	err = register.Save(statedb, params2.RelayerAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//load data
-	err = register.Load(evm.StateDB, params2.RelayerAddress)
+	err = register.Load(statedb, params2.RelayerAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,15 +201,19 @@ func TestRegisterDoElections(t *testing.T) {
 		if i%2 == 0 {
 			amount := new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18))
 			impl.InsertAccount2(0, from, pub, amount, big.NewInt(50), true)
-			//used to redeem
 			testacc = from
-			addLockedBalance(statedb, from, amount)
-			impl.CancelAccount(100, from, big.NewInt(10))
 		} else {
 			impl.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
 		}
 	}
 	fmt.Println("account number:", len(impl.accounts[1]), " all account:", impl.accounts[1])
+	//used to redeem
+	v1, v2, v3, v4, v5 := impl.GetBalance(testacc)
+	fmt.Println("insert Balance", v1, v2, v3, v4, v5)
+	impl.CancelAccount(100, from, big.NewInt(10))
+	addLockedBalance(statedb, from, new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18)))
+	v1, v2, v3, v4, v5 = impl.GetBalance(testacc)
+	fmt.Println("cancel Balance", v1, v2, v3, v4, v5)
 
 	//relayers election
 	_, err = impl.DoElections(statedb, 1, 0)
@@ -268,12 +273,13 @@ func TestRegisterDoElections(t *testing.T) {
 	fmt.Println("--------------------redeem test-------------------------------")
 	c2 := impl.GetAllCancelableAsset(testacc)[testacc]
 	fmt.Println("cancelable", c2)
-	err = impl.RedeemAccount(21000, testacc, big.NewInt(1))
+	err = impl.RedeemAccount(21000, testacc, big.NewInt(10))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, balance, _, _ := impl.GetBalance(testacc)
-	fmt.Println("after redeem", balance)
+	subLockedBalance(statedb, from, big.NewInt(10))
+	v1, v2, v3, v4, v5 = impl.GetBalance(testacc)
+	fmt.Println("after redeem", v1, v2, v3, v4, v5)
 }
 
 func TestGetBalance(t *testing.T) {
@@ -294,18 +300,24 @@ func TestGetBalance(t *testing.T) {
 	register.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
 	v1, v2, v3, v4, v5 := register.GetBalance(from)
 	fmt.Println("getBalance0", v1, v2, v3, v4, v5)
-	//addLockedBalance(statedb, from, value)
-	register.CancelAccount(1, from, value)
-	v1, v2, v3, v4, v5 = register.GetBalance(from)
-	fmt.Println("getBalance1", v1, v2, v3, v4, v5)
-	////save data
-	//err = register.Save(evm.StateDB, params2.RelayerAddress)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	////load data
-	//err = register.Load(evm.StateDB, params2.RelayerAddress)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
+}
+
+func TestStateDB(t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+
+	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	reg := NewRegisterImpl()
+	reg.curEpochID = 1
+	if err := reg.Save(statedb, params2.RelayerAddress); err != nil {
+		log.Crit("store failed, ", "err", err)
+	}
+	reg.curEpochID = 2
+	if err := reg.Load(statedb, params2.RelayerAddress); err != nil {
+		log.Crit("store failed, ", "err", err)
+	}
+	fmt.Println(reg)
 }

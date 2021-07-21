@@ -269,44 +269,35 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 
 	//////////////////////////////////pro compiled////////////////////////////////////
-	if new(big.Int).SetUint64(g.Number) == big.NewInt(0) {
-		key := common.BytesToHash(params2.RelayerAddress[:])
-		obj := statedb.GetPOWState(params2.RelayerAddress, key)
-		if len(obj) == 0 {
-			i := vm.NewRegisterImpl()
-			i.Save(statedb, params2.RelayerAddress)
-			statedb.SetNonce(params2.RelayerAddress, 1)
-			statedb.SetCode(params2.RelayerAddress, params2.RelayerAddress[:])
-			log.Info("makeRegisterInitState success")
-		}
-	}
+	//fmt.Println("gnumber: ",g.Number)
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
-	register := vm.NewRegisterImpl()
-	hh := g.Number
-	if hh != 0 {
-		hh = hh - 1
-	}
-	relayer := defaultRelayer2()
-	for _, member := range relayer {
-		var err error
-		err = register.InsertAccount2(hh, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
-		if err != nil {
-			log.Error("ToBlock InsertSAccount", "error", err)
-		} else {
-			vm.GenesisAddLockedBalance(statedb, member.Coinbase, params2.ElectionMinLimitForRegister)
+	if g.Number == 0 {
+		//	fmt.Println("init contract")
+		register := vm.NewRegisterImpl()
+		hh := g.Number
+		relayer := defaultRelayer2()
+		for _, member := range relayer {
+			var err error
+			err = register.InsertAccount2(hh, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
+			if err != nil {
+				log.Error("ToBlock InsertAccount", "error", err)
+			} else {
+				vm.GenesisAddLockedBalance(statedb, member.Coinbase, params2.ElectionMinLimitForRegister)
+			}
 		}
-	}
-	_, err := register.DoElections(statedb, 1, 0)
-	if err != nil {
-		log.Error("ToBlock DoElections", "error", err)
-	}
-	err = register.Shift(1, 0)
-	if err != nil {
-		log.Error("ToBlock Shift", "error", err)
-	}
-	err = register.Save(statedb, params2.RelayerAddress)
-	if err != nil {
-		log.Error("ToBlock IMPL Save", "error", err)
+		//	fmt.Println("DoElection")
+		_, err := register.DoElections(statedb, 1, 0)
+		if err != nil {
+			log.Error("ToBlock DoElections", "error", err)
+		}
+		err = register.Shift(1, 0)
+		if err != nil {
+			log.Error("ToBlock Shift", "error", err)
+		}
+		err = register.Save(statedb, params2.RelayerAddress)
+		if err != nil {
+			log.Error("ToBlock IMPL Save", "error", err)
+		}
 	}
 	////////////////////////////////////////////////////////////////////////////
 	root := statedb.IntermediateRoot(false)
