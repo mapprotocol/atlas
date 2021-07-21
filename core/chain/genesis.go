@@ -269,35 +269,31 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 
 	//////////////////////////////////pro compiled////////////////////////////////////
-	//fmt.Println("gnumber: ",g.Number)
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
-	if g.Number == 0 {
-		//	fmt.Println("init contract")
-		register := vm.NewRegisterImpl()
-		hh := g.Number
-		relayer := defaultRelayer2()
-		for _, member := range relayer {
-			var err error
-			err = register.InsertAccount2(hh, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
-			if err != nil {
-				log.Error("ToBlock InsertAccount", "error", err)
-			} else {
-				vm.GenesisAddLockedBalance(statedb, member.Coinbase, params2.ElectionMinLimitForRegister)
-			}
-		}
-		//	fmt.Println("DoElection")
-		_, err := register.DoElections(statedb, 1, 0)
+	register := vm.NewRegisterImpl()
+	hh := g.Number
+	relayer := defaultRelayer2()
+	for _, member := range relayer {
+		var err error
+		err = register.InsertAccount2(hh, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
 		if err != nil {
-			log.Error("ToBlock DoElections", "error", err)
+			log.Error("ToBlock InsertAccount", "error", err)
+		} else {
+			vm.GenesisAddLockedBalance(statedb, member.Coinbase, params2.ElectionMinLimitForRegister)
 		}
-		err = register.Shift(1, 0)
-		if err != nil {
-			log.Error("ToBlock Shift", "error", err)
-		}
-		err = register.Save(statedb, params2.RelayerAddress)
-		if err != nil {
-			log.Error("ToBlock IMPL Save", "error", err)
-		}
+	}
+	//	fmt.Println("DoElection")
+	_, err := register.DoElections(statedb, 1, 0)
+	if err != nil {
+		log.Error("ToBlock DoElections", "error", err)
+	}
+	err = register.Shift(1, 0)
+	if err != nil {
+		log.Error("ToBlock Shift", "error", err)
+	}
+	err = register.Save(statedb, params2.RelayerAddress)
+	if err != nil {
+		log.Error("ToBlock IMPL Save", "error", err)
 	}
 	////////////////////////////////////////////////////////////////////////////
 	root := statedb.IntermediateRoot(false)

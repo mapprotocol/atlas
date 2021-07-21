@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/mapprotocol/atlas/params"
+	"io"
 	"math/big"
 	"sort"
 )
@@ -526,7 +527,7 @@ func (s *Register) sort(hh uint64, valid bool) {
 	sort.Sort(tmp)
 	*s, _ = fromRegisterByAmount(tmp)
 }
-func (s *Register) getSA(addr common.Address) *RegisterAccount {
+func (s *Register) getRA(addr common.Address) *RegisterAccount {
 	for _, val := range *s {
 		if bytes.Equal(val.Unit.Address.Bytes(), addr.Bytes()) {
 			return val
@@ -535,7 +536,7 @@ func (s *Register) getSA(addr common.Address) *RegisterAccount {
 	return nil
 }
 func (s *Register) update(sa1 *RegisterAccount, hh uint64, next, move bool, effectHeight uint64) {
-	sa := s.getSA(sa1.Unit.Address)
+	sa := s.getRA(sa1.Unit.Address)
 	if sa == nil {
 		if hh >= effectHeight {
 			sa1.changeAlterableInfo()
@@ -718,7 +719,7 @@ func (i *RegisterImpl) calcRewardInReg(target uint64, sa *RegisterAccount, allRe
 	item.Register = new(big.Int).Sub(allRegister, left2)
 	return items, nil
 }
-func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *EpochIDInfo) ([]*SARewardInfos, error) {
+func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *EpochIDInfo) ([]*RewardInfos, error) {
 	if _, ok := i.accounts[einfo.EpochID]; !ok {
 		return nil, params.ErrInvalidParam
 	} else {
@@ -732,13 +733,13 @@ func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, e
 		}
 		reg := Register(el)
 		reg.sort(target, false)
-		var res []*SARewardInfos
+		var res []*RewardInfos
 		allValidatorRegister := reg.getAllRegister(target)
 		sum := len(reg)
 		left := big.NewInt(0)
 
 		for pos, v := range reg {
-			var info SARewardInfos
+			var info RewardInfos
 			var item RewardInfo
 			item.Address = v.Unit.GetRewardAddress()
 			allRegiater := v.getAllRegister(target)
@@ -763,7 +764,7 @@ func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, e
 		return res, nil
 	}
 }
-func (i *RegisterImpl) reward(begin, end, effectid uint64, allAmount *big.Int) ([]*SARewardInfos, error) {
+func (i *RegisterImpl) reward(begin, end, effectid uint64, allAmount *big.Int) ([]*RewardInfos, error) {
 	ids := GetEpochFromRange(begin, end)
 	if ids == nil || len(ids) > 2 {
 		return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "more than 2 epochid:", begin, end))
@@ -1040,7 +1041,7 @@ func (i *RegisterImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte)
 	return nil
 }
 
-func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) ([]*SARewardInfos, error) {
+func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) ([]*RewardInfos, error) {
 
 	res, err := i.reward(begin, end, effectid, allAmount)
 	if err == nil {
@@ -1177,9 +1178,6 @@ func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 		log.Crit("Failed to RLP encode RegisterImpl", "err", err)
 	}
 	hash := RlpHash(data)
-	//fmt.Println("save data", data)
-	//fmt.Println("load hash", hash)
-	//fmt.Println("save Impl",i)
 	state.SetPOWState(preAddress, key, data)
 	tmp := CloneRegisterImpl(i)
 	if tmp != nil {
@@ -1191,9 +1189,7 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	var temp RegisterImpl
 	key := common.BytesToHash(preAddress[:])
 	data := state.GetPOWState(preAddress, key)
-	//fmt.Println("load data", data)
 	hash := RlpHash(data)
-	//fmt.Println("load hash", hash)
 	if cc, ok := IC.Cache.Get(hash); ok {
 		register := cc.(*RegisterImpl)
 		temp = *(CloneRegisterImpl(register))
@@ -1202,7 +1198,6 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 			log.Error("Invalid RegisterImpl entry RLP", "err", err)
 			return errors.New(fmt.Sprintf("Invalid RegisterImpl entry RLP %s", err.Error()))
 		}
-		//fmt.Println("load Impl", temp)
 		tmp := CloneRegisterImpl(&temp)
 		if tmp != nil {
 			IC.Cache.Add(hash, tmp)
@@ -1410,4 +1405,50 @@ func GetCurrentEpochID(evm *EVM) (uint64, error) {
 		return 0, err
 	}
 	return register.getCurrentEpoch(), nil
+}
+
+type extRegisterImpl struct {
+	Accounts   []Register
+	CurEpochID uint64
+	Array      []uint64
+	LastReward uint64
+}
+
+func (i *RegisterImpl) DecodeRLP(s *rlp.Stream) error {
+	var ei extRegisterImpl
+	if err := s.Decode(&ei); err != nil {
+		return err
+	}
+	accounts := make(map[uint64]Register)
+	for i, account := range ei.Accounts {
+		accounts[ei.Array[i]] = account
+	}
+
+	i.curEpochID, i.accounts, i.lastReward = ei.CurEpochID, accounts, ei.LastReward
+	return nil
+}
+
+// EncodeRLP serializes b into the abeychain RLP ImpawnImpl format.
+func (i *RegisterImpl) EncodeRLP(w io.Writer) error {
+	var accounts []Register
+	var order []uint64
+	for i, _ := range i.accounts {
+		order = append(order, i)
+	}
+	for m := 0; m < len(order)-1; m++ {
+		for n := 0; n < len(order)-1-m; n++ {
+			if order[n] > order[n+1] {
+				order[n], order[n+1] = order[n+1], order[n]
+			}
+		}
+	}
+	for _, epoch := range order {
+		accounts = append(accounts, i.accounts[epoch])
+	}
+	return rlp.Encode(w, extRegisterImpl{
+		CurEpochID: i.curEpochID,
+		Accounts:   accounts,
+		Array:      order,
+		LastReward: i.lastReward,
+	})
 }

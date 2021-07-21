@@ -311,7 +311,7 @@ func TestStateDB(t *testing.T) {
 	}
 	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	reg := NewRegisterImpl()
-	reg.curEpochID = 1
+	reg.curEpochID = 11223
 	if err := reg.Save(statedb, params2.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
@@ -319,5 +319,19 @@ func TestStateDB(t *testing.T) {
 	if err := reg.Load(statedb, params2.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
+
+	fmt.Println("------------------------------")
+	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	hs := NewHeaderStore()
+	hs.epoch2reward[11233] = big.NewInt(11233)
+	if err := hs.Store(statedb, params2.RelayerAddress); err != nil {
+		log.Crit("store failed, ", "err", err)
+	}
+	hs.epoch2reward[2] = big.NewInt(2)
+	if err := hs.Load(statedb, params2.RelayerAddress); err != nil {
+		log.Crit("store failed, ", "err", err)
+	}
 	fmt.Println(reg)
+	fmt.Println(hs)
+	fmt.Println(rlp.EncodeToBytes(hs))
 }

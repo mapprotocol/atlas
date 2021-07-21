@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/params"
 	"golang.org/x/crypto/sha3"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 )
 
@@ -73,7 +72,7 @@ func (e *RewardInfo) ToJson() map[string]interface{} {
 	item["Register"] = (*hexutil.Big)(e.Register)
 	return item
 }
-func FetchOne(sas []*SARewardInfos, addr common.Address) []*RewardInfo {
+func FetchOne(sas []*RewardInfos, addr common.Address) []*RewardInfo {
 	items := make([]*RewardInfo, 0, 0)
 	for _, val := range sas {
 		if len(val.Items) > 0 {
@@ -102,32 +101,32 @@ func mergeRewardInfos(items1, itmes2 []*RewardInfo) []*RewardInfo {
 	return items1
 }
 
-type SARewardInfos struct {
+type RewardInfos struct {
 	Items []*RewardInfo `json:"Items"`
 }
 
-func (s *SARewardInfos) clone() *SARewardInfos {
-	var res SARewardInfos
+func (s *RewardInfos) clone() *RewardInfos {
+	var res RewardInfos
 	for _, v := range s.Items {
 		res.Items = append(res.Items, v.clone())
 	}
 	return &res
 }
-func (s *SARewardInfos) getSaAddress() common.Address {
+func (s *RewardInfos) getSaAddress() common.Address {
 	if len(s.Items) > 0 {
 		return s.Items[0].Address
 	}
 	return common.Address{}
 }
 
-func (s *SARewardInfos) String() string {
+func (s *RewardInfos) String() string {
 	var ss string
 	for _, v := range s.Items {
 		ss += v.String()
 	}
 	return ss
 }
-func (s *SARewardInfos) StringToToken() map[string]interface{} {
+func (s *RewardInfos) StringToToken() map[string]interface{} {
 	ss := make([]map[string]interface{}, 0, 0)
 	for _, v := range s.Items {
 		ss = append(ss, v.ToJson())
@@ -201,7 +200,7 @@ func ToBalanceInfos(items map[common.Address]*BalanceInfo) []*BalanceInfo {
 	return infos
 }
 
-func NewChainReward(height, tt uint64, coin *RewardInfo, fruits []*RewardInfo, relayer []*SARewardInfos) *ChainReward {
+func NewChainReward(height, tt uint64, coin *RewardInfo, fruits []*RewardInfo, relayer []*RewardInfos) *ChainReward {
 	return &ChainReward{
 		Height:   height,
 		St:       tt,
@@ -218,15 +217,15 @@ func ToRewardInfos1(items map[common.Address]*big.Int) []*RewardInfo {
 	}
 	return infos
 }
-func ToRewardInfos2(items map[common.Address]*big.Int) []*SARewardInfos {
-	infos := make([]*SARewardInfos, 0, 0)
+func ToRewardInfos2(items map[common.Address]*big.Int) []*RewardInfos {
+	infos := make([]*RewardInfos, 0, 0)
 	for k, v := range items {
 		items := []*RewardInfo{&RewardInfo{
 			Address: k,
 			Amount:  new(big.Int).Set(v),
 		}}
 
-		infos = append(infos, &SARewardInfos{
+		infos = append(infos, &RewardInfos{
 			Items: items,
 		})
 	}

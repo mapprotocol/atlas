@@ -2,7 +2,6 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -25,7 +24,6 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 		return nil, errors.New("execution reverted")
 	}
 	data := input[4:]
-	fmt.Println("use contract function:", method.Name)
 	switch method.Name {
 	case "register":
 		ret, err = register(evm, contract, data)
@@ -266,7 +264,6 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 
 //query your account is registered or not, is relayer or not
 func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-
 	method, _ := relayerABI.Methods["getRelayer"]
 	output, err := method.Inputs.Unpack(input)
 	args := struct {
@@ -274,7 +271,6 @@ func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 	}{
 		output[0].(common.Address),
 	}
-	//RegisterAccount->relayers
 	register := NewRegisterImpl()
 	err = register.Load(evm.StateDB, params.RelayerAddress)
 	if err != nil {
