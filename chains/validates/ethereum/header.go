@@ -34,6 +34,9 @@ func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 				parentHash.Bytes()[:4], i, chain[i].Number, hash.Bytes()[:4], chain[i].ParentHash[:4])
 		}
 	}
+	if chain[0].Number.Cmp(big.NewInt(1)) == 0 {
+		chainsdb.Genesis(chain[0].Genesis(), chains.ChainTypeETH)
+	}
 
 	abort, results := v.VerifyHeaders(chain)
 	defer close(abort)

@@ -126,7 +126,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	chainType, err := chains.ChainNameToChainType(args.To)
+	chainType, err := chains.ChainNameToChainType(args.From)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,4 +28,10 @@ type Header struct {
 
 func (eh *Header) Hash() common.Hash {
 	return rlpHash(eh)
+}
+
+func (eh *Header) Genesis() *Header {
+	genesis := &Header{}
+	_ = json.Unmarshal([]byte(GenesisJSON), genesis)
+	return genesis
 }
