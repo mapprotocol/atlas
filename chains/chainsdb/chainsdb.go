@@ -21,7 +21,7 @@ import (
 )
 
 var error01 = errors.New("no storedb")
-
+var error02 = errors.New("no chaindb")
 var (
 	storeMgr *HeaderChainStore
 )
@@ -31,7 +31,7 @@ func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
 		return nil, error01
 	}
 	if storeMgr.chainDb == nil {
-		return nil, error01
+		return nil, error02
 	}
 	storeMgr.currentChainType = chainType
 	return storeMgr, nil
@@ -52,7 +52,7 @@ func OpenDatabase(file string, cache, handles int) (ethdb.Database, error) {
 	return rawdb.NewLevelDBDatabase(file, 10, 10, "", false)
 }
 
-func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) {
+func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) *HeaderChainStore {
 	path := node.DefaultDataDir()
 	if ctx.GlobalIsSet(utils.DataDirFlag.Name) {
 		path = ctx.GlobalString(utils.DataDirFlag.Name)
@@ -63,6 +63,7 @@ func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) {
 		currentChainType: DefaultChainType,
 	}
 	storeMgr = db
+	return storeMgr
 }
 
 func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
@@ -424,6 +425,10 @@ func (hc *HeaderChainStore) ReadFistBlock(number uint64) common.Hash {
 }
 
 func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
+	if header.Number.Cmp(big.NewInt(0)) != 0 {
+		log.Error("wrong genesis!")
+		return
+	}
 	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
 	rawdb.WriteReceiptsChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), nil, chainType)
 	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
