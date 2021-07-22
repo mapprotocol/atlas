@@ -20,6 +20,19 @@ const (
 
 type Validate struct{}
 
+func (v *Validate) GetCurrentHeaderNumber(chain string) (uint64, error) {
+	chainType, err := chains.ChainNameToChainType(chain)
+	if err != nil {
+		return 0, err
+	}
+
+	store, err := chainsdb.GetStoreMgr(chainType)
+	if err != nil {
+		return 0, err
+	}
+	return store.CurrentHeaderNumber(), nil
+}
+
 func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 1; i < len(chain); i++ {
@@ -34,7 +47,17 @@ func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 				parentHash.Bytes()[:4], i, chain[i].Number, hash.Bytes()[:4], chain[i].ParentHash[:4])
 		}
 	}
-	if chain[0].Number.Cmp(big.NewInt(1)) == 0 {
+
+	firstNumber := chain[0].Number
+	currentNumber, err := v.GetCurrentHeaderNumber(chains.ChainNameETH)
+	if err != nil {
+		return 0, err
+	}
+	if firstNumber.Uint64() > currentNumber+1 {
+		return 0, fmt.Errorf("non contiguous insert, current number: %d", currentNumber)
+	}
+
+	if firstNumber.Cmp(big.NewInt(1)) == 0 {
 		chainsdb.Genesis(chain[0].Genesis(), chains.ChainTypeETH)
 	}
 

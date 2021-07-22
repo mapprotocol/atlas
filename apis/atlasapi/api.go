@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/processor"
 	"math/big"
 	"strings"
 	"time"
@@ -40,9 +39,11 @@ import (
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/accounts/scwallet"
+	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
 	"github.com/mapprotocol/atlas/consensus/clique"
 	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -2149,5 +2150,5 @@ func NewPublicHeaderStoreAPI(b Backend) *PublicHeaderStoreAPI {
 }
 
 func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chain string) (uint64, error) {
-	return vm.GetCurrentHeaderNumber(chain)
+	return new(ve.Validate).GetCurrentHeaderNumber(chain)
 }

@@ -10,9 +10,14 @@ const (
 	ChainTypeETH rawdb.ChainType = 1001
 )
 
+const (
+	ChainNameMAP = "MAP"
+	ChainNameETH = "ETH"
+)
+
 var name2type = map[string]rawdb.ChainType{
-	"MAP": ChainTypeMAP,
-	"ETH": ChainTypeETH,
+	ChainNameMAP: ChainTypeMAP,
+	ChainNameETH: ChainTypeETH,
 }
 
 func ChainNameToChainType(chain string) (rawdb.ChainType, error) {

@@ -156,22 +156,10 @@ func currentHeaderNumber(evm *EVM, contract *Contract, input []byte) (ret []byte
 		return nil, err
 	}
 
-	number, err := GetCurrentHeaderNumber(args.Chain)
+	v := new(ve.Validate)
+	number, err := v.GetCurrentHeaderNumber(args.Chain)
 	if err != nil {
 		return nil, err
 	}
 	return method.Outputs.Pack(new(big.Int).SetUint64(number))
-}
-
-func GetCurrentHeaderNumber(chain string) (uint64, error) {
-	chainType, err := chains.ChainNameToChainType(chain)
-	if err != nil {
-		return 0, err
-	}
-
-	store, err := chainsdb.GetStoreMgr(chainType)
-	if err != nil {
-		return 0, err
-	}
-	return store.CurrentHeaderNumber(), nil
 }
