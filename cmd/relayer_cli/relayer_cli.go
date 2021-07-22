@@ -257,8 +257,7 @@ func PrintBalance(conn *ethclient.Client, from common.Address) {
 	balance2.SetString(balance.String())
 	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
 
-	lockBalance, err := conn.LockBalanceAt(context.Background(), from, nil)
-	fmt.Println("Your wallet valid balance is ", Value, "'eth ", " lock balance is ", lockBalance, "'eth ")
+	fmt.Println("Your wallet balance is ", Value, "'eth ")
 }
 
 func loadPrivate(ctx *cli.Context) {
@@ -395,6 +394,9 @@ func queryAccountBalance(conn *ethclient.Client) {
 	if err != nil {
 		printError("method CallContract error", err)
 	}
+
+	PrintBalance(conn, from)
+	fmt.Println()
 
 	method, _ := abiRelayer.Methods["getBalance"]
 	ret, err := method.Outputs.Unpack(output)

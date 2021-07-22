@@ -2,7 +2,6 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -159,20 +158,33 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		log.Error("contract load error", "error", err)
 		return nil, err
 	}
-
 	if evm.StateDB.GetLockedBalance(args.Addr).Cmp(args.Value) < 0 {
-		newRedeemValue := args.Value.Sub(args.Value, evm.StateDB.GetLockedBalance(args.Addr))
-		log.Info("unregister ", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
+		log.Error("register balance insufficient", "address", args.Value, "value", args.Value)
+		return nil, ErrInsufficientBalance
+	}
+
+	locked, _, unlocked, _, _ := register.GetBalance(args.Addr)
+	if locked == nil {
+		locked = big.NewInt(0)
+	}
+	if unlocked == nil {
+		unlocked = big.NewInt(0)
+	}
+	if locked.Cmp(args.Value) < 0 {
+
+		newRedeemValue := args.Value.Sub(args.Value, locked)
 		err = register.CancelAccount(evm.Context.BlockNumber.Uint64(), args.Addr, newRedeemValue)
+		log.Info("unregistered", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", newRedeemValue)
 		if err != nil {
-			log.Error("unregistered error", "address", args.Addr, "Value", args.Value, "err", err)
+			log.Error("unregistered error", "address", args.Addr, "Value", newRedeemValue, "err", err)
 			return nil, err
 		}
-		if evm.StateDB.GetLockedBalance(args.Addr).Cmp(big.NewInt(0)) > 0 {
-			log.Info("withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
+
+		if locked.Cmp(big.NewInt(0)) > 0 {
+			log.Info("withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", locked)
 			err = register.RedeemAccount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
 			if err != nil {
-				log.Error("withdraw error", "address", args.Addr, "Value", args.Value, "err", err)
+				log.Error("withdraw error", "address", args.Addr, "Value", locked, "err", err)
 			}
 		}
 
@@ -181,15 +193,15 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 			log.Error("register save state error", "error", err)
 			return nil, err
 		}
-		subLockedBalance(evm.StateDB, args.Addr, args.Value)
+		subLockedBalance(evm.StateDB, args.Addr, locked)
 
 		event := relayerABI.Events["Withdraw"]
-		logData, err := event.Inputs.Pack(args.Addr, args.Value)
+		logData, err := event.Inputs.Pack(args.Addr, locked)
 		if err != nil {
 			log.Error("Pack register log error", "error", err)
 			return nil, err
 		}
-		log.Info("append log: ", logData)
+		log.Info("withdraw log: ", logData)
 		return nil, nil
 	}
 
@@ -197,7 +209,6 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	err = register.RedeemAccount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
 	if err != nil {
 		log.Error("register withdraw error", "address", args.Addr, "Value", args.Value, "err", err)
-		return nil, err
 	}
 
 	err = register.Save(evm.StateDB, params.RelayerAddress)
@@ -289,8 +300,7 @@ func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 			}
 		}
 	}
-	we, e := HistoryWorkEfficiency(evm.StateDB, register.getCurrentEpoch(), args.register)
-	fmt.Println("WorkEfficiency", we, "err", e)
+
 	_, h := register.GetCurrentEpochInfo()
 	epoch := new(big.Int).SetUint64(h)
 	ret, err = method.Outputs.Pack(acc, rel, epoch)

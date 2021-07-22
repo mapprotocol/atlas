@@ -807,7 +807,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 	case ctx.GlobalIsSet(BootnodesFlag.Name):
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(TestnetFlag.Name):
-		urls = params.RopstenBootnodes
+		urls = params2.TestnetBootnodes
 	case cfg.BootstrapNodes != nil || ctx.GlobalBool(SingleFlag.Name):
 		return // already set, don't apply defaults.
 	}
@@ -1687,7 +1687,7 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 	if cfg.SyncMode == downloader.LightSync {
 		protocol = "les"
 	}
-	if url := params.KnownDNSNetwork(genesis, protocol); url != "" {
+	if url := params2.KnownDNSNetwork(genesis, protocol); url != "" {
 		cfg.EthDiscoveryURLs = []string{url}
 		cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
 	}

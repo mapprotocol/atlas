@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
 )
@@ -39,7 +40,7 @@ func withdraw(ctx *cli.Context) error {
 	loadPrivate(ctx)
 	conn, url := dialConn(ctx)
 	printBaseInfo(conn, url)
-	PrintBalance(conn, from)
+	//PrintBalance(conn, from)
 
 	value := ethToWei(ctx, false)
 
@@ -48,7 +49,8 @@ func withdraw(ctx *cli.Context) error {
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 
 	getResult(conn, txHash, true)
-	PrintBalance(conn, from)
+	fmt.Println()
+	queryAccountBalance(conn)
 	return nil
 }
 
