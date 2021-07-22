@@ -429,6 +429,7 @@ func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
 		log.Error("wrong genesis!")
 		return
 	}
+	rawdb.WriteHeaderChains(storeMgr.chainDb, header, storeMgr.currentChainType)
 	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
 	rawdb.WriteReceiptsChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), nil, chainType)
 	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
@@ -436,4 +437,5 @@ func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
 	rawdb.WriteHeadFastBlockHashChains(storeMgr.chainDb, header.Hash(), chainType)
 	rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
 	rawdb.WriteChainConfigChains(storeMgr.chainDb, header.Hash(), (&core.Genesis{}).Config, chainType)
+
 }
