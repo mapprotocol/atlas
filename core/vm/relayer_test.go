@@ -191,7 +191,7 @@ func TestRegisterDoElections(t *testing.T) {
 	fmt.Println(" epoch 3 ", GetEpochFromID(3))
 	fmt.Println("------------------ready epoch----------------------")
 	fmt.Printf("\n")
-	var testacc common.Address
+	//var testacc common.Address
 	// register accounts in epoch 1
 	for i := uint64(0); i < 5; i++ {
 		value := big.NewInt(100)
@@ -201,26 +201,26 @@ func TestRegisterDoElections(t *testing.T) {
 		if i%2 == 0 {
 			amount := new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18))
 			impl.InsertAccount2(0, from, pub, amount, big.NewInt(50), true)
-			testacc = from
+			//testacc = from
 		} else {
 			impl.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
 		}
 	}
 	fmt.Println("account number:", len(impl.accounts[1]), " all account:", impl.accounts[1])
 	//used to redeem
-	v1, v2, v3, v4, v5 := impl.GetBalance(testacc)
-	fmt.Println("insert Balance", v1, v2, v3, v4, v5)
-	impl.CancelAccount(100, from, big.NewInt(10))
-	addLockedBalance(statedb, from, new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18)))
-	v1, v2, v3, v4, v5 = impl.GetBalance(testacc)
-	fmt.Println("cancel Balance", v1, v2, v3, v4, v5)
+	//v1, v2, v3, v4, v5 := impl.GetBalance(testacc)
+	//fmt.Println("insert Balance", v1, v2, v3, v4, v5)
+	//impl.CancelAccount(100, from, big.NewInt(10))
+	//addLockedBalance(statedb, from, new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18)))
+	//v1, v2, v3, v4, v5 = impl.GetBalance(testacc)
+	//fmt.Println("cancel Balance", v1, v2, v3, v4, v5)
 
 	//relayers election
 	_, err = impl.DoElections(statedb, 1, 0)
 	if err != nil {
 		fmt.Println("error : ", err)
 	}
-	fmt.Println("relayer number:", len(impl.getElections2(1)))
+	fmt.Println("relayer number:", len(impl.getElections2(1)), " all relayer: ", impl.getElections2(1))
 	err = impl.Shift(1, 0)
 
 	fmt.Println("------------------epoch 1----------------------")
@@ -245,7 +245,7 @@ func TestRegisterDoElections(t *testing.T) {
 		fmt.Println("error : ", err)
 	}
 	fmt.Println("add relayer:", len(relayer), ", qurry relayer:", len(impl.getElections2(1)))
-	fmt.Println("epoch2 relayer: ", len(impl.getElections2(2)))
+	fmt.Println("epoch2 relayer: ", len(impl.getElections2(1)), " all relayer: ", impl.getElections2(1))
 	fmt.Println()
 	err = impl.Shift(2, 0)
 
@@ -265,21 +265,21 @@ func TestRegisterDoElections(t *testing.T) {
 	if err != nil {
 		fmt.Println("error : ", err)
 	}
+	fmt.Println("epoch3 relayer: ", len(impl.getElections2(2)), " all relayer: ", impl.getElections2(2))
 	err = impl.Shift(3, 0)
 	fmt.Println(" relayer number:", len(relayer), " getElection 1:", len(impl.getElections2(1)), " getElection 2:", len(impl.getElections2(2)))
-
 	//Redeem test
-	fmt.Println()
-	fmt.Println("--------------------redeem test-------------------------------")
-	c2 := impl.GetAllCancelableAsset(testacc)[testacc]
-	fmt.Println("cancelable", c2)
-	err = impl.RedeemAccount(21000, testacc, big.NewInt(10))
-	if err != nil {
-		t.Fatal(err)
-	}
-	subLockedBalance(statedb, from, big.NewInt(10))
-	v1, v2, v3, v4, v5 = impl.GetBalance(testacc)
-	fmt.Println("after redeem", v1, v2, v3, v4, v5)
+	//fmt.Println()
+	//fmt.Println("--------------------redeem test-------------------------------")
+	//c2 := impl.GetAllCancelableAsset(testacc)[testacc]
+	//fmt.Println("cancelable", c2)
+	//err = impl.RedeemAccount(21000, testacc, big.NewInt(10))
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//subLockedBalance(statedb, from, big.NewInt(10))
+	//v1, v2, v3, v4, v5 = impl.GetBalance(testacc)
+	//fmt.Println("after redeem", v1, v2, v3, v4, v5)
 }
 
 func TestGetBalance(t *testing.T) {

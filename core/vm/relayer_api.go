@@ -853,7 +853,12 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 		for _, v := range val {
 			validRegister := v.getValidRegisterOnly(height)
 			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
-			if validRegister.Cmp(params.ElectionMinLimitForRegister) < 0 || num < params.MinWorkEfficiency {
+			if v.Relayer == true && num < params.MinWorkEfficiency {
+				v.Relayer = false
+				fmt.Println("num", num)
+				continue
+			}
+			if validRegister.Cmp(params.ElectionMinLimitForRegister) < 0 {
 				continue
 			}
 			v.Relayer = true
