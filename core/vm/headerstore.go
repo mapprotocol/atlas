@@ -2,6 +2,8 @@ package vm
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -42,7 +44,7 @@ var SyncGas = map[string]uint64{
 func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	method, err := abiHeaderStore.MethodById(input)
 	if err != nil {
-		log.Error("No method found")
+		log.Error(fmt.Sprintf("header store contract method(%s) not found", method))
 		return nil, ErrExecutionReverted
 	}
 
@@ -66,6 +68,11 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 }
 
 func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	// check if the relayer is registered in the current epoch
+	if !IsInCurrentEpoch(evm.StateDB, contract.CallerAddress) {
+		return nil, errors.New("invalid work epoch, please register first")
+	}
+
 	// decode
 	args := struct {
 		From    string
