@@ -10,6 +10,7 @@ import (
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -31,6 +32,19 @@ func (v *Validate) GetCurrentHeaderNumber(chain string) (uint64, error) {
 		return 0, err
 	}
 	return store.CurrentHeaderNumber(), nil
+}
+
+func (v *Validate) GetHashByNumber(chain string, number uint64) (common.Hash, error) {
+	chainType, err := chains.ChainNameToChainType(chain)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	store, err := chainsdb.GetStoreMgr(chainType)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return store.ReadCanonicalHash(number), nil
 }
 
 func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {

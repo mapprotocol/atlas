@@ -2152,3 +2152,7 @@ func NewPublicHeaderStoreAPI(b Backend) *PublicHeaderStoreAPI {
 func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chain string) (uint64, error) {
 	return new(ve.Validate).GetCurrentHeaderNumber(chain)
 }
+
+func (p *PublicHeaderStoreAPI) GetHashByNumber(chain string, number uint64) (common.Hash, error) {
+	return new(ve.Validate).GetHashByNumber(chain, number)
+}
