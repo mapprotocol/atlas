@@ -287,10 +287,6 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if err != nil {
 		log.Error("ToBlock DoElections", "error", err)
 	}
-	err = register.Shift(1, 0)
-	if err != nil {
-		log.Error("ToBlock Shift", "error", err)
-	}
 	err = register.Save(statedb, params2.RelayerAddress)
 	if err != nil {
 		log.Error("ToBlock IMPL Save", "error", err)

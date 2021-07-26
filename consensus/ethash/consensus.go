@@ -625,27 +625,6 @@ func LogPrint(info string, addr common.Address, amount *big.Int) {
 }
 
 func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) error {
-	next := new(big.Int).Add(number, big1)
-	first := vm.GetFirstEpoch()
-	if first.BeginHeight == next.Uint64() { //generate relayers after first block
-		i := vm.NewRegisterImpl()
-		if err := i.Load(state, params2.RelayerAddress); err != nil {
-			return err
-		}
-		if es, err := i.DoElections(state, first.EpochID, next.Uint64()); err != nil {
-			return err
-		} else {
-			log.Info("init in first forked, Do pre election", "height", next, "epoch:", first.EpochID, "len:", len(es), "err", err)
-		}
-		if err := i.Shift(first.EpochID, 0); err != nil {
-			return err
-		}
-		if err := i.Save(state, params2.RelayerAddress); err != nil {
-			return err
-		}
-		log.Info("init in first forked,", "height", next, "epoch:", first.EpochID)
-	}
-
 	epoch := vm.GetEpochFromHeight(number.Uint64())
 	if number.Uint64() == epoch.EndHeight-params2.ElectionPoint { //generate relayers in 100 block before end of epoch
 		i := vm.NewRegisterImpl()
