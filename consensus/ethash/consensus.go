@@ -652,7 +652,7 @@ func (ethash *Ethash) finalizeRelayers(state *state.StateDB, number *big.Int) er
 		if err := i.Load(state, params2.RelayerAddress); err != nil {
 			return err
 		}
-		if es, err := i.DoElections(state, epoch.EpochID+1, number.Uint64()); err != nil {
+		if es, err := i.DoElections(state, epoch.EpochID, number.Uint64()); err != nil {
 			return err
 		} else {
 			log.Info("Do validators election", "height", number, "epoch:", epoch.EpochID+1, "len:", len(es), "err", err)
