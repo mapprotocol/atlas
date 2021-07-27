@@ -48,15 +48,10 @@ type HeaderStoreCache struct {
 //	abnormalMsg map[common.Address]map[uint64]string
 //}
 
-type AbnormalInfo struct {
-	Height *big.Int
-	Msg    string
-}
-
 type RelayerSyncInfo struct {
-	Relayer        common.Address
-	Times          uint64
-	InvalidHeaders []*AbnormalInfo
+	Relayer common.Address
+	Times   uint64
+	Reward  *big.Int
 }
 
 type HeaderStore struct {
@@ -177,71 +172,33 @@ func (h *HeaderStore) IncrReceiveTimes(height uint64) {
 	h.height2receiveTimes[height]++
 }
 
-func (h *HeaderStore) StoreAbnormalMsg(relayer common.Address, height *big.Int, msg string) {
-	epoch := GetEpochFromHeight(height.Uint64())
-	// epoch does not exist
-	if _, ok := h.epoch2syncInfo[epoch.EpochID]; !ok {
-		h.epoch2syncInfo[epoch.EpochID] = append(h.epoch2syncInfo[epoch.EpochID], &RelayerSyncInfo{
-			Relayer: relayer,
-			Times:   0,
-			InvalidHeaders: []*AbnormalInfo{
-				{
-					Height: height,
-					Msg:    msg,
-				},
-			},
-		})
-		return
-	}
-
-	relayerExist := false
-	for i, rsi := range h.epoch2syncInfo[epoch.EpochID] {
+func (h *HeaderStore) StoreReward(epochID uint64, relayer common.Address, reward *big.Int) {
+	for _, rsi := range h.epoch2syncInfo[epochID] {
 		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
-			h.epoch2syncInfo[epoch.EpochID][i].InvalidHeaders = append(
-				h.epoch2syncInfo[epoch.EpochID][i].InvalidHeaders,
-				&AbnormalInfo{
-					Height: height,
-					Msg:    msg,
-				})
-			relayerExist = true
+			if rsi.Reward == nil {
+				rsi.Reward = new(big.Int)
+			}
+			rsi.Reward = reward
 		}
-	}
-	// relayer does not exist
-	if !relayerExist {
-		h.epoch2syncInfo[epoch.EpochID] = append(h.epoch2syncInfo[epoch.EpochID], &RelayerSyncInfo{
-			Relayer: relayer,
-			Times:   0,
-			InvalidHeaders: []*AbnormalInfo{
-				{
-					Height: height,
-					Msg:    msg,
-				},
-			},
-		})
 	}
 }
 
-func (h *HeaderStore) LoadAbnormalMsg(relayer common.Address, height *big.Int) string {
-	epoch := GetEpochFromHeight(height.Uint64())
-	for _, rsi := range h.epoch2syncInfo[epoch.EpochID] {
+func (h *HeaderStore) LoadReward(epochID uint64, relayer common.Address) *big.Int {
+	for _, rsi := range h.epoch2syncInfo[epochID] {
 		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
-			for _, h := range rsi.InvalidHeaders {
-				if h.Height.Cmp(height) == 0 {
-					return h.Msg
-				}
-			}
+			return rsi.Reward
 		}
 	}
-	return ""
+	return big.NewInt(0)
 }
 
 func (h *HeaderStore) AddSyncTimes(epochID, amount uint64, relayer common.Address) {
 	// epoch does not exist
 	if _, ok := h.epoch2syncInfo[epochID]; !ok {
 		h.epoch2syncInfo[epochID] = append(h.epoch2syncInfo[epochID], &RelayerSyncInfo{
-			Relayer:        relayer,
-			Times:          amount,
-			InvalidHeaders: []*AbnormalInfo{},
+			Relayer: relayer,
+			Times:   amount,
+			Reward:  new(big.Int),
 		})
 		return
 	}
@@ -257,9 +214,9 @@ func (h *HeaderStore) AddSyncTimes(epochID, amount uint64, relayer common.Addres
 	// relayer does not exist
 	if !relayerExist {
 		h.epoch2syncInfo[epochID] = append(h.epoch2syncInfo[epochID], &RelayerSyncInfo{
-			Relayer:        relayer,
-			Times:          amount,
-			InvalidHeaders: []*AbnormalInfo{},
+			Relayer: relayer,
+			Times:   amount,
+			Reward:  new(big.Int),
 		})
 	}
 }

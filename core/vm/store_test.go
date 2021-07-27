@@ -25,12 +25,6 @@ func getHeaderStore() *HeaderStore {
 				{
 					Relayer: common.HexToAddress("0x3f98da321de0a"),
 					Times:   862,
-					InvalidHeaders: []*AbnormalInfo{
-						{
-							Height: big.NewInt(674012),
-							Msg:    "sync times limit",
-						},
-					},
 				},
 			},
 		},
@@ -46,12 +40,6 @@ func modifyHeaderStore(hs *HeaderStore) *HeaderStore {
 	hs.epoch2syncInfo[1] = append(hs.epoch2syncInfo[1], &RelayerSyncInfo{
 		Relayer: common.HexToAddress("0x3f98da321de0a"),
 		Times:   66666,
-		InvalidHeaders: []*AbnormalInfo{
-			{
-				Height: big.NewInt(5555555555),
-				Msg:    "invalid relayer",
-			},
-		},
 	})
 
 	return hs
@@ -307,130 +295,202 @@ func TestHeaderStore_IncrReceiveTimes(t *testing.T) {
 	}
 }
 
-func TestHeaderStore_StoreAbnormalMsg(t *testing.T) {
+func TestHeaderStore_StoreReward(t *testing.T) {
 	type args struct {
+		epochID uint64
 		relayer common.Address
-		height  *big.Int
-		msg     string
-	}
-	tests := []struct {
-		name    string
-		hs      *HeaderStore
-		args    args
-		before  func(hs *HeaderStore)
-		after   func(hs *HeaderStore)
-		wantMsg string
-	}{
-		{
-			name: "epoch-not-exist",
-			hs:   NewHeaderStore(),
-			args: args{
-				relayer: common.HexToAddress("0xae90c87d2e80"),
-				height:  big.NewInt(468910),
-				msg:     syncLimit,
-			},
-			before: func(hs *HeaderStore) {},
-			after: func(hs *HeaderStore) {
-				epoch := GetEpochFromHeight(468918)
-				for _, ih := range hs.epoch2syncInfo[epoch.EpochID][0].InvalidHeaders {
-					fmt.Printf("================================== %#v\n", ih)
-				}
-			},
-			wantMsg: syncLimit,
-		},
-		{
-			name: "relayer-not-exist",
-			hs:   NewHeaderStore(),
-			args: args{
-				relayer: common.HexToAddress("0xae90c87d2e80"),
-				height:  big.NewInt(468910),
-				msg:     syncLimit,
-			},
-			before: func(hs *HeaderStore) {
-				hs.StoreAbnormalMsg(common.HexToAddress("0xaaef009933fadd"), big.NewInt(468912), syncLimit)
-			},
-			after: func(hs *HeaderStore) {
-				epoch := GetEpochFromHeight(468910)
-				for _, ih := range hs.epoch2syncInfo[epoch.EpochID][0].InvalidHeaders {
-					fmt.Printf("================================== %#v\n", ih)
-				}
-
-			},
-			wantMsg: syncLimit,
-		},
-		{
-			name: "epoch-relayer-exist",
-			hs:   NewHeaderStore(),
-			args: args{
-				relayer: common.HexToAddress("0xae90c87d2e80"),
-				height:  big.NewInt(468910),
-				msg:     syncLimit,
-			},
-			before: func(hs *HeaderStore) {
-				hs.StoreAbnormalMsg(common.HexToAddress("0xae90c87d2e80"), big.NewInt(468912), syncLimit)
-			},
-			after: func(hs *HeaderStore) {
-				epoch := GetEpochFromHeight(468918)
-				for _, ih := range hs.epoch2syncInfo[epoch.EpochID][0].InvalidHeaders {
-					fmt.Printf("================================== %#v\n", ih)
-				}
-
-			},
-			wantMsg: syncLimit,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.before(tt.hs)
-			tt.hs.StoreAbnormalMsg(tt.args.relayer, tt.args.height, tt.args.msg)
-			tt.after(tt.hs)
-			if gotMsg := tt.hs.LoadAbnormalMsg(tt.args.relayer, tt.args.height); gotMsg != tt.wantMsg {
-				t.Errorf("LoadAbnormalMsg() = %v, wantMsg %v", gotMsg, tt.wantMsg)
-			}
-		})
-	}
-}
-
-func TestHeaderStore_LoadAbnormalMsg(t *testing.T) {
-	type args struct {
-		relayer common.Address
-		height  *big.Int
+		reward  *big.Int
 	}
 	tests := []struct {
 		name   string
 		hs     *HeaderStore
 		args   args
 		before func(hs *HeaderStore)
-		want   string
+		after  func(hs *HeaderStore)
+		want   *big.Int
 	}{
 		{
-			name: "exist",
+			name: "epoch-not-exist",
 			hs:   NewHeaderStore(),
 			args: args{
+				epochID: 1,
 				relayer: common.HexToAddress("0xae90c87d2e80"),
-				height:  big.NewInt(468912),
-			},
-			before: func(hs *HeaderStore) {
-				hs.StoreAbnormalMsg(common.HexToAddress("0xae90c87d2e80"), big.NewInt(468912), "invalid relayer")
-			},
-			want: "invalid relayer",
-		},
-		{
-			name: "not-exist",
-			hs:   NewHeaderStore(),
-			args: args{
-				relayer: common.HexToAddress("0xae90c87d2e98"),
-				height:  big.NewInt(468910),
+				reward:  big.NewInt(123456789),
 			},
 			before: func(hs *HeaderStore) {},
-			want:   "",
+			after:  func(hs *HeaderStore) {},
+			want:   big.NewInt(0),
+		},
+		{
+			name: "relayer-sync-info-is-nil",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = nil
+			},
+			after: func(hs *HeaderStore) {},
+			want:  big.NewInt(0),
+		},
+		{
+			name: "relayer-sync-info-is-zero-value",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = []*RelayerSyncInfo{}
+			},
+			after: func(hs *HeaderStore) {},
+			want:  big.NewInt(0),
+		},
+		{
+			name: "epoch-exist-reward-is-nil",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = []*RelayerSyncInfo{
+					{
+						Relayer: common.HexToAddress("0xae90c87d2e80"),
+						Times:   0,
+					},
+				}
+			},
+			after: func(hs *HeaderStore) {},
+			want:  big.NewInt(123456789),
+		},
+		{
+			name: "store-reward",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(2222222233333333),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = []*RelayerSyncInfo{
+					{
+						Relayer: common.HexToAddress("0xae90c87d2e80"),
+						Times:   0,
+						Reward:  new(big.Int),
+					},
+				}
+			},
+			after: func(hs *HeaderStore) {},
+			want:  big.NewInt(2222222233333333),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.before(tt.hs)
-			if got := tt.hs.LoadAbnormalMsg(tt.args.relayer, tt.args.height); got != tt.want {
-				t.Errorf("LoadAbnormalMsg() = %v, want %v", got, tt.want)
+
+			tt.hs.StoreReward(tt.args.epochID, tt.args.relayer, tt.args.reward)
+
+			if got := tt.hs.LoadReward(tt.args.epochID, tt.args.relayer); got.Cmp(tt.want) != 0 {
+				t.Errorf("LoadReward() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHeaderStore_LoadReward(t *testing.T) {
+	type args struct {
+		epochID uint64
+		relayer common.Address
+		reward  *big.Int
+	}
+	tests := []struct {
+		name   string
+		hs     *HeaderStore
+		args   args
+		before func(hs *HeaderStore)
+		want   *big.Int
+	}{
+		{
+			name: "epoch-not-exist",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {},
+			want:   big.NewInt(0),
+		},
+		{
+			name: "epoch-exist-reward-is-nil",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = []*RelayerSyncInfo{
+					{
+						Relayer: common.HexToAddress("0xae90c87d2e80"),
+						Times:   0,
+					},
+				}
+			},
+			want: big.NewInt(123456789),
+		},
+		{
+			name: "",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = []*RelayerSyncInfo{
+					{
+						Relayer: common.HexToAddress("0xae90c87d2e80"),
+						Times:   0,
+						Reward:  new(big.Int),
+					},
+				}
+			},
+			want: big.NewInt(123456789),
+		},
+		{
+			name: "load-reward",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 1,
+				relayer: common.HexToAddress("0xae90c87d2e80"),
+				reward:  big.NewInt(123456789),
+			},
+			before: func(hs *HeaderStore) {
+				hs.epoch2syncInfo[1] = []*RelayerSyncInfo{
+					{
+						Relayer: common.HexToAddress("0xae90c87d2e80"),
+						Times:   0,
+						Reward:  new(big.Int),
+					},
+				}
+			},
+			want: big.NewInt(123456789),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.before(tt.hs)
+
+			tt.hs.StoreReward(tt.args.epochID, tt.args.relayer, tt.args.reward)
+
+			if got := tt.hs.LoadReward(tt.args.epochID, tt.args.relayer); got.Cmp(tt.want) != 0 {
+				t.Errorf("LoadReward() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -481,9 +541,7 @@ func TestHeaderStore_AddSyncTimes(t *testing.T) {
 				amount:  200,
 				relayer: common.HexToAddress("0xae90c87d2e80"),
 			},
-			before: func(hs *HeaderStore) {
-				hs.StoreAbnormalMsg(common.HexToAddress("0xae90c87d2e80"), big.NewInt(468912), syncLimit)
-			},
+			before:    func(hs *HeaderStore) {},
 			wantTimes: 200,
 		},
 	}
@@ -676,4 +734,11 @@ func TestHeaderStore_Load(t *testing.T) {
 			tt.after(tt.hs)
 		})
 	}
+}
+
+func TestNew(t *testing.T) {
+	//hs := NewHeaderStore()
+	//fmt.Printf("============================== %#v\n", hs)
+	//fmt.Println("============================== ", hs.epoch2reward[0] == nil)
+	//fmt.Println("============================== ", hs.epoch2syncInfo[0] == nil)
 }

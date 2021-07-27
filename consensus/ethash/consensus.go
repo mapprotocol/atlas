@@ -722,6 +722,7 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 	if height == epoch.EndHeight {
 		rs := hs.CalcReward(epoch.EpochID, hs.GetEpochReward(epoch.EpochID))
 		for addr, r := range rs {
+			hs.StoreReward(epoch.EpochID, addr, r)
 			state.AddBalance(addr, r)
 		}
 	}

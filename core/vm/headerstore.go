@@ -30,10 +30,6 @@ var (
 	abiHeaderStore, _ = abi.JSON(strings.NewReader(params.HeaderStoreABIJSON))
 )
 
-var (
-	syncLimit = "sync times limit exceeded"
-)
-
 // SyncGas defines all method gas
 var SyncGas = map[string]uint64{
 	Save:                0,
@@ -115,7 +111,6 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	var total uint64
 	for _, h := range hs {
 		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
-			headerStore.StoreAbnormalMsg(contract.CallerAddress, h.Number, syncLimit)
 			continue
 		}
 		total++

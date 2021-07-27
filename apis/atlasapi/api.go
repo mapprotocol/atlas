@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/accounts/keystore"
@@ -47,6 +48,7 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 	"github.com/tyler-smith/go-bip39"
 )
 
@@ -2155,4 +2157,21 @@ func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chain string) (uint64, error)
 
 func (p *PublicHeaderStoreAPI) GetHashByNumber(chain string, number uint64) (common.Hash, error) {
 	return new(ve.Validate).GetHashByNumber(chain, number)
+}
+
+func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) (*big.Int, error) {
+	bn := rpc.LatestBlockNumber
+	statedb, _, err := p.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
+	if err != nil {
+		return nil, err
+	}
+	if statedb == nil {
+		return nil, errors.New("failed to get state by number")
+	}
+
+	hs := new(vm.HeaderStore)
+	if err := hs.Load(statedb, params2.HeaderStoreAddress); err != nil {
+		return nil, err
+	}
+	return hs.LoadReward(epochID, common.HexToAddress(relayer)), nil
 }
