@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mapprotocol/atlas/cmd/ethclient"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/mapprotocol/atlas/cmd/ethclient"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -48,6 +49,20 @@ var (
 		Usage: "Relayer bft key for BFT (no 0x prefix)",
 		Value: "",
 	}
+
+	relayerflags = []cli.Flag{
+		KeyFlag,
+		KeyStoreFlag,
+		RPCListenAddrFlag,
+		RPCPortFlag,
+		FeeFlag,
+	}
+	StoreCommand = cli.Command{
+		Name:   "store",
+		Usage:  "relayer to store ",
+		Action: MigrateFlags(save),
+		Flags:  relayerflags,
+	}
 )
 
 func init() {
@@ -70,7 +85,15 @@ func init() {
 		os.Exit(1)
 	}
 	// Add subcommands.
-	app.Commands = []cli.Command{}
+	app.Commands = []cli.Command{
+		StoreCommand,
+		SubmitAtDifferentEpochCommand,
+		SubmitMultipleTimesAtCurEpochCommand,
+		submissionOfDifferentAccountsCommand,
+		withdrawAtDifferentEpochCommand,
+		appendAtDifferentEpochCommand,
+		saveManyTimesCommand,
+	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
@@ -96,9 +119,8 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 }
 
 func start(ctx *cli.Context) error {
-	//register
-	conn := register(ctx)
-
+	conn := getConn(ctx)
+	register(ctx, conn, from)
 	syncloop(ctx, conn)
 	return nil
 }
@@ -115,7 +137,7 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 				printError("BlockNumber err")
 			}
 			//2. isrelayers
-			isrelayers := queryIsRegister(conn)
+			isrelayers := queryIsRegister(conn, from)
 			if !isrelayers {
 				printError("not Relayers")
 				time.Sleep(time.Second)
@@ -129,12 +151,9 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 			break
 		}
 		// 1.get current num
-		chainNum, err := getCurrentNumberRpc(conn, "ETH")
-		if err != nil {
-			printError("getCurrentNumberRpc err")
-		}
+		chainNum := getCurrentNumberAbi(conn, "ETH")
 		// 2. get chains
-		chains, _ := getChains(ctx, chainNum)
+		chains, _ := getChains(chainNum)
 		// 3.store
 		marshal, err2 := json.Marshal(chains)
 
@@ -142,12 +161,14 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 			printError("marshal err")
 		}
 		//ret, _ := rlp.EncodeToBytes(chains)
-		input := packInputStore("save", "ETH", "MAP", marshal)
+		input := packInputStore("save", "ETH", "ETH", marshal)
 		txHash := sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
-		ret2 := getResult(conn, txHash, true, false)
+		ret2 := getResult(conn, txHash, true, from)
 		if !ret2 {
 			printError("store err")
 			break
 		}
+		Append(conn, from, priKey)
+		withdraw(conn, from, priKey)
 	}
 }
