@@ -557,11 +557,6 @@ func TestHeaderStore_AddSyncTimes(t *testing.T) {
 }
 
 func TestHeaderStore_GetSortedRelayers(t *testing.T) {
-	type fields struct {
-		epoch2reward        map[uint64]*big.Int
-		height2receiveTimes map[uint64]uint64
-		epoch2syncInfo      map[uint64][]*RelayerSyncInfo
-	}
 	type args struct {
 		epochID uint64
 	}
@@ -734,11 +729,4 @@ func TestHeaderStore_Load(t *testing.T) {
 			tt.after(tt.hs)
 		})
 	}
-}
-
-func TestNew(t *testing.T) {
-	//hs := NewHeaderStore()
-	//fmt.Printf("============================== %#v\n", hs)
-	//fmt.Println("============================== ", hs.epoch2reward[0] == nil)
-	//fmt.Println("============================== ", hs.epoch2syncInfo[0] == nil)
 }
