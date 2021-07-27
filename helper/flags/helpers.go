@@ -17,10 +17,10 @@
 package flags
 
 import (
+	params2 "github.com/mapprotocol/atlas/params"
 	"os"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/params"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -146,7 +146,7 @@ func NewApp(gitCommit, gitDate, usage string) *cli.App {
 	app.Name = filepath.Base(os.Args[0])
 	app.Author = ""
 	app.Email = ""
-	app.Version = params.VersionWithCommit(gitCommit, gitDate)
+	app.Version = params2.VersionWithCommit(gitCommit, gitDate)
 	app.Usage = usage
 	return app
 }

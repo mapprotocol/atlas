@@ -47,7 +47,7 @@ import (
 
 var (
 	// Files that end up in the atlas*.zip archive.
-	gethArchiveFiles = []string{
+	atlasArchiveFiles = []string{
 		"COPYING",
 		executablePath("atlas"),
 	}
@@ -356,7 +356,7 @@ func doArchive(cmdline []string) {
 		alltools = "atlas-alltools-" + base + ext
 	)
 	maybeSkipArchive(env)
-	if err := build.WriteArchive(atlas, gethArchiveFiles); err != nil {
+	if err := build.WriteArchive(atlas, atlasArchiveFiles); err != nil {
 		log.Fatal(err)
 	}
 	if err := build.WriteArchive(alltools, allToolsArchiveFiles); err != nil {
@@ -540,9 +540,9 @@ func newDebMetadata(distro, author string, env build.Environment, t time.Time) d
 // on all executable packages.
 func (meta debMetadata) Name() string {
 	if isUnstableBuild(meta.Env) {
-		return "ethereum-unstable"
+		return "atlas-unstable"
 	}
-	return "ethereum"
+	return "atlas"
 }
 
 // VersionString returns the debian version of the packages.

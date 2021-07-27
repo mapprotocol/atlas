@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 	"os"
 	"runtime"
 	"strconv"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/mapprotocol/atlas/consensus/ethash"
-	"github.com/ethereum/go-ethereum/params"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -106,7 +106,7 @@ func makedag(ctx *cli.Context) error {
 
 func version(ctx *cli.Context) error {
 	fmt.Println(strings.Title(clientIdentifier))
-	fmt.Println("Version:", params.VersionWithMeta)
+	fmt.Println("Version:", params2.VersionWithMeta)
 	if gitCommit != "" {
 		fmt.Println("Git Commit:", gitCommit)
 	}

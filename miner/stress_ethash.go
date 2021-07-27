@@ -21,6 +21,7 @@ package main
 
 import (
 	"crypto/ecdsa"
+	params2 "github.com/mapprotocol/atlas/params"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/txsdetails"
 	"io/ioutil"
@@ -148,8 +149,8 @@ func makeMiner(genesis *chain.Genesis) (*node.Node, *eth.Ethereum, error) {
 	datadir, _ := ioutil.TempDir("", "")
 
 	config := &node.Config{
-		Name:    "geth",
-		Version: params.Version,
+		Name:    "atlas",
+		Version: params2.Version,
 		DataDir: datadir,
 		P2P: p2p.Config{
 			ListenAddr:  "0.0.0.0:0",

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"os"
 	"reflect"
@@ -29,7 +30,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/atlas/catalyst"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/mapprotocol/atlas/cmd/node"
@@ -101,7 +101,7 @@ func loadConfig(file string, cfg *atlasConfig) error {
 func defaultNodeConfig() node.Config {
 	cfg := node.DefaultConfig
 	cfg.Name = clientIdentifier
-	cfg.Version = params.VersionWithCommit(gitCommit, gitDate)
+	cfg.Version = params2.VersionWithCommit(gitCommit, gitDate)
 	cfg.HTTPModules = append(cfg.HTTPModules, "eth")
 	cfg.WSModules = append(cfg.WSModules, "eth")
 	cfg.IPCPath = "atlas.ipc"

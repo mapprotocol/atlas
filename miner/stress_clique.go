@@ -22,6 +22,7 @@ package main
 import (
 	"bytes"
 	"crypto/ecdsa"
+	params2 "github.com/mapprotocol/atlas/params"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/txsdetails"
 	"io/ioutil"
@@ -30,19 +31,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/mapprotocol/atlas/atlas"
-	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/miner"
-	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/accounts/keystore"
+	"github.com/mapprotocol/atlas/atlas"
+	"github.com/mapprotocol/atlas/atlas/downloader"
+	"github.com/mapprotocol/atlas/cmd/node"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/miner"
 )
 
 func main() {
@@ -171,8 +171,8 @@ func makeSealer(genesis *chain.Genesis) (*node.Node, *eth.Ethereum, error) {
 	datadir, _ := ioutil.TempDir("", "")
 
 	config := &node.Config{
-		Name:    "geth",
-		Version: params.Version,
+		Name:    "atlas",
+		Version: params2.Version,
 		DataDir: datadir,
 		P2P: p2p.Config{
 			ListenAddr:  "0.0.0.0:0",
