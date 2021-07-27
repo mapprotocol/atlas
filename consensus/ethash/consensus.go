@@ -724,6 +724,7 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		for addr, r := range rs {
 			hs.StoreReward(epoch.EpochID, addr, r)
 			state.AddBalance(addr, r)
+			log.Info("Give out rewards ", "relayer", addr, "reward", r)
 		}
 	}
 	if err := hs.Store(state, params2.HeaderStoreAddress); err != nil {

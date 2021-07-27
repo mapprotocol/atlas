@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -48,8 +49,17 @@ func (v *Validate) GetHashByNumber(chain string, number uint64) (common.Hash, er
 }
 
 func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
+	chainLength := len(chain)
+	if chainLength == 1 {
+		if chain[0].Number == nil || chain[0].Difficulty == nil {
+			return 0, errors.New("invalid header number or difficulty is nil")
+		}
+	}
 	// Do a sanity check that the provided chain is actually ordered and linked
-	for i := 1; i < len(chain); i++ {
+	for i := 1; i < chainLength; i++ {
+		if chain[i].Number == nil || chain[i].Difficulty == nil {
+			return 0, errors.New("invalid header number or difficulty is nil")
+		}
 		if chain[i].Number.Uint64() != chain[i-1].Number.Uint64()+1 {
 			hash := chain[i].Hash()
 			parentHash := chain[i-1].Hash()
