@@ -44,6 +44,7 @@ var (
 	RelayerAddress     common.Address = params2.RelayerAddress
 	HeaderStoreAddress common.Address = params2.HeaderStoreAddress
 	Base                              = new(big.Int).SetUint64(10000)
+	impawnValue        int64          = 100000
 )
 var (
 	contractQueryFailedErr        = errors.New("Contract query failed result ")
@@ -71,6 +72,12 @@ var (
 		Action: MigrateFlags(withdrawAtDifferentEpoch),
 		Flags:  relayerflags,
 	}
+	withdrawAccordingToDifferentBalanceCommand = cli.Command{
+		Name:   "withdrawAccordingToDifferentBalance",
+		Usage:  "withdrawAccordingToDifferentBalance ",
+		Action: MigrateFlags(withdrawAccordingToDifferentBalance),
+		Flags:  relayerflags,
+	}
 	appendAtDifferentEpochCommand = cli.Command{
 		Name:   "appendAtDifferentEpoch",
 		Usage:  "appendAtDifferentEpoch ",
@@ -80,11 +87,10 @@ var (
 )
 
 const (
-	datadirPrivateKey            = "key"
-	datadirDefaultKeyStore       = "keystore"
-	RegisterAmount               = 100000
-	RewardInterval               = 14
-	impawnValue            int64 = 100000
+	datadirPrivateKey      = "key"
+	datadirDefaultKeyStore = "keystore"
+	RegisterAmount         = 100000
+	RewardInterval         = 14
 )
 
 func getConn(ctx *cli.Context) *ethclient.Client {
@@ -100,7 +106,7 @@ func register(ctx *cli.Context, conn *ethclient.Client, from1 common.Address) {
 	PrintBalance(conn, from1)
 	value := ethToWei(false)
 	if impawnValue < RegisterAmount {
-		printError("Amount must bigger than ", RegisterAmount)
+		log.Fatal("Amount must bigger than ", RegisterAmount)
 	}
 	fee = ctx.GlobalUint64(FeeFlag.Name)
 	checkFee(new(big.Int).SetUint64(fee))
@@ -113,7 +119,7 @@ func register(ctx *cli.Context, conn *ethclient.Client, from1 common.Address) {
 
 func checkFee(fee *big.Int) {
 	if fee.Sign() < 0 || fee.Cmp(Base) > 0 {
-		printError("Please set correct fee value")
+		log.Fatal("Please set correct fee value")
 	}
 }
 
@@ -125,7 +131,7 @@ func getPubKey(priKey *ecdsa.PrivateKey) (string, []byte, error) {
 	pk := crypto.FromECDSAPub(&priKey.PublicKey)
 	pubkey = crypto.PubkeyToAddress(priKey.PublicKey).String()
 	if _, err := crypto.UnmarshalPubkey(pk); err != nil {
-		printError("ValidPk error", err)
+		log.Fatal("ValidPk error", err)
 	}
 	return pubkey, pk, err
 }
@@ -180,14 +186,14 @@ func loadPrivateKey(ctx *cli.Context, path string) common.Address {
 	if path == "" {
 		file, err := getAllFile(datadirPrivateKey)
 		if err != nil {
-			printError(" getAllFile file name error", err)
+			log.Fatal(" getAllFile file name error", err)
 		}
 		kab, _ := filepath.Abs(datadirPrivateKey)
 		path = filepath.Join(kab, file)
 	}
 	priKey, err = crypto.LoadECDSA(path)
 	if err != nil {
-		printError("LoadECDSA error", err)
+		log.Fatal("LoadECDSA error", err)
 	}
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
 	if ctx.IsSet(PublicAdressFlag.Name) {
@@ -199,7 +205,7 @@ func loadPrivateKey(ctx *cli.Context, path string) common.Address {
 func getAllFile(path string) (string, error) {
 	rd, err := ioutil.ReadDir(path)
 	if err != nil {
-		printError("path ", err)
+		log.Fatal("path ", err)
 	}
 	for _, fi := range rd {
 		if fi.IsDir() {
@@ -214,13 +220,9 @@ func getAllFile(path string) (string, error) {
 	return "", err
 }
 
-func printError(error ...interface{}) {
-	//log.Fatal(error)
-}
-
 func ethToWei(zero bool) *big.Int {
 	if !zero && int(impawnValue) <= 0 {
-		printError("Value must bigger than 0")
+		log.Fatal("Value must bigger than 0")
 	}
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	value := new(big.Int).Mul(big.NewInt(impawnValue), baseUnit)
@@ -235,7 +237,6 @@ func weiToEth(value *big.Int) uint64 {
 
 func getResult(conn *ethclient.Client, txHash common.Hash, contract bool, from common.Address) bool {
 	fmt.Println("Please waiting ", " txHash ", txHash.String())
-
 	count := 0
 	for {
 		time.Sleep(time.Millisecond * 200)
@@ -280,7 +281,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, from com
 func packInput(abiMethod string, params ...interface{}) []byte {
 	input, err := abiRelayer.Pack(abiMethod, params...)
 	if err != nil {
-		printError(abiMethod, " error ", err)
+		log.Fatal(abiMethod, " error ", err)
 	}
 	return input
 }
@@ -304,11 +305,11 @@ func loadPrivate(ctx *cli.Context) {
 	} else if store != "" {
 		loadSigningKey(ctx, store)
 	} else {
-		printError("Must specify --key or --keystore")
+		log.Fatal("Must specify --key or --keystore")
 	}
 
 	if priKey == nil {
-		printError("load privateKey failed")
+		log.Fatal("load privateKey failed")
 	}
 }
 func dialConn(ctx *cli.Context) (*ethclient.Client, string) {
@@ -344,13 +345,13 @@ func printBaseInfo(conn *ethclient.Client) *types.Header {
 func loadSigningKey(ctx *cli.Context, keyfile string) common.Address {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
-		printError(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
+		log.Fatal(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
 	}
 	password, _ := prompt.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
 	//password := "secret"
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil || key == nil {
-		printError(fmt.Errorf("error decrypting key: %v", err))
+		log.Fatal(fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey = key.PrivateKey
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
@@ -362,12 +363,12 @@ func loadSigningKey(ctx *cli.Context, keyfile string) common.Address {
 func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
 	sheader, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		printError("get snail block error", err)
+		log.Fatal("get snail block error", err)
 	}
 	queryReward := uint64(0)
 	currentReward := sheader.Number.Uint64() - RewardInterval
 	if number > currentReward {
-		printError("reward no release current reward height ", currentReward)
+		log.Fatal("reward no release current reward height ", currentReward)
 	} else if number > 0 || start {
 		queryReward = number
 	} else {
@@ -376,7 +377,7 @@ func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
 	var crc map[string]interface{}
 	crc, err = conn.GetChainRewardContent(context.Background(), from, new(big.Int).SetUint64(queryReward))
 	if err != nil {
-		printError("get chain reward content error", err)
+		log.Fatal("get chain reward content error", err)
 	}
 	if info, ok := crc["stakingReward"]; ok {
 		if info, ok := info.([]interface{}); ok {
@@ -395,7 +396,7 @@ func queryRegisterInfo(conn *ethclient.Client, from common.Address, whichAccount
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		printError("method CallContract error", err)
+		log.Fatal("method CallContract error", err)
 	}
 
 	method, _ := abiRelayer.Methods["getRelayer"]
@@ -435,7 +436,7 @@ func queryIsRegister(conn *ethclient.Client, from common.Address) bool {
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		printError("method CallContract error", err)
+		log.Fatal("method CallContract error", err)
 	}
 	method, _ := abiRelayer.Methods["getRelayer"]
 	ret, err := method.Outputs.Unpack(output)
@@ -454,7 +455,7 @@ func queryRelayerEpoch(conn *ethclient.Client, currentNum uint64) bool {
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		printError("method CallContract error", err)
+		log.Fatal("method CallContract error", err)
 	}
 
 	method, _ := abiRelayer.Methods["getPeriodHeight"]
@@ -487,7 +488,7 @@ func queryRelayerEpoch(conn *ethclient.Client, currentNum uint64) bool {
 func withdraw(conn *ethclient.Client, from common.Address, priKey *ecdsa.PrivateKey) error {
 
 	value := ethToWei(false)
-
+	fmt.Println("value:======>", value)
 	input := packInput("withdraw", from, value)
 
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
@@ -602,42 +603,140 @@ func submissionOfDifferentAccounts(ctx *cli.Context) error {
 	priKey1, from1 := loadprivateCommon(keystore1)
 	priKey = priKey1
 	register(ctx, conn, from1)
-	_, _, curEpoch, err := queryRegisterInfo(conn, from, "myAccount")
+	_, _, curEpoch, err := queryRegisterInfo(conn, from, "from1")
 	if err != nil {
 		log.Fatal(err)
 	}
 	priKey2, from2 := loadprivateCommon(keystore2)
 	priKey = priKey2
 	register(ctx, conn, from2)
-	_, _, _, err1 := queryRegisterInfo(conn, from, "myAccount")
-	if err1 != nil {
-		log.Fatal(err1)
+	_, _, _, err2 := queryRegisterInfo(conn, from, "from2")
+	if err2 != nil {
+		log.Fatal(err2)
 	}
+
+	priKey3, from3 := loadprivateCommon(keystore3)
+	priKey = priKey3
+	register(ctx, conn, from3)
+	_, _, _, err3 := queryRegisterInfo(conn, from, "from3")
+	if err3 != nil {
+		log.Fatal(err3)
+	}
+
+	priKey4, from4 := loadprivateCommon(keystore4)
+	priKey = priKey4
+	register(ctx, conn, from4)
+	_, _, _, err4 := queryRegisterInfo(conn, from4, "from4")
+	if err4 != nil {
+		log.Fatal(err4)
+	}
+
+	priKey5, from5 := loadprivateCommon(keystore5)
+	priKey = priKey5
+	register(ctx, conn, from5)
+	_, _, _, err5 := queryRegisterInfo(conn, from5, "from5")
+	if err5 != nil {
+		log.Fatal(err5)
+	}
+
+	count := 0
 	curEpoch2 := big.NewInt(curEpoch.Int64())
 	connEth, _ := dialEthConn()
 	chains := getChainsCommon(connEth)
-	for {
-		_, _, curEpoch, err = queryRegisterInfo(conn, from, "myAccount")
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("curEpoch: ", curEpoch)
-		if curEpoch2.Cmp(curEpoch) == 0 {
-			aBalance := PrintBalance(conn, from1)
-			SaveByNum(conn, 10, from1, chains)
-			bBalance := PrintBalance(conn, from1)
-			fmt.Printf("old money:%v  new money %v change %v\n",
-				aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+	var startEpoch int64 = 1 // change it
 
-			aBalance1 := PrintBalance(conn, from2)
-			SaveByNum(conn, 10, from2, chains)
-			bBalance1 := PrintBalance(conn, from2)
-			fmt.Printf("old money:%v  new money %v change %v\n",
-				aBalance1, bBalance1, aBalance1.Abs(aBalance1.Sub(aBalance1, bBalance1)))
-			time.Sleep(time.Second)
-			break
-		}
+	if curEpoch2.Cmp(curEpoch) == 0 && curEpoch == big.NewInt(startEpoch) {
+		aBalance := PrintBalance(conn, from1)
+		SaveByNum(conn, 10, from1, chains)
+		bBalance := PrintBalance(conn, from1)
+		printChangeBalance(*aBalance, *bBalance)
+		fmt.Println("====================================")
+		aBalance1 := PrintBalance(conn, from2)
+		SaveByNum(conn, 10, from2, chains)
+		bBalance1 := PrintBalance(conn, from2)
+		printChangeBalance(*aBalance1, *bBalance1)
+		curEpoch2.Add(curEpoch2, common.Big1)
 	}
+
+	for {
+		_, _, curEpoch, err = queryRegisterInfo(conn, from, "001:")
+		if curEpoch2.Cmp(curEpoch) == 0 {
+			fmt.Println("================query==================curEpoch:", curEpoch)
+			queryAccountBalance(conn, from1)
+			queryAccountBalance(conn, from2)
+			queryAccountBalance(conn, from3)
+			queryAccountBalance(conn, from4)
+			queryAccountBalance(conn, from5)
+
+			fmt.Println("===================== from1 ==============================")
+			_, isRelayer1, _, err1 := queryRegisterInfo(conn, from1, "from1:")
+			if err1 != nil {
+				log.Fatal(err1)
+			}
+			if isRelayer1 {
+				a := PrintBalance(conn, from1)
+				SaveByNum(conn, 10, from1, chains)
+				b := PrintBalance(conn, from1)
+				printChangeBalance(*a, *b)
+				queryAccountBalance(conn, from1)
+			}
+			fmt.Println("================from2====================")
+			_, isRelayer2, _, err2 := queryRegisterInfo(conn, from2, "from2:")
+			if err2 != nil {
+				log.Fatal(err2)
+			}
+			if isRelayer2 {
+				a := PrintBalance(conn, from2)
+				SaveByNum(conn, 10, from2, chains)
+				b := PrintBalance(conn, from2)
+				printChangeBalance(*a, *b)
+				queryAccountBalance(conn, from2)
+			}
+			fmt.Println("==================from3==================")
+			_, isRelayer3, _, err3 := queryRegisterInfo(conn, from3, "from3:")
+			if err3 != nil {
+				log.Fatal(err3)
+			}
+			if isRelayer3 {
+				a := PrintBalance(conn, from3)
+				SaveByNum(conn, 10, from3, chains)
+				b := PrintBalance(conn, from3)
+				printChangeBalance(*a, *b)
+				queryAccountBalance(conn, from3)
+			}
+			fmt.Println("================from4====================")
+			_, isRelayer4, _, err4 := queryRegisterInfo(conn, from4, "from4:")
+			if err4 != nil {
+				log.Fatal(err4)
+			}
+			if isRelayer4 {
+				a := PrintBalance(conn, from4)
+				SaveByNum(conn, 10, from4, chains)
+				b := PrintBalance(conn, from4)
+				printChangeBalance(*a, *b)
+				queryAccountBalance(conn, from4)
+			}
+			fmt.Println("===================from5=================")
+			_, isRelayer5, _, err5 := queryRegisterInfo(conn, from5, "from5:")
+			if err5 != nil {
+				log.Fatal(err5)
+			}
+			if isRelayer5 {
+				a := PrintBalance(conn, from5)
+				SaveByNum(conn, 10, from5, chains)
+				b := PrintBalance(conn, from5)
+				printChangeBalance(*a, *b)
+				queryAccountBalance(conn, from5)
+			}
+			count++
+			curEpoch2.Add(curEpoch2, common.Big1)
+			if count > 3 {
+				break
+			}
+		}
+		time.Sleep(time.Second)
+	}
+
 	return nil
 }
 
@@ -708,6 +807,75 @@ func withdrawAtDifferentEpoch(ctx *cli.Context) error {
 		time.Sleep(time.Second)
 	}
 
+	return nil
+}
+
+//Cancellation according to different money
+// impawnValue through change impawnValue test
+// 123456700000000000000000000000 撤销 最大200000000000000000000000
+func withdrawAccordingToDifferentBalance(ctx *cli.Context) error {
+	fmt.Println("========================== withdrawAtDifferentEpoch ====================================")
+	conn := getConn(ctx)
+	priKey, from = loadprivateCommon(keystore1)
+	register(ctx, conn, from)
+	boolPrint = false
+	_, _, curEpoch, err := queryRegisterInfo(conn, from, "001:")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	boolPrint = true
+	oldbalance := PrintBalance(conn, from)
+	connEth, _ := dialEthConn()
+	chains := getChainsCommon(connEth)
+	SaveByNum(conn, 10, from, chains)
+	curEpoch2 := big.NewInt(curEpoch.Int64())
+	count := 0
+	fmt.Println("============= start ==================curEpoch:", curEpoch)
+	queryAccountBalance(conn, from)
+
+	if curEpoch2.Cmp(curEpoch) == 0 {
+		fmt.Println("===================== withdraw ==============================")
+		a := PrintBalance(conn, from)
+		impawnValue = impawnValue * 1234567 // -------------------------change
+		err := withdraw(conn, from, priKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		b := PrintBalance(conn, from)
+		printChangeBalance(*a, *b)
+		oldbalance = b
+		curEpoch2.Add(curEpoch2, common.Big1)
+		queryAccountBalance(conn, from)
+	}
+	boolPrint = false
+	for {
+		_, _, curEpoch, err = queryRegisterInfo(conn, from, "001:")
+		if curEpoch2.Cmp(curEpoch) == 0 {
+			fmt.Println("================query==================curEpoch:", curEpoch)
+			queryAccountBalance(conn, from)
+			curBalance := PrintBalance(conn, from)
+			printChangeBalance(*oldbalance, *curBalance)
+
+			fmt.Println("===================== withdraw ==============================")
+			a := PrintBalance(conn, from)
+			err := withdraw(conn, from, priKey)
+			if err != nil {
+				log.Fatal(err)
+			}
+			b := PrintBalance(conn, from)
+			printChangeBalance(*a, *b)
+			queryAccountBalance(conn, from)
+
+			oldbalance = b
+			count++
+			curEpoch2.Add(curEpoch2, common.Big1)
+			if count > 3 {
+				break
+			}
+		}
+		time.Sleep(time.Second)
+	}
 	return nil
 }
 

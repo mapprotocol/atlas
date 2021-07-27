@@ -33,7 +33,7 @@ func getCurrentNumberAbi(conn *ethclient.Client, chainType string) uint64 {
 	msg := ethchain.CallMsg{From: from, To: &HeaderStoreAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		printError("method CallContract error", err)
+		log.Fatal("method CallContract error", err)
 	}
 	method, _ := abiHeaderStore.Methods["currentHeaderNumber"]
 	ret, err := method.Outputs.Unpack(output)
@@ -85,13 +85,15 @@ func SaveByNum(conn *ethclient.Client, number int, from common.Address, chains [
 func packInputStore(abiMethod string, params ...interface{}) []byte {
 	input, err := abiHeaderStore.Pack(abiMethod, params...)
 	if err != nil {
-		printError(abiMethod, " error ", err)
+		log.Fatal(abiMethod, " error ", err)
 	}
 	return input
 }
 
 //Store many times at kinds Epoch
+// 第二届 钱并没有增加
 func saveManyTimes(ctx *cli.Context) error {
+	fmt.Println("======================== saveManyTimes ================================")
 	conn := getConn(ctx)
 	priKey, from = loadprivateCommon(keystore1)
 	register(ctx, conn, from)
@@ -144,6 +146,7 @@ func saveManyTimes(ctx *cli.Context) error {
 	}
 	count := 0
 	oldbalance := PrintBalance(conn, from)
+	queryAccountBalance(conn, from)
 	if curEpoch2.CmpAbs(curEpoch) == 0 {
 		fmt.Println("================== save ============================curEpoch: ", curEpoch)
 		save()

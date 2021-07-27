@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -91,6 +92,7 @@ func init() {
 		SubmitMultipleTimesAtCurEpochCommand,
 		submissionOfDifferentAccountsCommand,
 		withdrawAtDifferentEpochCommand,
+		withdrawAccordingToDifferentBalanceCommand,
 		appendAtDifferentEpochCommand,
 		saveManyTimesCommand,
 	}
@@ -134,18 +136,18 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 			//1.now Number
 			num, err := conn.BlockNumber(context.Background())
 			if err != nil {
-				printError("BlockNumber err")
+				log.Fatal("BlockNumber err")
 			}
 			//2. isrelayers
 			isrelayers := queryIsRegister(conn, from)
 			if !isrelayers {
-				printError("not Relayers")
+				log.Fatal("not Relayers")
 				time.Sleep(time.Second)
 				continue
 			}
 			//3.judge number at range
 			if !queryRelayerEpoch(conn, num) {
-				printError("wrong range !")
+				log.Fatal("wrong range !")
 				continue
 			}
 			break
@@ -158,14 +160,14 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 		marshal, err2 := json.Marshal(chains)
 
 		if err2 != nil {
-			printError("marshal err")
+			log.Fatal("marshal err")
 		}
 		//ret, _ := rlp.EncodeToBytes(chains)
 		input := packInputStore("save", "ETH", "ETH", marshal)
 		txHash := sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
 		ret2 := getResult(conn, txHash, true, from)
 		if !ret2 {
-			printError("store err")
+			log.Fatal("store err")
 			break
 		}
 		Append(conn, from, priKey)

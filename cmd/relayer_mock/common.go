@@ -21,6 +21,9 @@ import (
 var (
 	keystore1 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-09T06-27-06.967129500Z--c971f9cec4310cf001ca55078b43a568aaa0366d"
 	keystore2 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-09T06-26-32.960000300Z--78c5285c42572677d3f9dcc27b9ac7b1ff49843c"
+	keystore3 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-11T06-35-36.635750800Z--70bf8d9de50713101992649a4f0d7fa505ebb334"
+	keystore4 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-19T11-51-51.704095400Z--4e0449459f73341f8e9339cb9e49dae3115ec80f"
+	keystore5 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-21T10-26-12.236878500Z--8becddb5fbe6f3d6b08450e2d33e48e63d6c4b29"
 	boolPrint = true
 )
 
@@ -113,7 +116,7 @@ func queryAccountBalance(conn *ethclient.Client, from common.Address) {
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		printError("method CallContract error", err)
+		log.Fatal("method CallContract error", err)
 	}
 
 	PrintBalance(conn, from)
