@@ -153,7 +153,7 @@ func (h *HeaderStore) AddEpochReward(epochID uint64, reward *big.Int) {
 		h.epoch2reward[epochID] = new(big.Int).Add(big.NewInt(0), reward)
 		return
 	}
-	h.epoch2reward[epochID] = new(big.Int).Add(h.epoch2reward[epochID], reward)
+	h.epoch2reward[epochID] = new(big.Int).Add(r, reward)
 }
 
 func (h *HeaderStore) GetEpochReward(epochID uint64) *big.Int {
@@ -161,7 +161,7 @@ func (h *HeaderStore) GetEpochReward(epochID uint64) *big.Int {
 	if r == nil {
 		return big.NewInt(0)
 	}
-	return h.epoch2reward[epochID]
+	return r
 }
 
 func (h *HeaderStore) GetReceiveTimes(height uint64) uint64 {

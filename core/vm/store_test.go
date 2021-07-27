@@ -93,7 +93,7 @@ func TestHeaderStore_AddEpochReward(t *testing.T) {
 		wantReward *big.Int
 	}{
 		{
-			name: "not-set-epoch2reward",
+			name: "don`t-set-epoch2reward",
 			hs:   NewHeaderStore(),
 			args: args{
 				epochID: 0,
@@ -103,7 +103,7 @@ func TestHeaderStore_AddEpochReward(t *testing.T) {
 			wantReward: big.NewInt(100),
 		},
 		{
-			name: "not-set-epoch2reward-two-call-AddEpochReward",
+			name: "add-epoch-reward",
 			hs:   NewHeaderStore(),
 			args: args{
 				epochID: 2,
@@ -160,6 +160,15 @@ func TestHeaderStore_GetEpochReward(t *testing.T) {
 				hs.AddEpochReward(10, big.NewInt(998))
 			},
 			want: big.NewInt(998),
+		},
+		{
+			name: "t-2",
+			hs:   NewHeaderStore(),
+			args: args{
+				epochID: 10,
+			},
+			fn:   func(hs *HeaderStore) {},
+			want: big.NewInt(0),
 		},
 	}
 	for _, tt := range tests {
@@ -574,26 +583,28 @@ func TestHeaderStore_GetSortedRelayers(t *testing.T) {
 				epochID: 3,
 			},
 			before: func(hs *HeaderStore) {
-				hs.AddSyncTimes(3, 100, common.HexToAddress("0xae90c87d2e80"))
-				hs.AddSyncTimes(3, 150, common.HexToAddress("0xb890c87d2e80"))
-				hs.AddSyncTimes(3, 128, common.HexToAddress("0xa490c87d2e80"))
-				hs.AddSyncTimes(3, 232, common.HexToAddress("0xe090c87d2e80"))
+				hs.AddSyncTimes(3, 100, common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"))
+				hs.AddSyncTimes(3, 150, common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"))
+				hs.AddSyncTimes(3, 128, common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f6"))
+				hs.AddSyncTimes(3, 232, common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f7"))
 			},
 			want: []common.Address{
-				common.HexToAddress("0x0000000000000000000000000000B890C87d2E80"),
-				common.HexToAddress("0x0000000000000000000000000000E090c87D2e80"),
-				common.HexToAddress("0x0000000000000000000000000000a490C87d2E80"),
-				common.HexToAddress("0x0000000000000000000000000000aE90c87D2e80"),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f7"),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f6"),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.before(tt.hs)
-			if got := tt.hs.GetSortedRelayers(tt.args.epochID); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetSortedRelayers() = %v, want %v", got, tt.want)
-			}
-		})
+	for i := 0; i < 1000000; i++ {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.before(tt.hs)
+				if got := tt.hs.GetSortedRelayers(tt.args.epochID); !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("GetSortedRelayers() = %v, want %v", got, tt.want)
+				}
+			})
+		}
 	}
 }
 
@@ -727,6 +738,179 @@ func TestHeaderStore_Load(t *testing.T) {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			tt.after(tt.hs)
+		})
+	}
+}
+
+func TestHistoryWorkEfficiency(t *testing.T) {
+	type args struct {
+		state   StateDB
+		epochId uint64
+		relayer common.Address
+	}
+	tests := []struct {
+		name    string
+		hs      *HeaderStore
+		args    args
+		before  func(hs *HeaderStore, args args)
+		want    uint64
+		wantErr bool
+	}{
+		{
+			name: "didn't-store",
+			hs:   NewHeaderStore(),
+			args: args{
+				state:   getStateDB(),
+				epochId: 0,
+				relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+			},
+			before: func(hs *HeaderStore, args args) {
+				hs.AddSyncTimes(args.epochId, 258, args.relayer)
+			},
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name: "success",
+			hs:   NewHeaderStore(),
+			args: args{
+				state:   getStateDB(),
+				epochId: 0,
+				relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+			},
+			before: func(hs *HeaderStore, args args) {
+				hs.AddSyncTimes(args.epochId, 101, args.relayer)
+				_ = hs.Store(args.state, params.HeaderStoreAddress)
+			},
+			want:    101,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.before(tt.hs, tt.args)
+
+			got, err := HistoryWorkEfficiency(tt.args.state, tt.args.epochId, tt.args.relayer)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HistoryWorkEfficiency() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("HistoryWorkEfficiency() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHeaderStore_CalcReward(t *testing.T) {
+	hs := &HeaderStore{
+		epoch2reward: map[uint64]*big.Int{
+			1: big.NewInt(5000000),
+		},
+		height2receiveTimes: map[uint64]uint64{},
+		epoch2syncInfo: map[uint64][]*RelayerSyncInfo{
+			1: {
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+					Times:   1,
+					Reward:  &big.Int{},
+				},
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"),
+					Times:   1,
+					Reward:  &big.Int{},
+				},
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f6"),
+					Times:   1,
+					Reward:  &big.Int{},
+				},
+			},
+			2: {
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+					Times:   1,
+					Reward:  &big.Int{},
+				},
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"),
+					Times:   2,
+					Reward:  &big.Int{},
+				},
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f6"),
+					Times:   1,
+					Reward:  &big.Int{},
+				},
+			},
+			3: {
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+					Times:   1,
+					Reward:  &big.Int{},
+				},
+				{
+					Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"),
+					Times:   2,
+					Reward:  &big.Int{},
+				},
+			},
+		},
+	}
+	type args struct {
+		epochID   uint64
+		allAmount *big.Int
+	}
+	tests := []struct {
+		name string
+		hs   *HeaderStore
+		args args
+		want map[common.Address]*big.Int
+	}{
+		{
+			name: "t-1",
+			hs:   hs,
+			args: args{
+				epochID:   1,
+				allAmount: big.NewInt(5000000),
+			},
+			want: map[common.Address]*big.Int{
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"): big.NewInt(1666668),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"): big.NewInt(1666666),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f6"): big.NewInt(1666666),
+			},
+		},
+		{
+			name: "t-2",
+			hs:   hs,
+			args: args{
+				epochID:   2,
+				allAmount: big.NewInt(5000000),
+			},
+			want: map[common.Address]*big.Int{
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"): big.NewInt(1250000),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"): big.NewInt(2500000),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f6"): big.NewInt(1250000),
+			},
+		},
+		{
+			name: "t-3",
+			hs:   hs,
+			args: args{
+				epochID:   3,
+				allAmount: big.NewInt(5000000),
+			},
+			want: map[common.Address]*big.Int{
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"): big.NewInt(1666668),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"): big.NewInt(3333332),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.hs.CalcReward(tt.args.epochID, tt.args.allAmount); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CalcReward() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
