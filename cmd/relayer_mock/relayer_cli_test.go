@@ -22,8 +22,7 @@ func Test_register(t *testing.T) {
 	relayerBool := queryIsRegister(conn, from)
 	fmt.Printf("isrelayers:%v  \n", relayerBool)
 	bBalance := PrintBalance(conn, from)
-	fmt.Printf("old money:%v  new money %v change %v\n",
-		aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+	printChangeBalance(*aBalance, *bBalance)
 }
 
 func Test_withdraw(t *testing.T) {
@@ -32,7 +31,7 @@ func Test_withdraw(t *testing.T) {
 	a := PrintBalance(conn, from)
 	withdraw(conn, from, priKey)
 	b := PrintBalance(conn, from)
-	fmt.Printf("old money:%v  new money %v change %v", a, b, a.Abs(a.Sub(a, b)))
+	printChangeBalance(*a, *b)
 }
 func Test_append(t *testing.T) {
 	priKey, from = loadprivateCommon(keystore1)
@@ -43,5 +42,5 @@ func Test_append(t *testing.T) {
 		log.Fatal(err)
 	}
 	b := PrintBalance(conn, from)
-	fmt.Printf("old money:%v  new money %v change %v", a, b, a.Abs(a.Sub(a, b)))
+	printChangeBalance(*a, *b)
 }

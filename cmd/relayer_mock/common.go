@@ -16,7 +16,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
-	"time"
 )
 
 var (
@@ -52,17 +51,16 @@ func dialConnCommon() (*ethclient.Client, string) {
 	return conn, url
 }
 
-var sdfasdf = 0
-
 func getChainsCommon(conn *ethclient.Client) []ethereum.Header {
 	startNum := 1
-	endNum := 10
-	Headers := make([]ethereum.Header, 10)
-	HeaderBytes := make([]bytes.Buffer, 10)
+	endNum := 100
+	Headers := make([]ethereum.Header, 100)
+	HeaderBytes := make([]bytes.Buffer, 100)
 	for i := startNum; i <= endNum; i++ {
-		Header, _ := conn.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
-		sdfasdf = i
-		time.Sleep(time.Millisecond * 100)
+		Header, err := conn.HeaderByNumber(context.Background(), big.NewInt(int64(i)))
+		if err != nil {
+			log.Fatal(err)
+		}
 		convertChain(&Headers[i-1], &HeaderBytes[i-1], Header)
 	}
 	return Headers
@@ -76,7 +74,8 @@ func Min(x, y int) int {
 
 func convertChain(header *ethereum.Header, headerbyte *bytes.Buffer, e *types.Header) (*ethereum.Header, *bytes.Buffer) {
 	if header == nil || e == nil {
-		fmt.Println("ddd:", sdfasdf)
+		fmt.Println("header:", header, "e:", e)
+		return header, headerbyte
 	}
 	header.ParentHash = e.ParentHash
 	header.UncleHash = e.UncleHash

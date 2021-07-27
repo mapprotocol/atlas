@@ -11,7 +11,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 	"log"
 	"math/big"
-	"os"
 	"time"
 )
 
@@ -96,6 +95,7 @@ func saveManyTimes(ctx *cli.Context) error {
 	conn := getConn(ctx)
 	priKey, from = loadprivateCommon(keystore1)
 	register(ctx, conn, from)
+	boolPrint = false
 	_, _, curEpoch, err := queryRegisterInfo(conn, from, "myAccount")
 	if err != nil {
 		log.Fatal(err)
@@ -104,7 +104,7 @@ func saveManyTimes(ctx *cli.Context) error {
 
 	chains := getChainsCommon(connEth)
 
-	curEpoch2 := curEpoch
+	curEpoch2 := big.NewInt(curEpoch.Int64())
 	save := func() {
 		aBalance := PrintBalance(conn, from)
 
@@ -112,61 +112,65 @@ func saveManyTimes(ctx *cli.Context) error {
 		bool := realSave(conn, "ETH", marshal, from)
 		fmt.Printf("save %v\n", bool)
 		bBalance := PrintBalance(conn, from)
-		fmt.Printf("old money:%v  new money %v change %v\n",
-			aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+		printChangeBalance(*aBalance, *bBalance)
 
 		aBalance = PrintBalance(conn, from)
 		marshal, _ = json.Marshal(chains[:10])
 		bool = realSave(conn, "ETH", marshal, from)
 		fmt.Printf("save %v\n", bool)
 		bBalance = PrintBalance(conn, from)
-		fmt.Printf("old money:%v  new money %v change %v\n",
-			aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+		printChangeBalance(*aBalance, *bBalance)
 
 		aBalance = PrintBalance(conn, from)
 		marshal, _ = json.Marshal(chains[10:20])
 		bool = realSave(conn, "ETH", marshal, from)
 		fmt.Printf("save %v\n", bool)
 		bBalance = PrintBalance(conn, from)
-		fmt.Printf("old money:%v  new money %v change %v\n",
-			aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+		printChangeBalance(*aBalance, *bBalance)
 
 		aBalance = PrintBalance(conn, from)
 		marshal, _ = json.Marshal(chains[15:25])
 		bool = realSave(conn, "ETH", marshal, from)
 		fmt.Printf("save %v\n", bool)
 		bBalance = PrintBalance(conn, from)
-		fmt.Printf("old money:%v  new money %v change %v\n",
-			aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+		printChangeBalance(*aBalance, *bBalance)
 
 		aBalance = PrintBalance(conn, from)
 		marshal, _ = json.Marshal(chains[25:50])
 		bool = realSave(conn, "ETH", marshal, from)
 		fmt.Printf("save %v\n", bool)
 		bBalance = PrintBalance(conn, from)
-		fmt.Printf("old money:%v  new money %v change %v\n",
-			aBalance.String(), bBalance.String(), aBalance.Abs(aBalance.Sub(aBalance, bBalance)).String())
+		printChangeBalance(*aBalance, *bBalance)
 	}
 	count := 0
+	oldbalance := PrintBalance(conn, from)
+	if curEpoch2.CmpAbs(curEpoch) == 0 {
+		fmt.Println("================== save ============================curEpoch: ", curEpoch)
+		save()
+		curEpoch2.Add(curEpoch2, common.Big1)
+	}
 	for {
-		_, _, curEpoch, err = queryRegisterInfo(conn, from, "myAccount")
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("curEpoch: ", curEpoch)
-		if curEpoch2.CmpAbs(curEpoch) == 0 {
-			fmt.Println("==================cur Epoch============================")
+		_, _, curEpoch, err = queryRegisterInfo(conn, from, "001:")
+		if curEpoch2.Cmp(curEpoch) == 0 {
+			fmt.Println("================== query ================curEpoch:", curEpoch)
+			queryAccountBalance(conn, from)
+			curBalance := PrintBalance(conn, from)
+			printChangeBalance(*oldbalance, *curBalance)
+			fmt.Println("================== save ================curEpoch:", curEpoch)
+			a := PrintBalance(conn, from)
 			save()
-		} else {
-			fmt.Println("==================other Epoch============================")
-			save()
+			b := PrintBalance(conn, from)
+			printChangeBalance(*a, *b)
+			queryAccountBalance(conn, from)
+			oldbalance = curBalance
+			count++
+			curEpoch2.Add(curEpoch2, common.Big1)
+			if count > 3 {
+				break
+			}
 		}
 		time.Sleep(time.Second)
-		count++
-		if count > 100 {
-			fmt.Println("if you want continue please add the count limit")
-			os.Exit(1)
-		}
 	}
+
 	return nil
 }

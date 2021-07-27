@@ -512,7 +512,7 @@ func Append(conn *ethclient.Client, from common.Address, priKey *ecdsa.PrivateKe
 
 // SubmitAtDifferentEpoch
 // 测试结果：注册成功直接成为 relayer 当前Epoch为1 到 Epoch为2时候保存失败
-// 到了第二阶 就不能同步了 得是relayer  钱没有变化！！！！
+// 到了第二阶 就不能同步了 得是relayer  钱没有变化
 func SubmitAtDifferentEpoch(ctx *cli.Context) error {
 	fmt.Println("==============SubmitAtDifferentEpoch==============")
 	conn := getConn(ctx)
@@ -643,6 +643,7 @@ func submissionOfDifferentAccounts(ctx *cli.Context) error {
 
 // withdrawAtDifferentEpoch
 // relayer中的总 币值没有变化
+// 注册成功 查询的时候 locked amount: 100000000000000000000000
 // 测试结果 当前阶撤销 relayer 用户balance 和 locked amount:没有变化 到下一届 lock->unlock
 // 第二阶段 继续撤销 locked amount: 100000000000000000000000 这个会变化
 func withdrawAtDifferentEpoch(ctx *cli.Context) error {
@@ -657,9 +658,9 @@ func withdrawAtDifferentEpoch(ctx *cli.Context) error {
 	}
 	boolPrint = true
 	oldbalance := PrintBalance(conn, from)
-	//connEth, _ := dialEthConn()
-	//chains := getChainsCommon(connEth)
-	//SaveByNum(conn, 10, from, chains)
+	connEth, _ := dialEthConn()
+	chains := getChainsCommon(connEth)
+	SaveByNum(conn, 10, from, chains)
 	curEpoch2 := big.NewInt(curEpoch.Int64())
 	count := 0
 	fmt.Println("============= start ==================curEpoch:", curEpoch)
@@ -764,7 +765,6 @@ func appendAtDifferentEpoch(ctx *cli.Context) error {
 			queryAccountBalance(conn, from)
 			curBalance := PrintBalance(conn, from)
 			printChangeBalance(*oldbalance, *curBalance)
-			queryAccountBalance(conn, from)
 			fmt.Println("================== append  ================curEpoch:", curEpoch)
 
 			a := PrintBalance(conn, from)
