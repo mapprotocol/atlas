@@ -811,7 +811,7 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 		vv := v.clone()
 		vv.merge(prev, nextEpoch.BeginHeight, effectHeight)
 		if vv.isvalid() {
-			vv.Relayer = false
+			//vv.Relayer = false
 			nextInfos.update(vv, nextEpoch.BeginHeight, true, true, effectHeight)
 		}
 	}
@@ -855,7 +855,7 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
 			if v.Relayer == true && num < params.MinWorkEfficiency {
 				v.Relayer = false
-				fmt.Println("num", num)
+				//fmt.Println("num", num)
 				continue
 			}
 			if validRegister.Cmp(params.ElectionMinLimitForRegister) < 0 {
