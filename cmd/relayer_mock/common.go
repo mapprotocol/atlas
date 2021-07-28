@@ -25,14 +25,27 @@ var (
 	keystore4 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-19T11-51-51.704095400Z--4e0449459f73341f8e9339cb9e49dae3115ec80f"
 	keystore5 = "D:/BaiduNetdiskDownload/test015/atlas/data555/keystore/UTC--2021-07-21T10-26-12.236878500Z--8becddb5fbe6f3d6b08450e2d33e48e63d6c4b29"
 	boolPrint = true
+	password  = "123456"
 )
+
+func registerCommon(conn *ethclient.Client, keystore string) (*big.Float, common.Hash, common.Address) {
+	fee := uint64(0)
+	value := ethToWei(false)
+	priKey, from = loadprivateCommon(keystore)
+
+	pkey, pk, _ := getPubKey(priKey)
+	aBalance := PrintBalance(conn, from)
+	fmt.Printf("Fee: %v \nPub key:%v\nvalue:%v\n \n", fee, pkey, value)
+	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
+	txResult := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
+	return aBalance, txResult, from
+}
 
 func loadprivateCommon(keyfile string) (*ecdsa.PrivateKey, common.Address) {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
 	}
-	password := "123456"
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
 		log.Fatal(fmt.Errorf("error decrypting key: %v", err))

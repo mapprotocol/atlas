@@ -3,21 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/big"
 	"testing"
 )
 
 // test register
 func Test_register(t *testing.T) {
-	fee := uint64(0)
-	value := ethToWei(false)
-	priKey, from = loadprivateCommon(keystore1)
 	conn, _ := dialConnCommon()
-	pkey, pk, _ := getPubKey(priKey)
-	aBalance := PrintBalance(conn, from)
-	fmt.Printf("Fee: %v \nPub key:%v\nvalue:%v\n \n", fee, pkey, value)
-	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
-	txResult := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
+	aBalance, txResult, from := registerCommon(conn, keystore1)
 	getResult(conn, txResult, true, from)
 	relayerBool := queryIsRegister(conn, from)
 	fmt.Printf("isrelayers:%v  \n", relayerBool)

@@ -18,7 +18,8 @@ const (
 
 func getChains(startNum uint64) ([]ethereum.Header, []bytes.Buffer) {
 	conn, _ := dialEthConn()
-	currentNum_, _ := conn.BlockNumber(context.Background())
+	//currentNum_, _ := conn.BlockNumber(context.Background())
+	currentNum_ := uint64(10000)
 	//if startNum == currentNum_ {
 	//	log.Fatalf("startNum == currentNum ")
 	//}

@@ -598,42 +598,40 @@ func SubmitMultipleTimesAtCurEpoch(ctx *cli.Context) error {
 }
 
 //submission of different accounts
+// 从中间阶开始注册 5个里面有1个会注册失败 全部不是relayer 没有进行同步工作  下一阶段也没有成为ralayer register amount会多出 100000 ETH 其后不变
+// 从第一届开始注册 5个会注册失败 查出来注册金额register amount: 10万eth 后来阶段也不会成为 relayer
 func submissionOfDifferentAccounts(ctx *cli.Context) error {
+	fmt.Println("==============submissionOfDifferentAccounts==============")
 	conn := getConn(ctx)
-	priKey1, from1 := loadprivateCommon(keystore1)
-	priKey = priKey1
-	register(ctx, conn, from1)
-	_, _, curEpoch, err := queryRegisterInfo(conn, from, "from1")
+
+	password = "123456"
+	_, _, from1 := registerCommon(conn, keystore1)
+	_, _, curEpoch, err := queryRegisterInfo(conn, from1, "from1")
 	if err != nil {
 		log.Fatal(err)
 	}
-	priKey2, from2 := loadprivateCommon(keystore2)
-	priKey = priKey2
-	register(ctx, conn, from2)
-	_, _, _, err2 := queryRegisterInfo(conn, from, "from2")
+
+	password = ""
+	_, _, from2 := registerCommon(conn, keystore2)
+	_, _, _, err2 := queryRegisterInfo(conn, from2, "from2")
 	if err2 != nil {
 		log.Fatal(err2)
 	}
 
-	priKey3, from3 := loadprivateCommon(keystore3)
-	priKey = priKey3
-	register(ctx, conn, from3)
-	_, _, _, err3 := queryRegisterInfo(conn, from, "from3")
+	password = "123456"
+	_, _, from3 := registerCommon(conn, keystore3)
+	_, _, _, err3 := queryRegisterInfo(conn, from3, "from3")
 	if err3 != nil {
 		log.Fatal(err3)
 	}
 
-	priKey4, from4 := loadprivateCommon(keystore4)
-	priKey = priKey4
-	register(ctx, conn, from4)
+	_, _, from4 := registerCommon(conn, keystore4)
 	_, _, _, err4 := queryRegisterInfo(conn, from4, "from4")
 	if err4 != nil {
 		log.Fatal(err4)
 	}
 
-	priKey5, from5 := loadprivateCommon(keystore5)
-	priKey = priKey5
-	register(ctx, conn, from5)
+	_, _, from5 := registerCommon(conn, keystore5)
 	_, _, _, err5 := queryRegisterInfo(conn, from5, "from5")
 	if err5 != nil {
 		log.Fatal(err5)
@@ -643,23 +641,10 @@ func submissionOfDifferentAccounts(ctx *cli.Context) error {
 	curEpoch2 := big.NewInt(curEpoch.Int64())
 	connEth, _ := dialEthConn()
 	chains := getChainsCommon(connEth)
-	var startEpoch int64 = 1 // change it
-
-	if curEpoch2.Cmp(curEpoch) == 0 && curEpoch == big.NewInt(startEpoch) {
-		aBalance := PrintBalance(conn, from1)
-		SaveByNum(conn, 10, from1, chains)
-		bBalance := PrintBalance(conn, from1)
-		printChangeBalance(*aBalance, *bBalance)
-		fmt.Println("====================================")
-		aBalance1 := PrintBalance(conn, from2)
-		SaveByNum(conn, 10, from2, chains)
-		bBalance1 := PrintBalance(conn, from2)
-		printChangeBalance(*aBalance1, *bBalance1)
-		curEpoch2.Add(curEpoch2, common.Big1)
-	}
 
 	for {
-		_, _, curEpoch, err = queryRegisterInfo(conn, from, "001:")
+		boolPrint = false
+		_, _, curEpoch, err = queryRegisterInfo(conn, from, "")
 		if curEpoch2.Cmp(curEpoch) == 0 {
 			fmt.Println("================query==================curEpoch:", curEpoch)
 			queryAccountBalance(conn, from1)
@@ -742,7 +727,7 @@ func submissionOfDifferentAccounts(ctx *cli.Context) error {
 
 // withdrawAtDifferentEpoch
 // relayer中的总 币值没有变化
-// 注册成功 查询的时候 locked amount: 100000000000000000000000
+// 注册成功 查询的时候 locked amount: 100000000000000000000000 有时候会出来
 // 测试结果 当前阶撤销 relayer 用户balance 和 locked amount:没有变化 到下一届 lock->unlock
 // 第二阶段 继续撤销 locked amount: 100000000000000000000000 这个会变化
 func withdrawAtDifferentEpoch(ctx *cli.Context) error {
@@ -812,7 +797,7 @@ func withdrawAtDifferentEpoch(ctx *cli.Context) error {
 
 //Cancellation according to different money
 // impawnValue through change impawnValue test
-// 123456700000000000000000000000 撤销 最大200000000000000000000000
+// 123456700000000000000000000000 撤销 最大2000 000 000 000 000 000 000 00
 func withdrawAccordingToDifferentBalance(ctx *cli.Context) error {
 	fmt.Println("========================== withdrawAtDifferentEpoch ====================================")
 	conn := getConn(ctx)
