@@ -274,23 +274,29 @@ type LockedItem struct {
 	Locked bool
 }
 
-// LockedValue,the key of Value is epochid
-type LockedValue struct {
-	Value map[uint64]*LockedItem
+//// LockedValue,the key of Value is epochid
+//type LockedValue struct {
+//	Value map[uint64]*LockedItem
+//}
+
+func (s *RelayerValue) ToUnlockedValue(height uint64) *big.Int {
+	value := big.NewInt(0)
+	for k, v := range s.Value {
+		if IsUnlocked(k, height) {
+			value.Add(value, v)
+		}
+	}
+	return value
 }
 
-func (s *RelayerValue) ToLockedValue(height uint64) *LockedValue {
-	res := make(map[uint64]*LockedItem)
+func (s *RelayerValue) ToUnlockingValue(height uint64) *big.Int {
+	value := big.NewInt(0)
 	for k, v := range s.Value {
-		item := &LockedItem{
-			Amount: new(big.Int).Set(v),
-			Locked: !IsUnlocked(k, height),
+		if !IsUnlocked(k, height) {
+			value.Add(value, v)
 		}
-		res[k] = item
 	}
-	return &LockedValue{
-		Value: res,
-	}
+	return value
 }
 
 func toReward(val *big.Float) *big.Int {

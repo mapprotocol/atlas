@@ -37,6 +37,8 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 		ret, err = getPeriodHeight(evm, contract, data)
 	case "withdraw":
 		ret, err = withdraw(evm, contract, data)
+	case "unregister":
+		ret, err = unregister(evm, contract, data)
 	default:
 		log.Warn("RelayerContract call fallback function")
 		err = errors.New("execution reverted")
@@ -163,48 +165,6 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		return nil, ErrInsufficientBalance
 	}
 
-	locked, _, unlocked, _, _ := register.GetBalance(args.Addr)
-	if locked == nil {
-		locked = big.NewInt(0)
-	}
-	if unlocked == nil {
-		unlocked = big.NewInt(0)
-	}
-	if locked.Cmp(args.Value) < 0 {
-
-		newRedeemValue := args.Value.Sub(args.Value, locked)
-		err = register.CancelAccount(evm.Context.BlockNumber.Uint64(), args.Addr, newRedeemValue)
-		log.Info("unregistered", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", newRedeemValue)
-		if err != nil {
-			log.Error("unregistered error", "address", args.Addr, "Value", newRedeemValue, "err", err)
-			return nil, err
-		}
-
-		if locked.Cmp(big.NewInt(0)) > 0 {
-			log.Info("withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", locked)
-			err = register.RedeemAccount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
-			if err != nil {
-				log.Error("withdraw error", "address", args.Addr, "Value", locked, "err", err)
-			}
-		}
-
-		err = register.Save(evm.StateDB, params.RelayerAddress)
-		if err != nil {
-			log.Error("register save state error", "error", err)
-			return nil, err
-		}
-		subLockedBalance(evm.StateDB, args.Addr, locked)
-
-		event := relayerABI.Events["Withdraw"]
-		logData, err := event.Inputs.Pack(args.Addr, locked)
-		if err != nil {
-			log.Error("Pack register log error", "error", err)
-			return nil, err
-		}
-		log.Info("withdraw log: ", logData)
-		return nil, nil
-	}
-
 	log.Info("register withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
 	err = register.RedeemAccount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
 	if err != nil {
@@ -221,22 +181,55 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	event := relayerABI.Events["Withdraw"]
 	logData, err := event.Inputs.Pack(args.Addr, args.Value)
 	if err != nil {
-		log.Error("Pack register log error", "error", err)
+		log.Error("Pack withdraw log error", "error", err)
 		return nil, err
 	}
-	log.Info("append log: ", logData)
+	log.Info("withdraw log: ", logData)
+	return nil, nil
+}
+
+//if you want withdraw, unregister amount you need in your locked balance
+func unregister(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	method, _ := relayerABI.Methods["unregister"]
+	output, err := method.Inputs.Unpack(input)
+	args := struct {
+		Addr  common.Address
+		Value *big.Int
+	}{
+		output[0].(common.Address),
+		output[1].(*big.Int),
+	}
+
+	register := NewRegisterImpl()
+	err = register.Load(evm.StateDB, params.RelayerAddress)
+	if err != nil {
+		log.Error("contract load error", "error", err)
+		return nil, err
+	}
+	err = register.CancelAccount(evm.Context.BlockNumber.Uint64(), args.Addr, args.Value)
+	log.Info("unregistered", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
+	if err != nil {
+		log.Error("unregistered error", "address", args.Addr, "Value", args.Value, "err", err)
+		return nil, err
+	}
+	err = register.Save(evm.StateDB, params.RelayerAddress)
+	if err != nil {
+		log.Error("register save state error", "error", err)
+		return nil, err
+	}
+
+	event := relayerABI.Events["Unregister"]
+	logData, err := event.Inputs.Pack(args.Addr, args.Value)
+	if err != nil {
+		log.Error("Pack unregister log error", "error", err)
+		return nil, err
+	}
+	log.Info("unregister log: ", logData)
 	return nil, nil
 }
 
 //it will return locked asset,register asset,unlocked asset,reward asset and fine
 func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	var (
-		registered = big.NewInt(0)
-		locked     = big.NewInt(0)
-		unlocked   = big.NewInt(0)
-		reward     = big.NewInt(0)
-		fine       = big.NewInt(0)
-	)
 	method, _ := relayerABI.Methods["getBalance"]
 	output, err := method.Inputs.Unpack(input)
 	args := struct {
@@ -252,15 +245,15 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		return nil, err
 	}
 
-	locked, registered, unlocked, reward, fine = register.GetBalance(args.Addr)
+	unlocked, unlocking, locked, reward, fine := register.GetBalance(args.Addr, evm.Context.BlockNumber.Uint64())
+	if unlocked == nil {
+		unlocking = big.NewInt(0)
+	}
+	if unlocking == nil {
+		unlocking = big.NewInt(0)
+	}
 	if locked == nil {
 		locked = big.NewInt(0)
-	}
-	if registered == nil {
-		registered = big.NewInt(0)
-	}
-	if unlocked == nil {
-		unlocked = big.NewInt(0)
 	}
 	if reward == nil {
 		reward = big.NewInt(0)
@@ -269,8 +262,8 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		fine = big.NewInt(0)
 	}
 
-	log.Info("Get register getBalance", "address", args.Addr, "register", registered, "locked", locked, "unlocked", unlocked)
-	ret, err = method.Outputs.Pack(registered, locked, unlocked, reward, fine)
+	log.Info("Get register getBalance", "address", args.Addr, "locked", locked, "unlocking", unlocking, "unlocked", unlocked)
+	ret, err = method.Outputs.Pack(locked, unlocking, unlocked, reward, fine)
 	return ret, err
 }
 

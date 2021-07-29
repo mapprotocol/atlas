@@ -6,14 +6,14 @@ import (
 	"math/big"
 )
 
-var AppendCommand = cli.Command{
+var appendCommand = cli.Command{
 	Name:   "append",
 	Usage:  "Append validator registered fund ",
-	Action: MigrateFlags(Append),
+	Action: MigrateFlags(_append),
 	Flags:  RegisterFlags,
 }
 
-func Append(ctx *cli.Context) error {
+func _append(ctx *cli.Context) error {
 	loadPrivate(ctx)
 
 	conn, url := dialConn(ctx)
@@ -40,7 +40,6 @@ func withdraw(ctx *cli.Context) error {
 	loadPrivate(ctx)
 	conn, url := dialConn(ctx)
 	printBaseInfo(conn, url)
-	//PrintBalance(conn, from)
 
 	value := ethToWei(ctx, false)
 
@@ -49,8 +48,30 @@ func withdraw(ctx *cli.Context) error {
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 
 	getResult(conn, txHash, true)
-	fmt.Println()
-	queryAccountBalance(conn)
+
+	return nil
+}
+
+var unregisterCommand = cli.Command{
+	Name:   "unregister",
+	Usage:  "Call this will instant cancel your registered fund ",
+	Action: MigrateFlags(unregister),
+	Flags:  RegisterFlags,
+}
+
+func unregister(ctx *cli.Context) error {
+	loadPrivate(ctx)
+	conn, url := dialConn(ctx)
+	printBaseInfo(conn, url)
+
+	value := ethToWei(ctx, false)
+
+	input := packInput("unregister", from, value)
+
+	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
+
+	getResult(conn, txHash, true)
+
 	return nil
 }
 
@@ -99,5 +120,27 @@ func queryEpoch(ctx *cli.Context) error {
 
 	printBaseInfo(conn, url)
 	queryRelayerEpoch(conn)
+	return nil
+}
+
+var queryCommand = cli.Command{
+	Name:   "query",
+	Usage:  "Query Command include QueryRelayer Command, QueryBalance Command and QueryEpoch Command",
+	Action: MigrateFlags(query),
+	Flags:  RegisterFlags,
+}
+
+func query(ctx *cli.Context) error {
+	loadPrivate(ctx)
+	conn, url := dialConn(ctx)
+
+	printBaseInfo(conn, url)
+	fmt.Println()
+	queryRegisterInfo(conn)
+	fmt.Println()
+	queryRelayerEpoch(conn)
+	fmt.Println()
+	queryAccountBalance(conn)
+	fmt.Println()
 	return nil
 }

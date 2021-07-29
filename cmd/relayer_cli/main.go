@@ -86,11 +86,13 @@ func init() {
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		AppendCommand,
+		appendCommand,
+		unregisterCommand,
 		withdrawCommand,
 		queryRegisterCommand,
 		queryBalanceCommand,
 		queryEpochCommand,
+		queryCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))

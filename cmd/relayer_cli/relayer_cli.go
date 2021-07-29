@@ -57,7 +57,7 @@ func register(ctx *cli.Context) error {
 
 	printBaseInfo(conn, url)
 
-	PrintBalance(conn, from)
+	//PrintBalance(conn, from)
 
 	value := ethToWei(ctx, false)
 
@@ -233,7 +233,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 		fmt.Println("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		if contract && common.IsHexAddress(from.Hex()) {
-			queryRegisterInfo(conn)
+			queryAccountBalance(conn)
 		}
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		fmt.Println("Transaction Failed ", " Block Number", receipt.BlockNumber.Uint64())
@@ -395,18 +395,18 @@ func queryAccountBalance(conn *ethclient.Client) {
 		printError("method CallContract error", err)
 	}
 
-	PrintBalance(conn, from)
-	fmt.Println()
+	//fmt.Println()
+	//PrintBalance(conn, from)
 
 	method, _ := abiRelayer.Methods["getBalance"]
 	ret, err := method.Outputs.Unpack(output)
 	if len(ret) != 0 {
 		args := struct {
-			register *big.Int
-			locked   *big.Int
-			unlocked *big.Int
-			reward   *big.Int
-			fine     *big.Int
+			registered    *big.Int
+			unregistering *big.Int
+			unregistered  *big.Int
+			reward        *big.Int
+			fine          *big.Int
 		}{
 			ret[0].(*big.Int),
 			ret[1].(*big.Int),
@@ -414,12 +414,12 @@ func queryAccountBalance(conn *ethclient.Client) {
 			ret[3].(*big.Int),
 			ret[4].(*big.Int),
 		}
-		fmt.Println("query successfully,your account:")
-		fmt.Println("register amount: ", args.register)
-		fmt.Println("locked amount:", args.locked)
-		fmt.Println("unlocked amount:", args.unlocked)
-		fmt.Println("reward amount:", args.reward)
-		fmt.Println("fine amount:", args.fine)
+		fmt.Println("query successfully,your account(uint eth):")
+		fmt.Println("registered amount:    ", weiToEth(args.registered))
+		fmt.Println("unregistering amount: ", weiToEth(args.unregistering))
+		fmt.Println("unregistered amount:  ", weiToEth(args.unregistered))
+		fmt.Println("reward amount:        ", weiToEth(args.reward))
+		fmt.Println("fine amount:          ", weiToEth(args.fine))
 	} else {
 		fmt.Println("Contract query failed result len == 0")
 	}
@@ -452,12 +452,12 @@ func queryRelayerEpoch(conn *ethclient.Client) {
 			ret[3].(bool),
 		}
 		if args.relayer {
-			fmt.Println("query successfully,your account is relayer")
+			fmt.Println("query successfully, your account is relayer")
 			fmt.Println("start height in epoch: ", args.start)
 			fmt.Println("end height in epoch:   ", args.end)
 			fmt.Println("remain height in epoch:", args.remain)
 		} else {
-			fmt.Println("query successfully,your account is not relayer")
+			fmt.Println("query successfully, your account isn't in current epoch")
 		}
 
 	} else {

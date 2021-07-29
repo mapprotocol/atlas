@@ -27,9 +27,9 @@ var RelayerGas = map[string]uint64{
 
 var (
 	CountInEpoch                       = 12
-	MaxRedeemHeight             uint64 = 200
-	NewEpochLength              uint64 = 200
-	ElectionPoint               uint64 = 100
+	MaxRedeemHeight             uint64 = 10
+	NewEpochLength              uint64 = 10
+	ElectionPoint               uint64 = 1
 	FirstNewEpochID             uint64 = 1
 	PowForkPoint                uint64 = 0
 	ElectionMinLimitForRegister        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
@@ -68,7 +68,7 @@ const (
 const (
 	OpQueryRegister uint8 = 1 << iota
 	OpQueryLocked
-	OpQueryCancelable
+	OpQueryUnlocking
 	OpQueryReward
 	OpQueryFine
 )
@@ -115,6 +115,23 @@ const RelayerABIJSON = `[
   },
   {
     "name": "Withdraw",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "from",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "value",
+        "indexed": false
+      }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "Unregister",
     "inputs": [
       {
         "type": "address",
@@ -226,6 +243,24 @@ const RelayerABIJSON = `[
   },
   {
     "name": "withdraw",
+    "outputs": [],
+    "inputs": [
+      {
+        "type": "address",
+        "name": "holder"
+      },
+      {
+        "type": "uint256",
+        "unit": "wei",
+        "name": "value"
+      }
+    ],
+    "constant": false,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "unregister",
     "outputs": [],
     "inputs": [
       {

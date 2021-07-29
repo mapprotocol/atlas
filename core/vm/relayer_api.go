@@ -855,7 +855,6 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
 			if v.Relayer == true && num < params.MinWorkEfficiency {
 				v.Relayer = false
-				//fmt.Println("num", num)
 				continue
 			}
 			if validRegister.Cmp(params.ElectionMinLimitForRegister) < 0 {
@@ -866,6 +865,9 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 			if len(ee) >= params.CountInEpoch {
 				break
 			}
+		}
+		if len(ee) == 0 {
+			ee = i.getElections2(epochid) //if no one is selected, current relayer work continue
 		}
 		return ee, nil
 	} else {
@@ -1063,36 +1065,19 @@ func (i *RegisterImpl) GetAllRegisterAccount() Register {
 	}
 }
 
-func (i *RegisterImpl) GetLockedAsset2(addr common.Address, height uint64) map[common.Address]*LockedValue {
+func (i *RegisterImpl) GetBalance(addr common.Address, height uint64) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	epochid := i.curEpochID
-	items, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
-	res := make(map[common.Address]*LockedValue)
-	for k, v := range items {
-		res[k] = v.ToLockedValue(height)
-	}
-	return res
-}
-
-func (i *RegisterImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
-	epochid := i.curEpochID
-	locked, _, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
-	register, _, _, _ := i.getAsset(addr, epochid, params.OpQueryRegister)
-	_, unlock, _, _ := i.getAsset(addr, epochid, params.OpQueryCancelable)
+	unlocking, _, _, _ := i.getAsset(addr, epochid, params.OpQueryUnlocking)
+	_, lock, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
 	_, _, reward, _ := i.getAsset(addr, epochid, params.OpQueryReward)
 	_, _, _, fine := i.getAsset(addr, epochid, params.OpQueryFine)
-	var l *big.Int
-	var b *big.Int
+	var u1 = big.NewInt(0)
+	var u2 = big.NewInt(0)
 	var r *big.Int
 	var f *big.Int
-	if locked[addr] != nil {
-		l = locked[addr].Value[epochid]
-	}
-	if register[addr] != nil {
-		sum := big.NewInt(0)
-		for _, v := range register[addr].Value {
-			sum.Add(sum, v)
-		}
-		b = sum
+	if unlocking[addr] != nil {
+		u1.Add(u1, unlocking[addr].ToUnlockedValue(height))
+		u2.Add(u2, unlocking[addr].ToUnlockingValue(height))
 	}
 	if reward[addr] != nil {
 		r = reward[addr].Amount
@@ -1100,16 +1085,10 @@ func (i *RegisterImpl) GetBalance(addr common.Address) (*big.Int, *big.Int, *big
 	if fine[addr] != nil {
 		f = fine[addr].Amount
 	}
-	//locked,registered,unlocked,reward,fine
-	return l, b, unlock[addr], r, f
+	//locked,unlocked,reward,fine
+	return u1, u2, lock[addr], r, f
 }
 
-// GetAllCancelableAsset returns all asset on addr it can be canceled
-func (i *RegisterImpl) GetAllCancelableAsset(addr common.Address) map[common.Address]*big.Int {
-	epochid := i.curEpochID
-	_, res, _, _ := i.getAsset(addr, epochid, params.OpQueryCancelable)
-	return res
-}
 func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*RelayerValue, map[common.Address]*big.Int, map[common.Address]*RewardItem, map[common.Address]*FineItem) {
 	epochid := epoch
 	end := GetEpochFromID(epochid).EndHeight
@@ -1120,9 +1099,9 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 		res4 := make(map[common.Address]*FineItem)
 		for _, v := range val {
 			if bytes.Equal(v.Unit.Address.Bytes(), addr.Bytes()) {
-				if op&params.OpQueryRegister != 0 || op&params.OpQueryLocked != 0 {
+				if op&params.OpQueryRegister != 0 || op&params.OpQueryUnlocking != 0 {
 					if _, ok := res[addr]; !ok {
-						if op&params.OpQueryLocked != 0 {
+						if op&params.OpQueryUnlocking != 0 {
 							res[addr] = &RelayerValue{
 								Value: v.Unit.redeemToMap(),
 							}
@@ -1136,7 +1115,7 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 						log.Error("getAsset", "repeat register account", addr, "epochid", epochid, "op", op)
 					}
 				}
-				if op&params.OpQueryCancelable != 0 {
+				if op&params.OpQueryLocked != 0 {
 					all := v.Unit.getValidRegister(end)
 					if all.Sign() >= 0 {
 						res2[addr] = all
