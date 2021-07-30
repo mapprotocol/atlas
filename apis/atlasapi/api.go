@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2130,7 +2131,7 @@ func NewPublicRelayerAPI(b Backend) *PublicRelayerAPI {
 	}
 }
 
-func (s *PublicRelayerAPI) GetRelayers(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]common.Address, error) {
+func (s *PublicRelayerAPI) GetAllRelayers(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]common.Address, error) {
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
 		return nil, err
@@ -2141,6 +2142,90 @@ func (s *PublicRelayerAPI) GetRelayers(ctx context.Context, blockNrOrHash rpc.Bl
 		addr = append(addr, re[i].Coinbase)
 	}
 	return addr, nil
+}
+
+func (s *PublicRelayerAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+	register := vm.NewRegisterImpl()
+	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	err = register.Load(state, params2.RelayerAddress)
+	if err != nil {
+		log.Error("contract load error", "error", err)
+		return "", err
+	}
+	unlocked, unlocking, locked, _, _ := register.GetBalance(address, uint64(blockNrOrHash.BlockNumber.Int64()))
+	if unlocked == nil {
+		unlocking = big.NewInt(0)
+	}
+	if unlocking == nil {
+		unlocking = big.NewInt(0)
+	}
+	if locked == nil {
+		locked = big.NewInt(0)
+	}
+	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	unlocked = new(big.Int).Div(unlocked, baseUnit)
+	locked = new(big.Int).Div(locked, baseUnit)
+	unlocking = new(big.Int).Div(unlocking, baseUnit)
+	ret := " registered balance:" + locked.String() + " ETH," +
+		" unregistering balance:" + unlocking.String() + " ETH," +
+		" unregistered balance:" + unlocked.String() + " ETH"
+	return ret, nil
+}
+
+func (s *PublicRelayerAPI) GetAccountInfo(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+
+	register := vm.NewRegisterImpl()
+	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	err = register.Load(state, params2.RelayerAddress)
+	if err != nil {
+		log.Error("contract load error", "error", err)
+		return "", err //0,false,false, err
+	}
+	acc := "false"
+	accounts := register.GetAllRegisterAccount()
+	for _, v := range accounts {
+		if address == v.Unit.Address {
+			acc = "true"
+		}
+	}
+	rel := "false"
+	re := vm.GetCurrentRelayer(state)
+	for i := 0; i < len(re); i++ {
+		if address == re[i].Coinbase {
+			rel = "true"
+		}
+	}
+	_, h := register.GetCurrentEpochInfo()
+	epoch := new(big.Int).SetUint64(h)
+
+	ret := "current epoch: " + epoch.String() + ", register status: " + acc + ", relayer status: " + rel
+	return ret, nil
+}
+
+func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+	register := vm.NewRegisterImpl()
+	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
+	err = register.Load(state, params2.RelayerAddress)
+	if err != nil {
+		log.Error("contract load error", "error", err)
+		return "", err
+	}
+
+	ret := "query fail! no match massage"
+	info, h := register.GetCurrentEpochInfo()
+	for _, v := range info {
+		if h == v.EpochID {
+			blockNumber := strconv.FormatInt(header.Number.Int64(), 10)
+			epochID := strconv.FormatInt(int64(h), 10)
+			start := strconv.FormatInt(int64(v.BeginHeight), 10)
+			end := strconv.FormatInt(int64(v.EndHeight), 10)
+			ret = "epochID:" + epochID + ", blockNumber:" + blockNumber + ", epoch start:" + start + ", epoch end:" + end
+			break
+		}
+	}
+
+	return ret, nil
 }
 
 type PublicHeaderStoreAPI struct {
