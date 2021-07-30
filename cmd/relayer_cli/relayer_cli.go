@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
 	ethchain "github.com/ethereum/go-ethereum"
@@ -12,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	params2 "github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
@@ -323,32 +325,6 @@ func loadSigningKey(keyfile string) common.Address {
 	return from
 }
 
-//func queryRewardInfo(conn *ethclient.Client, number uint64, start bool) {
-//	header, err := conn.HeaderByNumber(context.Background(), nil)
-//	if err != nil {
-//		printError("get block error", err)
-//	}
-//	queryReward := uint64(0)
-//	currentReward := header.Number.Uint64() - RewardInterval
-//	if number > currentReward {
-//		printError("reward no release current reward height ", currentReward)
-//	} else if number > 0 || start {
-//		queryReward = number
-//	} else {
-//		queryReward = currentReward
-//	}
-//	var crc map[string]interface{}
-//	crc, err = conn.GetChainRewardContent(context.Background(), from, new(big.Int).SetUint64(queryReward))
-//	if err != nil {
-//		printError("get chain reward content error", err)
-//	}
-//	if info, ok := crc["stakingReward"]; ok {
-//		if info, ok := info.([]interface{}); ok {
-//			fmt.Println("queryRewardInfo", info)
-//		}
-//	}
-//}
-
 func queryRegisterInfo(conn *ethclient.Client) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
@@ -418,8 +394,8 @@ func queryAccountBalance(conn *ethclient.Client) {
 		fmt.Println("registered amount:    ", weiToEth(args.registered))
 		fmt.Println("unregistering amount: ", weiToEth(args.unregistering))
 		fmt.Println("unregistered amount:  ", weiToEth(args.unregistered))
-		fmt.Println("reward amount:        ", weiToEth(args.reward))
-		fmt.Println("fine amount:          ", weiToEth(args.fine))
+		//fmt.Println("reward amount:        ", weiToEth(args.reward))
+		//fmt.Println("fine amount:          ", weiToEth(args.fine))
 	} else {
 		fmt.Println("Contract query failed result len == 0")
 	}
@@ -463,4 +439,105 @@ func queryRelayerEpoch(conn *ethclient.Client) {
 	} else {
 		fmt.Println("Contract query failed result len == 0")
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//under func be used to test only, not formal
+
+var syncCommand = cli.Command{
+	Name:   "sync",
+	Usage:  "sync transactions from eth, not formal tool",
+	Action: MigrateFlags(syncTransactonsFromEth),
+	Flags:  RegisterFlags,
+}
+
+func syncTransactonsFromEth(ctx *cli.Context) error {
+	ip = "localhost" //utils.RPCListenAddrFlag.Name)
+	port = 7445      //utils.RPCPortFlag.Name)
+	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
+	conn, err := ethclient.Dial(url)
+	if err != nil {
+		return err
+	}
+
+	loadPrivate(ctx)
+	from = crypto.PubkeyToAddress(priKey.PublicKey)
+
+	for start := int64(1001); start <= 20000; start += 20 {
+		chains := getChains(start, start+19)
+		if chains == nil {
+			fmt.Println("header is nil")
+			continue
+		}
+		marshal, err := json.Marshal(chains)
+		if err != nil {
+			return err
+		}
+		input := packInputStore("save", "ETH", "MAP", marshal)
+		hash := sendContractTransaction(conn, from, params2.HeaderStoreAddress, nil, priKey, input)
+		fmt.Println("transaction hash:", hash)
+		fmt.Println()
+		time.Sleep(1e9)
+	}
+	return nil
+}
+
+func getChains(startNum, endNum int64) []*ethereum.Header {
+	conn, _ := dialEthConn()
+	Headers := make([]*ethereum.Header, 0, endNum-startNum+1)
+	for i := startNum; i <= endNum; i++ {
+		Header, _ := conn.HeaderByNumber(context.Background(), big.NewInt(i))
+		covertHeader := convertChain(Header)
+		if Header != nil {
+			Headers = append(Headers, covertHeader)
+		}
+	}
+	return Headers
+}
+
+func convertChain(e *types.Header) *ethereum.Header {
+	header := new(ethereum.Header)
+	header.ParentHash = e.ParentHash
+	header.UncleHash = e.UncleHash
+	header.Coinbase = e.Coinbase
+	header.Root = e.Root
+	header.TxHash = e.TxHash
+	header.ReceiptHash = e.ReceiptHash
+	header.GasLimit = e.GasLimit
+	header.GasUsed = e.GasUsed
+	header.Time = e.Time
+	header.MixDigest = e.MixDigest
+	header.Nonce = e.Nonce
+	header.Bloom = e.Bloom
+	if header.Difficulty = new(big.Int); e.Difficulty != nil {
+		header.Difficulty = e.Difficulty
+	}
+	if header.Number = new(big.Int); e.Number != nil {
+		header.Number = e.Number
+	}
+	if len(e.Extra) > 0 {
+		header.Extra = make([]byte, len(e.Extra))
+		header.Extra = e.Extra
+	}
+	return header
+}
+
+func dialEthConn() (*ethclient.Client, string) {
+	ip = "localhost" //utils.RPCListenAddrFlag.Name)
+	port = 8545      //utils.RPCPortFlag.Name)
+	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
+	conn, err := ethclient.Dial(url)
+	if err != nil {
+		log.Fatalf("Failed to connect to the Abeychain client: %v", err)
+	}
+	return conn, url
+}
+
+func packInputStore(abiMethod string, params ...interface{}) []byte {
+	abiHeaderStore, _ := abi.JSON(strings.NewReader(params2.HeaderStoreABIJSON))
+	input, err := abiHeaderStore.Pack(abiMethod, params...)
+	if err != nil {
+		log.Fatal(abiMethod, " error ", err)
+	}
+	return input
 }

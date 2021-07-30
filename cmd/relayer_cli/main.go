@@ -93,6 +93,7 @@ func init() {
 		queryBalanceCommand,
 		queryEpochCommand,
 		queryCommand,
+		syncCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))

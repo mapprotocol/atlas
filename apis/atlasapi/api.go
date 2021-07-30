@@ -2228,6 +2228,19 @@ func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHas
 	return ret, nil
 }
 
+func (s *PublicRelayerAPI) GetSyncNumber(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (uint64, error) {
+	register := vm.NewRegisterImpl()
+	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	err = register.Load(state, params2.RelayerAddress)
+	if err != nil {
+		log.Error("contract load error", "error", err)
+		return 0, err
+	}
+	_, h := register.GetCurrentEpochInfo()
+	num, _ := vm.HistoryWorkEfficiency(state, h, address)
+	return num, nil
+}
+
 type PublicHeaderStoreAPI struct {
 	b Backend
 }
