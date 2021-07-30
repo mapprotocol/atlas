@@ -846,7 +846,7 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 	if cur.EndHeight != height+params.ElectionPoint && i.curEpochID >= params.FirstNewEpochID {
 		return nil, params.ErrNotElectionTime
 	}
-
+	old_relayers := i.getElections2(epochid)
 	if val, ok := i.accounts[epochid]; ok {
 		val.sort(height, true)
 		var ee []*RegisterAccount
@@ -867,7 +867,10 @@ func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*Re
 			}
 		}
 		if len(ee) == 0 {
-			ee = i.getElections2(epochid) //if no one is selected, current relayer work continue
+			for _, v := range old_relayers {
+				v.Relayer = true
+			}
+			return old_relayers, nil
 		}
 		return ee, nil
 	} else {

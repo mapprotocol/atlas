@@ -26,14 +26,14 @@ var RelayerGas = map[string]uint64{
 }
 
 var (
-	CountInEpoch                       = 12
-	MaxRedeemHeight             uint64 = 10
-	NewEpochLength              uint64 = 10
-	ElectionPoint               uint64 = 1
+	CountInEpoch                       = 100
+	MaxRedeemHeight             uint64 = 10000
+	NewEpochLength              uint64 = 10000
+	ElectionPoint               uint64 = 200
 	FirstNewEpochID             uint64 = 1
 	PowForkPoint                uint64 = 0
 	ElectionMinLimitForRegister        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	MinWorkEfficiency           uint64 = 50 //every relayer generate 100 block at least
+	MinWorkEfficiency           uint64 = 1000 //every relayer sync 1000 block at least
 )
 
 var (
