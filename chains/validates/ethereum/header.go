@@ -78,7 +78,7 @@ func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 		return 0, err
 	}
 	if firstNumber.Uint64() > currentNumber+1 {
-		return 0, fmt.Errorf("non contiguous insert, current number: %d", currentNumber)
+		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
 	if firstNumber.Cmp(big.NewInt(1)) == 0 {
