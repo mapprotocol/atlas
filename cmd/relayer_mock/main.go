@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/cmd/ethclient"
+	"gopkg.in/urfave/cli.v1"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
-
-	"github.com/mapprotocol/atlas/cmd/ethclient"
-	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -58,10 +59,29 @@ var (
 		RPCPortFlag,
 		FeeFlag,
 	}
-	StoreCommand = cli.Command{
-		Name:   "store",
-		Usage:  "relayer to store ",
-		Action: MigrateFlags(save),
+
+	withdrawMockCommand = cli.Command{
+		Name:   "withdrawMock",
+		Usage:  "relayer to withdraw ",
+		Action: MigrateFlags(withdrawMock),
+		Flags:  relayerflags,
+	}
+	appendMockCommand = cli.Command{
+		Name:   "appendMock",
+		Usage:  "relayer to append ",
+		Action: MigrateFlags(appendMock),
+		Flags:  relayerflags,
+	}
+	registerMockCommand = cli.Command{
+		Name:   "registerMock",
+		Usage:  "relayer to register ",
+		Action: MigrateFlags(registerMock),
+		Flags:  relayerflags,
+	}
+	saveMockCommand = cli.Command{
+		Name:   "saveMock",
+		Usage:  "relayer to save ",
+		Action: MigrateFlags(saveMock),
 		Flags:  relayerflags,
 	}
 )
@@ -87,14 +107,10 @@ func init() {
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		StoreCommand,
-		SubmitAtDifferentEpochCommand,
-		SubmitMultipleTimesAtCurEpochCommand,
-		submissionOfDifferentAccountsCommand,
-		withdrawAtDifferentEpochCommand,
-		withdrawAccordingToDifferentBalanceCommand,
-		appendAtDifferentEpochCommand,
-		saveManyTimesCommand,
+		withdrawMockCommand,
+		appendMockCommand,
+		registerMockCommand,
+		saveMockCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
@@ -121,15 +137,15 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 }
 
 func start(ctx *cli.Context) error {
-	conn := getConn(ctx)
-	register(ctx, conn, from)
-	syncloop(ctx, conn)
+	conn := getConn11(ctx)
+	from, priKey := register(ctx, conn)
+	syncloop(ctx, conn, from, priKey)
 	return nil
 }
 
 //single node start
-func syncloop(ctx *cli.Context, conn *ethclient.Client) {
-	//myId := ctx.GlobalString(PublicAdressFlag.Name)
+func syncloop(ctx *cli.Context, conn *ethclient.Client, from common.Address, priKey *ecdsa.PrivateKey) {
+	chains := getEthChains()
 	for {
 		for {
 			time.Sleep(time.Second * 1)
@@ -146,30 +162,23 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client) {
 				continue
 			}
 			//3.judge number at range
-			if !queryRelayerEpoch(conn, num) {
+			if !queryRelayerEpoch(conn, num, from) {
 				log.Fatal("wrong range !")
 				continue
 			}
 			break
 		}
 		// 1.get current num
-		chainNum := getCurrentNumberAbi(conn, "ETH")
-		// 2. get chains
-		chains, _ := getChains(chainNum)
-		// 3.store
-		marshal, err2 := json.Marshal(chains)
+		chainNum := getCurrentNumberAbi(conn, "ETH", from)
+		// 2.store
+		marshal, err2 := json.Marshal(chains[chainNum : chainNum+10])
 
 		if err2 != nil {
 			log.Fatal("marshal err")
 		}
 		//ret, _ := rlp.EncodeToBytes(chains)
 		input := packInputStore("save", "ETH", "ETH", marshal)
-		txHash := sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
-		ret2 := getResult(conn, txHash, true, from)
-		if !ret2 {
-			log.Fatal("store err")
-			break
-		}
+		sendContractTransaction(conn, from, HeaderStoreAddress, nil, priKey, input)
 		Append(conn, from, priKey)
 		withdraw(conn, from, priKey)
 	}
