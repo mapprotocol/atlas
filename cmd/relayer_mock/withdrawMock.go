@@ -46,7 +46,8 @@ func (d *debugInfo) doWithdraw() {
 	fmt.Println("=================DO Withdraw========================")
 	conn := d.client
 	for k, _ := range d.relayerData {
-		err := d.relayerData[k].withdraw11(conn)
+		fmt.Println("ADDRESS:", d.relayerData[k].from)
+		err := d.relayerData[k].withdraw(conn)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -81,6 +82,8 @@ func (d *debugInfo) withdrawAtDifferentEpoch12() {
 				d.queck(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
+			default:
+				fmt.Println("over")
 			}
 		}
 	}
@@ -119,7 +122,7 @@ func (d *debugInfo) withdrawAccordingToDifferentBalance12() {
 		}
 	}
 }
-func (r *relayerInfo) withdraw11(conn *ethclient.Client) error {
+func (r *relayerInfo) withdraw(conn *ethclient.Client) error {
 
 	if int(r.impawnValue) <= 0 {
 		log.Fatal("Value must bigger than 0")

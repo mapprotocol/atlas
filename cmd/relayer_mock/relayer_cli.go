@@ -59,8 +59,8 @@ func register(ctx *cli.Context, conn *ethclient.Client) (common.Address, *ecdsa.
 		fmt.Println(" current number ", header.Number.String())
 	}
 
-	fmt.Println("Your wallet balance is ", getBalance11(conn, from), "'eth ")
-	value := ethToWei11(impawnValue)
+	fmt.Println("Your wallet balance is ", getBalance(conn, from), "'eth ")
+	value := ethToWei(impawnValue)
 	fee := ctx.GlobalUint64(FeeFlag.Name)
 	checkFee(new(big.Int).SetUint64(fee))
 	pubkey, pk, _ := getPubKey(priKey)
@@ -217,7 +217,7 @@ func dialConn() (*ethclient.Client, string) {
 	return conn, url
 }
 
-func queryRegisterInfo11(conn *ethclient.Client, from common.Address) (bool, bool, *big.Int, error) {
+func queryRegisterInfo(conn *ethclient.Client, from common.Address) (bool, bool, *big.Int, error) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -232,7 +232,6 @@ func queryRegisterInfo11(conn *ethclient.Client, from common.Address) (bool, boo
 
 	method, _ := abiRelayer.Methods["getRelayer"]
 	ret, err := method.Outputs.Unpack(output)
-	fmt.Println()
 	if len(ret) != 0 {
 		args := struct {
 			register bool
@@ -311,7 +310,7 @@ func queryRelayerEpoch(conn *ethclient.Client, currentNum uint64, from common.Ad
 }
 func withdraw(conn *ethclient.Client, from common.Address, priKey *ecdsa.PrivateKey) error {
 
-	value := ethToWei11(100000)
+	value := ethToWei(100000)
 
 	input := packInput("withdraw", from, value)
 
@@ -322,7 +321,7 @@ func withdraw(conn *ethclient.Client, from common.Address, priKey *ecdsa.Private
 
 func Append(conn *ethclient.Client, from common.Address, priKey *ecdsa.PrivateKey) error {
 
-	value := ethToWei11(100000)
+	value := ethToWei(100000)
 
 	input := packInput("append", from, value)
 

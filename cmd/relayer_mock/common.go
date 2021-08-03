@@ -106,7 +106,7 @@ func (d *debugInfo) preWork(ctx *cli.Context, step step, isRegister bool) {
 		Ele.from = acc
 		Ele.priKey = priKey
 		Ele.fee = uint64(0)
-		bb := getBalance11(conn, Ele.from)
+		bb := getBalance(conn, Ele.from)
 		Ele.preBalance = bb
 		Ele.nowBalance = bb
 		if isRegister {
@@ -120,22 +120,22 @@ func (d *debugInfo) queck(ss string) {
 	switch ss {
 	case BALANCE:
 		for k, _ := range d.relayerData {
-			fmt.Println("ADDRESS:", d.relayerData[k].from, " OLD BALANCE :", d.relayerData[k].preBalance, " NOW BALANCE :", getBalance11(conn, d.relayerData[k].from))
+			fmt.Println("ADDRESS:", d.relayerData[k].from, " OLD BALANCE :", d.relayerData[k].preBalance, " NOW BALANCE :", getBalance(conn, d.relayerData[k].from))
 		}
 	case IMPAWN_BALANCE:
 		for k, _ := range d.relayerData {
-			registered, unregistering, unregistered, _, _ := getImpawnBalance11(conn, d.relayerData[k].from)
+			registered, unregistering, unregistered, _, _ := getImpawnBalance(conn, d.relayerData[k].from)
 			fmt.Println("ADDRESS:", d.relayerData[k].from,
 				" NOW IMPAWN BALANCE :", registered, " IMPAWNING BALANCE :", unregistering, "IMPAWNED BALANCE :", unregistered)
 		}
 	case QUERY_RELAYERINFO:
 		for k, _ := range d.relayerData {
-			bool1, bool2, relayerEpoch, _ := queryRegisterInfo11(conn, d.relayerData[k].from)
+			bool1, bool2, relayerEpoch, _ := queryRegisterInfo(conn, d.relayerData[k].from)
 			fmt.Println("ADDRESS:", d.relayerData[k].from, "ISREGISTER:", bool1, " ISRELAYER :", bool2, " RELAYER_EPOCH :", relayerEpoch)
 		}
 	case REWARD:
 		for k, _ := range d.relayerData {
-			_, _, _, reward, _ := getImpawnBalance11(conn, d.relayerData[k].from)
+			_, _, _, reward, _ := getImpawnBalance(conn, d.relayerData[k].from)
 			fmt.Println("ADDRESS:", d.relayerData[k].from, " NOW REWARD:", reward)
 		}
 	case CHAINTYPE_HEIGHT:
@@ -171,20 +171,21 @@ func (d *debugInfo) atlasBackend() {
 		if canNext != "NO" {
 			temp := int(number) - int(target*epochHeight)
 			if temp > 0 {
+				if int((target+1)*epochHeight) < int(number) {
+					log.Fatal("Conditions can never be met")
+				}
 				d.notifyCh <- target + 1
 				canNext = "NO"
 				if count+1 == len(d.step) {
 					return
 				}
-			} else if (target+1)*epochHeight < number {
-				log.Fatal("Conditions can never be met")
 			}
 		}
 		time.Sleep(time.Second)
 	}
 }
 func getEthChains() []ethereum.Header {
-	Db, err := rawdb.NewLevelDBDatabase("zw", 128, 1024, "", false)
+	Db, err := rawdb.NewLevelDBDatabase("relayerMockStore", 128, 1024, "", false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -223,7 +224,7 @@ func getChainsCommon(conn *ethclient.Client) []ethereum.Header {
 	}
 	return Headers
 }
-func ethToWei11(impawn int64) *big.Int {
+func ethToWei(impawn int64) *big.Int {
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	value := new(big.Int).Mul(big.NewInt(impawn), baseUnit)
 	return value
@@ -244,7 +245,7 @@ func printChangeBalance(old, new big.Float) {
 	fmt.Printf("old balance:%v  new balance %v  change %v\n",
 		old1, new1, c.Abs(c.Sub(c, new1)))
 }
-func getBalance11(conn *ethclient.Client, address common.Address) *big.Float {
+func getBalance(conn *ethclient.Client, address common.Address) *big.Float {
 	balance, err := conn.BalanceAt(context.Background(), address, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -254,7 +255,7 @@ func getBalance11(conn *ethclient.Client, address common.Address) *big.Float {
 	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
 	return Value
 }
-func getImpawnBalance11(conn *ethclient.Client, from common.Address) (uint64, uint64, uint64, uint64, uint64) {
+func getImpawnBalance(conn *ethclient.Client, from common.Address) (uint64, uint64, uint64, uint64, uint64) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -298,7 +299,7 @@ func dialEthConn() (*ethclient.Client, string) {
 	return conn, url
 }
 func register11(ctx *cli.Context, conn *ethclient.Client, info relayerInfo) {
-	value := ethToWei11(info.impawnValue)
+	value := ethToWei(info.impawnValue)
 	if info.impawnValue < RegisterAmount {
 		log.Fatal("Amount must bigger than ", RegisterAmount)
 	}
@@ -346,11 +347,11 @@ func convertChain(header *ethereum.Header, headerbyte *bytes.Buffer, e *types.He
 }
 func registerCommon(conn *ethclient.Client, keystore string) (*big.Float, common.Address) {
 	fee := uint64(0)
-	value := ethToWei11(100000)
+	value := ethToWei(100000)
 	priKey, from := loadprivateCommon(keystore)
 
 	pkey, pk, _ := getPubKey(priKey)
-	aBalance := getBalance11(conn, from)
+	aBalance := getBalance(conn, from)
 	fmt.Printf("Fee: %v \nPub key:%v\nvalue:%v\n \n", fee, pkey, value)
 	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
 	sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
@@ -361,6 +362,10 @@ func loadprivateCommon(keyfile string) (*ecdsa.PrivateKey, common.Address) {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
+	}
+	password = "123456"
+	if keyfile == keystore2 {
+		password = ""
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {

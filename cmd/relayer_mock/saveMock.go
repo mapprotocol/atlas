@@ -21,8 +21,8 @@ func saveMock(ctx *cli.Context) error {
 		{url: keystore4},
 		{url: keystore5},
 	}
-	debugInfo.preWork(ctx, []int{1, 2, 3}, true)
-	debugInfo.saveMock(ctx) //change this
+	debugInfo.preWork(ctx, []int{1, 2, 3, 4}, true)
+	debugInfo.saveByDifferentAccounts(ctx) //change this
 	return nil
 }
 
@@ -57,6 +57,8 @@ func (d *debugInfo) saveMock(ctx *cli.Context) {
 				d.queck(REWARD)
 				d.atlasBackendCh <- NEXT_STEP
 				return
+			default:
+				fmt.Println("over")
 			}
 		}
 	}
@@ -67,6 +69,7 @@ func (d *debugInfo) doSave(chains []ethereum.Header) {
 	marshal, _ := json.Marshal(chains)
 	conn := d.client
 	for k, _ := range d.relayerData {
+		fmt.Println("ADDRESS:", d.relayerData[k].from)
 		d.relayerData[k].realSave(conn, "ETH", marshal)
 	}
 }
@@ -80,9 +83,11 @@ func (r *relayerInfo) realSave(conn *ethclient.Client, chainType string, marshal
 	msg := ethchain.CallMsg{From: r.from, To: &HeaderStoreAddress, Data: input}
 	_, err = conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		log.Fatal("method CallContract error (realSave) :", err)
+		//log.Fatal("method CallContract error (realSave) :", err)
+		fmt.Println("save false")
 		return false
 	}
+	fmt.Println("save success")
 	return true
 }
 func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
@@ -97,7 +102,7 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 				d.queck(QUERY_RELAYERINFO)
 				d.queck(BALANCE)
 				d.queck(IMPAWN_BALANCE)
-				d.queck(REWARD)
+				//d.queck(REWARD)
 				d.doSave(d.ethData[:10])
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
@@ -105,17 +110,26 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 				d.queck(QUERY_RELAYERINFO)
 				d.queck(BALANCE)
 				d.queck(IMPAWN_BALANCE)
-				d.queck(REWARD)
-				d.doSave(d.ethData[:10])
+				//d.queck(REWARD)
+				d.doSave(d.ethData[10:20])
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
 				d.queck(CHAINTYPE_HEIGHT)
 				d.queck(QUERY_RELAYERINFO)
 				d.queck(BALANCE)
 				d.queck(IMPAWN_BALANCE)
-				d.queck(REWARD)
+				//d.queck(REWARD)
+				d.doSave(d.ethData[10:20])
+				d.atlasBackendCh <- NEXT_STEP
+			case 4:
+				d.queck(CHAINTYPE_HEIGHT)
+				d.queck(QUERY_RELAYERINFO)
+				d.queck(BALANCE)
+				d.queck(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
+			default:
+				fmt.Println("over")
 			}
 		}
 	}

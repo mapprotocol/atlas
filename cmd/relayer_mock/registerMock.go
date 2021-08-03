@@ -37,6 +37,8 @@ func (d *debugInfo) registerMock(ctx *cli.Context) {
 				d.queck(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
+			default:
+				fmt.Println("over")
 			}
 		}
 	}
@@ -46,6 +48,7 @@ func (d *debugInfo) doRegister(ctx *cli.Context) {
 	fmt.Println("=================DO Register========================")
 	conn := d.client
 	for k, _ := range d.relayerData {
+		fmt.Println("ADDRESS:", d.relayerData[k].from)
 		register11(ctx, conn, *d.relayerData[k])
 	}
 }

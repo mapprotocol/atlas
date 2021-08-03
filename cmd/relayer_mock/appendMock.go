@@ -50,6 +50,8 @@ func (d *debugInfo) appendMock(ctx *cli.Context) {
 				d.queck(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
+			default:
+				fmt.Println("over")
 			}
 		}
 	}
@@ -59,14 +61,15 @@ func (d *debugInfo) doAppend() {
 	fmt.Println("=================DO Withdraw========================")
 	conn := d.client
 	for k, _ := range d.relayerData {
-		d.relayerData[k].Append11(conn)
+		fmt.Println("ADDRESS:", d.relayerData[k].from)
+		d.relayerData[k].Append(conn)
 	}
 }
-func (r *relayerInfo) Append11(conn *ethclient.Client) {
+func (r *relayerInfo) Append(conn *ethclient.Client) {
 	if int(r.impawnValue) <= 0 {
 		log.Fatal("Value must bigger than 0")
 	}
-	value := ethToWei11(r.impawnValue)
+	value := ethToWei(r.impawnValue)
 
 	input := packInput("append", r.from, value)
 
