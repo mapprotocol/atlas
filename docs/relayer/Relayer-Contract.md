@@ -1,3 +1,7 @@
+---
+sort: 1
+---
+
 ## Relayer Introduce
 
 Every node can participate as a relayer to proposal new blocks with account (100 relayer only).

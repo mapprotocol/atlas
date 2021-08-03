@@ -1,1 +1,14 @@
-theme: jekyll-theme-merlot
+title: Atlas
+lang: en
+description: Atlas chain is a truly fast, permissionless, secure and scalable public blockchain platform!
+
+remote_theme: rundocs/jekyll-rtd-theme
+
+readme_index:
+  with_frontmatter: true
+
+exclude:
+  - Makefile
+  - CNAME
+  - Gemfile
+  - Gemfile.lock

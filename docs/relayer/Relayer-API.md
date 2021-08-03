@@ -1,3 +1,7 @@
+---
+sort: 2
+---
+
 ### GetAllRelayers
 
 get all relayers in current epoch
