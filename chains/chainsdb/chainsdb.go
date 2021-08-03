@@ -3,39 +3,28 @@ package chainsdb
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/ethdb"
-
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/mapprotocol/atlas/chains/headers/ethereum"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"gopkg.in/urfave/cli.v1"
 	"math/big"
 	mrand "math/rand"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/consensus"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
+	"gopkg.in/urfave/cli.v1"
+
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
-var error01 = errors.New("no storedb")
-var error02 = errors.New("no chaindb")
+var storeMgrNilErr = errors.New("store mgr struct nil")
+var storeMgrChainDbNilErr = errors.New("store mgr chainDb element nil")
 var (
 	storeMgr *HeaderChainStore
 )
-
-func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
-	if storeMgr == nil {
-		return nil, error01
-	}
-	if storeMgr.chainDb == nil {
-		return nil, error02
-	}
-	storeMgr.currentChainType = chainType
-	return storeMgr, nil
-}
 
 const (
 	DefaultChainType = rawdb.ChainType(0)
@@ -51,7 +40,16 @@ type HeaderChainStore struct {
 func OpenDatabase(file string, cache, handles int) (ethdb.Database, error) {
 	return rawdb.NewLevelDBDatabase(file, 10, 10, "", false)
 }
-
+func GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
+	if storeMgr == nil {
+		return nil, storeMgrNilErr
+	}
+	if storeMgr.chainDb == nil {
+		return nil, storeMgrChainDbNilErr
+	}
+	storeMgr.currentChainType = chainType
+	return storeMgr, nil
+}
 func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) *HeaderChainStore {
 	path := node.DefaultDataDir()
 	if ctx.GlobalIsSet(utils.DataDirFlag.Name) {
@@ -65,25 +63,34 @@ func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) *Heade
 	storeMgr = db
 	return storeMgr
 }
-
-func (db *HeaderChainStore) SetChainType(m rawdb.ChainType) {
-	db.currentChainType = m
+func (hc *HeaderChainStore) GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
+	if storeMgr == nil {
+		return nil, storeMgrNilErr
+	}
+	if storeMgr.chainDb == nil {
+		return nil, storeMgrChainDbNilErr
+	}
+	storeMgr.currentChainType = chainType
+	return storeMgr, nil
+}
+func (hc *HeaderChainStore) SetChainType(m rawdb.ChainType) {
+	hc.currentChainType = m
 }
 
-func (db *HeaderChainStore) ReadHeader(Hash common.Hash, number uint64) *ethereum.Header {
-	return rawdb.ReadHeaderChains(db.chainDb, Hash, number, db.currentChainType)
+func (hc *HeaderChainStore) ReadHeader(Hash common.Hash, number uint64) *ethereum.Header {
+	return rawdb.ReadHeaderChains(hc.chainDb, Hash, number, hc.currentChainType)
 }
 
-func (db *HeaderChainStore) WriteHeader(header *ethereum.Header) {
-	batch := db.chainDb.NewBatch()
+func (hc *HeaderChainStore) WriteHeader(header *ethereum.Header) {
+	batch := hc.chainDb.NewBatch()
 	// Flush all accumulated deletions.
 	if err := batch.Write(); err != nil {
 		log.Crit("Failed to rewind block", "error", err)
 	}
-	rawdb.WriteHeaderChains(db.chainDb, header, db.currentChainType)
+	rawdb.WriteHeaderChains(hc.chainDb, header, hc.currentChainType)
 }
-func (db *HeaderChainStore) DeleteHeader(hash common.Hash, number uint64) {
-	rawdb.DeleteHeaderChains(db.chainDb, hash, number, db.currentChainType)
+func (hc *HeaderChainStore) DeleteHeader(hash common.Hash, number uint64) {
+	rawdb.DeleteHeaderChains(hc.chainDb, hash, number, hc.currentChainType)
 }
 
 func (hc *HeaderChainStore) InsertHeaderChain(chains []*ethereum.Header, start time.Time) (WriteStatus, error) {
@@ -151,9 +158,9 @@ func (hc *HeaderChainStore) HasHeader(hash common.Hash, number uint64) bool {
 }
 func (hc *HeaderChainStore) CurrentHeaderNumber() uint64 {
 	currentHeaderHash := hc.CurrentHeaderHash()
-	currentNum := (rawdb.ReadHeaderNumberChains(hc.chainDb, currentHeaderHash, hc.currentChainType))
+	currentNum := rawdb.ReadHeaderNumberChains(hc.chainDb, currentHeaderHash, hc.currentChainType)
 	if currentNum == nil {
-		return uint64(0)
+		return uint64(1)
 	}
 	return *(currentNum)
 }
@@ -429,13 +436,8 @@ func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
 		log.Error("wrong genesis!")
 		return
 	}
-	rawdb.WriteHeaderChains(storeMgr.chainDb, header, storeMgr.currentChainType)
+	rawdb.WriteHeaderChains(storeMgr.chainDb, header, chainType)
 	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
-	rawdb.WriteReceiptsChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), nil, chainType)
 	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
-	rawdb.WriteHeadBlockHashChains(storeMgr.chainDb, header.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHashChains(storeMgr.chainDb, header.Hash(), chainType)
 	rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
-	rawdb.WriteChainConfigChains(storeMgr.chainDb, header.Hash(), (&core.Genesis{}).Config, chainType)
-
 }

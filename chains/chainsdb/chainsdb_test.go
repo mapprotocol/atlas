@@ -48,7 +48,6 @@ func TestHeaderInsertion01(t *testing.T) {
 	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db001, 10)
 	chainB001 := converChainList(chainB)
 	log.Root().SetHandler(log.StdoutHandler)
-
 	// Inserting 64 headers on an empty chain, expecting
 	// 1 callbacks, 1 canon-status, 0 sidestatus,
 	testInsert01(t, hc, chainA001[:64], CanonStatTyState, nil)
@@ -364,7 +363,7 @@ func TestGenesis1(t *testing.T) {
 	// chain B: G->A1->B2...B128
 	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db001, 10)
 	chainB001 := converChainList(chainB)
-
+	chainB001[0].Number = big.NewInt(0)
 	type args struct {
 		header    *ethereum.Header
 		chainType rawdb.ChainType
