@@ -260,7 +260,7 @@ func (t ChainType) setTypeKeyNum(b []byte, n uint64) []byte {
 	return append(append(b, t.toByte()...), encodeBlockNumber(n)...)
 }
 
-//--------------- mark ---------
+//--------------- chains ---------
 // headerKey = headerPrefix + num (uint64 big endian) + hash
 func headerKeyChains(t ChainType, number uint64, hash common.Hash) []byte {
 	return append(append(headerPrefix, t.setTypeNumber(number)...), hash.Bytes()...)
