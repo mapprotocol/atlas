@@ -42,36 +42,10 @@ directory.
 
 |    Command    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | :-----------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|  **`atlas`**   | Our main Atlas CLI client. It is the entry point into the Atlas network (main-, test- or private net), capable of running as a full node (default), archive node (retaining all historical state) or a light node (retrieving data live). It can be used by other processes as a gateway into the Atlas network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. `atlas --help` ) for command line options.          |
-|   `devp2p`    | Utilities to interact with nodes on the networking layer, without running a full blockchain. |
-|   `abigen`    | Source code generator to convert Atlas contract definitions into easy to use, compile-time type-safe Go packages. It operates on plain Atlas contract ABIs with expanded functionality if the contract bytecode is also available. However, it also accepts Solidity source files, making development much more streamlined. |
-|  `bootnode`   | Stripped down version of our Atlas client implementation that only takes part in the network node discovery protocol, but does not run any of the higher level application protocols. It can be used as a lightweight bootstrap node to aid in finding peers in private networks.                                                                                                |
-|     `evm`     | Developer utility version of the EVM (Atlas Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode. Its purpose is to allow isolated, fine-grained debugging of EVM opcodes.                                                                                                    |
-|   `rlpdump`   | Developer utility tool to convert binary RLP Recursive Length Prefix dumps (data encoding used by the Atlas protocol both network as well as consensus wise) to user-friendlier hierarchical representation.                                                           |
-|   `puppeth`   | a CLI wizard that aids in creating a new Atlas network. |
+|   `ethclient`    | Simulate the atlas client to call the contract or obtain the atlas information. |
+|   `relayer_mock`    | Test cases of relayer module and headerstore module from the perspective of customers. |
+|  `relayer_cli`   | Test cases of relayer module  from the perspective of customers.                   
 
-## Running `atlas`
-
-Going through all the possible command line flags is out of scope here ,
-but we've enumerated a few common parameter combos to get you up to speed quickly on how you can run your own `atlas` instance.
-
-### Full node on the main Atlas network
-
-By far the most common scenario is people wanting to simply interact with the Atlas
-network: create accounts; transfer funds; deploy and interact with contracts. For this
-particular use-case the user doesn't care about years-old historical data, so we can
-fast-sync quickly to the current state of the network. To do so:
-
-```shell
-$ atlas console
-```
-
-This command will:
- * Start `atlas` in fast sync mode (default, can be changed with the `--syncmode` flag),
-   causing it to download more data in exchange for avoiding processing the entire history of the Atlas network, which is very CPU intensive.
- * Start up `atlas`'s built-in interactive JavaScript console,
-   (via the trailing `console` subcommand) through which you can interact using [`web3` methods](https://web3js.readthedocs.io/en/) 
-   This tool is optional and if you leave it out you can always attach to an already running `atlas` instance with `atlas attach`.
 
 
 ### Configuration
@@ -252,10 +226,3 @@ Please make sure your contributions adhere to our coding guidelines:
  * Pull requests need to be based on and opened against the `master` branch.
  * Commit messages should be prefixed with the package(s) they modify.
    * E.g. "eth, rpc: make trace configs optional"
-
-Please see the [Developers' Guide](https://geth.ethereum.org/docs/developers/devguide)
-for more details on configuring your environment, managing project dependencies, and
-testing procedures.
-
-
-
