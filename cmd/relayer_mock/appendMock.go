@@ -22,32 +22,32 @@ func (d *debugInfo) appendMock(ctx *cli.Context) {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(100)
 				d.doAppend()
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(100)
 				d.doAppend()
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(100)
 				d.doAppend()
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.doAppend()
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:

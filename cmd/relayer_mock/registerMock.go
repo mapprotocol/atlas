@@ -20,21 +20,21 @@ func (d *debugInfo) registerMock(ctx *cli.Context) {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.doRegister(ctx)
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.doRegister(ctx)
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:

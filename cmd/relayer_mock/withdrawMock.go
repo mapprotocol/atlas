@@ -23,18 +23,18 @@ func (d *debugInfo) withdrawMock(ctx *cli.Context) {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(QUERY_RELAYERINFO)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.doWithdraw()
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			}
@@ -61,25 +61,25 @@ func (d *debugInfo) withdrawAtDifferentEpoch12() {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.doWithdraw()
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				fmt.Println("=====================================================")
 				d.doWithdraw()
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:
@@ -97,24 +97,24 @@ func (d *debugInfo) withdrawAccordingToDifferentBalance12() {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(500)
 				d.doWithdraw()
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(300)
 				d.doWithdraw()
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(100)
 				d.doWithdraw()
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.changeAllImpawnValue(1000000)
 				d.doWithdraw()
 				d.atlasBackendCh <- NEXT_STEP

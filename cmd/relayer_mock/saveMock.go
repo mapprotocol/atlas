@@ -34,27 +34,27 @@ func (d *debugInfo) saveMock(ctx *cli.Context) {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
-				d.queck(REWARD)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REWARD)
 				d.doSave(d.ethData[:10])
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
-				d.queck(REWARD)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REWARD)
 				d.doSave(d.ethData[:10])
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
-				d.queck(REWARD)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REWARD)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:
@@ -98,34 +98,34 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
 			switch currentEpoch {
 			case 1:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
-				//d.queck(REWARD)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
+				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[:10])
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
-				//d.queck(REWARD)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
+				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[10:20])
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
-				//d.queck(REWARD)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
+				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[10:20])
 				d.atlasBackendCh <- NEXT_STEP
 			case 4:
-				d.queck(CHAINTYPE_HEIGHT)
-				d.queck(QUERY_RELAYERINFO)
-				d.queck(BALANCE)
-				d.queck(IMPAWN_BALANCE)
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(IMPAWN_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:

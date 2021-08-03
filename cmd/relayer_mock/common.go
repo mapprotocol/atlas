@@ -115,7 +115,7 @@ func (d *debugInfo) preWork(ctx *cli.Context, step step, isRegister bool) {
 	}
 
 }
-func (d *debugInfo) queck(ss string) {
+func (d *debugInfo) queryDebuginfo(ss string) {
 	conn := d.client
 	switch ss {
 	case BALANCE:
