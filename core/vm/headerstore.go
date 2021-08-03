@@ -100,7 +100,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	// store synchronization information
+	// calc synchronization information
 	headerStore := NewHeaderStore()
 	err = headerStore.Load(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
@@ -111,7 +111,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	var total uint64
 	for _, h := range hs {
 		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
-			continue
+			return nil, fmt.Errorf("the number of synchronizations has reached the limit(%d)", TimesLimit)
 		}
 		total++
 		headerStore.IncrReceiveTimes(h.Number.Uint64())
@@ -121,12 +121,6 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
-
-	err = headerStore.Store(evm.StateDB, params.HeaderStoreAddress)
-	if err != nil {
-		log.Error("sync save state error", "error", err)
-		return nil, err
-	}
 
 	chainType, err := chains.ChainNameToChainType(args.From)
 	if err != nil {
@@ -140,6 +134,13 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 	if _, err := store.InsertHeaderChain(hs, start); err != nil {
 		log.Error("InsertHeaderChain failed.", "err", err)
+		return nil, err
+	}
+
+	// store synchronization information
+	err = headerStore.Store(evm.StateDB, params.HeaderStoreAddress)
+	if err != nil {
+		log.Error("sync save state error", "error", err)
 		return nil, err
 	}
 	return nil, nil

@@ -17,7 +17,7 @@ func dialEthConn() (*ethclient.Client, string) {
 	url := "http://127.0.0.1:8545"
 	conn, err := ethclient.Dial(url)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Abeychain client: %v", err)
+		log.Fatalf("Failed to connect to the MAP chain client: %v", err)
 	}
 	return conn, url
 }

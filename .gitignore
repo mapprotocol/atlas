@@ -1,0 +1,11 @@
+# IdeaIDE
+.idea
+
+# VS Code
+.vscode
+
+# DS_Store
+.DS_Store
+
+# used by the Makefile
+/build/bin/
