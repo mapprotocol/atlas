@@ -25,12 +25,11 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"github.com/mapprotocol/atlas/accounts/scwallet"
-	"github.com/mapprotocol/atlas/accounts/usbwallet"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/internal/jsre"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/accounts/scwallet"
+	"github.com/mapprotocol/atlas/apis/jsre"
 )
 
 // bridge is a collection of JavaScript utility methods to bride the .js runtime
@@ -124,7 +123,7 @@ func (b *bridge) OpenWallet(call jsre.Call) (goja.Value, error) {
 
 	// Wallet open failed, report error unless it's a PIN or PUK entry
 	switch {
-	case strings.HasSuffix(err.Error(), usbwallet.ErrTrezorPINNeeded.Error()):
+	case strings.HasSuffix(err.Error(), "trezor: pin needed"):
 		val, err = b.readPinAndReopenWallet(call)
 		if err == nil {
 			return val, nil

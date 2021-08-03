@@ -30,10 +30,10 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/ethereum/go-ethereum/internal/jsre/deps"
-	"github.com/ethereum/go-ethereum/internal/web3ext"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/apis/jsre"
+	"github.com/mapprotocol/atlas/apis/jsre/deps"
+	"github.com/mapprotocol/atlas/apis/web3ext"
 	"github.com/mattn/go-colorable"
 	"github.com/peterh/liner"
 )
@@ -296,12 +296,12 @@ func (c *Console) AutoCompleteInput(line string, pos int) (string, []string, str
 	return line[:start], c.jsre.CompleteKeywords(line[start:pos]), line[pos:]
 }
 
-// Welcome show summary of current Geth instance and some metadata about the
+// Welcome show summary of current Atlas instance and some metadata about the
 // console's available modules.
 func (c *Console) Welcome() {
-	message := "Welcome to the Geth JavaScript console!\n\n"
+	message := "Welcome to the Atlas JavaScript console!\n\n"
 
-	// Print some generic Geth metadata
+	// Print some generic Atlas metadata
 	if res, err := c.jsre.Run(`
 		var message = "instance: " + web3.version.node + "\n";
 		try {
