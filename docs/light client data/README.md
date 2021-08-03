@@ -2,8 +2,8 @@
 sort: 2
 ---
 
-# Header Store
+# light client data
 
-the header store contract in the atlas:
+the light client data(header) store contract in the atlas:
 
 {% include list.liquid %}
