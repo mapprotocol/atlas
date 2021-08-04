@@ -30,8 +30,9 @@ func (eh *Header) Hash() common.Hash {
 	return rlpHash(eh)
 }
 
-func (eh *Header) Genesis() *Header {
+func (eh *Header) Genesis(chainID uint64) *Header {
 	genesis := &Header{}
-	_ = json.Unmarshal([]byte(GenesisJSON), genesis)
+	g := GetGenesisByChainID(chainID)
+	_ = json.Unmarshal([]byte(g), genesis)
 	return genesis
 }

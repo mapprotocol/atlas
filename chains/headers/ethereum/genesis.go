@@ -1,5 +1,7 @@
 package ethereum
 
+import "github.com/mapprotocol/atlas/params"
+
 var GenesisJSON = ` {
         "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
@@ -53,3 +55,16 @@ var PrivateGenesisJSON = ` {
         "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "nonce": "0x0000000000000042"
     }`
+
+var ChainID2GenesisJSON = map[uint64]string{
+	params.MainNetChainID: GenesisJSON,
+	params.TestNetChainID: TestnetGenesisJSON,
+	params.DevNetChainID:  PrivateGenesisJSON,
+}
+
+func GetGenesisByChainID(chainID uint64) string {
+	if g, ok := ChainID2GenesisJSON[chainID]; ok {
+		return g
+	}
+	return GenesisJSON
+}

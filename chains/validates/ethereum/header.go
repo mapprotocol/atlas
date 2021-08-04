@@ -47,7 +47,7 @@ func (v *Validate) GetHashByNumber(chain rawdb.ChainType, number uint64) (common
 	return store.ReadCanonicalHash(number), nil
 }
 
-func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
+func (v *Validate) ValidateHeaderChain(chainID uint64, chain []*ethereum.Header) (int, error) {
 	chainLength := len(chain)
 	if chainLength == 1 {
 		if chain[0].Number == nil || chain[0].Difficulty == nil {
@@ -81,7 +81,7 @@ func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 	}
 
 	if firstNumber.Cmp(big.NewInt(1)) == 0 {
-		chainsdb.Genesis(chain[0].Genesis(), chains.ChainTypeETH)
+		chainsdb.Genesis(chain[0].Genesis(chainID), chains.ChainTypeETH)
 	}
 
 	abort, results := v.VerifyHeaders(chain)

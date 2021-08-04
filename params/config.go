@@ -6,6 +6,13 @@ import (
 	"math/big"
 )
 
+const (
+	MainNetChainID    uint64 = 211
+	TestNetChainID    uint64 = 212
+	DevNetChainID     uint64 = 213
+	SingleNodeChainID uint64 = 214
+)
+
 // Genesis hashes to enforce below configs on.
 var (
 	MainnetGenesisHash = common.HexToHash("0xf6285fd285d6c15aae581220e9b13f4d0ac75428ee90076e737f4e6125d31723")

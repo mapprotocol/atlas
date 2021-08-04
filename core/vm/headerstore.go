@@ -72,8 +72,8 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 	// decode
 	args := struct {
-		From    uint64
-		To      uint64
+		From    *big.Int
+		To      *big.Int
 		Headers []byte
 	}{}
 
@@ -87,7 +87,9 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	// check if it is a supported chain
-	if !(chains.IsSupportedChain(rawdb.ChainType(args.From)) || chains.IsSupportedChain(rawdb.ChainType(args.To))) {
+	fromChain := rawdb.ChainType(args.From.Uint64())
+	toChain := rawdb.ChainType(args.To.Uint64())
+	if !(chains.IsSupportedChain(fromChain) || chains.IsSupportedChain(toChain)) {
 		return nil, ErrNotSupportChain
 	}
 
@@ -101,7 +103,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	// validate header
 	header := new(ve.Validate)
 	start := time.Now()
-	if _, err := header.ValidateHeaderChain(hs); err != nil {
+	if _, err := header.ValidateHeaderChain(evm.chainConfig.ChainID.Uint64(), hs); err != nil {
 		log.Error("ValidateHeaderChain failed.", "err", err)
 		return nil, err
 	}
@@ -129,7 +131,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
 
 	// store block header
-	store, err := chainsdb.GetStoreMgr(rawdb.ChainType(args.From))
+	store, err := chainsdb.GetStoreMgr(fromChain)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +151,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		ChainID uint64
+		ChainID *big.Int
 	}{}
 	method, _ := abiHeaderStore.Methods[CurNbrAndHash]
 	unpack, err := method.Inputs.Unpack(input)
@@ -161,7 +163,7 @@ func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byt
 	}
 
 	v := new(ve.Validate)
-	c := rawdb.ChainType(args.ChainID)
+	c := rawdb.ChainType(args.ChainID.Uint64())
 	number, err := v.GetCurrentHeaderNumber(c)
 	if err != nil {
 		return nil, err
