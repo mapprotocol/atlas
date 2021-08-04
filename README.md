@@ -1,6 +1,6 @@
 ## Atlas chain 
 
-Atlas chain is a truly fast, permissionless, secure and scalable public blockchain platform.
+Atlas chain is a truly fast, permissionless, secure and scalable public blockchain platform. [more](https://mapprotocol.github.io/atlas/)
 
 <a href="https://github.com/mapprotocol/atlas/blob/main/COPYING"><img src="https://img.shields.io/badge/license-GPL%20%20Atlas-lightgrey.svg"></a>
 
