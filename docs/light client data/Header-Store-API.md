@@ -5,6 +5,7 @@ sort: 2
 # Header-Store-API
 
 ## chain identification list
+
 | chain ID | comment           |
 | ---------| ----------------- | 
 | 1000     | MAP chain         |
@@ -43,7 +44,6 @@ curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","metho
 }
 
 ```
-
 
 ## GetHashByNumber
 
@@ -134,7 +134,6 @@ get relayer rewards for the specified epoch
 | parameter | type   | comment |
 | --------- | ------ | ------- |
 | result    | number | reward of relayer |
-
 
 ### example
 
