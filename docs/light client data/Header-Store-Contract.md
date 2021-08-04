@@ -19,17 +19,22 @@ header store contract is deployed at address:
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "chain",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "chainID",
+        "type": "uint256"
       }
     ],
-    "name": "currentHeaderNumber",
+    "name": "currentNumberAndHash",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "number",
         "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "hash",
+        "type": "bytes"
       }
     ],
     "stateMutability": "nonpayable",
@@ -38,14 +43,14 @@ header store contract is deployed at address:
   {
     "inputs": [
       {
-        "internalType": "string",
+        "internalType": "uint256",
         "name": "from",
-        "type": "string"
+        "type": "uint256"
       },
       {
-        "internalType": "string",
+        "internalType": "uint256",
         "name": "to",
-        "type": "string"
+        "type": "uint256"
       },
       {
         "internalType": "bytes",
@@ -67,21 +72,21 @@ header store contract is deployed at address:
 
 validate and save the block header synchronized by the relayer
 
-### parameters
+#### parameters
 
 | parameter| type   | comment |
 | -------- | ------ | ------- |
-| from     | string | source chain identification |
-| to       | string | destination chain identification |
-| header   | []byte | block header json serialized data |
+| from     | number | source chain identification |
+| to       | number | destination chain identification |
+| headers  | []byte | block header json serialized data |
 
 ### currentHeaderNumber
 
 get the current synchronized part height of the corresponding chain
 
-### parameters
+#### parameters
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| chain     | string | chain identification |
+| chainID   | number | chain identification |
 
