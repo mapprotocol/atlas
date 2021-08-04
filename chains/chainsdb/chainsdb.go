@@ -160,7 +160,7 @@ func (hc *HeaderChainStore) CurrentHeaderNumber() uint64 {
 	currentHeaderHash := hc.CurrentHeaderHash()
 	currentNum := rawdb.ReadHeaderNumberChains(hc.chainDb, currentHeaderHash, hc.currentChainType)
 	if currentNum == nil {
-		return uint64(1)
+		return uint64(0)
 	}
 	return *(currentNum)
 }
