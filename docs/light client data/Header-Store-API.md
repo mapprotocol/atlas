@@ -14,3 +14,8 @@ get the synchronized part height of the corresponding chain m:1
 | --------- | ------ | ------- |
 | chain     | string | chain identification |
 
+### response parameters
+
+| parameter | type   | comment |
+| --------- | ------ | ------- |
+| result    | number | current block height |
