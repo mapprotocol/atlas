@@ -1626,7 +1626,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 	case ctx.GlobalBool(SingleFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 1234
+			cfg.NetworkId = params2.SingleWorkID
 		}
 		// Create new developer account or reuse existing one
 		var (

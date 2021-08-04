@@ -397,7 +397,7 @@ func DevnetGenesisBlock() *Genesis {
 // SingleGenesisBlock returns the 'geth --dev' genesis block.
 func SingleGenesisBlock(faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
-	config := *params2.SingleNetCfg
+	config := *params2.SingleNetConfig
 	//config.Ethash.Period = period
 	dc := defaultRelayer()
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
