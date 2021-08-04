@@ -90,16 +90,6 @@ const RelayerABIJSON = `[
     "name": "Register",
     "inputs": [
       {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "bytes",
-        "name": "pubkey",
-        "indexed": false
-      },
-      {
         "type": "uint256",
         "name": "value",
         "indexed": false

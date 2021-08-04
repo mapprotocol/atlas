@@ -1,4 +1,10 @@
-### GetAllRelayers
+---
+sort: 2
+---
+
+# Relayer-API
+
+## GetAllRelayers
 
 get all relayers in specified epoch on the basis of block number
 
@@ -39,7 +45,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-### GetAccountInfo
+## GetAccountInfo
 
 query your account is registered or not, is elected for relayer or not in specified epoch on the basis of block number
 
@@ -70,7 +76,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-### GetSyncNumber
+## GetSyncNumber
 
 query block number relayer Synchronized in specified epoch on the basis of block number
 
@@ -101,7 +107,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-### GetRegisteredBalance
+## GetRelayerBalance
 
 query registered balance in your account
 
