@@ -42,9 +42,8 @@ directory.
 
 |    Command    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | :-----------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   `ethclient`    | Simulate the atlas client to call the contract or obtain the atlas information. |
-|   `relayer_mock`    | Test cases of relayer module and headerstore module from the perspective of customers. |
-|  `relayer_cli`   | Test cases of relayer module  from the perspective of customers.                   
+|   `relayer_mock`    | Test cases of relayer module and headerstore module from the perspective of customers.You can get relayer information and storeHeaderMod through this tool    |
+|  `relayer_cli`   | Test cases of relayer module  from the perspective of customers. You can get relayer information through this tool                 
 
 
 
@@ -102,7 +101,6 @@ Maintaining your own private network is more involved as a lot of configurations
 granted in the official networks need to be manually set up.
 
 #### Defining the private genesis state
-
 First, you'll need to create the genesis state of your networks, which all nodes need to be
 aware of and agree upon. This consists of a small JSON file (e.g. call it `genesis.json`):
 
@@ -111,12 +109,16 @@ aware of and agree upon. This consists of a small JSON file (e.g. call it `genes
   "config": {
     "chainId": <arbitrary positive integer>,
     "homesteadBlock": 0,
+    "daoForkBlock":0,
+	"daoForkSupport":true,
     "eip150Block": 0,
+    "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "eip155Block": 0,
     "eip158Block": 0,
     "byzantiumBlock": 0,
     "constantinopleBlock": 0,
     "petersburgBlock": 0,
+    "muirGlacierBlock":0,
     "istanbulBlock": 0,
     "berlinBlock": 0
   },
@@ -156,24 +158,6 @@ set:
 $ atlas init path/to/genesis.json
 ```
 
-#### Creating the rendezvous point
-
-With all nodes that you want to run initialized to the desired genesis state, you'll need to
-start a bootstrap node that others can use to find each other in your network and/or over
-the internet. The clean way is to configure and run a dedicated bootnode:
-
-```shell
-$ bootnode --genkey=boot.key
-$ bootnode --nodekey=boot.key
-```
-
-With the bootnode online, it will display an [`enode` URL](https://eth.wiki/en/fundamentals/enode-url-format)
-that other nodes can use to connect to it and exchange peer information. Make sure to
-replace the displayed IP address information (most probably `[::]`) with your externally
-accessible IP to get the actual `enode` URL.
-
-*Note: You could also use a full-fledged `atlas` node as a bootnode, but it's the less
-recommended way.*
 
 #### Starting up your member nodes
 
@@ -206,7 +190,7 @@ $ atlas <usual-flags> --miner.etherbase=0x00000000000000000000000000000000000000
 ```
 
 Which will start mining blocks and transactions on a single CPU thread, crediting all
-proceedings to the account specified by `--miner.etherbase`. You can further tune the mining by changing the default gas limit blocks converge to (`--miner.targetgaslimit`) and the price transactions are accepted at (`--miner.gasprice`).
+proceedings to the account specified by `--miner.etherbase`. You can further tune the mining by changing the default gas price transactions converge to (`--miner.gasprice`).
 
 ## Contribution
 
@@ -226,3 +210,8 @@ Please make sure your contributions adhere to our coding guidelines:
  * Pull requests need to be based on and opened against the `master` branch.
  * Commit messages should be prefixed with the package(s) they modify.
    * E.g. "eth, rpc: make trace configs optional"
+
+
+
+
+
