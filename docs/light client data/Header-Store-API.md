@@ -62,7 +62,7 @@ get the block hash of the corresponding chain by number
 
 # request:
 
-curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_getHashByNumber","params":["ETH", 1],"id":1}' http://127.0.0.1:7445
+curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_getHashByNumber","params":["ETH", "1"],"id":1}' http://127.0.0.1:7445
 
 # response:
 
@@ -98,7 +98,7 @@ get relayer rewards for the specified epoch
 
 # request:
 
-curl -X POST -H "Content-Type: application/json" --data '{{"jsonrpc":"2.0","method":"header_getRelayerReward","params":[1, "0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"],"id":1}' http://127.0.0.1:7445
+curl -X POST -H "Content-Type: application/json" --data '{{"jsonrpc":"2.0","method":"header_getRelayerReward","params":["1", "0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"],"id":1}' http://127.0.0.1:7445
 
 #response:
 
