@@ -65,19 +65,21 @@ $ atlas --your-favourite-flags dumpconfig
 
 Do not forget `--http.addr 0.0.0.0`, if you want to access RPC from other containers and/or hosts. By default, `atlas` binds to the local interface and RPC endpoints is not accessible from the outside.
 
-### DefultConfig
-| parameter    | MainnetChain| TestnetChain      | DevnetChain       | SingleNetChain   |
+### DefultParams
+| param    | MainnetChain| TestnetChain      | DevnetChain       | SingleNetChain   |
 | :-----------: | :--------------| :---------------- | :----------------| :---------------|
 | ChainId       |     211      |     212      |     213      |     214    |
 | NetworkId     |     211      |     212      |     213      |     214      |
 | Port          |     20101      |     20101      |     20101      |20101|
 | RpcPort       |     7445      |     7445      |     7445      |     7445   |
 
-| parameter      | value|
+| param      | value| comment
 | :-----------:  | :--------------  | 
 | miner.threads  |     0            |   
 | miner.gaslimit |     8000000      |  
-|miner.gasprice  |    1e9Wei        | 
+| miner.gasprice |    1e9Wei        | 
+| TxGas       |    21000         |Minimum gas of creating a transaction |
+
 ### Programmatically interfacing `atlas` nodes
 
 As a developer, sooner rather than later you'll want to start interacting with `atlas` and the Atlas network via your own programs and not manually through the console. To aid this, `atlas` has built-in support for a JSON-RPC based APIs standard APIs.
