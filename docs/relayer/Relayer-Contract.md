@@ -1,6 +1,7 @@
 ---
 sort: 1
 ---
+
 # Relayer-Contract
 
 ## Relayer Introduce
@@ -17,7 +18,7 @@ If relayer not completes task (about synchronising 1000 block) in current epoch,
 One node can participate as a relayer to proposal new blocks with `register` function. To
 become relayer, you need to `register` with some `eth` coins.
 
-### parameters
+`register` function inputs 1 item:
 
 | parameter | type    | comment                                                      |
 | --------- | ------- | ------------------------------------------------------------ |
@@ -29,6 +30,8 @@ become relayer, you need to `register` with some `eth` coins.
 You can unregister a portion of the registered from account balance. With the `unregister` transaction executed, the unregistering portion is locked in the contract for about 2 epoch.
 After the period, you can withdraw the unregistered coins.
 
+`unregister` function inputs 1 item:
+
 | parameter | type    | comment                                        |
 | :-------- | ------- | ---------------------------------------------- |
 | value     | uint256(eth) | unregister a portion of balance, the unit is `eth` |
@@ -36,6 +39,8 @@ After the period, you can withdraw the unregistered coins.
 ### append
 
 After register, you can append extra `eth` token to the contract by `append` function.
+
+`append` function inputs 1 item:
 
 | parameter | type | comment                                         |
 | --------- | ---- | ----------------------------------------------- |
@@ -45,24 +50,28 @@ After register, you can append extra `eth` token to the contract by `append` fun
 
 You can withdraw the unregistered token after a period of 2 epoch.
 
+`withdraw` function inputs 1 item:
+
 | parameter | type         | comment                                 |
 | --------- | ------------ | --------------------------------------- |
 | value     | uint256(eth) | amount of value withdrawed to the owner |
 
-### getRegisteredBalance
+### getRelayerBalance
 
 You can query balance status by `getRegisterBalance` function. there are 3 states for the
-deposit: `registerde`, `unregistering`, `unregistered`
+balance: `registerde`, `unregistering`, `unregistered`
 
 * registered: token which you bond to contract
 * unregistering: token which are unregistering but are still locked in the contract util 2 epoch.
 * unregistered: you use withdraw token of unregistered state
 
+`getRelayerBalance` function inputs 1 item:
+
 | parameter | type    | comment         |
 | --------- | ------- | --------------- |
 | owner     | address | account address |
 
-`getRegisterBalance` function outputs tuple of 3 items:
+`getRelayerBalance` function outputs 3 items:
 
 | parameter     | type    | comment                                                   |
 | ------------- | ------- | --------------------------------------------------------- |
@@ -74,11 +83,13 @@ deposit: `registerde`, `unregistering`, `unregistered`
 
 You can query that you are registered or not, relayer or not
 
+`getRelayer` function inputs 1 item:
+
 | parameter | type    | comment         |
 | --------- | ------- | --------------- |
 | owner     | address | account address |
 
-`getRelayer` function outputs tuple of 3 items:
+`getRelayer` function outputs 3 items:
 
 | parameter     | type    | comment                 |
 | ------------- | ------- | ----------------------- |
@@ -90,11 +101,13 @@ You can query that you are registered or not, relayer or not
 
 You can query that started block number, ended block number and remained block number in the current epoch
 
+`getPeriodHeight` function inputs 1 item:
+
 | parameter | type    | comment         |
 | --------- | ------- | --------------- |
 | owner     | address | account address |
 
-`getPeriodHeight` function outputs 4 items:
+`getPeriodHeight` function outputs 3 items:
 
 | parameter     | type    | comment                                   |
 | ------------- | ------- | ----------------------------------------- |
