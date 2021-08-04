@@ -15,18 +15,12 @@ If relayer not completes task (about synchronising 1000 block) in current epoch,
 ### register
 
 One node can participate as a relayer to proposal new blocks with `register` function. To
-become relayer, you need to `register` with some `eth` coins. You can charge for additional `fee` rate from the reward.
-
-The feeRate calculation:
-
-feeRate = fee / 10000
+become relayer, you need to `register` with some `eth` coins.
 
 ### parameters
 
 | parameter | type    | comment                                                      |
 | --------- | ------- | ------------------------------------------------------------ |
-| pubkey    | bytes   | BFT public key of 65 bytes                                   |
-| fee       | uint256 | percent of reward charged for relayer, the rate = fee / 10000 |
 | value     | uint256(eth)     | `eth` token to register |
 
 
@@ -55,9 +49,9 @@ You can withdraw the unregistered token after a period of 2 epoch.
 | --------- | ------------ | --------------------------------------- |
 | value     | uint256(eth) | amount of value withdrawed to the owner |
 
-### getBlance
+### getRegisteredBalance
 
-You can query balance status by `getBalance` function. there are 3 states for the
+You can query balance status by `getRegisterBalance` function. there are 3 states for the
 deposit: `registerde`, `unregistering`, `unregistered`
 
 * registered: token which you bond to contract
@@ -68,7 +62,7 @@ deposit: `registerde`, `unregistering`, `unregistered`
 | --------- | ------- | --------------- |
 | owner     | address | account address |
 
-`getBalance` function outputs tuple of 3 items:
+`getRegisterBalance` function outputs tuple of 3 items:
 
 | parameter     | type    | comment                                                   |
 | ------------- | ------- | --------------------------------------------------------- |
@@ -105,6 +99,5 @@ You can query that started block number, ended block number and remained block n
 | parameter     | type    | comment                                   |
 | ------------- | ------- | ----------------------------------------- |
 | started       | uint256 | started block number in the current epoch |
-| ended         | uint256 | ended block number in the current epoch   | 
-| remained      | uint256 | remained block number in the current epoch|  
+| ended         | uint256 | ended block number in the current epoch   |
 | relayer       | bool    | you are relayer or not                    | 

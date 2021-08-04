@@ -1,6 +1,6 @@
 ### GetAllRelayers
 
-get all relayers in current epoch
+get all relayers in specified epoch on the basis of block number
 
 ### request parameters
 
@@ -41,7 +41,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 
 ### GetAccountInfo
 
-query your account is registered or not, is elected for relayer or not
+query your account is registered or not, is elected for relayer or not in specified epoch on the basis of block number
 
 ### request parameters
 
@@ -72,7 +72,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 
 ### GetSyncNumber
 
-query block number relayer Synchronized in the current epoch
+query block number relayer Synchronized in specified epoch on the basis of block number
 
 ### request parameters
 
@@ -101,38 +101,9 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-### GetCurrentEpochInfo
+### GetRegisteredBalance
 
-query message about the current epoch
-
-### request parameters
-
-| parameter | type   | comment |
-| --------- | ------ | ------- |
-| number    | string | block number |
-
-### response parameters
-
-| parameter | type   | comment |
-| --------- | ------ | ------- |
-| result    | string | epoch message |
-
-### example
-
-```shell
-# request:
-curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method":"relayer_getCurrentEpochInfo","params":["latest"],"id":83}' http://127.0.0.1:7445 | jq
-
-#response:
-{
-  "jsonrpc": "2.0",
-  "id": 83,
-  "result": "epochID:1, blockNumber:839, epoch start:1, epoch end:10000"
-}
-```
-### GetBalance
-
-query balance in your account
+query registered balance in your account
 
 ### request parameters
 
