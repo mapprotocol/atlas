@@ -36,6 +36,7 @@ var (
 	ErrGasUintOverflow          = errors.New("gas uint64 overflow")
 	ErrSyncInvalidInput         = errors.New("invalid input for sync contract")
 	ErrJSONUnmarshal            = errors.New("json unmarshal error")
+	ErrNotSupportChain          = errors.New("not support chain")
 )
 
 // ErrStackUnderflow wraps an evm error when the items on the stack less

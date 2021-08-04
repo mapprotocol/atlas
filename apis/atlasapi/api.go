@@ -46,6 +46,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -2272,12 +2273,31 @@ func NewPublicHeaderStoreAPI(b Backend) *PublicHeaderStoreAPI {
 	return &PublicHeaderStoreAPI{b: b}
 }
 
-func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chain string) (uint64, error) {
-	return new(ve.Validate).GetCurrentHeaderNumber(chain)
+func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chainID uint64) (uint64, error) {
+	return new(ve.Validate).GetCurrentHeaderNumber(rawdb.ChainType(chainID))
 }
 
-func (p *PublicHeaderStoreAPI) GetHashByNumber(chain string, number uint64) (common.Hash, error) {
-	return new(ve.Validate).GetHashByNumber(chain, number)
+func (p *PublicHeaderStoreAPI) GetHashByNumber(chainID uint64, number uint64) (common.Hash, error) {
+	return new(ve.Validate).GetHashByNumber(rawdb.ChainType(chainID), number)
+}
+
+func (p *PublicHeaderStoreAPI) CurrentNumberAndHash(chainID uint64) (map[string]interface{}, error) {
+	v := new(ve.Validate)
+	c := rawdb.ChainType(chainID)
+	number, err := v.GetCurrentHeaderNumber(c)
+	if err != nil {
+		return nil, err
+	}
+	hash, err := v.GetHashByNumber(c, number)
+	if err != nil {
+		return nil, err
+	}
+
+	nh := map[string]interface{}{
+		"number": number,
+		"hash":   hash,
+	}
+	return nh, nil
 }
 
 func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) (*big.Int, error) {

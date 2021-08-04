@@ -15,12 +15,13 @@ import (
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
+	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/params"
 )
 
 const (
-	Save                = "save"
-	CurrentHeaderNumber = "currentHeaderNumber"
+	Save          = "save"
+	CurNbrAndHash = "currentNumberAndHash"
 )
 
 const TimesLimit = 3
@@ -32,8 +33,8 @@ var (
 
 // SyncGas defines all method gas
 var SyncGas = map[string]uint64{
-	Save:                0,
-	CurrentHeaderNumber: 0,
+	Save:          0,
+	CurNbrAndHash: 0,
 }
 
 // RunHeaderStore execute atlas header store contract
@@ -48,8 +49,8 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	switch method.Name {
 	case Save:
 		ret, err = save(evm, contract, data)
-	case CurrentHeaderNumber:
-		ret, err = currentHeaderNumber(evm, contract, data)
+	case CurNbrAndHash:
+		ret, err = currentNumberAndHash(evm, contract, data)
 	default:
 		log.Warn("sync contract failed, invalid method name", "methodName", method.Name)
 		err = ErrSyncInvalidInput
@@ -71,8 +72,8 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 
 	// decode
 	args := struct {
-		From    string
-		To      string
+		From    uint64
+		To      uint64
 		Headers []byte
 	}{}
 
@@ -83,6 +84,11 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 	if err := method.Inputs.Copy(&args, unpack); err != nil {
 		return nil, err
+	}
+
+	// check if it is a supported chain
+	if !(chains.IsSupportedChain(rawdb.ChainType(args.From)) || chains.IsSupportedChain(rawdb.ChainType(args.To))) {
+		return nil, ErrNotSupportChain
 	}
 
 	var hs []*ethereum.Header
@@ -122,13 +128,8 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
 
-	chainType, err := chains.ChainNameToChainType(args.From)
-	if err != nil {
-		return nil, err
-	}
-
 	// store block header
-	store, err := chainsdb.GetStoreMgr(chainType)
+	store, err := chainsdb.GetStoreMgr(rawdb.ChainType(args.From))
 	if err != nil {
 		return nil, err
 	}
@@ -146,11 +147,11 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	return nil, nil
 }
 
-func currentHeaderNumber(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
-		Chain string
+		ChainID uint64
 	}{}
-	method, _ := abiHeaderStore.Methods[CurrentHeaderNumber]
+	method, _ := abiHeaderStore.Methods[CurNbrAndHash]
 	unpack, err := method.Inputs.Unpack(input)
 	if err != nil {
 		return nil, err
@@ -160,9 +161,14 @@ func currentHeaderNumber(evm *EVM, contract *Contract, input []byte) (ret []byte
 	}
 
 	v := new(ve.Validate)
-	number, err := v.GetCurrentHeaderNumber(args.Chain)
+	c := rawdb.ChainType(args.ChainID)
+	number, err := v.GetCurrentHeaderNumber(c)
 	if err != nil {
 		return nil, err
 	}
-	return method.Outputs.Pack(new(big.Int).SetUint64(number))
+	hash, err := v.GetHashByNumber(c, number)
+	if err != nil {
+		return nil, err
+	}
+	return method.Outputs.Pack(new(big.Int).SetUint64(number), hash)
 }

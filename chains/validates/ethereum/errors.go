@@ -7,4 +7,5 @@ var (
 	errUnknownAncestor = errors.New("unknown ancestor")
 	errFutureBlock     = errors.New("block in the future")
 	errInvalidNumber   = errors.New("invalid block number")
+	errNotSupportChain = errors.New("not support chain")
 )

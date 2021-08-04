@@ -10,6 +10,7 @@ import (
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+	"github.com/mapprotocol/atlas/core/rawdb"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -22,26 +23,24 @@ const (
 
 type Validate struct{}
 
-func (v *Validate) GetCurrentHeaderNumber(chain string) (uint64, error) {
-	chainType, err := chains.ChainNameToChainType(chain)
-	if err != nil {
-		return 0, err
+func (v *Validate) GetCurrentHeaderNumber(chain rawdb.ChainType) (uint64, error) {
+	if !chains.IsSupportedChain(chain) {
+		return 0, errNotSupportChain
 	}
 
-	store, err := chainsdb.GetStoreMgr(chainType)
+	store, err := chainsdb.GetStoreMgr(chain)
 	if err != nil {
 		return 0, err
 	}
 	return store.CurrentHeaderNumber(), nil
 }
 
-func (v *Validate) GetHashByNumber(chain string, number uint64) (common.Hash, error) {
-	chainType, err := chains.ChainNameToChainType(chain)
-	if err != nil {
-		return common.Hash{}, err
+func (v *Validate) GetHashByNumber(chain rawdb.ChainType, number uint64) (common.Hash, error) {
+	if !chains.IsSupportedChain(chain) {
+		return common.Hash{}, errNotSupportChain
 	}
 
-	store, err := chainsdb.GetStoreMgr(chainType)
+	store, err := chainsdb.GetStoreMgr(chain)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -73,7 +72,7 @@ func (v *Validate) ValidateHeaderChain(chain []*ethereum.Header) (int, error) {
 	}
 
 	firstNumber := chain[0].Number
-	currentNumber, err := v.GetCurrentHeaderNumber(chains.ChainNameETH)
+	currentNumber, err := v.GetCurrentHeaderNumber(chains.ChainTypeETH)
 	if err != nil {
 		return 0, err
 	}

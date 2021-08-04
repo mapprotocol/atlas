@@ -1,7 +1,6 @@
 package chains
 
 import (
-	"errors"
 	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
@@ -10,20 +9,16 @@ const (
 	ChainTypeETH rawdb.ChainType = 1001
 )
 
-const (
-	ChainNameMAP = "MAP"
-	ChainNameETH = "ETH"
-)
-
-var name2type = map[string]rawdb.ChainType{
-	ChainNameMAP: ChainTypeMAP,
-	ChainNameETH: ChainTypeETH,
+var ChainTypeList = []rawdb.ChainType{
+	ChainTypeMAP,
+	ChainTypeETH,
 }
 
-func ChainNameToChainType(chain string) (rawdb.ChainType, error) {
-	chainType, ok := name2type[chain]
-	if !ok {
-		return 0, errors.New("unsupported chain ")
+func IsSupportedChain(chain rawdb.ChainType) bool {
+	for _, c := range ChainTypeList {
+		if c == chain {
+			return true
+		}
 	}
-	return chainType, nil
+	return false
 }
