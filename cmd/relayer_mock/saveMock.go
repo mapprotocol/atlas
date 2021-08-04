@@ -74,20 +74,23 @@ func (d *debugInfo) doSave(chains []ethereum.Header) {
 	}
 }
 func (r *relayerInfo) realSave(conn *ethclient.Client, chainType string, marshal []byte) bool {
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		log.Fatal(err)
-		return false
-	}
+	//header, err := conn.HeaderByNumber(context.Background(), nil)
+	//if err != nil {
+	//	log.Fatal(err)
+	//	return false
+	//}
 	input := packInputStore("save", chainType, "MAP", marshal)
-	msg := ethchain.CallMsg{From: r.from, To: &HeaderStoreAddress, Data: input}
-	_, err = conn.CallContract(context.Background(), msg, header.Number)
-	if err != nil {
-		//log.Fatal("method CallContract error (realSave) :", err)
-		fmt.Println("save false")
-		return false
-	}
-	fmt.Println("save success")
+	sendContractTransaction(conn, r.from, HeaderStoreAddress, nil, r.priKey, input)
+
+	//input := packInputStore("save", chainType, "MAP", marshal)
+	//msg := ethchain.CallMsg{From: r.from, To: &HeaderStoreAddress, Data: input}
+	//_, err = conn.CallContract(context.Background(), msg, header.Number)
+	//if err != nil {
+	//	//log.Fatal("method CallContract error (realSave) :", err)
+	//	fmt.Println("save false")
+	//	return false
+	//}
+	//fmt.Println("save success")
 	return true
 }
 func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
