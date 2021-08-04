@@ -1,10 +1,4 @@
----
-sort: 2
----
-
-# Relayer-API
-
-## GetAllRelayers
+### GetAllRelayers
 
 get all relayers in current epoch
 
@@ -18,7 +12,7 @@ get all relayers in current epoch
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| result    | string | relayers address |
+| result    | address[] | relayers address |
 
 ### example
 
@@ -45,7 +39,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-## GetAccountInfo
+### GetAccountInfo
 
 query your account is registered or not, is elected for relayer or not
 
@@ -76,7 +70,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-## GetSyncNumber
+### GetSyncNumber
 
 query block number relayer Synchronized in the current epoch
 
@@ -107,7 +101,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 }
 ```
 
-## GetCurrentEpochInfo
+### GetCurrentEpochInfo
 
 query message about the current epoch
 
@@ -136,7 +130,7 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
   "result": "epochID:1, blockNumber:839, epoch start:1, epoch end:10000"
 }
 ```
-## GetCurrentEpochInfo
+### GetBalance
 
 query balance in your account
 
