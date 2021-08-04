@@ -6,7 +6,7 @@ sort: 2
 
 ## CurrentHeaderNumber
 
-get the synchronized part height of the corresponding chain
+get the synchronized part height of the corresponding chain m:1
 
 ### request parameters
 
