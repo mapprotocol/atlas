@@ -24,7 +24,7 @@ get the synchronized part height of the corresponding chain m:1
 
 ```shell
 # request:
-curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_currentHeaderNumber","params":["ETH"],"id":1}'
+# curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_currentHeaderNumber","params":["ETH"],"id":1}'
 
 # response:
 {
@@ -55,7 +55,7 @@ get the block hash of the corresponding chain by number
 
 ```shell
 # request:
-curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_getHashByNumber","params":["ETH", 1],"id":1}'
+# curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_getHashByNumber","params":["ETH", 1],"id":1}'
 
 # response:
 {
@@ -86,7 +86,7 @@ get relayer rewards for the specified epoch
 
 ```shell
 # request:
-curl -X POST -H "Content-Type: application/json" --data '{{"jsonrpc":"2.0","method":"header_getRelayerReward","params":[1, "0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"],"id":1}'
+# curl -X POST -H "Content-Type: application/json" --data '{{"jsonrpc":"2.0","method":"header_getRelayerReward","params":[1, "0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"],"id":1}'
 
 #response:
 {
