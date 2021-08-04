@@ -74,10 +74,10 @@ Do not forget `--http.addr 0.0.0.0`, if you want to access RPC from other contai
 | RpcPort       |     7445      |     7445      |     7445      |     7445   |
 
 | param      | value| comment
-| :-----------:  | :--------------  | 
-| miner.threads  |     0            |   
-| miner.gaslimit |     8000000      |  
-| miner.gasprice |    1e9Wei        | 
+| :-----------:  | :--------------  | :--------------   | 
+| miner.threads  |     0            |                   |   
+| miner.gaslimit |     8000000      |                   |   
+| miner.gasprice |    1e9Wei        |                   | 
 | TxGas       |    21000         |Minimum gas of creating a transaction |
 
 ### Programmatically interfacing `atlas` nodes
