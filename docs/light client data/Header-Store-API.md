@@ -56,6 +56,23 @@ get the block hash of the corresponding chain by number
 | --------- | ------ | ------- |
 | result    | number | block hash |
 
+### example
+
+```shell
+
+# request:
+
+curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"header_getHashByNumber","params":["ETH", 1],"id":1}' http://127.0.0.1:7445
+
+# response:
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"
+}
+
+```
 
 ## GetRelayerReward
 
@@ -73,3 +90,22 @@ get relayer rewards for the specified epoch
 | parameter | type   | comment |
 | --------- | ------ | ------- |
 | result    | number | reward of relayer |
+
+
+### example
+
+```shell
+
+# request:
+
+curl -X POST -H "Content-Type: application/json" --data '{{"jsonrpc":"2.0","method":"header_getRelayerReward","params":[1, "0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"],"id":1}' http://127.0.0.1:7445
+
+#response:
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": 15000000000
+}
+
+```
