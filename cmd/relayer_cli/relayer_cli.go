@@ -53,6 +53,8 @@ const (
 
 func register(ctx *cli.Context) error {
 
+	fmt.Println(abiRelayer.Methods)
+
 	loadPrivate(ctx)
 
 	conn, url := dialConn(ctx)
@@ -67,14 +69,8 @@ func register(ctx *cli.Context) error {
 		printError("Amount must bigger than ", RegisterAmount)
 	}
 
-	fee = ctx.GlobalUint64(FeeFlag.Name)
-	checkFee(new(big.Int).SetUint64(fee))
-
-	pk := crypto.FromECDSAPub(&priKey.PublicKey)
-	pubkey := crypto.PubkeyToAddress(priKey.PublicKey).String()
-
-	fmt.Println("Fee", fee, " Pubkey ", pubkey, " value ", value)
-	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
+	fmt.Println("Fee", fee, " value ", value)
+	input := packInput("register", value)
 	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
 	getResult(conn, txHash, true)
@@ -364,7 +360,7 @@ func queryAccountBalance(conn *ethclient.Client) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	input := packInput("getBalance", from)
+	input := packInput("getRelayerBalance", from)
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
@@ -374,21 +370,17 @@ func queryAccountBalance(conn *ethclient.Client) {
 	//fmt.Println()
 	//PrintBalance(conn, from)
 
-	method, _ := abiRelayer.Methods["getBalance"]
+	method, _ := abiRelayer.Methods["getRelayerBalance"]
 	ret, err := method.Outputs.Unpack(output)
 	if len(ret) != 0 {
 		args := struct {
 			registered    *big.Int
 			unregistering *big.Int
 			unregistered  *big.Int
-			reward        *big.Int
-			fine          *big.Int
 		}{
 			ret[0].(*big.Int),
 			ret[1].(*big.Int),
 			ret[2].(*big.Int),
-			ret[3].(*big.Int),
-			ret[4].(*big.Int),
 		}
 		fmt.Println("query successfully,your account(uint eth):")
 		fmt.Println("registered amount:    ", weiToEth(args.registered))
@@ -419,19 +411,17 @@ func queryRelayerEpoch(conn *ethclient.Client) {
 		args := struct {
 			start   *big.Int
 			end     *big.Int
-			remain  *big.Int
 			relayer bool
 		}{
 			ret[0].(*big.Int),
 			ret[1].(*big.Int),
-			ret[2].(*big.Int),
-			ret[3].(bool),
+			ret[2].(bool),
 		}
 		if args.relayer {
 			fmt.Println("query successfully, your account is relayer")
 			fmt.Println("start height in epoch: ", args.start)
 			fmt.Println("end height in epoch:   ", args.end)
-			fmt.Println("remain height in epoch:", args.remain)
+			//fmt.Println("remain height in epoch:", args.remain)
 		} else {
 			fmt.Println("query successfully, your account isn't in current epoch")
 		}

@@ -275,7 +275,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	relayer := defaultRelayer2()
 	for _, member := range relayer {
 		var err error
-		err = register.InsertAccount2(hh, member.Coinbase, member.Publickey, params2.ElectionMinLimitForRegister, big.NewInt(100), true)
+		err = register.InsertAccount2(hh, member.Coinbase, params2.ElectionMinLimitForRegister)
 		if err != nil {
 			log.Error("ToBlock InsertAccount", "error", err)
 		} else {

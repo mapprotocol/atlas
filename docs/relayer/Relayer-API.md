@@ -72,7 +72,11 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 {
   "jsonrpc": "2.0",
   "id": 83,
-  "result": "current epoch: 1, register status: true, relayer status: true"
+  "result": {
+    "epochID": "1",
+    "registerStatus": "true",
+    "relayerStatus": "true"
+  }
 }
 ```
 
@@ -134,6 +138,44 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
 {
   "jsonrpc": "2.0",
   "id": 83,
-  "result": " registered balance:100020 ETH, unregistering balance:0 ETH, unregistered balance:100000 ETH"
+  "result": {
+    "registered": 100000,
+    "unregistered": 0,
+    "unregistering": 0
+  }
+}
+```
+## GetCurrentEpochInfo
+
+query message about the current epoch
+
+### request parameters
+
+| parameter | type   | comment |
+| --------- | ------ | ------- |
+| number    | string | block number |
+
+### response parameters
+
+| parameter | type   | comment |
+| --------- | ------ | ------- |
+| result    | string | epoch message |
+
+### example
+
+```shell
+# request:
+curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method":"relayer_getCurrentEpochInfo","params":["latest"],"id":83}' http://127.0.0.1:7445 | jq
+
+#response:
+{
+  "jsonrpc": "2.0",
+  "id": 83,
+  "result": {
+    "blockNumber": "0",
+    "epochEnd": "10000",
+    "epochID": "1",
+    "epochStart": "1"
+  }
 }
 ```

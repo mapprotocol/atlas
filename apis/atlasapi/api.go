@@ -2144,13 +2144,19 @@ func (s *PublicRelayerAPI) GetAllRelayers(ctx context.Context, blockNrOrHash rpc
 	return addr, nil
 }
 
-func (s *PublicRelayerAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+func (s *PublicRelayerAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (map[string]interface{}, error) {
+	fields := map[string]interface{}{
+		"registered":    nil,
+		"unregistering": nil,
+		"unregistered":  nil,
+	}
+
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	err = register.Load(state, params2.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
-		return "", err
+		return fields, err
 	}
 	unlocked, unlocking, locked, _, _ := register.GetBalance(address, uint64(blockNrOrHash.BlockNumber.Int64()))
 	if unlocked == nil {
@@ -2166,20 +2172,25 @@ func (s *PublicRelayerAPI) GetBalance(ctx context.Context, address common.Addres
 	unlocked = new(big.Int).Div(unlocked, baseUnit)
 	locked = new(big.Int).Div(locked, baseUnit)
 	unlocking = new(big.Int).Div(unlocking, baseUnit)
-	ret := " registered balance:" + locked.String() + " ETH," +
-		" unregistering balance:" + unlocking.String() + " ETH," +
-		" unregistered balance:" + unlocked.String() + " ETH"
-	return ret, nil
+	fields["registered"] = locked
+	fields["unregistering"] = unlocking
+	fields["unregistered"] = unlocked
+	return fields, nil
 }
 
-func (s *PublicRelayerAPI) GetAccountInfo(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+func (s *PublicRelayerAPI) GetAccountInfo(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (map[string]interface{}, error) {
+	fields := map[string]interface{}{
+		"registerStatus": nil,
+		"relayerStatus":  nil,
+		"epochID":        nil,
+	}
 
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	err = register.Load(state, params2.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
-		return "", err //0,false,false, err
+		return fields, err //0,false,false, err
 	}
 	acc := "false"
 	accounts := register.GetAllRegisterAccount()
@@ -2198,21 +2209,30 @@ func (s *PublicRelayerAPI) GetAccountInfo(ctx context.Context, address common.Ad
 	_, h := register.GetCurrentEpochInfo()
 	epoch := new(big.Int).SetUint64(h)
 
-	ret := "current epoch: " + epoch.String() + ", register status: " + acc + ", relayer status: " + rel
-	return ret, nil
+	//ret := "current epoch: " + epoch.String() + ", register status: " + acc + ", relayer status: " + rel
+	fields["registerStatus"] = acc
+	fields["relayerStatus"] = rel
+	fields["epochID"] = epoch.String()
+	return fields, nil
 }
 
-func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (string, error) {
+func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (map[string]interface{}, error) {
+	fields := map[string]interface{}{
+		"epochID":     nil,
+		"blockNumber": nil,
+		"epochStart":  nil,
+		"epochEnd":    nil,
+	}
+
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
 	err = register.Load(state, params2.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
-		return "", err
+		return fields, err
 	}
 
-	ret := "query fail! no match massage"
 	info, h := register.GetCurrentEpochInfo()
 	for _, v := range info {
 		if h == v.EpochID {
@@ -2220,12 +2240,15 @@ func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHas
 			epochID := strconv.FormatInt(int64(h), 10)
 			start := strconv.FormatInt(int64(v.BeginHeight), 10)
 			end := strconv.FormatInt(int64(v.EndHeight), 10)
-			ret = "epochID:" + epochID + ", blockNumber:" + blockNumber + ", epoch start:" + start + ", epoch end:" + end
+			fields["epochID"] = epochID
+			fields["blockNumber"] = blockNumber
+			fields["epochStart"] = start
+			fields["epochEnd"] = end
 			break
 		}
 	}
 
-	return ret, nil
+	return fields, nil
 }
 
 func (s *PublicRelayerAPI) GetSyncNumber(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (uint64, error) {

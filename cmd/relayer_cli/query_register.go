@@ -21,7 +21,7 @@ func _append(ctx *cli.Context) error {
 
 	value := ethToWei(ctx, false)
 
-	input := packInput("append", from, value)
+	input := packInput("append", value)
 	txHash := sendContractTransaction(conn, from, RelayerAddress, nil, priKey, input)
 
 	getResult(conn, txHash, true)
@@ -43,7 +43,7 @@ func withdraw(ctx *cli.Context) error {
 
 	value := ethToWei(ctx, false)
 
-	input := packInput("withdraw", from, value)
+	input := packInput("withdraw", value)
 
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 
@@ -66,7 +66,7 @@ func unregister(ctx *cli.Context) error {
 
 	value := ethToWei(ctx, false)
 
-	input := packInput("unregister", from, value)
+	input := packInput("unregister", value)
 
 	txHash := sendContractTransaction(conn, from, RelayerAddress, new(big.Int).SetInt64(0), priKey, input)
 

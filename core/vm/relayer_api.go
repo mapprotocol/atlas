@@ -959,30 +959,13 @@ func (i *RegisterImpl) insertAccount(height uint64, sa *RegisterAccount) error {
 	}
 	return nil
 }
-func (i *RegisterImpl) InsertAccount2(height uint64, addr common.Address, pk []byte, val *big.Int, fee *big.Int, auto bool) error {
-	if val.Sign() <= 0 || height < 0 || fee.Sign() < 0 || fee.Cmp(params.Base) > 0 {
-		return params.ErrInvalidParam
-	}
-	if err := ValidPk(pk); err != nil {
-		return err
-	}
-	if i.repeatPK(addr, pk) {
-		log.Error("Insert account repeat pk", "addr", addr, "pk", pk)
-		return params.ErrRepeatPk
-	}
-	state := uint8(0)
-	if auto {
-		state |= params.StateResgisterAuto
-	}
+func (i *RegisterImpl) InsertAccount2(height uint64, addr common.Address, val *big.Int) error {
 	ra := &RegisterAccount{
-		Votepubkey: append([]byte{}, pk...),
-		Fee:        new(big.Int).Set(fee),
 		Unit: &registerUnit{
 			Address: addr,
 			Value: []*PairRegisterValue{&PairRegisterValue{
 				Amount: new(big.Int).Set(val),
 				Height: new(big.Int).SetUint64(height),
-				State:  state,
 			}},
 			RedeemInof: make([]*RedeemItem, 0),
 		},

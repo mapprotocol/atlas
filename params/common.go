@@ -90,13 +90,13 @@ const RelayerABIJSON = `[
     "name": "Register",
     "inputs": [
       {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
+        "type": "address",
+        "name": "from",
+        "indexed": true
       },
       {
         "type": "uint256",
-        "name": "fee",
+        "name": "value",
         "indexed": false
       }
     ],
@@ -159,14 +159,6 @@ const RelayerABIJSON = `[
     "outputs": [],
     "inputs": [
       {
-        "type": "bytes",
-        "name": "pubkey"
-      },
-      {
-        "type": "uint256",
-        "name": "fee"
-      },
-      {
         "type": "uint256",
         "name": "value"
       }
@@ -180,10 +172,6 @@ const RelayerABIJSON = `[
     "outputs": [],
     "inputs": [
       {
-        "type": "address",
-        "name": "holder"
-      },
-      {
         "type": "uint256",
         "name": "value"
       }
@@ -193,7 +181,7 @@ const RelayerABIJSON = `[
     "type": "function"
   },
   {
-    "name": "getBalance",
+    "name": "getRelayerBalance",
     "outputs": [
       {
         "type": "uint256",
@@ -209,16 +197,6 @@ const RelayerABIJSON = `[
         "type": "uint256",
         "unit": "wei",
         "name": "unlocked"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "reward"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "fine"
       }
     ],
     "inputs": [
@@ -236,10 +214,6 @@ const RelayerABIJSON = `[
     "outputs": [],
     "inputs": [
       {
-        "type": "address",
-        "name": "holder"
-      },
-      {
         "type": "uint256",
         "unit": "wei",
         "name": "value"
@@ -253,10 +227,6 @@ const RelayerABIJSON = `[
     "name": "unregister",
     "outputs": [],
     "inputs": [
-      {
-        "type": "address",
-        "name": "holder"
-      },
       {
         "type": "uint256",
         "unit": "wei",
@@ -277,10 +247,6 @@ const RelayerABIJSON = `[
       {
         "type": "uint256",
         "name": "end"
-      },  
-      {
-        "type": "uint256",
-        "name": "remain"
       },
       {
         "type": "bool",
