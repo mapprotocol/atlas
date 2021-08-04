@@ -172,5 +172,5 @@ func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byt
 	if err != nil {
 		return nil, err
 	}
-	return method.Outputs.Pack(new(big.Int).SetUint64(number), hash)
+	return method.Outputs.Pack(new(big.Int).SetUint64(number), hash.Bytes())
 }
