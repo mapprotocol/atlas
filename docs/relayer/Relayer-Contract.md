@@ -11,6 +11,224 @@ Depending on the performance,the registered accounts will be elected as relayer 
 And election time is before 200 block number in the current epoch.
 If relayer not completes task (about synchronising 1000 block) in current epoch, it will be not elected as relayer next epoch.
 
+## Contract Address
+
+relayer contract is deployed at address:
+
+```
+0x00000000000052656c6179657241646472657373
+```
+
+## Contract json ABI
+
+```json
+[
+{
+"name": "Register",
+"inputs": [
+{
+"type": "address",
+"name": "from",
+"indexed": true
+},
+{
+"type": "uint256",
+"name": "value",
+"indexed": false
+}
+],
+"anonymous": false,
+"type": "event"
+},
+{
+"name": "Withdraw",
+"inputs": [
+{
+"type": "address",
+"name": "from",
+"indexed": true
+},
+{
+"type": "uint256",
+"name": "value",
+"indexed": false
+}
+],
+"anonymous": false,
+"type": "event"
+},
+{
+"name": "Unregister",
+"inputs": [
+{
+"type": "address",
+"name": "from",
+"indexed": true
+},
+{
+"type": "uint256",
+"name": "value",
+"indexed": false
+}
+],
+"anonymous": false,
+"type": "event"
+},
+{
+"name": "Append",
+"inputs": [
+{
+"type": "address",
+"name": "from",
+"indexed": true
+},
+{
+"type": "uint256",
+"name": "value",
+"indexed": false
+}
+],
+"anonymous": false,
+"type": "event"
+},
+{
+"name": "register",
+"outputs": [],
+"inputs": [
+{
+"type": "uint256",
+"name": "value"
+}
+],
+"constant": false,
+"payable": false,
+"type": "function"
+},
+{
+"name": "append",
+"outputs": [],
+"inputs": [
+{
+"type": "uint256",
+"name": "value"
+}
+],
+"constant": false,
+"payable": false,
+"type": "function"
+},
+{
+"name": "getRelayerBalance",
+"outputs": [
+{
+"type": "uint256",
+"unit": "wei",
+"name": "register"
+},
+{
+"type": "uint256",
+"unit": "wei",
+"name": "locked"
+},
+{
+"type": "uint256",
+"unit": "wei",
+"name": "unlocked"
+}
+],
+"inputs": [
+{
+"type": "address",
+"name": "holder"
+}
+],
+"constant": true,
+"payable": false,
+"type": "function"
+},
+{
+"name": "withdraw",
+"outputs": [],
+"inputs": [
+{
+"type": "uint256",
+"unit": "wei",
+"name": "value"
+}
+],
+"constant": false,
+"payable": false,
+"type": "function"
+},
+{
+"name": "unregister",
+"outputs": [],
+"inputs": [
+{
+"type": "uint256",
+"unit": "wei",
+"name": "value"
+}
+],
+"constant": false,
+"payable": false,
+"type": "function"
+},
+{
+"name": "getPeriodHeight",
+"outputs": [
+{
+"type": "uint256",
+"name": "start"
+},
+{
+"type": "uint256",
+"name": "end"
+},
+{
+"type": "bool",
+"name": "relayer"
+}
+],
+"inputs": [
+{
+"type": "address",
+"name": "holder"
+}
+],
+"constant": true,
+"payable": false,
+"type": "function"
+},
+{
+"name": "getRelayer",
+"inputs": [
+{
+"type": "address",
+"name": "holder"
+}
+],
+"outputs": [
+{
+"type": "bool",
+"name": "relayer"
+},
+{
+"type": "bool",
+"name": "register"
+},
+{
+"type": "uint256",
+"name": "epoch"
+}
+],
+"constant": true,
+"payable": false,
+"type": "function"
+}
+]
+```
+
 ## Interact with contract interface
 
 ### register

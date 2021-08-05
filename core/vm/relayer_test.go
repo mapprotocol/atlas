@@ -63,7 +63,7 @@ func TestRegister(t *testing.T) {
 	//log.Info("Staking deposit", "address", from.StringToAbey(), "Value", Value)
 	register := NewRegisterImpl()
 	// join selection
-	err = register.InsertAccount2(0, from, pub, value, big.NewInt(0), true)
+	err = register.InsertAccount2(0, from, value)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestRegister(t *testing.T) {
 	}
 
 	//query money
-	fmt.Println(register.GetBalance(from))
+	fmt.Println(register.GetBalance(from, h))
 	//query relayer
 	fmt.Println()
 	//query epoch
@@ -153,23 +153,23 @@ func TestInsertAccount(t *testing.T) {
 	}
 	amount := new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18))
 
-	impl.InsertAccount2(1, from[0], pub[0], amount, big.NewInt(50), true)
+	impl.InsertAccount2(1, from[0], amount)
 	impl.Shift(2, 0)
 	fmt.Println("Current Epoch Info:", impl.getCurrentEpochInfo())
 
-	impl.InsertAccount2(10001, from[1], pub[1], amount, big.NewInt(50), true)
+	impl.InsertAccount2(10001, from[1], amount)
 	impl.Shift(3, 0)
 	fmt.Println("Current Epoch Info:", impl.getCurrentEpochInfo())
 
-	impl.InsertAccount2(20001, from[2], pub[2], amount, big.NewInt(50), true)
+	impl.InsertAccount2(20001, from[2], amount)
 	impl.Shift(4, 0)
 	fmt.Println("Current Epoch Info:", impl.getCurrentEpochInfo())
 
-	impl.InsertAccount2(30001, from[3], pub[3], amount, big.NewInt(50), true)
+	impl.InsertAccount2(30001, from[3], amount)
 	impl.Shift(5, 0)
 	fmt.Println("Current Epoch Info:", impl.getCurrentEpochInfo())
 
-	impl.InsertAccount2(40001, from[4], pub[4], amount, big.NewInt(50), true)
+	impl.InsertAccount2(40001, from[4], amount)
 
 	fmt.Println("1. all account:", impl.accounts[1])
 	fmt.Println("2. all account:", impl.accounts[2])
@@ -197,13 +197,13 @@ func TestRegisterDoElections(t *testing.T) {
 		value := big.NewInt(100)
 		priKey, _ := crypto.GenerateKey()
 		from := crypto.PubkeyToAddress(priKey.PublicKey)
-		pub := crypto.FromECDSAPub(&priKey.PublicKey)
+		//pub := crypto.FromECDSAPub(&priKey.PublicKey)
 		if i%2 == 0 {
 			amount := new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18))
-			impl.InsertAccount2(0, from, pub, amount, big.NewInt(50), true)
+			impl.InsertAccount2(0, from, amount)
 			//testacc = from
 		} else {
-			impl.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
+			impl.InsertAccount2(0, from, value)
 		}
 	}
 	fmt.Println("account number:", len(impl.accounts[1]), " all account:", impl.accounts[1])
@@ -230,11 +230,11 @@ func TestRegisterDoElections(t *testing.T) {
 		value := new(big.Int).Mul(big.NewInt(200000), big.NewInt(1e18))
 		priKey, _ := crypto.GenerateKey()
 		from := crypto.PubkeyToAddress(priKey.PublicKey)
-		pub := crypto.FromECDSAPub(&priKey.PublicKey)
+		//	pub := crypto.FromECDSAPub(&priKey.PublicKey)
 		if i%2 == 0 {
-			impl.InsertAccount2(8880+i, from, pub, value, big.NewInt(50), true)
+			impl.InsertAccount2(8880+i, from, value)
 		} else {
-			impl.InsertAccount2(9990+i, from, pub, value, big.NewInt(50), true)
+			impl.InsertAccount2(9990+i, from, value)
 		}
 	}
 	fmt.Println("epoch1 account number:", len(impl.accounts[1]), " all account:", impl.accounts[1])
@@ -256,8 +256,8 @@ func TestRegisterDoElections(t *testing.T) {
 		value := big.NewInt(100)
 		priKey, _ := crypto.GenerateKey()
 		from := crypto.PubkeyToAddress(priKey.PublicKey)
-		pub := crypto.FromECDSAPub(&priKey.PublicKey)
-		impl.InsertAccount2(13333+i, from, pub, value, big.NewInt(50), true)
+		//pub := crypto.FromECDSAPub(&priKey.PublicKey)
+		impl.InsertAccount2(13333+i, from, value)
 	}
 	fmt.Println(" epoch2 account:", len(impl.accounts[2]), impl.accounts[2])
 	//relayer election
@@ -286,7 +286,7 @@ func TestGetBalance(t *testing.T) {
 	value := big.NewInt(100)
 	priKey, _ := crypto.GenerateKey()
 	from := crypto.PubkeyToAddress(priKey.PublicKey)
-	pub := crypto.FromECDSAPub(&priKey.PublicKey)
+	//pub := crypto.FromECDSAPub(&priKey.PublicKey)
 
 	db := rawdb.NewMemoryDatabase()
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
@@ -297,8 +297,8 @@ func TestGetBalance(t *testing.T) {
 	//evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	register := NewRegisterImpl()
-	register.InsertAccount2(0, from, pub, value, big.NewInt(50), true)
-	v1, v2, v3, v4, v5 := register.GetBalance(from)
+	register.InsertAccount2(0, from, value)
+	v1, v2, v3, v4, v5 := register.GetBalance(from, h)
 	fmt.Println("getBalance0", v1, v2, v3, v4, v5)
 }
 

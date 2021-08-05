@@ -12,13 +12,13 @@ get all relayers in specified epoch on the basis of block number
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| number    | string | block number |
+| number    | string | integer block number, or the string `"latest"`, `"earliest"` or `"pending"` |
 
 ### response parameters
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| result    | address[] | relayers address |
+| result    | address[] | relayers' addresses owned in this epoch. |
 
 ### example
 
@@ -53,14 +53,16 @@ query your account is registered or not, is elected for relayer or not in specif
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| account   | address| account address |
-| number    | string | block number |
+| account   | address| address to check for account |
+| number    | string | integer block number, or the string `"latest"`, `"earliest"` or `"pending"` |
 
 ### response parameters
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| result    | string | account status |
+| epochID    | string | show epoch id, rely on params blockNumber |
+| registerStatus    | bool | the account is registered with the display `true`, otherwise the display is `false` |
+| relayerStatus    | bool | the account is relayer with the display `true`, otherwise the display is `false` |
 
 ### example
 
@@ -88,14 +90,14 @@ query block number relayer Synchronized in specified epoch on the basis of block
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| number    | string | block number |
-| relayer   | address | relayer address |
+| number    | string | integer block number, or the string `"latest"`, `"earliest"` or `"pending"` |
+| relayer   | address | address to check for relayer. |
 
 ### response parameters
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| result    | uint256| block number relayer Synchronized |
+| result    | number | the number of Synchronized block from epoch start to specified block number. |
 
 ### example
 
@@ -119,14 +121,16 @@ query registered balance in your account
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| number    | string | block number |
-| relayer   | address | relayer address |
+| number    | string |  integer block number, or the string `"latest"`, `"earliest"` or `"pending"` |
+| relayer   | address | address to check for balance |
 
 ### response parameters
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| result    | string | balance message |
+| registered    | number | in order to be elected as relayer, need to save enough balance in contract |
+| unregistered    | number | when account unregister balance, it will unlock after 2 epoch and show `unregistering`  |
+| unregistering    | number | unregistered balance can withdraw directly, them will release from contract |
 
 ### example
 
@@ -153,13 +157,16 @@ query message about the current epoch
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| number    | string | block number |
+| number    | string | integer block number, or the string `"latest"`, `"earliest"` or `"pending"` |
 
 ### response parameters
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| result    | string | epoch message |
+| blockNumber    | string | show epoch id, rely on params blockNumber |
+| epochEnd    | string | show block number when epoch start, rely on params blockNumber |
+| epochID    | string | show block number when epoch end, rely on params blockNumber |
+| epochStart    | string | show latest block number  |
 
 ### example
 
