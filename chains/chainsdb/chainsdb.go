@@ -436,6 +436,10 @@ func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
 		log.Error("wrong genesis!")
 		return
 	}
+	if data := rawdb.ReadHeaderChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType); data != nil {
+		log.Info("repeat save ")
+		return
+	}
 	rawdb.WriteHeaderChains(storeMgr.chainDb, header, chainType)
 	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
 	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
