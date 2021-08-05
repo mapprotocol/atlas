@@ -384,7 +384,9 @@ func DefaultTestnetGenesisBlock() *Genesis {
 }
 
 // DevnetGenesisBlock returns the 'geth --dev' genesis block.
-func DevnetGenesisBlock() *Genesis {
+func DevnetGenesisBlock(faucet common.Address) *Genesis {
+	dc := defaultRelayer()
+	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	return &Genesis{
 		Config:     params2.DevnetConfig,
 		ExtraData:  []byte{1, 2, 3},

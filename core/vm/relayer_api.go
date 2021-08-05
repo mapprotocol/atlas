@@ -436,11 +436,6 @@ func (s *RegisterAccount) clone() *RegisterAccount {
 	return ss
 }
 func (s *RegisterAccount) isvalid() bool {
-	//for _, v := range s.Delegation {
-	//	if v.isValid() {
-	//		return true
-	//	}
-	//}
 	return s.Unit.isValid()
 }
 
@@ -476,11 +471,6 @@ func (s *Register) getValidRegister(hh uint64) *big.Int {
 	return all
 }
 func (s *Register) sort(hh uint64, valid bool) {
-	//for _, v := range *s {
-	//	tmp := toDelegationByAmount(hh, valid, v.Delegation)
-	//	sort.Sort(tmp)
-	//	v.Delegation, _ = fromDelegationByAmount(tmp)
-	//}
 	tmp := toRegisterByAmount(hh, valid, *s)
 	sort.Sort(tmp)
 	*s, _ = fromRegisterByAmount(tmp)
@@ -649,7 +639,6 @@ func (i *RegisterImpl) redeem(sa *RegisterAccount, height uint64, amount *big.In
 		return errors.New(fmt.Sprint(params.ErrRedeemAmount, "request amount", amount, "redeem amount", all))
 	}
 	sa.finishRedeemed()
-	// fmt.Println("SA redeemed amount:[", all.String(), "],addr:[", addr.String())
 	return nil
 }
 
@@ -674,7 +663,6 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 		vv := v.clone()
 		vv.merge(prev, nextEpoch.BeginHeight, effectHeight)
 		if vv.isvalid() {
-			//vv.Relayer = false
 			nextInfos.update(vv, nextEpoch.BeginHeight, true, true, effectHeight)
 		}
 	}
@@ -689,7 +677,6 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*RegisterAccount, error) {
 
 	cur := GetEpochFromID(i.curEpochID)
-	// Epoch = 1 and height = 0
 	if i.curEpochID == params.FirstNewEpochID && height == 0 {
 		if val, ok := i.accounts[1]; ok {
 			var ee []*RegisterAccount
@@ -747,10 +734,8 @@ func (i *RegisterImpl) Shift(epochid, effectHeight uint64) error {
 	lastReward := i.lastReward
 	minEpoch := GetEpochFromHeight(lastReward)
 	min := i.getMinEpochID()
-	// fmt.Println("*** move min:", min, "minEpoch:", minEpoch.EpochID, "lastReward:", i.lastReward)
 	for ii := min; minEpoch.EpochID > 1 && ii < minEpoch.EpochID-1; ii++ {
 		delete(i.accounts, ii)
-		// fmt.Println("delete epoch:", ii)
 	}
 
 	if epochid != i.getCurrentEpoch()+1 {
@@ -775,7 +760,6 @@ func (i *RegisterImpl) CancelAccount(curHeight uint64, addr common.Address, amou
 		return err
 	}
 	err2 := sa.stopRegisterInfo(amount, new(big.Int).SetUint64(curHeight))
-	// fmt.Println("[SA]insert a redeem,address:[", addr.String(), "],amount:[", amount.String(), "],height:", curHeight, "]err:", err2)
 	return err2
 }
 
