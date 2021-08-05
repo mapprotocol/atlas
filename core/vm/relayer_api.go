@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
@@ -342,12 +341,9 @@ func (s *registerUnit) redeemToMap() map[uint64]*big.Int {
 }
 
 type RegisterAccount struct {
-	Unit       *registerUnit
-	Votepubkey []byte
-	Fee        *big.Int
-	Relayer    bool
-	//Delegation []*DelegationAccount
-	Modify *AlterableInfo
+	Unit    *registerUnit
+	Relayer bool
+	Modify  *AlterableInfo
 }
 type AlterableInfo struct {
 	Fee        *big.Int
@@ -381,16 +377,7 @@ func (s *RegisterAccount) updatePk(height uint64, pk []byte) {
 }
 func (s *RegisterAccount) update(sa *RegisterAccount, hh uint64, next, move bool) {
 	s.Unit.update(sa.Unit, move)
-	//dirty := false
-	//for _, v := range sa.Delegation {
-	//	da := s.getDA(v.Unit.GetRewardAddress())
-	//	if da == nil {
-	//		s.Delegation = append(s.Delegation, v)
-	//		dirty = true
-	//	} else {
-	//		da.update(v, move)
-	//	}
-	//}
+
 	// ignore the pk param
 	if hh > s.getMaxHeight() && s.Modify != nil && sa.Modify != nil {
 		if sa.Modify.Fee != nil {
@@ -400,14 +387,7 @@ func (s *RegisterAccount) update(sa *RegisterAccount, hh uint64, next, move bool
 			s.Modify.VotePubkey = CopyVotePk(sa.Modify.VotePubkey)
 		}
 	}
-	if next {
-		s.changeAlterableInfo()
-	}
-	//if dirty && hh != 0 {
-	//	tmp := toDelegationByAmount(hh, false, s.Delegation)
-	//	sort.Sort(tmp)
-	//	s.Delegation, _ = fromDelegationByAmount(tmp)
-	//}
+
 }
 func (s *RegisterAccount) stopRegisterInfo(amount, lastHeight *big.Int) error {
 	return s.Unit.stopRegisterInfo(amount, lastHeight)
@@ -437,36 +417,14 @@ func (s *RegisterAccount) getMaxHeight() uint64 {
 	l := len(s.Unit.Value)
 	return s.Unit.Value[l-1].Height.Uint64()
 }
-func (s *RegisterAccount) changeAlterableInfo() {
-	if s.Modify != nil {
-		if s.Modify.Fee != nil && 0 != s.Modify.Fee.Cmp(params.InvalidFee) {
-			if s.Modify.Fee.Sign() >= 0 && s.Modify.Fee.Cmp(params.Base) <= 0 {
-				preFee := new(big.Int).Set(s.Fee)
-				s.Fee = new(big.Int).Set(s.Modify.Fee)
-				s.Modify.Fee = new(big.Int).Set(params.InvalidFee)
-				log.Info("apply fee", "Address", s.Unit.GetRewardAddress(), "pre-fee", preFee.String(), "fee", s.Fee.String())
-			}
-		}
-		if s.Modify.VotePubkey != nil && len(s.Modify.VotePubkey) >= 64 {
-			if err := ValidPk(s.Modify.VotePubkey); err == nil {
-				s.Votepubkey = CopyVotePk(s.Modify.VotePubkey)
-				s.Modify.VotePubkey = []byte{}
-			}
-		}
-	}
-}
+
 func (s *RegisterAccount) clone() *RegisterAccount {
 	ss := &RegisterAccount{
-		Votepubkey: CopyVotePk(s.Votepubkey),
-		Unit:       s.Unit.clone(),
-		Fee:        new(big.Int).Set(s.Fee),
-		Relayer:    s.Relayer,
-		//Delegation: make([]*DelegationAccount, 0),
-		Modify: &AlterableInfo{},
+		Unit:    s.Unit.clone(),
+		Relayer: s.Relayer,
+		Modify:  &AlterableInfo{},
 	}
-	//for _, v := range s.Delegation {
-	//	ss.Delegation = append(ss.Delegation, v.clone())
-	//}
+
 	if s.Modify != nil {
 		if s.Modify.Fee != nil {
 			ss.Modify.Fee = new(big.Int).Set(s.Modify.Fee)
@@ -538,9 +496,6 @@ func (s *Register) getRA(addr common.Address) *RegisterAccount {
 func (s *Register) update(sa1 *RegisterAccount, hh uint64, next, move bool, effectHeight uint64) {
 	sa := s.getRA(sa1.Unit.Address)
 	if sa == nil {
-		if hh >= effectHeight {
-			sa1.changeAlterableInfo()
-		}
 		*s = append(*s, sa1)
 		s.sort(hh, false)
 	} else {
@@ -623,16 +578,6 @@ func (i *RegisterImpl) GetCurrentEpochInfo() ([]*EpochIDInfo, uint64) {
 	return i.getCurrentEpochInfo(), i.getCurrentEpoch()
 }
 
-func (i *RegisterImpl) repeatPK(addr common.Address, pk []byte) bool {
-	for _, v := range i.accounts {
-		for _, vv := range v {
-			if !bytes.Equal(addr.Bytes(), vv.Unit.Address.Bytes()) && bytes.Equal(pk, vv.Votepubkey) {
-				return true
-			}
-		}
-	}
-	return false
-}
 func (i *RegisterImpl) GetRegisterAccount(epochid uint64, addr common.Address) (*RegisterAccount, error) {
 	if v, ok := i.accounts[epochid]; !ok {
 		return nil, params.ErrInvalidRegister
@@ -706,88 +651,6 @@ func (i *RegisterImpl) redeem(sa *RegisterAccount, height uint64, amount *big.In
 	sa.finishRedeemed()
 	// fmt.Println("SA redeemed amount:[", all.String(), "],addr:[", addr.String())
 	return nil
-}
-
-func (i *RegisterImpl) calcRewardInReg(target uint64, sa *RegisterAccount, allReward, allRegister *big.Int, item *RewardInfo) ([]*RewardInfo, error) {
-	if sa == nil || allReward == nil || item == nil || allRegister == nil {
-		return nil, params.ErrInvalidParam
-	}
-	var items []*RewardInfo
-	fee := new(big.Int).Quo(new(big.Int).Mul(allReward, sa.Fee), params.Base)
-	all, left, left2 := new(big.Int).Sub(allReward, fee), big.NewInt(0), big.NewInt(0)
-	item.Amount = new(big.Int).Add(new(big.Int).Sub(all, left), fee)
-	item.Register = new(big.Int).Sub(allRegister, left2)
-	return items, nil
-}
-func (i *RegisterImpl) calcReward(target, effectid uint64, allAmount *big.Int, einfo *EpochIDInfo) ([]*RewardInfos, error) {
-	if _, ok := i.accounts[einfo.EpochID]; !ok {
-		return nil, params.ErrInvalidParam
-	} else {
-		el := i.getElections2(einfo.EpochID)
-		if el == nil {
-			return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "epochid:", einfo.EpochID))
-		}
-		el = i.fetchAccountsInEpoch(einfo.EpochID, el)
-		if len(el) == 0 {
-			return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "epochid:", einfo.EpochID, "sas=0"))
-		}
-		reg := Register(el)
-		reg.sort(target, false)
-		var res []*RewardInfos
-		allValidatorRegister := reg.getAllRegister(target)
-		sum := len(reg)
-		left := big.NewInt(0)
-
-		for pos, v := range reg {
-			var info RewardInfos
-			var item RewardInfo
-			item.Address = v.Unit.GetRewardAddress()
-			allRegiater := v.getAllRegister(target)
-			if allRegiater.Sign() <= 0 {
-				continue
-			}
-
-			v2 := new(big.Int).Quo(new(big.Int).Mul(allRegiater, allAmount), allValidatorRegister)
-			if pos == sum-1 {
-				v2 = new(big.Int).Sub(allAmount, left)
-			}
-			left = left.Add(left, v2)
-
-			if ii, err := i.calcRewardInReg(target, v, v2, allRegiater, &item); err != nil {
-				return nil, err
-			} else {
-				info.Items = append(info.Items, &item)
-				info.Items = append(info.Items, ii[:]...)
-			}
-			res = append(res, &info)
-		}
-		return res, nil
-	}
-}
-func (i *RegisterImpl) reward(begin, end, effectid uint64, allAmount *big.Int) ([]*RewardInfos, error) {
-	ids := GetEpochFromRange(begin, end)
-	if ids == nil || len(ids) > 2 {
-		return nil, errors.New(fmt.Sprint(params.ErrMatchEpochID, "more than 2 epochid:", begin, end))
-	}
-
-	if len(ids) == 2 {
-		tmp := new(big.Int).Quo(new(big.Int).Mul(allAmount, new(big.Int).SetUint64(ids[0].EndHeight-begin+1)), new(big.Int).SetUint64(end-begin+1))
-		amount1, amount2 := tmp, new(big.Int).Sub(allAmount, tmp)
-		// log.Info("*****reward", "begin", begin, "end", end, "allAmount", allAmount,"amount1",amount1,"amount2",
-		// amount2,"ids[0]",ids[0].String(),"ids[1]",ids[1].String())
-		if items, err := i.calcReward(ids[0].EndHeight, effectid, amount1, ids[0]); err != nil {
-			return nil, err
-		} else {
-			if items1, err2 := i.calcReward(end, effectid, amount2, ids[1]); err2 != nil {
-				return nil, err2
-			} else {
-				items = append(items, items1[:]...)
-			}
-			return items, nil
-		}
-	} else {
-		return i.calcReward(end, effectid, allAmount, ids[0])
-	}
 }
 
 ///////////auxiliary function ////////////////////////////////////////////
@@ -1015,10 +878,6 @@ func (i *RegisterImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte)
 	if err := ValidPk(pk); err != nil {
 		return err
 	}
-	if i.repeatPK(addr, pk) {
-		log.Error("UpdateSAPK repeat pk", "addr", addr, "pk", pk)
-		return params.ErrRepeatPk
-	}
 	epochInfo := GetEpochFromHeight(height)
 	if epochInfo.EpochID > i.getCurrentEpoch() {
 		log.Info("UpdateSAPK", "eid", epochInfo.EpochID, "height", height, "eid2", i.getCurrentEpoch())
@@ -1030,15 +889,6 @@ func (i *RegisterImpl) UpdateSAPK(height uint64, addr common.Address, pk []byte)
 	}
 	sa.updatePk(height, pk)
 	return nil
-}
-
-func (i *RegisterImpl) Reward2(begin, end, effectid uint64, allAmount *big.Int) ([]*RewardInfos, error) {
-
-	res, err := i.reward(begin, end, effectid, allAmount)
-	if err == nil {
-		i.lastReward = end
-	}
-	return res, err
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1185,10 +1035,9 @@ func GetCurrentRelayer(state StateDB) []*params.RelayerMember {
 		//pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
 		vv = append(vv, &params.RelayerMember{
 			//RelayerBase: crypto.PubkeyToAddress(*pubkey),
-			Coinbase:  v.Unit.GetRewardAddress(),
-			Publickey: CopyVotePk(v.Votepubkey),
-			Flag:      params.StateUsedFlag,
-			MType:     params.TypeWorked,
+			Coinbase: v.Unit.GetRewardAddress(),
+			Flag:     params.StateUsedFlag,
+			MType:    params.TypeWorked,
 		})
 	}
 	return vv
@@ -1214,13 +1063,10 @@ func GetRelayersByEpoch(state StateDB, eid, hh uint64) []*params.RelayerMember {
 	}
 	var vv []*params.RelayerMember
 	for _, v := range accs {
-		pubkey, _ := crypto.UnmarshalPubkey(v.Votepubkey)
 		vv = append(vv, &params.RelayerMember{
-			RelayerBase: crypto.PubkeyToAddress(*pubkey),
-			Coinbase:    v.Unit.GetRewardAddress(),
-			Publickey:   CopyVotePk(v.Votepubkey),
-			Flag:        params.StateUsedFlag,
-			MType:       params.TypeWorked,
+			Coinbase: v.Unit.GetRewardAddress(),
+			Flag:     params.StateUsedFlag,
+			MType:    params.TypeWorked,
 		})
 	}
 	return vv

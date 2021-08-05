@@ -2,7 +2,6 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -251,7 +250,7 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 
 	log.Info("Get register getBalance", "address", args.Addr, "locked", locked, "unlocking", unlocking, "unlocked", unlocked)
 	ret, err = method.Outputs.Pack(locked, unlocking, unlocked)
-	fmt.Println("log", unlocked, unlocking, locked, ret)
+	//fmt.Println("log", unlocked, unlocking, locked, ret)
 	return ret, err
 }
 
