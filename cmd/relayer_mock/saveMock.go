@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
+	"github.com/mapprotocol/atlas/core/rawdb"
 	"gopkg.in/urfave/cli.v1"
 	"log"
 	"math/big"
@@ -16,12 +17,12 @@ import (
 func saveMock(ctx *cli.Context) error {
 	debugInfo := debugInfo{}
 	debugInfo.relayerData = []*relayerInfo{
-		{url: keystore2},
-		{url: keystore3},
-		{url: keystore4},
-		{url: keystore5},
+		//{url: keystore2},
+		//{url: keystore3},
+		//{url: keystore4},
+		//{url: keystore5},
 	}
-	debugInfo.preWork(ctx, []int{1, 2, 3, 4}, true)
+	debugInfo.preWork(ctx, []int{1}, true)
 	debugInfo.saveByDifferentAccounts(ctx) //change this
 	return nil
 }
@@ -70,16 +71,16 @@ func (d *debugInfo) doSave(chains []ethereum.Header) {
 	conn := d.client
 	for k, _ := range d.relayerData {
 		fmt.Println("ADDRESS:", d.relayerData[k].from)
-		d.relayerData[k].realSave(conn, "ETH", marshal)
+		d.relayerData[k].realSave(conn, ChainTypeETH, marshal)
 	}
 }
-func (r *relayerInfo) realSave(conn *ethclient.Client, chainType string, marshal []byte) bool {
+func (r *relayerInfo) realSave(conn *ethclient.Client, chainType rawdb.ChainType, marshal []byte) bool {
 	//header, err := conn.HeaderByNumber(context.Background(), nil)
 	//if err != nil {
 	//	log.Fatal(err)
 	//	return false
 	//}
-	input := packInputStore("save", chainType, "MAP", marshal)
+	input := packInputStore("save", big.NewInt(int64(chainType)), big.NewInt(int64(ChainTypeMAP)), marshal)
 	sendContractTransaction(conn, r.from, HeaderStoreAddress, nil, r.priKey, input)
 
 	//input := packInputStore("save", chainType, "MAP", marshal)
@@ -102,11 +103,18 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 			switch currentEpoch {
 			case 1:
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
-				d.queryDebuginfo(QUERY_RELAYERINFO)
-				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				//d.queryDebuginfo(QUERY_RELAYERINFO)
+				//d.queryDebuginfo(BALANCE)
+				//d.queryDebuginfo(IMPAWN_BALANCE)
 				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[:10])
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.doSave(d.ethData[:9])
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.doSave(d.ethData[:2])
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.doSave(d.ethData[:1])
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
@@ -139,20 +147,22 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 }
 
 //  getCurrent type chain number by abi
-func getCurrentNumberAbi(conn *ethclient.Client, chainType string, from common.Address) uint64 {
+func getCurrentNumberAbi(conn *ethclient.Client, chainType rawdb.ChainType, from common.Address) uint64 {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	input := packInputStore("currentHeaderNumber", chainType)
+	input := packInputStore(CurNbrAndHash, big.NewInt(int64(chainType)))
 	msg := ethchain.CallMsg{From: from, To: &HeaderStoreAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Fatal("method CallContract error", err)
 	}
-	method, _ := abiHeaderStore.Methods["currentHeaderNumber"]
+	method, _ := abiHeaderStore.Methods[CurNbrAndHash]
 	ret, err := method.Outputs.Unpack(output)
 	ret1 := ret[0].(*big.Int).Uint64()
+	ret2 := common.BytesToHash(ret[1].([]byte))
+	fmt.Println(ret2)
 	return ret1
 }
 

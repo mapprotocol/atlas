@@ -169,7 +169,7 @@ func syncloop(ctx *cli.Context, conn *ethclient.Client, from common.Address, pri
 			break
 		}
 		// 1.get current num
-		chainNum := getCurrentNumberAbi(conn, "ETH", from)
+		chainNum := getCurrentNumberAbi(conn, ChainTypeETH, from)
 		// 2.store
 		marshal, err2 := json.Marshal(chains[chainNum : chainNum+10])
 

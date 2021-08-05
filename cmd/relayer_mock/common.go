@@ -13,9 +13,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/cmd/ethclient"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
 	params2 "github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
@@ -54,6 +56,11 @@ const (
 
 	EthRPCListenAddr = "localhost"
 	EthRPCPortFlag   = 8083
+	ChainTypeETH     = chains.ChainTypeETH
+	ChainTypeMAP     = chains.ChainTypeMAP
+
+	// method name
+	CurNbrAndHash = vm.CurNbrAndHash
 )
 
 type step []int // epoch height
@@ -124,7 +131,7 @@ func (d *debugInfo) queryDebuginfo(ss string) {
 		}
 	case IMPAWN_BALANCE:
 		for k, _ := range d.relayerData {
-			registered, unregistering, unregistered, _, _ := getImpawnBalance(conn, d.relayerData[k].from)
+			registered, unregistering, unregistered := getImpawnBalance(conn, d.relayerData[k].from)
 			fmt.Println("ADDRESS:", d.relayerData[k].from,
 				" NOW IMPAWN BALANCE :", registered, " IMPAWNING BALANCE :", unregistering, "IMPAWNED BALANCE :", unregistered)
 		}
@@ -134,13 +141,10 @@ func (d *debugInfo) queryDebuginfo(ss string) {
 			fmt.Println("ADDRESS:", d.relayerData[k].from, "ISREGISTER:", bool1, " ISRELAYER :", bool2, " RELAYER_EPOCH :", relayerEpoch)
 		}
 	case REWARD:
-		for k, _ := range d.relayerData {
-			_, _, _, reward, _ := getImpawnBalance(conn, d.relayerData[k].from)
-			fmt.Println("ADDRESS:", d.relayerData[k].from, " NOW REWARD:", reward)
-		}
+
 	case CHAINTYPE_HEIGHT:
 		for k, _ := range d.relayerData {
-			currentTypeHeight := getCurrentNumberAbi(conn, "ETH", d.relayerData[k].from)
+			currentTypeHeight := getCurrentNumberAbi(conn, ChainTypeETH, d.relayerData[k].from)
 			fmt.Println("ADDRESS:", d.relayerData[k].from, " TYPE HEIGHT:", currentTypeHeight)
 		}
 	}
@@ -157,7 +161,10 @@ func (d *debugInfo) atlasBackend() {
 			select {
 			case <-d.atlasBackendCh:
 				count++
-				target = uint64(d.step[count]) - 1
+				if count < len(d.step) {
+					target = uint64(d.step[count]) - 1
+				}
+
 				canNext = "YES"
 			}
 		}
@@ -255,38 +262,33 @@ func getBalance(conn *ethclient.Client, address common.Address) *big.Float {
 	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
 	return Value
 }
-func getImpawnBalance(conn *ethclient.Client, from common.Address) (uint64, uint64, uint64, uint64, uint64) {
+func getImpawnBalance(conn *ethclient.Client, from common.Address) (uint64, uint64, uint64) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	input := packInput("getBalance", from)
+	input := packInput("getRelayerBalance", from)
 	msg := ethchain.CallMsg{From: from, To: &RelayerAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Fatal("method CallContract error", err)
 	}
-	method, _ := abiRelayer.Methods["getBalance"]
+	method, _ := abiRelayer.Methods["getRelayerBalance"]
 	ret, err := method.Outputs.Unpack(output)
 	if len(ret) != 0 {
 		args := struct {
 			registered    *big.Int
 			unregistering *big.Int
 			unregistered  *big.Int
-			reward        *big.Int
-			fine          *big.Int
 		}{
 			ret[0].(*big.Int),
 			ret[1].(*big.Int),
 			ret[2].(*big.Int),
-			ret[3].(*big.Int),
-			ret[4].(*big.Int),
 		}
-		return weiToEth(args.registered), weiToEth(args.unregistering), weiToEth(args.unregistered), weiToEth(args.reward), weiToEth(args.fine)
-
+		return weiToEth(args.registered), weiToEth(args.unregistering), weiToEth(args.unregistered)
 	}
 	log.Fatal("Contract query failed result len == 0")
-	return 0, 0, 0, 0, 0
+	return 0, 0, 0
 }
 func dialEthConn() (*ethclient.Client, string) {
 	ip = EthRPCListenAddr //utils.RPCListenAddrFlag.Name)
@@ -305,8 +307,7 @@ func register11(ctx *cli.Context, conn *ethclient.Client, info relayerInfo) {
 	}
 	fee := ctx.GlobalUint64(FeeFlag.Name)
 	checkFee(new(big.Int).SetUint64(fee))
-	_, pk, _ := getPubKey(info.priKey)
-	input := packInput("register", pk, new(big.Int).SetUint64(fee), value)
+	input := packInput("register", value)
 	sendContractTransaction(conn, info.from, RelayerAddress, nil, info.priKey, input)
 }
 func Min(x, y int) int {
