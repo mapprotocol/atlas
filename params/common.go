@@ -185,23 +185,23 @@ const RelayerABIJSON = `[
       {
         "type": "uint256",
         "unit": "wei",
-        "name": "register"
+        "name": "registered"
       },
       {
         "type": "uint256",
         "unit": "wei",
-        "name": "locked"
+        "name": "unregistering"
       },
       {
         "type": "uint256",
         "unit": "wei",
-        "name": "unlocked"
+        "name": "unregistered"
       }
     ],
     "inputs": [
       {
         "type": "address",
-        "name": "holder"
+        "name": "owner"
       }
     ],
     "constant": true,
@@ -255,7 +255,7 @@ const RelayerABIJSON = `[
     "inputs": [
       {
         "type": "address",
-        "name": "holder"
+        "name": "owner"
       }
     ],
     "constant": true,
@@ -267,17 +267,17 @@ const RelayerABIJSON = `[
     "inputs": [
       {
         "type": "address",
-        "name": "holder"
+        "name": "owner"
       }
     ],
     "outputs": [
       {
         "type": "bool",
-        "name": "relayer"
+        "name": "register"
       },
       {
         "type": "bool",
-        "name": "register"
+        "name": "relayer"
       },
       {
         "type": "uint256",

@@ -2144,7 +2144,7 @@ func (s *PublicRelayerAPI) GetAllRelayers(ctx context.Context, blockNrOrHash rpc
 	return addr, nil
 }
 
-func (s *PublicRelayerAPI) GetBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (map[string]interface{}, error) {
+func (s *PublicRelayerAPI) GetRelayerBalance(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (map[string]interface{}, error) {
 	fields := map[string]interface{}{
 		"registered":    nil,
 		"unregistering": nil,

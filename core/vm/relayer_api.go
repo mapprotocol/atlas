@@ -902,15 +902,15 @@ func (i *RegisterImpl) GetBalance(addr common.Address, height uint64) (*big.Int,
 		f = fine[addr].Amount
 	}
 	//locked,unlocked,fine
-	return u1, u2, lock[addr], f
+	return u1, u2, lock, f
 }
 
-func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*RelayerValue, map[common.Address]*big.Int, map[common.Address]*FineItem) {
+func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*RelayerValue, *big.Int, map[common.Address]*FineItem) {
 	epochid := epoch
 	end := GetEpochFromID(epochid).EndHeight
 	if val, ok := i.accounts[epochid]; ok {
 		res := make(map[common.Address]*RelayerValue)
-		res2 := make(map[common.Address]*big.Int)
+		res2 := big.NewInt(0)
 		res3 := make(map[common.Address]*FineItem)
 		for _, v := range val {
 			if bytes.Equal(v.Unit.Address.Bytes(), addr.Bytes()) {
@@ -931,9 +931,24 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 					}
 				}
 				if op&params.OpQueryLocked != 0 {
-					all := v.Unit.getValidRegister(end)
-					if all.Sign() >= 0 {
-						res2[addr] = all
+					all := big.NewInt(0)
+					for _, v := range v.Unit.Value {
+						if v.Height.Uint64() <= end {
+							all = all.Add(all, v.Amount)
+						} else {
+							break
+						}
+					}
+					e := GetEpochFromHeight(end)
+					r := v.Unit.getRedeemItem(e.EpochID)
+					if r != nil {
+						balance := new(big.Int).Sub(all, r.Amount)
+						if balance.Sign() >= 0 {
+							res2 = balance
+						} else {
+							log.Error("getRegisterBalance error", "all amount", all, "redeem amount", r.Amount, "height", end)
+							res2 = big.NewInt(0)
+						}
 					}
 				}
 				if op&params.OpQueryFine != 0 {

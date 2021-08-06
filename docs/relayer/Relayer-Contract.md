@@ -329,6 +329,6 @@ You can query that started block number, ended block number and remained block n
 
 | parameter     | type    | comment                                   |
 | ------------- | ------- | ----------------------------------------- |
-| started       | uint256 | started block number in the current epoch |
-| ended         | uint256 | ended block number in the current epoch   |
+| start         | uint256 | started block number in the current epoch |
+| end           | uint256 | ended block number in the current epoch   |
 | relayer       | bool    | you are relayer or not                    | 
