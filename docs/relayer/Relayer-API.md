@@ -60,7 +60,7 @@ query your account is registered or not, is elected for relayer or not in specif
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| epochID    | string | show epoch id, rely on params blockNumber |
+| epochID    | number | show epoch id, rely on params blockNumber |
 | registerStatus    | bool | the account is registered with the display `true`, otherwise the display is `false` |
 | relayerStatus    | bool | the account is relayer with the display `true`, otherwise the display is `false` |
 
@@ -75,9 +75,9 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
   "jsonrpc": "2.0",
   "id": 83,
   "result": {
-    "epochID": "1",
-    "registerStatus": "true",
-    "relayerStatus": "true"
+    "epochID": 1,
+    "registerStatus": true,
+    "relayerStatus": true
   }
 }
 ```
@@ -163,10 +163,10 @@ query message about the current epoch
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| blockNumber    | string | show epoch id, rely on params blockNumber |
-| epochEnd    | string | show block number when epoch start, rely on params blockNumber |
-| epochID    | string | show block number when epoch end, rely on params blockNumber |
-| epochStart    | string | show latest block number  |
+| blockNumber    | number | show epoch id, rely on params blockNumber |
+| epochEnd    | number | show block number when epoch start, rely on params blockNumber |
+| epochID    | number | show block number when epoch end, rely on params blockNumber |
+| epochStart    | number | show latest block number  |
 
 ### example
 
@@ -179,10 +179,10 @@ curl -X POST -H 'Content-Type:application/json' --data '{"jsonrpc":"2.0","method
   "jsonrpc": "2.0",
   "id": 83,
   "result": {
-    "blockNumber": "0",
-    "epochEnd": "10000",
-    "epochID": "1",
-    "epochStart": "1"
+    "blockNumber": 0,
+    "epochEnd": 10000,
+    "epochID": 1,
+    "epochStart": 1
   }
 }
 ```
