@@ -237,7 +237,7 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 		return nil, err
 	}
 
-	unlocked, unlocking, locked, _, _ := register.GetBalance(args.Addr, evm.Context.BlockNumber.Uint64())
+	unlocked, unlocking, locked, _ := register.GetBalance(args.Addr, evm.Context.BlockNumber.Uint64())
 	if unlocked == nil {
 		unlocking = big.NewInt(0)
 	}

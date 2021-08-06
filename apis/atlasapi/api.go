@@ -2158,7 +2158,7 @@ func (s *PublicRelayerAPI) GetBalance(ctx context.Context, address common.Addres
 		log.Error("contract load error", "error", err)
 		return fields, err
 	}
-	unlocked, unlocking, locked, _, _ := register.GetBalance(address, uint64(blockNrOrHash.BlockNumber.Int64()))
+	unlocked, unlocking, locked, _ := register.GetBalance(address, uint64(blockNrOrHash.BlockNumber.Int64()))
 	if unlocked == nil {
 		unlocking = big.NewInt(0)
 	}

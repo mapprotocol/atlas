@@ -126,10 +126,10 @@ func (s *registerUnit) getAllRegister(hh uint64) *big.Int {
 func (s *registerUnit) getValidRegister(hh uint64) *big.Int {
 	all := big.NewInt(0)
 	for _, v := range s.Value {
-		if v.Height.Uint64() <= hh {
-			if v.isElection() {
-				all = all.Add(all, v.Amount)
-			}
+		if v.Height.Uint64() <= hh-params.ElectionPoint {
+			//if v.isElection() {
+			all = all.Add(all, v.Amount)
+			//}
 		} else {
 			break
 		}
@@ -885,38 +885,33 @@ func (i *RegisterImpl) GetAllRegisterAccount() Register {
 	}
 }
 
-func (i *RegisterImpl) GetBalance(addr common.Address, height uint64) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
+func (i *RegisterImpl) GetBalance(addr common.Address, height uint64) (*big.Int, *big.Int, *big.Int, *big.Int) {
 	epochid := i.curEpochID
-	unlocking, _, _, _ := i.getAsset(addr, epochid, params.OpQueryUnlocking)
-	_, lock, _, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
-	_, _, reward, _ := i.getAsset(addr, epochid, params.OpQueryReward)
-	_, _, _, fine := i.getAsset(addr, epochid, params.OpQueryFine)
+	unlocking, _, _ := i.getAsset(addr, epochid, params.OpQueryUnlocking)
+	_, lock, _ := i.getAsset(addr, epochid, params.OpQueryLocked)
+	_, _, fine := i.getAsset(addr, epochid, params.OpQueryFine)
 	var u1 = big.NewInt(0)
 	var u2 = big.NewInt(0)
-	var r *big.Int
 	var f *big.Int
 	if unlocking[addr] != nil {
 		u1.Add(u1, unlocking[addr].ToUnlockedValue(height))
 		u2.Add(u2, unlocking[addr].ToUnlockingValue(height))
 	}
-	if reward[addr] != nil {
-		r = reward[addr].Amount
-	}
+
 	if fine[addr] != nil {
 		f = fine[addr].Amount
 	}
-	//locked,unlocked,reward,fine
-	return u1, u2, lock[addr], r, f
+	//locked,unlocked,fine
+	return u1, u2, lock[addr], f
 }
 
-func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*RelayerValue, map[common.Address]*big.Int, map[common.Address]*RewardItem, map[common.Address]*FineItem) {
+func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (map[common.Address]*RelayerValue, map[common.Address]*big.Int, map[common.Address]*FineItem) {
 	epochid := epoch
 	end := GetEpochFromID(epochid).EndHeight
 	if val, ok := i.accounts[epochid]; ok {
 		res := make(map[common.Address]*RelayerValue)
 		res2 := make(map[common.Address]*big.Int)
-		res3 := make(map[common.Address]*RewardItem)
-		res4 := make(map[common.Address]*FineItem)
+		res3 := make(map[common.Address]*FineItem)
 		for _, v := range val {
 			if bytes.Equal(v.Unit.Address.Bytes(), addr.Bytes()) {
 				if op&params.OpQueryRegister != 0 || op&params.OpQueryUnlocking != 0 {
@@ -941,13 +936,8 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 						res2[addr] = all
 					}
 				}
-				if op&params.OpQueryReward != 0 {
-					res3[addr] = &RewardItem{
-						Amount: v.Unit.getReward(epochid),
-					}
-				}
 				if op&params.OpQueryFine != 0 {
-					res4[addr] = &FineItem{
+					res3[addr] = &FineItem{
 						Amount: v.Unit.getFine(epochid),
 					}
 				}
@@ -955,11 +945,11 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 				continue
 			}
 		}
-		return res, res2, res3, res4
+		return res, res2, res3
 	} else {
 		log.Error("getAsset", "wrong epoch in current", epochid)
 	}
-	return nil, nil, nil, nil
+	return nil, nil, nil
 }
 func (i *RegisterImpl) MakeModifyStateByTip10() {
 	if val, ok := i.accounts[i.curEpochID]; ok {
