@@ -9,7 +9,7 @@ import (
 
 func appendMock(ctx *cli.Context) error {
 	debugInfo := debugInfo{}
-	debugInfo.preWork(ctx, []int{1, 2, 3}, true)
+	debugInfo.preWork(ctx, true)
 	debugInfo.appendMock(ctx) //change this
 	return nil
 }
@@ -20,34 +20,41 @@ func (d *debugInfo) appendMock(ctx *cli.Context) {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(100)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(100)
 				d.doAppend()
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(100)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(100)
 				d.doAppend()
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(100)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(100)
 				d.doAppend()
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.doAppend()
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:
@@ -66,10 +73,10 @@ func (d *debugInfo) doAppend() {
 	}
 }
 func (r *relayerInfo) Append(conn *ethclient.Client) {
-	if int(r.impawnValue) <= 0 {
+	if int(r.registerValue) <= 0 {
 		log.Fatal("Value must bigger than 0")
 	}
-	value := ethToWei(r.impawnValue)
+	value := ethToWei(r.registerValue)
 
 	input := packInput("append", r.from, value)
 

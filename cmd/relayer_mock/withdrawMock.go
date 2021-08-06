@@ -10,7 +10,7 @@ import (
 
 func withdrawMock(ctx *cli.Context) error {
 	debugInfo := debugInfo{}
-	debugInfo.preWork(ctx, []int{1, 2, 3}, true)
+	debugInfo.preWork(ctx, true)
 	debugInfo.withdrawMock(ctx) //change this
 	return nil
 }
@@ -21,7 +21,14 @@ func (d *debugInfo) withdrawMock(ctx *cli.Context) {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.doWithdraw()
@@ -29,12 +36,12 @@ func (d *debugInfo) withdrawMock(ctx *cli.Context) {
 			case 2:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			}
@@ -59,27 +66,34 @@ func (d *debugInfo) withdrawAtDifferentEpoch12() {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.doWithdraw()
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				fmt.Println("=====================================================")
 				d.doWithdraw()
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:
@@ -95,27 +109,34 @@ func (d *debugInfo) withdrawAccordingToDifferentBalance12() {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(500)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(500)
 				d.doWithdraw()
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(300)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(300)
 				d.doWithdraw()
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(100)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(100)
 				d.doWithdraw()
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
-				d.changeAllImpawnValue(1000000)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.changeAllRegisterValue(1000000)
 				d.doWithdraw()
 				d.atlasBackendCh <- NEXT_STEP
 			}
@@ -124,11 +145,11 @@ func (d *debugInfo) withdrawAccordingToDifferentBalance12() {
 }
 func (r *relayerInfo) withdraw(conn *ethclient.Client) error {
 
-	if int(r.impawnValue) <= 0 {
+	if int(r.registerValue) <= 0 {
 		log.Fatal("Value must bigger than 0")
 	}
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	value := new(big.Int).Mul(big.NewInt(r.impawnValue), baseUnit)
+	value := new(big.Int).Mul(big.NewInt(r.registerValue), baseUnit)
 
 	input := packInput("withdraw", r.from, value)
 

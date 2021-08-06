@@ -22,8 +22,8 @@ func saveMock(ctx *cli.Context) error {
 		//{url: keystore4},
 		//{url: keystore5},
 	}
-	debugInfo.preWork(ctx, []int{1}, true)
-	debugInfo.saveByDifferentAccounts(ctx) //change this
+	debugInfo.preWork(ctx, true)
+	debugInfo.saveForkBlock(ctx) //change this
 	return nil
 }
 
@@ -33,12 +33,19 @@ func (d *debugInfo) saveMock(ctx *cli.Context) {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.queryDebuginfo(REWARD)
 				d.doSave(d.ethData[:10])
 				d.atlasBackendCh <- NEXT_STEP
@@ -46,7 +53,7 @@ func (d *debugInfo) saveMock(ctx *cli.Context) {
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.queryDebuginfo(REWARD)
 				d.doSave(d.ethData[:10])
 				d.atlasBackendCh <- NEXT_STEP
@@ -54,7 +61,7 @@ func (d *debugInfo) saveMock(ctx *cli.Context) {
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.queryDebuginfo(REWARD)
 				d.atlasBackendCh <- NEXT_STEP
 				return
@@ -100,12 +107,19 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				//d.queryDebuginfo(QUERY_RELAYERINFO)
 				//d.queryDebuginfo(BALANCE)
-				//d.queryDebuginfo(IMPAWN_BALANCE)
+				//d.queryDebuginfo(REGISTER_BALANCE)
 				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[:10])
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
@@ -120,7 +134,7 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[10:20])
 				d.atlasBackendCh <- NEXT_STEP
@@ -128,7 +142,7 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				//d.query_debugInfo(REWARD)
 				d.doSave(d.ethData[10:20])
 				d.atlasBackendCh <- NEXT_STEP
@@ -136,7 +150,59 @@ func (d *debugInfo) saveByDifferentAccounts(ctx *cli.Context) {
 				d.queryDebuginfo(CHAINTYPE_HEIGHT)
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.atlasBackendCh <- NEXT_STEP
+				return
+			default:
+				fmt.Println("over")
+			}
+		}
+	}
+}
+
+func (d *debugInfo) saveForkBlock(ctx *cli.Context) {
+	go d.atlasBackend()
+	A, B := getForkBlock()
+	for {
+		select {
+		case currentEpoch := <-d.notifyCh:
+			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
+			case 1:
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.queryDebuginfo(REWARD)
+				d.doSave(A[:10])
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.queryDebuginfo(REWARD)
+				d.doSave(B[:8])
+				d.atlasBackendCh <- NEXT_STEP
+			case 2:
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.queryDebuginfo(REWARD)
+				d.doSave(d.ethData[:10])
+				d.atlasBackendCh <- NEXT_STEP
+			case 3:
+				d.queryDebuginfo(CHAINTYPE_HEIGHT)
+				d.queryDebuginfo(QUERY_RELAYERINFO)
+				d.queryDebuginfo(BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
+				d.queryDebuginfo(REWARD)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:
@@ -161,8 +227,8 @@ func getCurrentNumberAbi(conn *ethclient.Client, chainType rawdb.ChainType, from
 	method, _ := abiHeaderStore.Methods[CurNbrAndHash]
 	ret, err := method.Outputs.Unpack(output)
 	ret1 := ret[0].(*big.Int).Uint64()
-	ret2 := common.BytesToHash(ret[1].([]byte))
-	fmt.Println(ret2)
+	//ret2 := common.BytesToHash(ret[1].([]byte))
+	//fmt.Println(ret2)
 	return ret1
 }
 

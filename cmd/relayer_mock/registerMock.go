@@ -7,7 +7,7 @@ import (
 
 func registerMock(ctx *cli.Context) error {
 	debugInfo := debugInfo{}
-	debugInfo.preWork(ctx, []int{1, 2, 3}, false)
+	debugInfo.preWork(ctx, false)
 	debugInfo.registerMock(ctx) //change this
 	return nil
 }
@@ -18,23 +18,30 @@ func (d *debugInfo) registerMock(ctx *cli.Context) {
 		select {
 		case currentEpoch := <-d.notifyCh:
 			fmt.Println("CURRENT EPOCH ========>", currentEpoch)
-			switch currentEpoch {
+			currentEpoch1 := int(currentEpoch)
+			for i := 0; i < len(d.step); i++ {
+				if d.step[i] == currentEpoch1 {
+					currentEpoch1 = i + 1
+					break
+				}
+			}
+			switch currentEpoch1 {
 			case 1:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.doRegister(ctx)
 				d.atlasBackendCh <- NEXT_STEP
 			case 2:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.doRegister(ctx)
 				d.atlasBackendCh <- NEXT_STEP
 			case 3:
 				d.queryDebuginfo(QUERY_RELAYERINFO)
 				d.queryDebuginfo(BALANCE)
-				d.queryDebuginfo(IMPAWN_BALANCE)
+				d.queryDebuginfo(REGISTER_BALANCE)
 				d.atlasBackendCh <- NEXT_STEP
 				return
 			default:

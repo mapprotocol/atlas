@@ -45,7 +45,7 @@ var (
 
 const (
 	BALANCE           = "balance"
-	IMPAWN_BALANCE    = "impawnBalance"
+	REGISTER_BALANCE  = "registerBalance"
 	QUERY_RELAYERINFO = "relayerInfo"
 	REWARD            = "reward"
 	CHAINTYPE_HEIGHT  = "chainTypeHeight"
@@ -73,13 +73,13 @@ type debugInfo struct {
 	relayerData    []*relayerInfo
 }
 type relayerInfo struct {
-	url         string
-	from        common.Address
-	preBalance  *big.Float
-	nowBalance  *big.Float
-	impawnValue int64
-	priKey      *ecdsa.PrivateKey
-	fee         uint64
+	url           string
+	from          common.Address
+	preBalance    *big.Float
+	nowBalance    *big.Float
+	registerValue int64
+	priKey        *ecdsa.PrivateKey
+	fee           uint64
 }
 
 func (r *relayerInfo) swapBalance() {
@@ -87,29 +87,35 @@ func (r *relayerInfo) swapBalance() {
 	r.preBalance = big.NewFloat(f)
 }
 
-func (r *relayerInfo) changeImpawnValue(value int64) {
-	r.impawnValue = value
+func (r *relayerInfo) changeRegisterValue(value int64) {
+	r.registerValue = value
 }
-func (d *debugInfo) changeAllImpawnValue(value int64) {
+func (d *debugInfo) changeAllRegisterValue(value int64) {
 	for k, _ := range d.relayerData {
-		d.relayerData[k].impawnValue = value
+		d.relayerData[k].registerValue = value
 	}
 }
 
-func (d *debugInfo) preWork(ctx *cli.Context, step step, isRegister bool) {
+func (d *debugInfo) preWork(ctx *cli.Context, isRegister bool) {
 	conn := getConn11(ctx)
 	d.atlasBackendCh = make(chan string)
 	d.notifyCh = make(chan uint64)
 	d.client = conn
-	d.step = step
+
 	d.ethData = getEthChains()
+	number, err := conn.BlockNumber(context.Background())
+	if err != nil {
+		log.Fatal("get BlockNumber err ", err)
+	}
+	currentEpoch := number / epochHeight
+	d.step = []int{int(currentEpoch + 1), int(currentEpoch + 2), int(currentEpoch + 3)}
 	d.relayerData = append(d.relayerData, &relayerInfo{url: keystore1})
 	for k, _ := range d.relayerData {
 		Ele := d.relayerData[k]
 		priKey, from := loadprivateCommon(Ele.url)
 		var acc common.Address
 		acc.SetBytes(from.Bytes())
-		Ele.impawnValue = 100000
+		Ele.registerValue = registerValue
 		Ele.from = acc
 		Ele.priKey = priKey
 		Ele.fee = uint64(0)
@@ -129,11 +135,11 @@ func (d *debugInfo) queryDebuginfo(ss string) {
 		for k, _ := range d.relayerData {
 			fmt.Println("ADDRESS:", d.relayerData[k].from, " OLD BALANCE :", d.relayerData[k].preBalance, " NOW BALANCE :", getBalance(conn, d.relayerData[k].from))
 		}
-	case IMPAWN_BALANCE:
+	case REGISTER_BALANCE:
 		for k, _ := range d.relayerData {
-			registered, unregistering, unregistered := getImpawnBalance(conn, d.relayerData[k].from)
+			registered, unregistering, unregistered := getRegisterBalance(conn, d.relayerData[k].from)
 			fmt.Println("ADDRESS:", d.relayerData[k].from,
-				" NOW IMPAWN BALANCE :", registered, " IMPAWNING BALANCE :", unregistering, "IMPAWNED BALANCE :", unregistered)
+				" NOW registerValue BALANCE :", registered, " registerING BALANCE :", unregistering, "registerED BALANCE :", unregistered)
 		}
 	case QUERY_RELAYERINFO:
 		for k, _ := range d.relayerData {
@@ -231,9 +237,9 @@ func getChainsCommon(conn *ethclient.Client) []ethereum.Header {
 	}
 	return Headers
 }
-func ethToWei(impawn int64) *big.Int {
+func ethToWei(registerValue int64) *big.Int {
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	value := new(big.Int).Mul(big.NewInt(impawn), baseUnit)
+	value := new(big.Int).Mul(big.NewInt(registerValue), baseUnit)
 	return value
 }
 
@@ -262,7 +268,7 @@ func getBalance(conn *ethclient.Client, address common.Address) *big.Float {
 	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
 	return Value
 }
-func getImpawnBalance(conn *ethclient.Client, from common.Address) (uint64, uint64, uint64) {
+func getRegisterBalance(conn *ethclient.Client, from common.Address) (uint64, uint64, uint64) {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -296,13 +302,13 @@ func dialEthConn() (*ethclient.Client, string) {
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	conn, err := ethclient.Dial(url)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Abeychain client: %v", err)
+		log.Fatalf("Failed to connect to the AtlasChain client: %v", err)
 	}
 	return conn, url
 }
 func register11(ctx *cli.Context, conn *ethclient.Client, info relayerInfo) {
-	value := ethToWei(info.impawnValue)
-	if info.impawnValue < RegisterAmount {
+	value := ethToWei(info.registerValue)
+	if info.registerValue < RegisterAmount {
 		log.Fatal("Amount must bigger than ", RegisterAmount)
 	}
 	fee := ctx.GlobalUint64(FeeFlag.Name)

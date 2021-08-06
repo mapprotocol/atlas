@@ -27,18 +27,18 @@ var (
 
 var (
 	//baseUnit   = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	Base              = new(big.Int).SetUint64(10000)
-	impawnValue int64 = 100000
+	Base = new(big.Int).SetUint64(10000)
 )
 var (
 	contractQueryFailedErr = errors.New("Contract query failed result ")
 )
 
 const (
-	datadirPrivateKey      = "key"
-	datadirDefaultKeyStore = "keystore"
-	RegisterAmount         = 100000
-	RewardInterval         = 14
+	registerValue          int64 = 100000
+	datadirPrivateKey            = "key"
+	datadirDefaultKeyStore       = "keystore"
+	RegisterAmount               = 100000
+	RewardInterval               = 14
 )
 
 func getConn11(ctx *cli.Context) *ethclient.Client {
@@ -60,7 +60,7 @@ func register(ctx *cli.Context, conn *ethclient.Client) (common.Address, *ecdsa.
 	}
 
 	fmt.Println("Your wallet balance is ", getBalance(conn, from), "'eth ")
-	value := ethToWei(impawnValue)
+	value := ethToWei(registerValue)
 	fee := ctx.GlobalUint64(FeeFlag.Name)
 	checkFee(new(big.Int).SetUint64(fee))
 	pubkey, pk, _ := getPubKey(priKey)
@@ -212,7 +212,7 @@ func dialConn() (*ethclient.Client, string) {
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	conn, err := ethclient.Dial(url)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Abeychain client: %v", err)
+		log.Fatalf("Failed to connect to the atlas chain client: %v", err)
 	}
 	return conn, url
 }
