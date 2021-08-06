@@ -1060,12 +1060,12 @@ type relayer struct{}
 
 func (c *relayer) RequiredGas(input []byte) uint64 {
 	var (
-		abiStaking abi.ABI
-		baseGas    uint64 = 21000
-		method     *abi.Method
-		err        error
+		abiRegister abi.ABI
+		baseGas     uint64 = 21000
+		method      *abi.Method
+		err         error
 	)
-	method, err = abiStaking.MethodById(input)
+	method, err = abiRegister.MethodById(input)
 
 	if err != nil {
 		return baseGas

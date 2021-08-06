@@ -183,7 +183,7 @@ func (s *registerUnit) stopRegisterInfo(amount, lastHeight *big.Int) error {
 	tmp := &RedeemItem{
 		Amount:  new(big.Int).Set(amount),
 		EpochID: e.EpochID,
-		State:   params.StateRedeem,
+		State:   params.StateUnregister,
 	}
 	if r == nil {
 		s.RedeemInof = append(s.RedeemInof, tmp)
@@ -203,12 +203,12 @@ func (s *registerUnit) redeeming(hh uint64, amount *big.Int) (common.Address, *b
 			allAmount = allAmount.Add(allAmount, v.Amount)
 			res := allAmount.Cmp(amount)
 			if res <= 0 {
-				v.Amount, v.State = v.Amount.Sub(v.Amount, v.Amount), params.StateRedeemed
+				v.Amount, v.State = v.Amount.Sub(v.Amount, v.Amount), params.StateUnregistered
 				if res == 0 {
 					break
 				}
 			} else {
-				v.State = params.StateRedeemed
+				v.State = params.StateUnregistered
 				v.Amount.Set(new(big.Int).Sub(allAmount, amount))
 				break
 			}
@@ -226,7 +226,7 @@ func (s *registerUnit) redeeming(hh uint64, amount *big.Int) (common.Address, *b
 func (s *registerUnit) finishRedeemed() {
 	pos := -1
 	for i, v := range s.RedeemInof {
-		if v.Amount.Sign() == 0 && v.State == params.StateRedeemed {
+		if v.Amount.Sign() == 0 && v.State == params.StateUnregistered {
 			pos = i
 		}
 	}
@@ -1226,7 +1226,7 @@ func (i *RegisterImpl) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-// EncodeRLP serializes b into the abeychain RLP ImpawnImpl format.
+// EncodeRLP serializes b into the atlaschain RLP RegisterImpl format.
 func (i *RegisterImpl) EncodeRLP(w io.Writer) error {
 	var accounts []Register
 	var order []uint64

@@ -28,13 +28,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/mapprotocol/atlas/apis/jsre"
 	"github.com/mapprotocol/atlas/atlas"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
-	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/mapprotocol/atlas/miner"
 	"github.com/mapprotocol/atlas/cmd/node"
+	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/miner"
 )
 
 const (
@@ -99,7 +99,7 @@ func newTester(t *testing.T, confOverride func(*ethconfig.Config)) *tester {
 		t.Fatalf("failed to create node: %v", err)
 	}
 	ethConf := &ethconfig.Config{
-		Genesis: chain.DevnetGenesisBlock(),
+		Genesis: chain.DevnetGenesisBlock(common.Address{'1'}),
 		Miner: miner.Config{
 			Etherbase: common.HexToAddress(testAddress),
 		},

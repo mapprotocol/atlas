@@ -352,7 +352,7 @@ func doArchive(cmdline []string) {
 	var (
 		env      = build.Env()
 		base     = archiveBasename(*arch, env)
-		atlas   = "atlas-" + base + ext
+		atlas    = "atlas-" + base + ext
 		alltools = "atlas-alltools-" + base + ext
 	)
 	maybeSkipArchive(env)
@@ -656,7 +656,7 @@ func doWindowsInstaller(cmdline []string) {
 	// first section contains the atlas binary, second section holds the dev tools.
 	templateData := map[string]interface{}{
 		"License":  "COPYING",
-		"Atlas":   gethTool,
+		"Atlas":    gethTool,
 		"DevTools": devTools,
 	}
 	build.Render("build/nsis.atlas.nsi", filepath.Join(*workdir, "atlas.nsi"), 0644, nil)
@@ -838,7 +838,7 @@ func doXCodeFramework(cmdline []string) {
 	// Build the iOS XCode framework
 	build.MustRun(goTool("get", "golang.org/x/mobile/cmd/gomobile", "golang.org/x/mobile/cmd/gobind"))
 	build.MustRun(gomobileTool("init"))
-	bind := gomobileTool("bind", "-ldflags", "-s -w", "--target", "ios", "--tags", "ios", "-v", "github.com/abeychain/go-abey/mobile")
+	bind := gomobileTool("bind", "-ldflags", "-s -w", "--target", "ios", "--tags", "ios", "-v", "")
 
 	if *local {
 		// If we're building locally, use the build folder and stop afterwards

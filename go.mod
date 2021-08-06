@@ -15,12 +15,12 @@ require (
 	github.com/dop251/goja v0.0.0-20200721192441-a695b0cdd498
 	github.com/edsrzf/mmap-go v1.0.0
 	github.com/ethereum/go-ethereum v1.10.3
-	github.com/fatih/color v1.10.0 // indirect
+	github.com/fatih/color v1.10.0
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3
 	github.com/google/uuid v1.1.5
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
@@ -29,7 +29,6 @@ require (
 	github.com/influxdata/influxdb v1.8.5 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/karalabe/usb v0.0.0-20190919080040-51dc0efba356
 	github.com/kr/text v0.2.0 // indirect
 	github.com/loinfish/azure-storage-go v0.0.1
 	github.com/mattn/go-colorable v0.1.8

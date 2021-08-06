@@ -234,7 +234,7 @@ relayer contract is deployed at address:
 ### register
 
 One node can participate as a relayer to proposal new blocks with `register` function. To
-become relayer, you need to `register` with some `eth` coins.
+become relayer, you need to `register` at leaste 100000 `eth` coins.
 
 `register` function inputs 1 item:
 

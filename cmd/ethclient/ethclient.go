@@ -22,8 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	//"github.com/abeychain/go-abey/core/vm"
-	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -50,37 +48,6 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 	}
 	return NewClient(c), nil
 }
-
-/////////////////////////////////////////////////////
-
-func (ec *Client) GetChainRewardContent(ctx context.Context, account common.Address, number *big.Int) (map[string]interface{}, error) {
-	var result map[string]interface{}
-	err := ec.c.CallContext(ctx, &result, "abey_getChainRewardContent", toBlockNumArg(number), account)
-	if err != nil {
-		return result, err
-	}
-	return result, nil
-}
-
-// LockBalanceAt returns the wei balance of the given account.
-// The block number can be nil, in which case the balance is taken from the latest known block.
-func (ec *Client) LockBalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
-	var result hexutil.Big
-	err := ec.c.CallContext(ctx, &result, "abey_getLockBalance", account, toBlockNumArg(blockNumber))
-	return (*big.Int)(&result), err
-}
-
-//impawn_getLockedAsset
-func (ec *Client) GetLockedAsset(ctx context.Context, account common.Address, number *big.Int) ([]vm.LockedAsset, error) {
-	var result []vm.LockedAsset
-	err := ec.c.CallContext(ctx, &result, "impawn_getLockedAsset", account, toBlockNumArg(number))
-	if err != nil {
-		return result, err
-	}
-	return result, nil
-}
-
-///////////////////////////////////////////////////////
 
 // NewClient creates a client that uses the given RPC client.
 func NewClient(c *rpc.Client) *Client {

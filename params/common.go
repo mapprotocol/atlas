@@ -52,7 +52,6 @@ var (
 	ErrDelegationSelf    = errors.New("wrong")
 	ErrRedeemAmount      = errors.New("wrong redeem amount")
 	ErrForbidAddress     = errors.New("Forbidding Address")
-	ErrRepeatPk          = errors.New("repeat PK on staking tx")
 )
 
 const (
@@ -60,10 +59,10 @@ const (
 	StateRegisterOnce uint8 = 1 << iota
 	// StateResgisterAuto can be election in every epoch
 	StateResgisterAuto
-	// StateRedeem can be redeem real time (after MaxRedeemHeight block)
-	StateRedeem
-	// StateRedeemed flag the asset which is staking in the height is redeemed
-	StateRedeemed
+	// StateUnregister can be redeem real time (after MaxRedeemHeight block)
+	StateUnregister
+	// StateUnregistered flag the asset which is unregistered in the height is redeemed
+	StateUnregistered
 )
 const (
 	OpQueryRegister uint8 = 1 << iota

@@ -60,7 +60,6 @@ func TestRegister(t *testing.T) {
 	statedb.GetOrNewStateObject(params2.RelayerAddress)
 
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
-	//log.Info("Staking deposit", "address", from.StringToAbey(), "Value", Value)
 	register := NewRegisterImpl()
 	// join selection
 	err = register.InsertAccount2(0, from, value)
