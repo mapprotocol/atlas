@@ -392,7 +392,7 @@ func DevnetGenesisBlock(faucet common.Address) *Genesis {
 		ExtraData:  []byte{1, 2, 3},
 		GasLimit:   11500000,
 		Difficulty: big.NewInt(1),
-		Alloc:      defaultRelayer(),
+		Alloc:      dc,
 	}
 }
 

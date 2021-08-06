@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 	"time"
 
@@ -2193,27 +2192,26 @@ func (s *PublicRelayerAPI) GetAccountInfo(ctx context.Context, address common.Ad
 		log.Error("contract load error", "error", err)
 		return fields, err //0,false,false, err
 	}
-	acc := "false"
+	acc := false
 	accounts := register.GetAllRegisterAccount()
 	for _, v := range accounts {
 		if address == v.Unit.Address {
-			acc = "true"
+			acc = true
 		}
 	}
-	rel := "false"
+	rel := false
 	re := vm.GetCurrentRelayer(state)
 	for i := 0; i < len(re); i++ {
 		if address == re[i].Coinbase {
-			rel = "true"
+			rel = true
 		}
 	}
 	_, h := register.GetCurrentEpochInfo()
-	epoch := new(big.Int).SetUint64(h)
 
 	//ret := "current epoch: " + epoch.String() + ", register status: " + acc + ", relayer status: " + rel
 	fields["registerStatus"] = acc
 	fields["relayerStatus"] = rel
-	fields["epochID"] = epoch.String()
+	fields["epochID"] = h
 	return fields, nil
 }
 
@@ -2237,14 +2235,10 @@ func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHas
 	info, h := register.GetCurrentEpochInfo()
 	for _, v := range info {
 		if h == v.EpochID {
-			blockNumber := strconv.FormatInt(header.Number.Int64(), 10)
-			epochID := strconv.FormatInt(int64(h), 10)
-			start := strconv.FormatInt(int64(v.BeginHeight), 10)
-			end := strconv.FormatInt(int64(v.EndHeight), 10)
-			fields["epochID"] = epochID
-			fields["blockNumber"] = blockNumber
-			fields["epochStart"] = start
-			fields["epochEnd"] = end
+			fields["epochID"] = v.EpochID
+			fields["blockNumber"] = header.Number.Int64()
+			fields["epochStart"] = v.BeginHeight
+			fields["epochEnd"] = v.EndHeight
 			break
 		}
 	}
