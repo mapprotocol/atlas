@@ -297,8 +297,8 @@ func TestGetBalance(t *testing.T) {
 
 	register := NewRegisterImpl()
 	register.InsertAccount2(0, from, value)
-	v1, v2, v3, v4, v5 := register.GetBalance(from, h)
-	fmt.Println("getBalance0", v1, v2, v3, v4, v5)
+	v1, v2, v3, v4 := register.GetBalance(from, h)
+	fmt.Println("getBalance0", v1, v2, v3, v4)
 }
 
 func TestStateDB(t *testing.T) {

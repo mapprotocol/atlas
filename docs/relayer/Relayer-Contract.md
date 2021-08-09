@@ -317,7 +317,7 @@ You can query that you are registered or not, relayer or not
 
 ### getPeriodHeight
 
-You can query that started block number, ended block number and remained block number in the current epoch
+When You are relayer that can query started block number and ended block number in the current epoch
 
 `getPeriodHeight` function inputs 1 item:
 

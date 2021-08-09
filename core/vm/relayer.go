@@ -316,7 +316,7 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	}
 
 	if !rel {
-		ret, err = method.Outputs.Pack(big.NewInt(0), big.NewInt(0), big.NewInt(0), false)
+		ret, err = method.Outputs.Pack(big.NewInt(0), big.NewInt(0), false)
 		return ret, nil
 	}
 
