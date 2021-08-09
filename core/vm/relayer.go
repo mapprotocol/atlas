@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -287,6 +288,18 @@ func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 	if err != nil {
 		return nil, err
 	}
+
+	res := struct {
+		Register bool
+		Relayer  bool
+		Epoch    int64
+	}{}
+	err = relayerABI.UnpackIntoInterface(&res, "getPeriodHeight", ret)
+	if err != nil {
+		fmt.Println("abi error", err)
+	}
+
+	fmt.Println("res", res)
 	return ret, nil
 }
 

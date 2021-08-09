@@ -943,12 +943,9 @@ func (i *RegisterImpl) getAsset(addr common.Address, epoch uint64, op uint8) (ma
 					r := v.Unit.getRedeemItem(e.EpochID)
 					if r != nil {
 						balance := new(big.Int).Sub(all, r.Amount)
-						if balance.Sign() >= 0 {
-							res2 = balance
-						} else {
-							log.Error("getRegisterBalance error", "all amount", all, "redeem amount", r.Amount, "height", end)
-							res2 = big.NewInt(0)
-						}
+						res2 = balance
+					} else {
+						res2 = all
 					}
 				}
 				if op&params.OpQueryFine != 0 {
