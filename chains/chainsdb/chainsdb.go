@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
@@ -24,6 +23,7 @@ import (
 
 var storeMgrNilErr = errors.New("store mgr struct nil")
 var storeMgrChainDbNilErr = errors.New("store mgr chainDb element nil")
+var storeMgrTdNil = errors.New("store mgr td nil")
 var (
 	storeMgr *HeaderChainStore
 )
@@ -206,7 +206,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 	Number := headers[0].Number.Uint64()
 	ptd := hc.GetTd(headers[0].ParentHash, Number-1)
 	if ptd == nil {
-		return &headerWriteResultState{}, consensus.ErrUnknownAncestor
+		return &headerWriteResultState{}, storeMgrTdNil
 	}
 	var (
 		lastNumber = headers[0].Number.Uint64() - 1 // Last successfully imported number
