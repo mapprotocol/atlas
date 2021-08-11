@@ -1,8 +1,10 @@
 package chainsdb
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	mrand "math/rand"
 	"sync"
@@ -61,6 +63,7 @@ func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) *Heade
 		currentChainType: DefaultChainType,
 	}
 	storeMgr = db
+	Genesis()
 	return storeMgr
 }
 func (hc *HeaderChainStore) GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
@@ -73,6 +76,7 @@ func (hc *HeaderChainStore) GetStoreMgr(chainType rawdb.ChainType) (*HeaderChain
 	storeMgr.currentChainType = chainType
 	return storeMgr, nil
 }
+
 func (hc *HeaderChainStore) SetChainType(m rawdb.ChainType) {
 	hc.currentChainType = m
 }
@@ -431,17 +435,38 @@ func (hc *HeaderChainStore) ReadFistBlock(number uint64) common.Hash {
 	return rawdb.ReadCanonicalHashChains(hc.chainDb, number, hc.currentChainType)
 }
 
-func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
-	if header.Number.Cmp(big.NewInt(0)) != 0 {
-		log.Error("wrong genesis!")
-		return
+func Genesis() {
+	save := func(chainType rawdb.ChainType, name string) {
+		data, err := ioutil.ReadFile(fmt.Sprintf("chains/chainsdb/config/%v_config.json", name))
+		if err != nil {
+			log.Crit("readFile Err", err)
+		}
+		header := &ethereum.Header{}
+		_ = json.Unmarshal(data, header)
+
+		if data := rawdb.ReadHeaderChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType); data != nil {
+			log.Info("repeat save ")
+			return
+		}
+		rawdb.WriteHeaderChains(storeMgr.chainDb, header, chainType)
+		rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
+		rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
+		rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
 	}
-	if data := rawdb.ReadHeaderChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType); data != nil {
-		log.Info("repeat save ")
-		return
+	data, err := ioutil.ReadFile(fmt.Sprintf("chains/chainsdb/config/chaintype_config.json"))
+	if err != nil {
+		log.Crit("readFile Err", err.Error())
 	}
-	rawdb.WriteHeaderChains(storeMgr.chainDb, header, chainType)
-	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
-	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
-	rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
+	var config []struct {
+		Name string
+		Id   rawdb.ChainType
+	}
+
+	_ = json.Unmarshal(data, &config)
+
+	l := len(config)
+	for i := 0; i < l; i++ {
+		save(config[i].Id, config[i].Name)
+	}
+
 }

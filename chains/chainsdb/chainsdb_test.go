@@ -1,6 +1,7 @@
 package chainsdb
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	"io/ioutil"
 	"math/big"
 	"reflect"
 	"testing"
@@ -383,7 +385,32 @@ func TestGenesis1(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Genesis(tt.args.header, tt.args.chainType)
+			Genesis()
 		})
 	}
+}
+
+func TestRead_chaintype_config(t *testing.T) {
+	data, err := ioutil.ReadFile(fmt.Sprintf("config/chaintype_config.json"))
+	if err != nil {
+		log.Error("readFile Err", err)
+	}
+	var config []struct {
+		Name string
+		Id   rawdb.ChainType
+	}
+	_ = json.Unmarshal(data, &config)
+	fmt.Println(config)
+}
+func TestRead_ethconfig(t *testing.T) {
+	data, err := ioutil.ReadFile(fmt.Sprintf("config/%v_config.json", "ropsten"))
+	if err != nil {
+		log.Error("read eht store config err", err)
+	}
+	genesis := &ethereum.Header{}
+	err = json.Unmarshal(data, genesis)
+	if err != nil {
+		log.Error("Unmarshal Err", err.Error())
+	}
+	fmt.Println(genesis.Hash())
 }

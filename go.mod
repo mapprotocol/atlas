@@ -36,6 +36,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/opentracing/opentracing-go v1.1.0
 	github.com/peterh/liner v1.2.1
 	github.com/prometheus/tsdb v0.10.0
 	github.com/rivo/uniseg v0.2.0 // indirect
