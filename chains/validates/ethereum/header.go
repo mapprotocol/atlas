@@ -80,10 +80,6 @@ func (v *Validate) ValidateHeaderChain(chainID uint64, chain []*ethereum.Header)
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	if firstNumber.Cmp(big.NewInt(1)) == 0 {
-		chainsdb.Genesis(chain[0].Genesis(chainID), chains.ChainTypeETH)
-	}
-
 	abort, results := v.VerifyHeaders(chain)
 	defer close(abort)
 
@@ -157,6 +153,7 @@ func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, uni
 		if err != nil {
 			return err
 		}
+		fmt.Println(headers[0].ParentHash)
 		parent = s.ReadHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
