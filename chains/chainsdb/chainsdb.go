@@ -439,7 +439,7 @@ func Genesis() {
 	save := func(chainType rawdb.ChainType, name string) {
 		data, err := ioutil.ReadFile(fmt.Sprintf("chains/chainsdb/config/%v_config.json", name))
 		if err != nil {
-			log.Crit("readFile Err", err)
+			log.Crit(" readFile Err:", "name:", name, " err:", err.Error())
 		}
 		header := &ethereum.Header{}
 		_ = json.Unmarshal(data, header)
@@ -455,7 +455,7 @@ func Genesis() {
 	}
 	data, err := ioutil.ReadFile(fmt.Sprintf("chains/chainsdb/config/chaintype_config.json"))
 	if err != nil {
-		log.Crit("readFile Err", err.Error())
+		log.Crit("chain type config readFile Err", err.Error())
 	}
 	var config []struct {
 		Name string
