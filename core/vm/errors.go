@@ -34,8 +34,7 @@ var (
 	ErrWriteProtection          = errors.New("write protection")
 	ErrReturnDataOutOfBounds    = errors.New("return data out of bounds")
 	ErrGasUintOverflow          = errors.New("gas uint64 overflow")
-	ErrSyncInvalidInput         = errors.New("invalid input for sync contract")
-	ErrJSONUnmarshal            = errors.New("json unmarshal error")
+	ErrRLPDecode                = errors.New("rlp decode error")
 	ErrNotSupportChain          = errors.New("not support chain")
 )
 
