@@ -78,7 +78,7 @@ validate and save the block header synchronized by the relayer
 | -------- | ------ | ------- |
 | from     | number | source chain identification |
 | to       | number | destination chain identification |
-| headers  | []byte | block header json serialized data |
+| headers  | []byte | a batch of block header rlp encoded data, example: rlp.EncodeToBytes([]Header{}) |
 
 ### currentHeaderNumber
 
