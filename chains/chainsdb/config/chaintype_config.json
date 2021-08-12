@@ -10,9 +10,5 @@
   {
     "Name": "eth_dev",
     "Id": 1003
-  },
-  {
-    "Name": "eth_ropsten",
-    "Id": 1004
   }
 ]
