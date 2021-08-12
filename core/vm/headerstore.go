@@ -103,7 +103,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	// validate header
 	header := new(ve.Validate)
 	start := time.Now()
-	if _, err := header.ValidateHeaderChain(evm.chainConfig.ChainID.Uint64(), hs); err != nil {
+	if _, err := header.ValidateHeaderChain(fromChain, hs); err != nil {
 		log.Error("ValidateHeaderChain failed.", "err", err)
 		return nil, err
 	}

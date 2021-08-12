@@ -403,7 +403,7 @@ func TestRead_chaintype_config(t *testing.T) {
 	fmt.Println(config)
 }
 func TestRead_ethconfig(t *testing.T) {
-	data, err := ioutil.ReadFile(fmt.Sprintf("config/%v_config.json", "ropsten"))
+	data, err := ioutil.ReadFile(fmt.Sprintf("config/%v_config.json", "eth_dev"))
 	if err != nil {
 		log.Error("read eht store config err", err)
 	}
