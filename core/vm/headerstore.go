@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -11,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
@@ -33,16 +33,16 @@ var (
 
 // SyncGas defines all method gas
 var SyncGas = map[string]uint64{
-	Save:          0,
-	CurNbrAndHash: 0,
+	//Save:          0,
+	CurNbrAndHash: 42000,
 }
 
 // RunHeaderStore execute atlas header store contract
 func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	method, err := abiHeaderStore.MethodById(input)
 	if err != nil {
-		log.Error(fmt.Sprintf("header store contract method(%s) not found", method))
-		return nil, ErrExecutionReverted
+		log.Error("get header store ABI method failed", "error", err)
+		return nil, err
 	}
 
 	data := input[4:]
@@ -52,13 +52,12 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	case CurNbrAndHash:
 		ret, err = currentNumberAndHash(evm, contract, data)
 	default:
-		log.Warn("sync contract failed, invalid method name", "methodName", method.Name)
-		err = ErrSyncInvalidInput
+		log.Warn("run contract failed, invalid method name", "method.name", method.Name)
+		return ret, errors.New("invalid method name")
 	}
 
 	if err != nil {
-		log.Warn("sync contract failed", "error", err)
-		err = ErrExecutionReverted
+		log.Error("run contract failed", "method.name", method.Name, "error", err)
 	}
 
 	return ret, err
@@ -94,10 +93,9 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	var hs []*ethereum.Header
-	err = json.Unmarshal(args.Headers, &hs)
-	if err != nil {
-		log.Error("args.Header json unmarshal failed.", "err", err, "args.Header", string(args.Headers))
-		return nil, ErrJSONUnmarshal
+	if err := rlp.DecodeBytes(args.Headers, &hs); err != nil {
+		log.Error("rlp decode failed.", "err", err)
+		return nil, ErrRLPDecode
 	}
 
 	// validate header
@@ -143,9 +141,10 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	// store synchronization information
 	err = headerStore.Store(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
-		log.Error("sync save state error", "error", err)
+		log.Error("store state error", "error", err)
 		return nil, err
 	}
+	log.Info("save contract execution complete")
 	return nil, nil
 }
 
