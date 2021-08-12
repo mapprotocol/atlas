@@ -2,6 +2,9 @@ package ethereum
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/opentracing/opentracing-go/log"
+	"io/ioutil"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -35,4 +38,13 @@ func (eh *Header) Genesis(chainID uint64) *Header {
 	g := GetGenesisByChainID(chainID)
 	_ = json.Unmarshal([]byte(g), genesis)
 	return genesis
+}
+func configGenesis(name string) {
+	data, err := ioutil.ReadFile(fmt.Sprintf("config/%v_config.json", name))
+	if err != nil {
+		log.Error(err)
+	}
+	var genesis = &Header{}
+	json.Unmarshal(data, genesis)
+	fmt.Println(genesis.Hash())
 }

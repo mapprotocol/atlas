@@ -23,31 +23,31 @@ const (
 
 type Validate struct{}
 
-func (v *Validate) GetCurrentHeaderNumber(chain rawdb.ChainType) (uint64, error) {
-	if !chains.IsSupportedChain(chain) {
+func (v *Validate) GetCurrentHeaderNumber(chainType rawdb.ChainType) (uint64, error) {
+	if !chains.IsSupportedChain(chainType) {
 		return 0, errNotSupportChain
 	}
 
-	store, err := chainsdb.GetStoreMgr(chain)
+	store, err := chainsdb.GetStoreMgr(chainType)
 	if err != nil {
 		return 0, err
 	}
 	return store.CurrentHeaderNumber(), nil
 }
 
-func (v *Validate) GetHashByNumber(chain rawdb.ChainType, number uint64) (common.Hash, error) {
-	if !chains.IsSupportedChain(chain) {
+func (v *Validate) GetHashByNumber(chainType rawdb.ChainType, number uint64) (common.Hash, error) {
+	if !chains.IsSupportedChain(chainType) {
 		return common.Hash{}, errNotSupportChain
 	}
 
-	store, err := chainsdb.GetStoreMgr(chain)
+	store, err := chainsdb.GetStoreMgr(chainType)
 	if err != nil {
 		return common.Hash{}, err
 	}
 	return store.ReadCanonicalHash(number), nil
 }
 
-func (v *Validate) ValidateHeaderChain(chainID uint64, chain []*ethereum.Header) (int, error) {
+func (v *Validate) ValidateHeaderChain(chainType rawdb.ChainType, chain []*ethereum.Header) (int, error) {
 	chainLength := len(chain)
 	if chainLength == 1 {
 		if chain[0].Number == nil || chain[0].Difficulty == nil {
@@ -72,7 +72,7 @@ func (v *Validate) ValidateHeaderChain(chainID uint64, chain []*ethereum.Header)
 	}
 
 	firstNumber := chain[0].Number
-	currentNumber, err := v.GetCurrentHeaderNumber(chains.ChainTypeETH)
+	currentNumber, err := v.GetCurrentHeaderNumber(chainType)
 	if err != nil {
 		return 0, err
 	}
@@ -80,11 +80,7 @@ func (v *Validate) ValidateHeaderChain(chainID uint64, chain []*ethereum.Header)
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	if firstNumber.Cmp(big.NewInt(1)) == 0 {
-		chainsdb.Genesis(chain[0].Genesis(chainID), chains.ChainTypeETH)
-	}
-
-	abort, results := v.VerifyHeaders(chain)
+	abort, results := v.VerifyHeaders(chain, chainType)
 	defer close(abort)
 
 	for i := range chain {
@@ -96,7 +92,7 @@ func (v *Validate) ValidateHeaderChain(chainID uint64, chain []*ethereum.Header)
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(headers []*ethereum.Header) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(headers []*ethereum.Header, chainType rawdb.ChainType) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -114,7 +110,7 @@ func (v *Validate) VerifyHeaders(headers []*ethereum.Header) (chan<- struct{}, <
 	for i := 0; i < workers; i++ {
 		go func() {
 			for index := range inputs {
-				errors[index] = v.verifyHeaderWorker(headers, index, unixNow)
+				errors[index] = v.verifyHeaderWorker(headers, index, unixNow, chainType)
 				done <- index
 			}
 		}()
@@ -150,13 +146,14 @@ func (v *Validate) VerifyHeaders(headers []*ethereum.Header) (chan<- struct{}, <
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, unixNow int64) error {
+func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, unixNow int64, chainType rawdb.ChainType) error {
 	var parent *ethereum.Header
 	if index == 0 {
-		s, err := chainsdb.GetStoreMgr(chains.ChainTypeETH)
+		s, err := chainsdb.GetStoreMgr(chainType)
 		if err != nil {
 			return err
 		}
+		fmt.Println(headers[0].ParentHash)
 		parent = s.ReadHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
