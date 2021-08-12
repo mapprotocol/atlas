@@ -1,14 +1,14 @@
 [
   {
     "Name": "eth",
-    "Id": 1001
+    "Id": 1
   },
   {
     "Name": "eth_test",
-    "Id": 1002
+    "Id": 3
   },
   {
     "Name": "eth_dev",
-    "Id": 1003
+    "Id": 10
   }
 ]
