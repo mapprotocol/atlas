@@ -386,12 +386,13 @@ func DefaultTestnetGenesisBlock() *Genesis {
 // DevnetGenesisBlock returns the 'geth --dev' genesis block.
 func DevnetGenesisBlock(faucet common.Address) *Genesis {
 	dc := defaultRelayer()
-	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
+	defaultBalance, _ := new(big.Int).SetString("100000000000000000000000000", 10)
+	dc[faucet] = GenesisAccount{Balance: defaultBalance}
 	return &Genesis{
 		Config:     params2.DevnetConfig,
 		ExtraData:  []byte{1, 2, 3},
 		GasLimit:   11500000,
-		Difficulty: big.NewInt(1),
+		Difficulty: big.NewInt(1000000),
 		Alloc:      dc,
 	}
 }
