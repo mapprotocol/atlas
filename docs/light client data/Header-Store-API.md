@@ -9,7 +9,9 @@ sort: 2
 | chain ID | comment           |
 | ---------| ----------------- | 
 | 1000     | MAP chain         |
-| 1001     | ethereum chain    |
+| 1001     | ethereum chain (main chain)    |
+| 1002     | ethereum chain (ropsten chain start Number 800 )    |
+| 1003     | ethereum chain (Private chain  (--dev))|
 
 ## CurrentHeaderNumber
 
