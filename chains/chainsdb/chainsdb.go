@@ -1,8 +1,10 @@
 package chainsdb
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	mrand "math/rand"
 	"sync"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
@@ -22,6 +23,7 @@ import (
 
 var storeMgrNilErr = errors.New("store mgr struct nil")
 var storeMgrChainDbNilErr = errors.New("store mgr chainDb element nil")
+var storeMgrTdNil = errors.New("store mgr td nil")
 var (
 	storeMgr *HeaderChainStore
 )
@@ -61,6 +63,7 @@ func NewStoreDb(ctx *cli.Context, DatabaseCache int, DatabaseHandles int) *Heade
 		currentChainType: DefaultChainType,
 	}
 	storeMgr = db
+	Genesis()
 	return storeMgr
 }
 func (hc *HeaderChainStore) GetStoreMgr(chainType rawdb.ChainType) (*HeaderChainStore, error) {
@@ -73,6 +76,7 @@ func (hc *HeaderChainStore) GetStoreMgr(chainType rawdb.ChainType) (*HeaderChain
 	storeMgr.currentChainType = chainType
 	return storeMgr, nil
 }
+
 func (hc *HeaderChainStore) SetChainType(m rawdb.ChainType) {
 	hc.currentChainType = m
 }
@@ -202,7 +206,7 @@ func (hc *HeaderChainStore) writeHeaders(headers []*ethereum.Header) (result *he
 	Number := headers[0].Number.Uint64()
 	ptd := hc.GetTd(headers[0].ParentHash, Number-1)
 	if ptd == nil {
-		return &headerWriteResultState{}, consensus.ErrUnknownAncestor
+		return &headerWriteResultState{}, storeMgrTdNil
 	}
 	var (
 		lastNumber = headers[0].Number.Uint64() - 1 // Last successfully imported number
@@ -431,17 +435,38 @@ func (hc *HeaderChainStore) ReadFistBlock(number uint64) common.Hash {
 	return rawdb.ReadCanonicalHashChains(hc.chainDb, number, hc.currentChainType)
 }
 
-func Genesis(header *ethereum.Header, chainType rawdb.ChainType) {
-	if header.Number.Cmp(big.NewInt(0)) != 0 {
-		log.Error("wrong genesis!")
-		return
+func Genesis() {
+	save := func(chainType rawdb.ChainType, name string) {
+		data, err := ioutil.ReadFile(fmt.Sprintf("chains/chainsdb/config/%v_config.json", name))
+		if err != nil {
+			log.Crit(" readFile Err:", "name:", name, " err:", err.Error())
+		}
+		header := &ethereum.Header{}
+		_ = json.Unmarshal(data, header)
+
+		if data := rawdb.ReadHeaderChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType); data != nil {
+			log.Info("repeat save ")
+			return
+		}
+		rawdb.WriteHeaderChains(storeMgr.chainDb, header, chainType)
+		rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
+		rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
+		rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
 	}
-	if data := rawdb.ReadHeaderChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType); data != nil {
-		log.Info("repeat save ")
-		return
+	data, err := ioutil.ReadFile(fmt.Sprintf("chains/chainsdb/config/chaintype_config.json"))
+	if err != nil {
+		log.Crit("chain type config readFile Err", err.Error())
 	}
-	rawdb.WriteHeaderChains(storeMgr.chainDb, header, chainType)
-	rawdb.WriteTdChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), header.Difficulty, chainType)
-	rawdb.WriteCanonicalHashChains(storeMgr.chainDb, header.Hash(), header.Number.Uint64(), chainType)
-	rawdb.WriteHeadHeaderHashChains(storeMgr.chainDb, header.Hash(), chainType)
+	var config []struct {
+		Name string
+		Id   rawdb.ChainType
+	}
+
+	_ = json.Unmarshal(data, &config)
+
+	l := len(config)
+	for i := 0; i < l; i++ {
+		save(config[i].Id, config[i].Name)
+	}
+
 }

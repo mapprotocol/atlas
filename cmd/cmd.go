@@ -198,7 +198,7 @@ var (
 
 func init() {
 	// Initialize the CLI app and start Atlas
-	app.Action = atlas
+	app.Action = runAtlas
 	app.HideVersion = true // we have a command to print the version
 	app.Copyright = "Copyright 2021-2022 The map-protocol Authors"
 	app.Commands = []cli.Command{
@@ -299,7 +299,7 @@ func prepare(ctx *cli.Context) {
 // atlas is the main entry point into the system if no special subcommand is ran.
 // It creates a default node based on the command line arguments and runs it in
 // blocking mode, waiting for it to be shut down.
-func atlas(ctx *cli.Context) error {
+func runAtlas(ctx *cli.Context) error {
 	if args := ctx.Args(); len(args) > 0 {
 		return fmt.Errorf("invalid command: %q", args[0])
 	}
@@ -399,7 +399,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend atlasapi.Backend) {
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
 		}
-		ethBackend, ok := backend.(*eth.EthAPIBackend)
+		ethBackend, ok := backend.(*atlas.EthAPIBackend)
 		if !ok {
 			utils.Fatalf("Ethereum service not running: %v", err)
 		}

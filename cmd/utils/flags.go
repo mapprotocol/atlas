@@ -1696,7 +1696,7 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 // RegisterEthService adds an Ethereum client to the stack.
 // The second return value is the full node instance, which may be nil if the
 // node is running as a light client.
-func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (atlasapi.Backend, *eth.Ethereum) {
+func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (atlasapi.Backend, *atlas.Ethereum) {
 	//if cfg.SyncMode == downloader.LightSync {
 	//	backend, err := les.New(stack, cfg)
 	//	if err != nil {
@@ -1705,7 +1705,7 @@ func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (atlasapi.Backe
 	//	stack.RegisterAPIs(tracers.APIs(backend.ApiBackend))
 	//	return backend.ApiBackend, nil
 	//}
-	backend, err := eth.New(stack, cfg)
+	backend, err := atlas.New(stack, cfg)
 	if err != nil {
 		Fatalf("Failed to register the Ethereum service: %v", err)
 	}

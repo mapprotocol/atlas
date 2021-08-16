@@ -1081,16 +1081,22 @@ func (c *relayer) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error
 	return RunContract(evm, contract, input)
 }
 
+const gasPerByte = 68
+
 type store struct{}
 
 func (s *store) RequiredGas(input []byte) uint64 {
 	var (
-		baseGas uint64 = 0
+		baseGas uint64 = 21000
 	)
 
 	method, err := abiHeaderStore.MethodById(input)
 	if err != nil {
 		return baseGas
+	}
+
+	if method.Name == Save {
+		return uint64(len(input) * gasPerByte)
 	}
 
 	if gas, ok := SyncGas[method.Name]; ok {

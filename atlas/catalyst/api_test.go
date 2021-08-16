@@ -215,7 +215,7 @@ func TestEth2NewBlock(t *testing.T) {
 }
 
 // startEthService creates a full node instance for testing.
-func startEthService(t *testing.T, genesis *chain.Genesis, blocks []*types.Block) (*node.Node, *eth.Ethereum) {
+func startEthService(t *testing.T, genesis *chain.Genesis, blocks []*types.Block) (*node.Node, *atlas.Ethereum) {
 	t.Helper()
 
 	n, err := node.New(&node.Config{})
@@ -224,9 +224,9 @@ func startEthService(t *testing.T, genesis *chain.Genesis, blocks []*types.Block
 	}
 
 	ethcfg := &ethconfig.Config{Genesis: genesis, Ethash: ethash.Config{PowMode: ethash.ModeFake}}
-	ethservice, err := eth.New(n, ethcfg)
+	ethservice, err := atlas.New(n, ethcfg)
 	if err != nil {
-		t.Fatal("can't create eth service:", err)
+		t.Fatal("can't create atlas service:", err)
 	}
 	if err := n.Start(); err != nil {
 		t.Fatal("can't start node:", err)

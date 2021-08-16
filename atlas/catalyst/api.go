@@ -37,7 +37,7 @@ import (
 )
 
 // Register adds catalyst APIs to the node.
-func Register(stack *node.Node, backend *eth.Ethereum) error {
+func Register(stack *node.Node, backend *atlas.Ethereum) error {
 	chainconfig := backend.BlockChain().Config()
 	if chainconfig.CatalystBlock == nil {
 		return errors.New("catalystBlock is not set in genesis config")
@@ -58,11 +58,11 @@ func Register(stack *node.Node, backend *eth.Ethereum) error {
 }
 
 type consensusAPI struct {
-	eth *eth.Ethereum
+	atlas *atlas.Ethereum
 }
 
-func newConsensusAPI(eth *eth.Ethereum) *consensusAPI {
-	return &consensusAPI{eth: eth}
+func newConsensusAPI(atlas *atlas.Ethereum) *consensusAPI {
+	return &consensusAPI{atlas: atlas}
 }
 
 // blockExecutionEnv gathers all the data required to execute
@@ -90,12 +90,12 @@ func (env *blockExecutionEnv) commitTransaction(tx *types.Transaction, coinbase 
 }
 
 func (api *consensusAPI) makeEnv(parent *types.Block, header *types.Header) (*blockExecutionEnv, error) {
-	state, err := api.eth.BlockChain().StateAt(parent.Root())
+	state, err := api.atlas.BlockChain().StateAt(parent.Root())
 	if err != nil {
 		return nil, err
 	}
 	env := &blockExecutionEnv{
-		chain:   api.eth.BlockChain(),
+		chain:   api.atlas.BlockChain(),
 		state:   state,
 		header:  header,
 		gasPool: new(core.GasPool).AddGas(header.GasLimit),
@@ -108,14 +108,14 @@ func (api *consensusAPI) makeEnv(parent *types.Block, header *types.Header) (*bl
 func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableData, error) {
 	log.Info("Producing block", "parentHash", params.ParentHash)
 
-	bc := api.eth.BlockChain()
+	bc := api.atlas.BlockChain()
 	parent := bc.GetBlockByHash(params.ParentHash)
 	if parent == nil {
 		log.Warn("Cannot assemble block with parent hash to unknown block", "parentHash", params.ParentHash)
 		return nil, fmt.Errorf("cannot assemble block with unknown parent %s", params.ParentHash)
 	}
 
-	pool := api.eth.TxPool()
+	pool := api.atlas.TxPool()
 
 	if parent.Time() >= params.Timestamp {
 		return nil, fmt.Errorf("child timestamp lower than parent's: %d >= %d", parent.Time(), params.Timestamp)
@@ -131,7 +131,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		return nil, err
 	}
 
-	coinbase, err := api.eth.Etherbase()
+	coinbase, err := api.atlas.Etherbase()
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		Extra:      []byte{},
 		Time:       params.Timestamp,
 	}
-	err = api.eth.Engine().Prepare(bc, header)
+	err = api.atlas.Engine().Prepare(bc, header)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 	}
 
 	// Create the block.
-	block, err := api.eth.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, nil /* uncles */, env.receipts)
+	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, nil /* uncles */, env.receipts)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +275,7 @@ func insertBlockParamsToBlock(params executableData) (*types.Block, error) {
 // or false + an error. This is a bit redundant for go, but simplifies things on the
 // eth2 side.
 func (api *consensusAPI) NewBlock(params executableData) (*newBlockResponse, error) {
-	parent := api.eth.BlockChain().GetBlockByHash(params.ParentHash)
+	parent := api.atlas.BlockChain().GetBlockByHash(params.ParentHash)
 	if parent == nil {
 		return &newBlockResponse{false}, fmt.Errorf("could not find parent %x", params.ParentHash)
 	}
@@ -284,14 +284,14 @@ func (api *consensusAPI) NewBlock(params executableData) (*newBlockResponse, err
 		return nil, err
 	}
 
-	_, err = api.eth.BlockChain().InsertChainWithoutSealVerification(block)
+	_, err = api.atlas.BlockChain().InsertChainWithoutSealVerification(block)
 	return &newBlockResponse{err == nil}, err
 }
 
 // Used in tests to add a the list of transactions from a block to the tx pool.
 func (api *consensusAPI) addBlockTxs(block *types.Block) error {
 	for _, tx := range block.Transactions() {
-		api.eth.TxPool().AddLocal(tx)
+		api.atlas.TxPool().AddLocal(tx)
 	}
 	return nil
 }
