@@ -53,6 +53,7 @@ var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 	params2.RelayerAddress:           &relayer{},
 	params2.HeaderStoreAddress:       &store{},
+	params2.TxVerifyAddress:          &verify{},
 }
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
@@ -68,6 +69,7 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
 	params2.RelayerAddress:           &relayer{},
 	params2.HeaderStoreAddress:       &store{},
+	params2.TxVerifyAddress:          &verify{},
 }
 
 // PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum
@@ -84,6 +86,7 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{9}): &blake2F{},
 	params2.RelayerAddress:           &relayer{},
 	params2.HeaderStoreAddress:       &store{},
+	params2.TxVerifyAddress:          &verify{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
@@ -100,6 +103,7 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{9}): &blake2F{},
 	params2.RelayerAddress:           &relayer{},
 	params2.HeaderStoreAddress:       &store{},
+	params2.TxVerifyAddress:          &verify{},
 }
 
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
@@ -116,6 +120,7 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{18}): &bls12381MapG2{},
 	params2.RelayerAddress:            &relayer{},
 	params2.HeaderStoreAddress:        &store{},
+	params2.TxVerifyAddress:           &verify{},
 }
 
 var (
@@ -1107,4 +1112,26 @@ func (s *store) RequiredGas(input []byte) uint64 {
 
 func (s *store) Run(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	return RunHeaderStore(evm, contract, input)
+}
+
+type verify struct{}
+
+func (tv *verify) RequiredGas(input []byte) uint64 {
+	var (
+		baseGas uint64 = 21000
+	)
+
+	method, err := abiTxVerify.MethodById(input)
+	if err != nil {
+		return baseGas
+	}
+
+	if gas, ok := TxVerifyGas[method.Name]; ok {
+		return gas
+	}
+	return baseGas
+}
+
+func (tv *verify) Run(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	return RunTxVerify(evm, contract, input)
 }

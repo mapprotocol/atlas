@@ -49,3 +49,29 @@ const HeaderStoreABIJSON = `[
         "type": "function"
     }
 ]`
+
+const TxVerifyABIJSON = `[
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "srcChain",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "dstChain",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "txProve",
+				"type": "bytes"
+			}
+		],
+		"name": "txVerify",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]`
