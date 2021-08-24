@@ -14,6 +14,7 @@ var (
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
+	TxVerifyAddress    = common.BytesToAddress([]byte("txVerifyAddress"))
 )
 
 var RelayerGas = map[string]uint64{

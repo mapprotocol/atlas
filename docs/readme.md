@@ -41,10 +41,8 @@ type CrossTXProve struct {
 
 
 type BaseParams struct {
-	SrcChain *big.Int
-	DstChain *big.Int
-	From     common.Address
-	To       common.Address
+	From     []byte
+	To       []byte
 	Value    *big.Int
 }
 
@@ -52,13 +50,11 @@ type BaseParams struct {
 ```
 BaseParams details: cross tx matedata.
 
-| parameter   | type           | comment |
-| ----------- | -------------- | ------- |
-| Tx.SrcChain | *big.Int       | source chain identification |
-| Tx.DstChain | *big.Int       | destination chain identification|
-| Tx.From     | common.Address | the sender of the transaction,use ethereum`s common package |
-| Tx.To       | common.Address | the receiver of the transaction,use ethereum`s common package |
-| Tx.Value    | *big.Int       | transaction value |
+| parameter   | type      | comment |
+| ----------- | ----------| ------- |
+| Tx.From     | []byte    | the sender of the transaction,use ethereum`s common package |
+| Tx.To       | []byte    | the receiver of the transaction,use ethereum`s common package |
+| Tx.Value    | *big.Int  | transaction value |
 
 
 
@@ -121,7 +117,9 @@ package main
 
 import (
 	"math/big"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/light"
@@ -129,25 +127,36 @@ import (
 )
 
 type TxParams struct {
-	SrcChain *big.Int
-	DstChain *big.Int
-	From     common.Address
-	To       common.Address
-	Value    *big.Int
+	From  common.Address
+	To    common.Address
+	Value *big.Int
 }
 
-type TXProve struct {
+type TxProve struct {
 	Tx      *TxParams
 	Receipt *types.Receipt
 	Prove   light.NodeList
 	TxIndex uint
 }
 
-func example() []byte {
-	input, err := rlp.EncodeToBytes(TXProve{})
+func example() {
+	var (
+		srcChain = big.NewInt(1)
+		dstChain = big.NewInt(211)
+	)
+
+	txProve, err := rlp.EncodeToBytes(TxProve{})
 	if err != nil {
 		panic(err)
 	}
-	return input
+
+	ABITxVerify, _ := abi.JSON(strings.NewReader(""))
+	input, err := ABITxVerify.Pack("txVerify", srcChain, dstChain, txProve)
+	if err != nil {
+		panic(err)
+	}
+	// Send Transaction
+	
+	return
 }
 ```
