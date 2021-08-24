@@ -1,39 +1,19 @@
-# Atlas Chain
+---
+sort: 1
+---
 
-Atlas chain is a truly fast, permissionless, secure and scalable public blockchain platform.
+# Cross Chain Transaction Verify Interface
 
-Building atlas requires both a Go (version 1.14 or later) and a C compiler.
-You can install them using your favourite package manager.
-Once the dependencies are installed, run
+## Ethereum
 
-```
-    git clone https://github.com/mapprotocol/atlas.git
-    cd atlas
-    make atlas
-```
-
-## Running atlas
-
-Going `atlas -h` can get help infos.
-
-### Running on the atlas main network
-
-```
-$ atlas console
-```
-
-## Cross Chain Interface
-
-### Ethereum 
-
-a cross tx on the ethereum mainnet, the relayer which watch the ethereum will capture the tx and send the key information 
+a cross tx on the ethereum mainnet, the relayer which watch the ethereum will capture the tx and send the key information
 to the map atlas.
-
-key info details:
+ 
+key info details: 
 
 ```
 type CrossTxProve struct {
-	Tx      *BaseParams
+	Tx      *TxParams
 	Receipt *types.Receipt
 	Prove   light.NodeList
 	TxIndex uint
@@ -48,7 +28,7 @@ type BaseParams struct {
 
 
 ```
-BaseParams details: cross tx matedata.
+TxParams details: cross tx metadata.
 
 | parameter   | type      | comment |
 | ----------- | ----------| ------- |
@@ -104,6 +84,18 @@ func NewNodeSet() *NodeSet {
 	return &NodeSet{
 		nodes: make(map[string][]byte),
 	}
+}
+
+// NodeList converts the node set to a NodeList
+func (db *NodeSet) NodeList() NodeList {
+	db.lock.RLock()
+	defer db.lock.RUnlock()
+
+	var values NodeList
+	for _, key := range db.order {
+		values = append(values, db.nodes[key])
+	}
+	return values
 }
 
 ```

@@ -21,7 +21,7 @@ get the synchronized part height of the corresponding chain
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| chainID   | number | [chain identification](#chain identification list)  |
+| chainID   | number | [chain identification](#chain-identification-list)  |
 
 ### response parameters
 
@@ -55,7 +55,7 @@ get the block hash of the corresponding chain by number
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| chainID   | number | [chain identification](#chain identification list) |
+| chainID   | number | [chain identification](#chain-identification-list) |
 | number    | number | block number |
 
 ### response parameters
@@ -90,7 +90,7 @@ equivalent to the set of CurrentHeaderNumber and GetHashByNumber
 
 | parameter | type   | comment |
 | --------- | ------ | ------- |
-| chainID   | number | [chain identification](#chain identification list) |
+| chainID   | number | [chain identification](#chain-identification-list) |
 
 ### response parameters
 

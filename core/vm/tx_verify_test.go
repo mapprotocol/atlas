@@ -3,9 +3,11 @@ package vm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/txverify"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/params"
 	"log"
 	"math/big"
 	"testing"
@@ -217,4 +219,8 @@ func TestReceiptsRootAndProof(t *testing.T) {
 	if err := v.Verify(srcChain, dstChain, getTxProve()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestAddr(t *testing.T) {
+	fmt.Println("============================== addr: ", params.TxVerifyAddress)
 }
