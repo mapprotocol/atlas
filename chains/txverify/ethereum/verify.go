@@ -48,12 +48,12 @@ func (v *Verify) Verify(srcChain, dstChain *big.Int, txProveBytes []byte) error 
 		return err
 	}
 
-	topics, number, err := v.getLogAndBlockNumber(txProve.Receipt.Logs)
+	log, number, err := v.getLogAndBlockNumber(txProve.Receipt.Logs)
 	if err != nil {
 		return err
 	}
 
-	if err := v.verifyTxParams(srcChain, dstChain, txProve.Tx, topics); err != nil {
+	if err := v.verifyTxParams(srcChain, dstChain, txProve.Tx, log); err != nil {
 		return err
 	}
 	receiptsRoot, err := v.getReceiptsRoot(rawdb.ChainType(srcChain.Uint64()), number)
