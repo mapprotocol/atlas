@@ -195,7 +195,7 @@ func makeBlock(keys []*ecdsa.PrivateKey, chain *chain.BlockChain, engine *Backen
 	defer sub.Unsubscribe()
 
 	// start seal request (this is non-blocking)
-	err := engine.Seal(chain, block)
+	err := engine.Seal(chain, block,nil,nil)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func makeBlockWithoutSeal(chain *chain.BlockChain, engine *Backend, parent *type
 	if err != nil {
 		fmt.Printf("Error!! %v\n", err)
 	}
-	engine.Finalize(chain, header, state, nil)
+	engine.Finalize(chain, header, state, nil, nil)
 
 	block, err := engine.FinalizeAndAssemble(chain, header, state, nil, nil, nil)
 	if err != nil {

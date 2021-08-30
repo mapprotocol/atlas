@@ -461,7 +461,7 @@ func (sb *Backend) LookbackWindow(header *types.Header, state *state.StateDB) ui
 //
 // Note: The block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
-func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction) {
+func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	start := time.Now()
 	defer sb.finalizationTimer.UpdateSince(start)
 
@@ -501,9 +501,9 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 //
 // Note: The block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
-func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, receipts []*types.Receipt, randomness *types.Randomness) (*types.Block, error) {
+func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,  uncles []*types.Header, receipts []*types.Receipt/* randomness *types.Randomness*/) (*types.Block, error) {
 
-	sb.Finalize(chain, header, state, txs)
+	sb.Finalize(chain, header, state, txs,nil)
 
 	// Add extra receipt for Block's Internal Transaction Logs
 	if len(state.GetLogs(common.Hash{})) > 0 {
@@ -535,7 +535,7 @@ func (sb *Backend) checkIsValidSigner(chain consensus.ChainHeaderReader, header 
 
 // Seal generates a new block for the given input block with the local miner's
 // seal place on top and submits it the the consensus engine.
-func (sb *Backend) Seal(chain consensus.ChainHeaderReader, block *types.Block) error {
+func (sb *Backend) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 
 	header := block.Header()
 

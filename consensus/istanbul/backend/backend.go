@@ -336,6 +336,20 @@ type Backend struct {
 	abortCommitHook func(result *istanbulCore.StateProcessResult) bool // Method to call upon committing a proposal
 }
 
+func (sb *Backend) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
+	return nil
+	//panic("implement me")
+}
+
+func (sb *Backend) SealHash(header *types.Header) common.Hash {
+	return common.Hash{}
+	//panic("implement me")
+}
+
+func (sb *Backend) CalcDifficulty(chain consensus.ChainHeaderReader, time uint64, parent *types.Header) *big.Int {
+	return big.NewInt(0)
+}
+
 // IsProxy returns true if instance has proxy flag
 func (sb *Backend) IsProxy() bool {
 	return sb.config.Proxy

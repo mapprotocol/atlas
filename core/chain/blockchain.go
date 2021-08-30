@@ -216,6 +216,16 @@ type BlockChain struct {
 	terminateInsert func(common.Hash, uint64) bool // Testing hook used to terminate ancient receipt chain insertion.
 }
 
+func (bc *BlockChain) NewEVMRunnerForCurrentBlock() (vm.EVMRunner, error) {
+	block := bc.CurrentBlock()
+	state, err := bc.StateAt(block.Header().Root)
+	if err != nil {
+		log.Error("Can't create EVMRunner for current block (error fetching state)", "number", block.Number(), "stateRoot", block.Root().Hex(), "err", err)
+		return nil, err
+	}
+	return vmcontext.NewEVMRunner(bc, block.Header(), state), nil
+}
+
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
