@@ -141,3 +141,100 @@ func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 		}
 	}
 }
+
+// Istanbul is a consensus engine to avoid byzantine failure
+type Istanbul interface {
+	Engine
+
+	// IsProxiedValidator returns true if this node is a proxied validator
+	IsProxiedValidator() bool
+
+	// IsProxy returns true if this node is a proxy
+	IsProxy() bool
+
+	// IsPrimary returns true if this node is the primary validator
+	IsPrimary() bool
+
+	// IsPrimaryForSeq returns true if this node is the primary validator for the sequence
+	IsPrimaryForSeq(seq *big.Int) bool
+
+	// SetChain injects the blockchain and related functions to the istanbul consensus engine
+	SetChain(chain ChainContext, currentBlock func() *types.Block, stateAt func(common.Hash) (*state.StateDB, error))
+
+	// SetCallBacks sets call back functions
+	SetCallBacks(hasBadBlock func(common.Hash) bool,
+		processBlock func(*types.Block, *state.StateDB) (types.Receipts, []*types.Log, uint64, error),
+		validateState func(*types.Block, *state.StateDB, types.Receipts, uint64) error,
+		onNewConsensusBlock func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB)) error
+
+	// StartValidating starts the validating engine
+	StartValidating() error
+
+	// StopValidating stops the validating engine
+	StopValidating() error
+
+	// StartAnnouncing starts the announcing
+	StartAnnouncing() error
+
+	// StopAnnouncing stops the announcing
+	StopAnnouncing() error
+
+	// StartProxiedValidatorEngine starts the proxied validator engine
+	StartProxiedValidatorEngine() error
+
+	// StopProxiedValidatorEngine stops the proxied validator engine
+	StopProxiedValidatorEngine() error
+
+	// UpdateValSetDiff will update the validator set diff in the header, if the mined header is the last block of the epoch.
+	// The changes are executed inline.
+	UpdateValSetDiff(chain ChainHeaderReader, header *types.Header, state *state.StateDB) error
+
+	// IsLastBlockOfEpoch will check to see if the header is from the last block of an epoch
+	IsLastBlockOfEpoch(header *types.Header) bool
+
+	// LookbackWindow returns the size of the lookback window for calculating uptime (in blocks)
+	LookbackWindow(header *types.Header, state *state.StateDB) uint64
+
+	// ValidatorAddress will return the istanbul engine's validator address
+	ValidatorAddress() common.Address
+
+	// GenerateRandomness will generate the random beacon randomness
+	GenerateRandomness(parentHash common.Hash) (common.Hash, common.Hash, error)
+}
+
+//// ChainContext defines a small collection of methods needed to access the local
+//// blockchain
+type ChainContext interface {
+	ChainHeaderReader
+
+	// NewEVMRunnerForCurrentBlock creates the System's EVMRunner for current block & state
+	NewEVMRunnerForCurrentBlock() (vm.EVMRunner, error)
+
+	// NewEVMRunner creates the System's EVMRunner for given header & sttate
+	NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner
+}
+
+//// Handler should be implemented if the consensus needs to handle and send peer messages
+//type Handler interface {
+//	// NewWork handles a new work event from the miner
+//	NewWork() error
+//
+//	// HandleMsg handles a message from peer
+//	HandleMsg(address common.Address, data p2p.Msg, peer Peer) (bool, error)
+//
+//	// SetBroadcaster sets the broadcaster to send message to peers
+//	SetBroadcaster(Broadcaster)
+//
+//	// SetP2PServer sets the p2p server to connect/disconnect to/from peers
+//	SetP2PServer(P2PServer)
+//
+//	// RegisterPeer will notify the consensus engine that a new peer has been added
+//	RegisterPeer(peer Peer, fromProxiedNode bool) error
+//
+//	// UnregisterPeer will notify the consensus engine that a new peer has been removed
+//	UnregisterPeer(peer Peer, fromProxiedNode bool)
+//
+//	// Handshake will begin a handshake with a new peer. It returns if the peer
+//	// has identified itself as a validator and should bypass any max peer checks.
+//	Handshake(peer Peer) (bool, error)
+//}

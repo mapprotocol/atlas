@@ -364,3 +364,30 @@ func (b *Block) Hash() common.Hash {
 }
 
 type Blocks []*Block
+
+func (b *Block) MutableHeader() *Header { return b.header }
+
+type Randomness struct {
+	Revealed  common.Hash
+	Committed common.Hash
+}
+
+func (r *Randomness) Size() common.StorageSize {
+	return common.StorageSize(64)
+}
+
+func (r *Randomness) DecodeRLP(s *rlp.Stream) error {
+	var random struct {
+		Revealed  common.Hash
+		Committed common.Hash
+	}
+	if err := s.Decode(&random); err != nil {
+		return err
+	}
+	r.Revealed, r.Committed = random.Revealed, random.Committed
+	return nil
+}
+
+func (r *Randomness) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, []interface{}{r.Revealed, r.Committed})
+}

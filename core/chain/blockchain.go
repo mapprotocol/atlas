@@ -20,10 +20,12 @@ package chain
 import (
 	"errors"
 	"fmt"
+
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/txsdetails"
+	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -35,12 +37,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/state/snapshot"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -49,6 +45,12 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
 )
 
 var (
@@ -75,10 +77,9 @@ var (
 	blockExecutionTimer  = metrics.NewRegisteredTimer("chain/execution", nil)
 	blockWriteTimer      = metrics.NewRegisteredTimer("chain/write", nil)
 
-	blockReorgMeter         = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
-	blockReorgAddMeter      = metrics.NewRegisteredMeter("chain/reorg/add", nil)
-	blockReorgDropMeter     = metrics.NewRegisteredMeter("chain/reorg/drop", nil)
-
+	blockReorgMeter     = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
+	blockReorgAddMeter  = metrics.NewRegisteredMeter("chain/reorg/add", nil)
+	blockReorgDropMeter = metrics.NewRegisteredMeter("chain/reorg/drop", nil)
 
 	blockPrefetchExecuteTimer   = metrics.NewRegisteredTimer("chain/prefetch/executes", nil)
 	blockPrefetchInterruptMeter = metrics.NewRegisteredMeter("chain/prefetch/interrupts", nil)
@@ -1439,6 +1440,11 @@ func (bc *BlockChain) writeKnownBlock(block *types.Block) error {
 	return nil
 }
 
+// NewEVMRunner creates the System's EVMRunner for given header & sttate
+func (bc *BlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner {
+	return vmcontext.NewEVMRunner(bc, header, state)
+}
+
 // WriteBlockWithState writes the block and all associated state to the database.
 func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) (status WriteStatus, err error) {
 	bc.chainmu.Lock()
@@ -1452,6 +1458,37 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) (status WriteStatus, err error) {
 	bc.wg.Add(1)
 	defer bc.wg.Done()
+
+	randomCommitment := common.Hash{}
+	if istEngine, isIstanbul := bc.engine.(consensus.Istanbul); isIstanbul {
+
+		if hash := bc.GetCanonicalHash(block.NumberU64()); (hash != common.Hash{} && hash != block.Hash()) {
+			log.Error("Found two blocks with same height", "old", hash, "new", block.Hash())
+		}
+
+		//lookbackWindow := istEngine.LookbackWindow(block.Header(), state)
+
+		//uptimeMonitor := uptime.NewMonitor(store.New(bc.db), bc.chainConfig.Istanbul.Epoch, lookbackWindow)
+		//err = uptimeMonitor.ProcessBlock(block)
+		//if err != nil {
+		//	return NonStatTy, err
+		//}
+
+		blockAuthor, err := istEngine.Author(block.Header())
+		if err != nil {
+			log.Warn("Unable to retrieve the author for block", "blockNum", block.NumberU64(), "err", err)
+		}
+
+		if blockAuthor == istEngine.ValidatorAddress() && !istEngine.IsProxy() {
+			// Calculate the randomness commitment
+			_, randomCommitment, err = istEngine.GenerateRandomness(block.ParentHash())
+
+			if err != nil {
+				log.Error("Couldn't generate the randomness for the block", "blockNum", block.NumberU64(), "err", err)
+				return NonStatTy, err
+			}
+		}
+	}
 
 	// Calculate the total difficulty of the block
 	ptd := bc.GetTd(block.ParentHash(), block.NumberU64()-1)
@@ -1472,6 +1509,11 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	rawdb.WriteBlock(blockBatch, block)
 	rawdb.WriteReceipts(blockBatch, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WritePreimages(blockBatch, state.Preimages())
+	if (randomCommitment != common.Hash{}) {
+		// Note that the random commitment cache entry is never transferred over to the freezer,
+		// unlike all of the other saved data within this batch write
+		rawdb.WriteRandomCommitmentCache(blockBatch, randomCommitment, block.ParentHash())
+	}
 	if err := blockBatch.Write(); err != nil {
 		log.Crit("Failed to write block into disk", "err", err)
 	}
@@ -2513,4 +2555,55 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 // block processing has started while false means it has stopped.
 func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscription {
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
+}
+
+// RecoverRandomnessCache will do a search for the block that was used to generate the given commitment.
+// Specifically, it will find the block that this node authored and that block's parent hash is used to
+// created the commitment.  The search is a reverse iteration of the node's local chain starting at
+// the block where it's hash is the given commitmentBlockHash.
+func (bc *BlockChain) RecoverRandomnessCache(commitment common.Hash, commitmentBlockHash common.Hash) error {
+	istEngine, isIstanbul := bc.engine.(consensus.Istanbul)
+	if !isIstanbul {
+		return nil
+	}
+
+	log.Info("Recovering randomness cache entry", "commitment", commitment.Hex(), "initial block search", commitmentBlockHash.Hex())
+
+	blockHashIter := commitmentBlockHash
+	var parentHash common.Hash
+	for {
+		blockHeader := bc.GetHeaderByHash(blockHashIter)
+
+		// We got to the genesis block, so search didn't find the latest
+		// block authored by this validator.
+		if blockHeader.Number.Uint64() == 0 {
+			return errors.New("randomness commitment not found")
+		}
+
+		blockAuthor, err := istEngine.Author(blockHeader)
+		if err != nil {
+			log.Error("Error is retrieving block author", "block number", blockHeader.Number.Uint64(), "block hash", blockHeader.Hash(), "error", err)
+			return err
+		}
+
+		if blockAuthor == istEngine.ValidatorAddress() {
+			parentHash = blockHeader.ParentHash
+			break
+		}
+
+		blockHashIter = blockHeader.ParentHash
+	}
+
+	// Calculate the randomness commitment
+	// The calculation is stateless (e.g. it's just a hash operation of a string), so any passed in block header and state
+	// will do. Will use the previously fetched current header and state.
+	_, randomCommitment, err := istEngine.GenerateRandomness(parentHash)
+	if err != nil {
+		log.Error("Couldn't generate the randomness from the parent hash", "parent hash", parentHash, "err", err)
+		return err
+	}
+
+	rawdb.WriteRandomCommitmentCache(bc.db, randomCommitment, parentHash)
+
+	return nil
 }

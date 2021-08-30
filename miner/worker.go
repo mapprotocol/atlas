@@ -18,7 +18,10 @@ package miner
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/processor"
 	"math/big"
@@ -28,15 +31,15 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
 )
 
 const (
@@ -157,9 +160,10 @@ type worker struct {
 	remoteUncles map[common.Hash]*types.Block // A set of side blocks as the possible uncle blocks.
 	unconfirmed  *unconfirmedBlocks           // A set of locally mined blocks pending canonicalness confirmations.
 
-	mu       sync.RWMutex // The lock used to protect the coinbase and extra fields
-	coinbase common.Address
-	extra    []byte
+	mu             sync.RWMutex // The lock used to protect the coinbase and extra fields
+	coinbase       common.Address
+	txFeeRecipient common.Address
+	extra          []byte
 
 	pendingMu    sync.RWMutex
 	pendingTasks map[common.Hash]*task
@@ -187,31 +191,38 @@ type worker struct {
 	skipSealHook func(*task) bool                   // Method to decide whether skipping the sealing.
 	fullTaskHook func()                             // Method to call before pushing the full sealing task.
 	resubmitHook func(time.Duration, time.Duration) // Method to call upon updating resubmitting interval.
+
+	// Needed for randomness
+	db ethdb.Database
+
+	blockConstructGauge metrics.Gauge
 }
 
-func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool) *worker {
+func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
 	worker := &worker{
-		config:             config,
-		chainConfig:        chainConfig,
-		engine:             engine,
-		eth:                eth,
-		mux:                mux,
-		chain:              eth.BlockChain(),
-		isLocalBlock:       isLocalBlock,
-		localUncles:        make(map[common.Hash]*types.Block),
-		remoteUncles:       make(map[common.Hash]*types.Block),
-		unconfirmed:        newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
-		pendingTasks:       make(map[common.Hash]*task),
-		txsCh:              make(chan core.NewTxsEvent, txChanSize),
-		chainHeadCh:        make(chan core.ChainHeadEvent, chainHeadChanSize),
-		chainSideCh:        make(chan core.ChainSideEvent, chainSideChanSize),
-		newWorkCh:          make(chan *newWorkReq),
-		taskCh:             make(chan *task),
-		resultCh:           make(chan *types.Block, resultQueueSize),
-		exitCh:             make(chan struct{}),
-		startCh:            make(chan struct{}, 1),
-		resubmitIntervalCh: make(chan time.Duration),
-		resubmitAdjustCh:   make(chan *intervalAdjust, resubmitAdjustChanSize),
+		config:              config,
+		chainConfig:         chainConfig,
+		engine:              engine,
+		eth:                 eth,
+		mux:                 mux,
+		chain:               eth.BlockChain(),
+		isLocalBlock:        isLocalBlock,
+		localUncles:         make(map[common.Hash]*types.Block),
+		remoteUncles:        make(map[common.Hash]*types.Block),
+		unconfirmed:         newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
+		pendingTasks:        make(map[common.Hash]*task),
+		txsCh:               make(chan core.NewTxsEvent, txChanSize),
+		chainHeadCh:         make(chan core.ChainHeadEvent, chainHeadChanSize),
+		chainSideCh:         make(chan core.ChainSideEvent, chainSideChanSize),
+		newWorkCh:           make(chan *newWorkReq),
+		taskCh:              make(chan *task),
+		resultCh:            make(chan *types.Block, resultQueueSize),
+		exitCh:              make(chan struct{}),
+		startCh:             make(chan struct{}, 1),
+		resubmitIntervalCh:  make(chan time.Duration),
+		resubmitAdjustCh:    make(chan *intervalAdjust, resubmitAdjustChanSize),
+		db:                  db,
+		blockConstructGauge: metrics.NewRegisteredGauge("miner/worker/block_construct", nil),
 	}
 	// Subscribe NewTxsEvent for tx pool
 	worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
@@ -290,11 +301,21 @@ func (w *worker) pendingBlock() *types.Block {
 func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
 	w.startCh <- struct{}{}
+
+	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
+		if istanbul.IsPrimary() {
+			istanbul.StartValidating()
+		}
+	}
 }
 
 // stop sets the running status as 0.
 func (w *worker) stop() {
 	atomic.StoreInt32(&w.running, 0)
+
+	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
+		istanbul.StopValidating()
+	}
 }
 
 // isRunning returns an indicator whether worker is running or not.
@@ -437,8 +458,46 @@ func (w *worker) mainLoop() {
 	defer w.chainHeadSub.Unsubscribe()
 	defer w.chainSideSub.Unsubscribe()
 
+	var taskCtx context.Context
+	var cancel context.CancelFunc
+	var wg sync.WaitGroup
+
+	txsCh := make(chan core.NewTxsEvent, txChanSize)
+
+	generateNewBlock := func() {
+		if cancel != nil {
+			cancel()
+		}
+		wg.Wait()
+		taskCtx, cancel = context.WithCancel(context.Background())
+		wg.Add(1)
+
+		if w.isRunning() {
+			// engine.NewWork posts the FinalCommitted Event to IBFT to signal the start of the next round
+			//if h, ok := w.engine.(consensus.Handler); ok {
+			//	h.NewWork()
+			//}
+
+			go func() {
+				w.constructAndSubmitNewBlock(taskCtx)
+				wg.Done()
+			}()
+		} else {
+			go func() {
+				w.constructPendingStateBlock(taskCtx, txsCh)
+				wg.Done()
+			}()
+		}
+	}
+
 	for {
 		select {
+		case <-w.startCh:
+			generateNewBlock()
+
+		case <-w.chainHeadCh:
+			generateNewBlock()
+
 		case req := <-w.newWorkCh:
 			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)
 
@@ -1037,6 +1096,149 @@ func (w *worker) postSideBlock(event core.ChainSideEvent) {
 	case w.chainSideCh <- event:
 	case <-w.exitCh:
 	}
+}
+
+// constructAndSubmitNewBlock constructs a new block and if the worker is running, submits
+// a task to the engine
+func (w *worker) constructAndSubmitNewBlock(ctx context.Context) {
+	start := time.Now()
+
+	// Initialize the block.
+	b, err := prepareBlock(w)
+	if err != nil {
+		log.Error("Failed to create mining context", "err", err)
+		return
+	}
+	w.updatePendingBlock(b)
+
+	// TODO: worker based adaptive sleep with this delay
+	// wait for the timestamp of header, use this to adjust the block period
+	delay := time.Until(time.Unix(int64(b.header.Time), 0))
+	select {
+	case <-time.After(delay):
+	case <-ctx.Done():
+		return
+	}
+
+	err = b.selectAndApplyTransactions(ctx, w)
+	if err != nil {
+		log.Error("Failed to apply transactions to the block", "err", err)
+		return
+	}
+	w.updatePendingBlock(b)
+
+	block, err := b.finalizeAndAssemble(w)
+	if err != nil {
+		log.Error("Failed to finalize and assemble the block", "err", err)
+		return
+	}
+	w.updatePendingBlock(b)
+
+	// We update the block construction metric here, rather than at the end of the function, because
+	// `submitTaskToEngine` may take a long time if the engine's handler is busy (e.g. if we are not
+	// the proposer and the engine has already gotten and is verifying the proposal).  See
+	// https://github.com/celo-org/celo-blockchain/issues/1639#issuecomment-888611039
+	// And we subtract the time we spent sleeping, since we want the time spent actually building the block.
+	w.blockConstructGauge.Update(time.Since(start).Nanoseconds() - delay.Nanoseconds())
+
+	if w.isRunning() {
+		if w.fullTaskHook != nil {
+			w.fullTaskHook()
+		}
+		w.submitTaskToEngine(&task{receipts: b.receipts, state: b.state, block: block, createdAt: time.Now()})
+
+		feesCelo := totalFees(block, b.receipts)
+		log.Info("Commit new mining work", "number", block.Number(), "txs", b.tcount, "gas", block.GasUsed(),
+			"fees", feesCelo, "elapsed", common.PrettyDuration(time.Since(start)))
+
+	}
+}
+
+// constructPendingStateBlock constructs a new block and keeps applying new transactions to it.
+// until it is full or the context is cancelled.
+func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core.NewTxsEvent) {
+	// Initialize the block.
+	b, err := prepareBlock(w)
+	if err != nil {
+		log.Error("Failed to create mining context", "err", err)
+		return
+	}
+	w.updatePendingBlock(b)
+
+	err = b.selectAndApplyTransactions(ctx, w)
+	if err != nil {
+		log.Error("Failed to apply transactions to the block", "err", err)
+		return
+	}
+	w.updatePendingBlock(b)
+
+	w.mu.RLock()
+	txFeeRecipient := w.txFeeRecipient
+	//if !w.chainConfig.IsDonut(b.header.Number) && w.txFeeRecipient != w.coinbase {
+	//	txFeeRecipient = w.coinbase
+	//	log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the coinbase.")
+	//}
+	w.mu.RUnlock()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev := <-txsCh:
+			if !w.isRunning() {
+				// If block is already full, abort
+				if gp := b.gasPool; gp != nil && gp.Gas() < params.TxGas {
+					return
+				}
+
+				txs := make(map[common.Address]types.Transactions)
+				for _, tx := range ev.Txs {
+					acc, _ := types.Sender(b.signer, tx)
+					txs[acc] = append(txs[acc], tx)
+				}
+
+				txset := types.NewTransactionsByPriceAndNonce(b.signer, txs)
+				tcount := b.tcount
+				b.commitTransactions(ctx, w, txset, txFeeRecipient)
+				// Only update the snapshot if any new transactons were added
+				// to the pending block
+				if tcount != b.tcount {
+					w.updatePendingBlock(b)
+				}
+			}
+		}
+	}
+
+}
+
+//updatePendingBlock updates pending snapshot block and state.
+func (w *worker) updatePendingBlock(b *blockState) {
+	w.snapshotMu.Lock()
+	defer w.snapshotMu.Unlock()
+
+	w.snapshotBlock = types.NewBlock(
+		b.header,
+		b.txs,
+		nil,
+		b.receipts,
+		trie.NewStackTrie(nil), //b.randomness,
+	)
+
+	w.snapshotState = b.state.Copy()
+}
+
+func (w *worker) submitTaskToEngine(task *task) {
+	if w.newTaskHook != nil {
+		w.newTaskHook(task)
+	}
+
+	if w.skipSealHook != nil && w.skipSealHook(task) {
+		return
+	}
+
+	//if err := w.engine.Seal(w.chain, task.block); err != nil {
+	//	log.Warn("Block sealing failed", "err", err)
+	//}
 }
 
 // totalFees computes total consumed fees in ETH. Block transactions and receipts have to have the same order.

@@ -19,20 +19,23 @@ package miner
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/mapprotocol/atlas/contracts/random"
 	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/txsdetails"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/atlas/downloader"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // Backend wraps all methods required for mining.
@@ -61,12 +64,14 @@ type Miner struct {
 	coinbase common.Address
 	eth      Backend
 	engine   consensus.Engine
-	exitCh   chan struct{}
-	startCh  chan common.Address
-	stopCh   chan struct{}
+	db       ethdb.Database // Needed for randomness
+
+	exitCh  chan struct{}
+	startCh chan common.Address
+	stopCh  chan struct{}
 }
 
-func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
+func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool, db ethdb.Database) *Miner {
 	miner := &Miner{
 		eth:     eth,
 		mux:     mux,
@@ -74,7 +79,8 @@ func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *even
 		exitCh:  make(chan struct{}),
 		startCh: make(chan common.Address),
 		stopCh:  make(chan struct{}),
-		worker:  newWorker(config, chainConfig, engine, eth, mux, isLocalBlock, true),
+		worker:  newWorker(config, chainConfig, engine, eth, mux, isLocalBlock, true, db),
+		db:      db,
 	}
 	go miner.update()
 
@@ -121,6 +127,7 @@ func (miner *Miner) update() {
 					miner.worker.start()
 				}
 			case downloader.DoneEvent:
+				miner.recoverRandomness()
 				canStart = true
 				if shouldStart {
 					miner.SetEtherbase(miner.coinbase)
@@ -221,4 +228,41 @@ func (miner *Miner) DisablePreseal() {
 // to the given channel.
 func (miner *Miner) SubscribePendingLogs(ch chan<- []*types.Log) event.Subscription {
 	return miner.worker.pendingLogsFeed.Subscribe(ch)
+}
+
+func (miner *Miner) recoverRandomness() {
+	// If this is using the istanbul consensus engine, then we need to check
+	// for the randomness cache for the randomness beacon protocol
+	_, isIstanbul := miner.engine.(consensus.Istanbul)
+	if isIstanbul {
+		// getCurrentBlockAndState
+		currentBlock := miner.eth.BlockChain().CurrentBlock()
+		currentHeader := currentBlock.Header()
+		currentState, err := miner.eth.BlockChain().StateAt(currentBlock.Root())
+		if err != nil {
+			log.Error("Error in retrieving state", "block hash", currentHeader.Hash(), "error", err)
+			return
+		}
+
+		if currentHeader.Number.Uint64() > 0 {
+			vmRunner := miner.eth.BlockChain().NewEVMRunner(currentHeader, currentState)
+			// Check to see if we already have the commitment cache
+			lastCommitment, err := random.GetLastCommitment(vmRunner, miner.coinbase)
+			if err != nil {
+				log.Error("Error in retrieving last commitment", "error", err)
+				return
+			}
+
+			// If there is a non empty last commitment and if we don't have that commitment's
+			// cache entry, then we need to recover it.
+			if (lastCommitment != common.Hash{}) && (rawdb.ReadRandomCommitmentCache(miner.db, lastCommitment) == common.Hash{}) {
+				err := miner.eth.BlockChain().RecoverRandomnessCache(lastCommitment, currentBlock.Hash())
+				if err != nil {
+					log.Error("Error in recovering randomness cache", "error", err)
+					return
+				}
+			}
+		}
+	}
+
 }
