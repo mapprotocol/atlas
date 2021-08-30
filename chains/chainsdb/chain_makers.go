@@ -18,16 +18,17 @@ package chainsdb
 
 import (
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // BlockGen creates blocks for testing.
@@ -44,7 +45,7 @@ type BlockGen struct {
 	receipts []*types.Receipt
 	uncles   []*types.Header
 
-	config *params.ChainConfig
+	config *params2.ChainConfig
 	engine consensus.Engine
 }
 
@@ -73,9 +74,9 @@ func (b *BlockGen) SetCoinbase(addr common.Address) {
 // Blocks created by GenerateChain do not contain valid proof of work
 // values. Inserting them into BlockChain requires use of FakePow or
 // a similar non-validating proof of work implementation.
-func GenerateChain(config *params.ChainConfig, parent *types.Block, engine consensus.Engine, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
+func GenerateChain(config *params2.ChainConfig, parent *types.Block, engine consensus.Engine, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
 	if config == nil {
-		config = params.TestChainConfig
+		config = params2.TestChainConfig
 	}
 	blocks, receipts := make(types.Blocks, n), make([]types.Receipts, n)
 	chainreader := &fakeChainReader{config: config}
@@ -165,18 +166,18 @@ func makeHeaderChain(parent *types.Header, n int, engine consensus.Engine, db et
 
 // makeBlockChain creates a deterministic chain of blocks rooted at parent.
 func makeBlockChain(parent *types.Block, n int, engine consensus.Engine, db ethdb.Database, seed int) []*types.Block {
-	blocks, _ := GenerateChain(params.TestChainConfig, parent, engine, db, n, func(i int, b *BlockGen) {
+	blocks, _ := GenerateChain(params2.TestChainConfig, parent, engine, db, n, func(i int, b *BlockGen) {
 		b.SetCoinbase(common.Address{0: byte(seed), 19: byte(i)})
 	})
 	return blocks
 }
 
 type fakeChainReader struct {
-	config *params.ChainConfig
+	config *params2.ChainConfig
 }
 
 // Config returns the chain configuration.
-func (cr *fakeChainReader) Config() *params.ChainConfig {
+func (cr *fakeChainReader) Config() *params2.ChainConfig {
 	return cr.config
 }
 

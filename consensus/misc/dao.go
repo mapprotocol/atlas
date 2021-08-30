@@ -19,11 +19,12 @@ package misc
 import (
 	"bytes"
 	"errors"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 var (
@@ -44,7 +45,7 @@ var (
 //      with the fork specific extra-data set
 //   b) if the node is pro-fork, require blocks in the specific range to have the
 //      unique extra-data set.
-func VerifyDAOHeaderExtraData(config *params.ChainConfig, header *types.Header) error {
+func VerifyDAOHeaderExtraData(config *params2.ChainConfig, header *types.Header) error {
 	// Short circuit validation if the node doesn't care about the DAO fork
 	if config.DAOForkBlock == nil {
 		return nil

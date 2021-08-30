@@ -18,14 +18,14 @@ package rawdb
 
 import (
 	"bytes"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // ReadTxLookupEntry retrieves the positional metadata associated with a transaction
@@ -120,7 +120,7 @@ func ReadTransaction(db ethdb.Reader, hash common.Hash) (*types.Transaction, com
 
 // ReadReceipt retrieves a specific transaction receipt from the database, along with
 // its added positional metadata.
-func ReadReceipt(db ethdb.Reader, hash common.Hash, config *params.ChainConfig) (*types.Receipt, common.Hash, uint64, uint64) {
+func ReadReceipt(db ethdb.Reader, hash common.Hash, config *params2.ChainConfig) (*types.Receipt, common.Hash, uint64, uint64) {
 	// Retrieve the context of the receipt based on the transaction hash
 	blockNumber := ReadTxLookupEntry(db, hash)
 	if blockNumber == nil {

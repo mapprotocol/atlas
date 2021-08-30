@@ -19,9 +19,9 @@ package core
 import (
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate istanbul.RoundChangeCertificate) {

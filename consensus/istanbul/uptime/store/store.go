@@ -1,9 +1,9 @@
 package store
 
 import (
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/uptime"
-	"github.com/celo-org/celo-blockchain/core/rawdb"
-	"github.com/celo-org/celo-blockchain/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
 type uptimeStoreImpl struct {

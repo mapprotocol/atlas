@@ -20,6 +20,7 @@ package chain
 import (
 	"errors"
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/abstract"
@@ -41,7 +42,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
@@ -163,8 +163,8 @@ var defaultCacheConfig = &CacheConfig{
 // included in the canonical one where as GetBlockByNumber always represents the
 // canonical chain.
 type BlockChain struct {
-	chainConfig *params.ChainConfig // Chain & network configuration
-	cacheConfig *CacheConfig        // Cache configuration for pruning
+	chainConfig *params2.ChainConfig // Chain & network configuration
+	cacheConfig *CacheConfig         // Cache configuration for pruning
 
 	db     ethdb.Database // Low level persistent database to store final content in
 	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
@@ -219,7 +219,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
-func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64) (*BlockChain, error) {
+func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params2.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -2521,7 +2521,7 @@ func (bc *BlockChain) GetTransactionLookup(hash common.Hash) *rawdb.LegacyTxLook
 }
 
 // Config retrieves the chain's fork configuration.
-func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
+func (bc *BlockChain) Config() *params2.ChainConfig { return bc.chainConfig }
 
 // Engine retrieves the blockchain's consensus engine.
 func (bc *BlockChain) Engine() consensus.Engine { return bc.engine }
@@ -2606,4 +2606,10 @@ func (bc *BlockChain) RecoverRandomnessCache(commitment common.Hash, commitmentB
 	rawdb.WriteRandomCommitmentCache(bc.db, randomCommitment, parentHash)
 
 	return nil
+}
+
+// HasBadBlock returns whether the block with the hash is a bad block
+func (bc *BlockChain) HasBadBlock(hash common.Hash) bool {
+
+	return true //bc.badBlocks.Contains(hash)
 }

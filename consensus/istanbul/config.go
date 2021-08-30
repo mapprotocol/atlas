@@ -18,10 +18,10 @@ package istanbul
 
 import (
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -103,7 +103,7 @@ var DefaultConfig = &Config{
 }
 
 //ApplyParamsChainConfigToConfig applies the istanbul config values from params.chainConfig to the istanbul.Config config
-func ApplyParamsChainConfigToConfig(chainConfig *params.ChainConfig, config *Config) error {
+func ApplyParamsChainConfigToConfig(chainConfig *params2.ChainConfig, config *Config) error {
 	if chainConfig.Istanbul.Epoch != 0 {
 		if chainConfig.Istanbul.Epoch < MinEpochSize {
 			return fmt.Errorf("istanbul.Epoch must be greater than %d", MinEpochSize-1)

@@ -20,12 +20,12 @@ package atlasapi
 import (
 	"context"
 	"github.com/mapprotocol/atlas/core/processor"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/atlas/downloader"
@@ -87,7 +87,7 @@ type Backend interface {
 	SubscribePendingLogsEvent(ch chan<- []*types.Log) event.Subscription
 	SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription
 
-	ChainConfig() *params.ChainConfig
+	ChainConfig() *params2.ChainConfig
 	Engine() consensus.Engine
 }
 

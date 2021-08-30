@@ -20,6 +20,7 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"io"
 	"math/big"
 	"reflect"
@@ -32,6 +33,10 @@ import (
 )
 
 var (
+	//EmptyRootHash       = DeriveSha(Transactions{})
+	EmptyRandomness     = Randomness{}
+	EmptyEpochSnarkData = EpochSnarkData{}
+
 	EmptyRootHash  = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	EmptyUncleHash = rlpHash([]*Header(nil))
 )
@@ -390,4 +395,71 @@ func (r *Randomness) DecodeRLP(s *rlp.Stream) error {
 
 func (r *Randomness) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, []interface{}{r.Revealed, r.Committed})
+}
+
+type EpochSnarkData struct {
+	Bitmap    *big.Int
+	Signature []byte
+}
+
+// Size returns the approximate memory used by all internal contents. It is used
+// to approximate and limit the memory consumption of various caches.
+func (r *EpochSnarkData) Size() common.StorageSize {
+	return common.StorageSize(blscrypto.SIGNATUREBYTES + (r.Bitmap.BitLen() / 8))
+}
+
+func (r *EpochSnarkData) DecodeRLP(s *rlp.Stream) error {
+	var epochSnarkData struct {
+		Bitmap    *big.Int
+		Signature []byte
+	}
+	if err := s.Decode(&epochSnarkData); err != nil {
+		return err
+	}
+	r.Bitmap = epochSnarkData.Bitmap
+	r.Signature = epochSnarkData.Signature
+	return nil
+}
+
+func (r *EpochSnarkData) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, []interface{}{r.Bitmap, r.Signature})
+}
+
+func (r *EpochSnarkData) IsEmpty() bool {
+	return len(r.Signature) == 0
+}
+
+// WithHeader returns a new block with the data from b but the header replaced with
+// the sealed one.
+func (b *Block) WithHeader(header *Header) *Block {
+	cpy := *header
+
+	return &Block{
+		header:       &cpy,
+		transactions: b.transactions,
+		//randomness:     b.randomness,
+		//epochSnarkData: b.epochSnarkData,
+	}
+}
+
+// WithRandomness returns a new block with the given randomness.
+func (b *Block) WithRandomness(randomness *Randomness) *Block {
+	block := &Block{
+		header:       b.header,
+		transactions: b.transactions,
+		//randomness:     randomness,
+		//epochSnarkData: b.epochSnarkData,
+	}
+	return block
+}
+
+// WithEpochSnarkData returns a new block with the given epoch SNARK data.
+func (b *Block) WithEpochSnarkData(epochSnarkData *EpochSnarkData) *Block {
+	block := &Block{
+		header:       b.header,
+		transactions: b.transactions,
+		//randomness:     b.randomness,
+		//epochSnarkData: epochSnarkData,
+	}
+	return block
 }

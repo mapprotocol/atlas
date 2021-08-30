@@ -17,13 +17,14 @@
 package proxy
 
 import (
+	"github.com/mapprotocol/atlas/core/types"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 // proxySet defines the set of proxies that the validator is aware of and
@@ -114,13 +115,13 @@ func (ps *proxySet) removeProxyPeer(proxyID enode.ID) {
 
 // addRemoteValidators adds remote validators to be assigned by the valAssigner
 func (ps *proxySet) addRemoteValidators(validators []common.Address) bool {
-	ps.logger.Trace("adding remote validators to the proxy set", "validators", common.ConvertToStringSlice(validators))
+	ps.logger.Trace("adding remote validators to the proxy set", "validators", types.ConvertToStringSlice(validators))
 	return ps.valAssigner.assignRemoteValidators(validators, ps.valAssignments)
 }
 
 // removeRemoteValidators removes remote validators from the validator assignments
 func (ps *proxySet) removeRemoteValidators(validators []common.Address) bool {
-	ps.logger.Trace("removing remote validators from the proxy set", "validators", common.ConvertToStringSlice(validators))
+	ps.logger.Trace("removing remote validators from the proxy set", "validators", types.ConvertToStringSlice(validators))
 	return ps.valAssigner.removeRemoteValidators(validators, ps.valAssignments)
 }
 

@@ -18,6 +18,7 @@ package vm
 
 import (
 	"errors"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -122,9 +123,9 @@ type EVM struct {
 	depth int
 
 	// chainConfig contains information about the current chain
-	chainConfig *params.ChainConfig
+	chainConfig *params2.ChainConfig
 	// chain rules contains the chain rules for the current epoch
-	chainRules params.Rules
+	chainRules params2.Rules
 	// virtual machine configuration options used to initialise the
 	// evm.
 	vmConfig Config
@@ -143,7 +144,7 @@ type EVM struct {
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config) *EVM {
+func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params2.ChainConfig, vmConfig Config) *EVM {
 	evm := &EVM{
 		Context:      blockCtx,
 		TxContext:    txCtx,
@@ -515,7 +516,7 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 }
 
 // ChainConfig returns the environment's chain configuration
-func (evm *EVM) ChainConfig() *params.ChainConfig { return evm.chainConfig }
+func (evm *EVM) ChainConfig() *params2.ChainConfig { return evm.chainConfig }
 
 //func (evm *EVM) StopGasMetering() {
 //	evm.dontMeterGas = true

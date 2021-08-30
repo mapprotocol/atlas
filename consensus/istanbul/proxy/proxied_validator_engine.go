@@ -17,15 +17,15 @@
 package proxy
 
 import (
+	"github.com/mapprotocol/atlas/core/types"
 	"sync"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/p2p"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 // BackendForProxiedValidatorEngine provides the Istanbul backend application specific functions for Istanbul proxied validator engine
@@ -70,10 +70,10 @@ type BackendForProxiedValidatorEngine interface {
 	RetrieveValidatorConnSet() (map[common.Address]bool, error)
 
 	// AddPeer will add a static peer
-	AddPeer(node *enode.Node, purpose p2p.PurposeFlag)
+	AddPeer(node *enode.Node, purpose consensus.PurposeFlag)
 
 	// RemovePeer will remove a static peer
-	RemovePeer(node *enode.Node, purpose p2p.PurposeFlag)
+	RemovePeer(node *enode.Node, purpose consensus.PurposeFlag)
 
 	// GetProxiedValidatorEngine returns the proxied validator engine created for this Backend.  This should only be used for the unit tests.
 	GetProxiedValidatorEngine() ProxiedValidatorEngine
@@ -229,7 +229,7 @@ func (pv *proxiedValidatorEngine) RegisterProxyPeer(proxyPeer consensus.Peer) er
 	}
 
 	logger := pv.logger.New("func", "RegisterProxyPeer")
-	if proxyPeer.PurposeIsSet(p2p.ProxyPurpose) {
+	if proxyPeer.PurposeIsSet(consensus.ProxyPurpose) {
 		logger.Info("Got new proxy peer", "proxyPeer", proxyPeer)
 		select {
 		case pv.addProxyPeer <- proxyPeer:
@@ -249,7 +249,7 @@ func (pv *proxiedValidatorEngine) UnregisterProxyPeer(proxyPeer consensus.Peer) 
 		return istanbul.ErrStoppedProxiedValidatorEngine
 	}
 
-	if proxyPeer.PurposeIsSet(p2p.ProxyPurpose) {
+	if proxyPeer.PurposeIsSet(consensus.ProxyPurpose) {
 		select {
 		case pv.removeProxyPeer <- proxyPeer:
 		case <-pv.quit:
@@ -413,7 +413,7 @@ loop:
 				}
 				log.Info("Adding proxy node", "proxyNode", proxyNode, "proxyID", proxyID)
 				ps.addProxy(proxyNode)
-				pv.backend.AddPeer(proxyNode.InternalNode, p2p.ProxyPurpose)
+				pv.backend.AddPeer(proxyNode.InternalNode, consensus.ProxyPurpose)
 			}
 
 		case rmProxyNodes := <-pv.removeProxies:
@@ -440,7 +440,7 @@ loop:
 					pv.backend.UpdateAnnounceVersion()
 					pv.sendValEnodeShareMsgs(ps)
 				}
-				pv.backend.RemovePeer(proxy.node, p2p.ProxyPurpose)
+				pv.backend.RemovePeer(proxy.node, consensus.ProxyPurpose)
 			}
 
 		case connectedPeer := <-pv.addProxyPeer:
@@ -532,7 +532,7 @@ func (pv *proxiedValidatorEngine) sendValEnodeShareMsgs(ps *proxySet) {
 				valAddresses = append(valAddresses, valAddress)
 			}
 			logger.Info("Sending val enode share msg to proxy", "proxy peer", proxy.peer, "valAddresses length", len(valAddresses))
-			logger.Trace("Sending val enode share msg to proxy with validator addresses", "valAddresses", common.ConvertToStringSlice(valAddresses))
+			logger.Trace("Sending val enode share msg to proxy with validator addresses", "valAddresses", types.ConvertToStringSlice(valAddresses))
 			pv.sendValEnodesShareMsg(proxy.peer, valAddresses)
 		}
 	}
@@ -566,7 +566,7 @@ func (pv *proxiedValidatorEngine) sendEnodeCerts(ps *proxySet, enodeCerts map[en
 // conn set and the proxy set's validator conn set, and apply any diff to the proxy set.
 func (pv *proxiedValidatorEngine) updateValidatorAssignments(ps *proxySet) (bool, error) {
 	newVals, rmVals, err := pv.getValidatorConnSetDiff(ps.getValidators())
-	log.Trace("Proxy Handler updating validators", "newVals", common.ConvertToStringSlice(newVals), "rmVals", common.ConvertToStringSlice(rmVals), "err", err, "func", "updateValiadtors")
+	log.Trace("Proxy Handler updating validators", "newVals", types.ConvertToStringSlice(newVals), "rmVals", types.ConvertToStringSlice(rmVals), "err", err, "func", "updateValiadtors")
 	if err != nil {
 		return false, err
 	}
@@ -587,7 +587,7 @@ func (pv *proxiedValidatorEngine) updateValidatorAssignments(ps *proxySet) (bool
 func (pv *proxiedValidatorEngine) getValidatorConnSetDiff(validators []common.Address) (newVals []common.Address, rmVals []common.Address, err error) {
 	logger := pv.logger.New("func", "getValidatorConnSetDiff")
 
-	logger.Trace("Proxied validator engine retrieving validator connection set diff", "validators", common.ConvertToStringSlice(validators))
+	logger.Trace("Proxied validator engine retrieving validator connection set diff", "validators", types.ConvertToStringSlice(validators))
 
 	// Get the set of active and registered validators
 	newValConnSet, err := pv.backend.RetrieveValidatorConnSet()
@@ -603,7 +603,7 @@ func (pv *proxiedValidatorEngine) getValidatorConnSetDiff(validators []common.Ad
 	for newVal := range newValConnSet {
 		outputNewValConnSet = append(outputNewValConnSet, newVal)
 	}
-	logger.Trace("retrieved validator connset", "valConnSet", common.ConvertToStringSlice(outputNewValConnSet))
+	logger.Trace("retrieved validator connset", "valConnSet", types.ConvertToStringSlice(outputNewValConnSet))
 
 	rmVals = make([]common.Address, 0) // There is a good chance that there will be no diff, so set size to 0
 
@@ -623,7 +623,7 @@ func (pv *proxiedValidatorEngine) getValidatorConnSetDiff(validators []common.Ad
 		newVals = append(newVals, newVal)
 	}
 
-	logger.Trace("returned diff", "newVals", common.ConvertToStringSlice(newVals), "rmVals", common.ConvertToStringSlice(rmVals))
+	logger.Trace("returned diff", "newVals", types.ConvertToStringSlice(newVals), "rmVals", types.ConvertToStringSlice(rmVals))
 
 	return newVals, rmVals, nil
 }

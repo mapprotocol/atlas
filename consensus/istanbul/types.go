@@ -23,13 +23,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/accounts"
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/core/types"
-	"github.com/celo-org/celo-blockchain/crypto"
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 // Decrypt is a decrypt callback function to request an ECIES ciphertext to be

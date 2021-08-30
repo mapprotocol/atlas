@@ -17,7 +17,7 @@
 package core
 
 import (
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 type backlogEvent struct {

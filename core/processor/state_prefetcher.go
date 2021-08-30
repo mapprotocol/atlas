@@ -19,26 +19,26 @@ package processor
 import (
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/abstract"
+	params2 "github.com/mapprotocol/atlas/params"
 	"sync/atomic"
 
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // statePrefetcher is a basic Prefetcher, which blindly executes a block on top
 // of an arbitrary state with the goal of prefetching potentially useful state
 // data from disk before the main block processor start executing.
 type statePrefetcher struct {
-	config *params.ChainConfig // Chain configuration options
-	bc     abstract.ChainContext   // Canonical block chain
-	engine consensus.Engine    // Consensus engine used for block rewards
+	config *params2.ChainConfig  // Chain configuration options
+	bc     abstract.ChainContext // Canonical block chain
+	engine consensus.Engine      // Consensus engine used for block rewards
 }
 
 // NewStatePrefetcher initialises a new statePrefetcher.
-func NewStatePrefetcher(config *params.ChainConfig, bc abstract.ChainContext, engine consensus.Engine) *statePrefetcher {
+func NewStatePrefetcher(config *params2.ChainConfig, bc abstract.ChainContext, engine consensus.Engine) *statePrefetcher {
 	return &statePrefetcher{
 		config: config,
 		bc:     bc,
@@ -87,7 +87,7 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 // precacheTransaction attempts to apply a transaction to the given state database
 // and uses the input parameters for its environment. The goal is not to execute
 // the transaction successfully, rather to warm up touched data slots.
-func precacheTransaction(msg types.Message, config *params.ChainConfig, gaspool *core.GasPool, statedb *state.StateDB, header *types.Header, evm *vm.EVM) error {
+func precacheTransaction(msg types.Message, config *params2.ChainConfig, gaspool *core.GasPool, statedb *state.StateDB, header *types.Header, evm *vm.EVM) error {
 	// Update the evm with the new transaction context.
 	evm.Reset(NewEVMTxContext(msg), statedb)
 	// Add addresses to access list if applicable

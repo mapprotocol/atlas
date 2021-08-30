@@ -19,18 +19,19 @@ package proxy
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/mapprotocol/atlas/core/types"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 func (pv *proxiedValidatorEngine) generateValEnodesShareMsg(remoteValidators []common.Address) (*istanbul.Message, error) {
 	logger := pv.logger.New("func", "generateValEnodesShareMsg")
 
-	logger.Trace("generateValEnodesShareMsg called", "remoteValidators", common.ConvertToStringSlice(remoteValidators))
+	logger.Trace("generateValEnodesShareMsg called", "remoteValidators", types.ConvertToStringSlice(remoteValidators))
 	vetEntries, err := pv.backend.GetValEnodeTableEntries(remoteValidators)
 	logger.Trace("GetValEnodeTableEntries returned", "vetEntries", vetEntries)
 

@@ -19,12 +19,13 @@ package chain
 import (
 	"fmt"
 	"github.com/mapprotocol/atlas/core"
+	params2 "github.com/mapprotocol/atlas/params"
 
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and
@@ -32,13 +33,13 @@ import (
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	config *params.ChainConfig // Chain configuration options
-	bc     *BlockChain         // Canonical block chain
-	engine consensus.Engine    // Consensus engine used for validating
+	config *params2.ChainConfig // Chain configuration options
+	bc     *BlockChain          // Canonical block chain
+	engine consensus.Engine     // Consensus engine used for validating
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(config *params.ChainConfig, blockchain *BlockChain, engine consensus.Engine) *BlockValidator {
+func NewBlockValidator(config *params2.ChainConfig, blockchain *BlockChain, engine consensus.Engine) *BlockValidator {
 	validator := &BlockValidator{
 		config: config,
 		engine: engine,

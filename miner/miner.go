@@ -24,6 +24,7 @@ import (
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/txsdetails"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"time"
 
@@ -71,7 +72,7 @@ type Miner struct {
 	stopCh  chan struct{}
 }
 
-func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool, db ethdb.Database) *Miner {
+func New(eth Backend, config *Config, chainConfig *params2.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool, db ethdb.Database) *Miner {
 	miner := &Miner{
 		eth:     eth,
 		mux:     mux,

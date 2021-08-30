@@ -2,10 +2,10 @@ package vmcontext
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 )
 
@@ -23,7 +23,7 @@ type chainContext interface {
 	GetHeaderByNumber(uint64) *types.Header
 
 	// Config returns the blockchain's chain configuration
-	Config() *params.ChainConfig
+	Config() *params2.ChainConfig
 }
 
 // New creates a new context for use in the EVM.

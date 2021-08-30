@@ -20,25 +20,27 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	istanbulCore "github.com/celo-org/celo-blockchain/consensus/istanbul/core"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/uptime"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/validator"
-	"github.com/celo-org/celo-blockchain/contracts/blockchain_parameters"
-	gpm "github.com/celo-org/celo-blockchain/contracts/gasprice_minimum"
-	ethCore "github.com/celo-org/celo-blockchain/core"
-	"github.com/celo-org/celo-blockchain/core/state"
-	"github.com/celo-org/celo-blockchain/core/types"
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/rlp"
-	"github.com/celo-org/celo-blockchain/rpc"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/rpc"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	istanbulCore "github.com/mapprotocol/atlas/consensus/istanbul/core"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
+	gpm "github.com/mapprotocol/atlas/contracts/gasprice_minimum"
+	ethCore "github.com/mapprotocol/atlas/core"
+	ethChain "github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -512,7 +514,7 @@ func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	}
 
 	// Assemble and return the final block for sealing
-	block := types.NewBlock(header, txs, receipts, randomness)
+	block := types.NewBlock(header, txs, nil,receipts, trie.NewStackTrie(nil))
 	return block, nil
 }
 
@@ -592,7 +594,7 @@ func (sb *Backend) SetChain(chain consensus.ChainContext, currentBlock func() *t
 	sb.currentBlock = currentBlock
 	sb.stateAt = stateAt
 
-	if bc, ok := chain.(*ethCore.BlockChain); ok {
+	if bc, ok := chain.(*ethChain.BlockChain); ok {
 		go sb.newChainHeadLoop(bc)
 		go sb.updateReplicaStateLoop(bc)
 	}
@@ -600,7 +602,7 @@ func (sb *Backend) SetChain(chain consensus.ChainContext, currentBlock func() *t
 }
 
 // Loop to run on new chain head events. Chain head events may be batched.
-func (sb *Backend) newChainHeadLoop(bc *ethCore.BlockChain) {
+func (sb *Backend) newChainHeadLoop(bc *ethChain.BlockChain) {
 	// Batched. For stats & announce
 	chainHeadCh := make(chan ethCore.ChainHeadEvent, 10)
 	chainHeadSub := bc.SubscribeChainHeadEvent(chainHeadCh)
@@ -618,7 +620,7 @@ func (sb *Backend) newChainHeadLoop(bc *ethCore.BlockChain) {
 }
 
 // Loop to update replica state. Listens to chain events to avoid batching.
-func (sb *Backend) updateReplicaStateLoop(bc *ethCore.BlockChain) {
+func (sb *Backend) updateReplicaStateLoop(bc *ethChain.BlockChain) {
 	// Unbatched event listener
 	chainEventCh := make(chan ethCore.ChainEvent, 10)
 	chainEventSub := bc.SubscribeChainEvent(chainEventCh)
@@ -1112,8 +1114,8 @@ func writeValidatorSetDiff(header *types.Header, oldValSet []istanbul.ValidatorD
 	if len(addedValidators) > 0 || removedValidators.BitLen() > 0 {
 		oldValidatorsAddresses, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(oldValSet)
 		newValidatorsAddresses, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(newValSet)
-		log.Debug("Setting istanbul header validator fields", "oldValSet", common.ConvertToStringSlice(oldValidatorsAddresses), "newValSet", common.ConvertToStringSlice(newValidatorsAddresses),
-			"addedValidators", common.ConvertToStringSlice(addedValidatorsAddresses), "removedValidators", removedValidators.Text(16))
+		log.Debug("Setting istanbul header validator fields", "oldValSet", types.ConvertToStringSlice(oldValidatorsAddresses), "newValSet", types.ConvertToStringSlice(newValidatorsAddresses),
+			"addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses), "removedValidators", removedValidators.Text(16))
 	}
 
 	extra, err := types.ExtractIstanbulExtra(header)

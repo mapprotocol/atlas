@@ -23,11 +23,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/common/task"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/syndtr/goleveldb/leveldb"
 	lvlerrors "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -61,7 +60,7 @@ type RoundStateDBOptions struct {
 
 type roundStateDBImpl struct {
 	db                   *leveldb.DB
-	stopGarbageCollector task.StopFn
+	stopGarbageCollector StopFn
 	opts                 RoundStateDBOptions
 	logger               log.Logger
 }
@@ -111,7 +110,7 @@ func newRoundStateDB(path string, opts *RoundStateDBOptions) (RoundStateDB, erro
 	}
 
 	if rsdb.opts.withGarbageCollector {
-		rsdb.stopGarbageCollector = task.RunTaskRepeateadly(rsdb.garbageCollectEntries, rsdb.opts.garbageCollectorPeriod)
+		rsdb.stopGarbageCollector = RunTaskRepeateadly(rsdb.garbageCollectEntries, rsdb.opts.garbageCollectorPeriod)
 	}
 
 	return rsdb, nil
@@ -302,5 +301,30 @@ func key2View(key []byte) *istanbul.View {
 	return &istanbul.View{
 		Sequence: new(big.Int).SetUint64(seq),
 		Round:    new(big.Int).SetUint64(round),
+	}
+}
+
+type StopFn func()
+
+func RunTaskRepeateadly(task func(), period time.Duration) StopFn {
+	// Setup the ticker and the channel to signal
+	// the ending of the interval
+	ticker := time.NewTicker(period)
+	stop := make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				task()
+			case <-stop:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	return func() {
+		stop <- struct{}{}
 	}
 }

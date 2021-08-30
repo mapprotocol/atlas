@@ -19,6 +19,7 @@ package vm
 import (
 	"encoding/hex"
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 	"io"
 	"math/big"
 	"strings"
@@ -28,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // Storage represents a contract's storage.
@@ -52,7 +52,7 @@ type LogConfig struct {
 	Debug             bool // print output during capture end
 	Limit             int  // maximum length of output, but zero means unlimited
 	// Chain overrides, can be used to execute a trace using future fork rules
-	Overrides *params.ChainConfig `json:"overrides,omitempty"`
+	Overrides *params2.ChainConfig `json:"overrides,omitempty"`
 }
 
 //go:generate gencodec -type StructLog -field-override structLogMarshaling -out gen_structlog.go

@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sort"
 
@@ -29,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/core/types"
 )
@@ -592,7 +593,7 @@ func ReadRawReceipts(db ethdb.Reader, hash common.Hash, number uint64) types.Rec
 // The current implementation populates these metadata fields by reading the receipts'
 // corresponding block body, so if the block body is not found it will return nil even
 // if the receipt itself is stored.
-func ReadReceipts(db ethdb.Reader, hash common.Hash, number uint64, config *params.ChainConfig) types.Receipts {
+func ReadReceipts(db ethdb.Reader, hash common.Hash, number uint64, config *params2.ChainConfig) types.Receipts {
 	// We're deriving many fields from the block body, retrieve beside the receipt
 	receipts := ReadRawReceipts(db, hash, number)
 	if receipts == nil {
@@ -1188,7 +1189,7 @@ func DeleteReceiptsChains(db DatabaseDeleter, hash common.Hash, number uint64, m
 }
 
 // WriteChainConfig writes the chain config settings to the database.
-func WriteChainConfigChains(db DatabaseWriter, hash common.Hash, cfg *params.ChainConfig, m ChainType) {
+func WriteChainConfigChains(db DatabaseWriter, hash common.Hash, cfg *params2.ChainConfig, m ChainType) {
 	if cfg == nil {
 		return
 	}
@@ -1223,4 +1224,36 @@ func ReadRandomCommitmentCache(db ethdb.Reader, commitment common.Hash) common.H
 	}
 
 	return common.BytesToHash(parentHash)
+}
+
+// ReadAccumulatedEpochUptime retrieves the so-far accumulated uptime array for the validators of the specified epoch
+func ReadAccumulatedEpochUptime(db ethdb.Reader, epoch uint64) *uptime.Uptime {
+	data, _ := db.Get(uptimeKey(epoch))
+	if len(data) == 0 {
+		log.Trace("ReadAccumulatedEpochUptime EMPTY", "epoch", epoch)
+		return nil
+	}
+	uptime := new(uptime.Uptime)
+	if err := rlp.Decode(bytes.NewReader(data), uptime); err != nil {
+		log.Error("Invalid uptime RLP", "err", err)
+		return nil
+	}
+	return uptime
+}
+
+// WriteAccumulatedEpochUptime updates the accumulated uptime array for the validators of the specified epoch
+func WriteAccumulatedEpochUptime(db ethdb.KeyValueWriter, epoch uint64, uptime *uptime.Uptime) {
+	data, err := rlp.EncodeToBytes(uptime)
+	if err != nil {
+		log.Crit("Failed to RLP encode updated uptime", "err", err)
+	}
+	if err := db.Put(uptimeKey(epoch), data); err != nil {
+		log.Crit("Failed to store updated uptime", "err", err)
+	}
+}
+
+// uptimeKey = uptimePrefix + epoch number
+func uptimeKey(epoch uint64) []byte {
+	// abuse encodeBlockNumber for epochs
+	return append([]byte("uptime"), encodeBlockNumber(epoch)...)
 }

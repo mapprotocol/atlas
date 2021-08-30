@@ -25,11 +25,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 type defaultValidator struct {

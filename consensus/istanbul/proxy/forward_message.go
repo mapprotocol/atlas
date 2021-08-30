@@ -17,15 +17,16 @@
 package proxy
 
 import (
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 func (pv *proxiedValidatorEngine) sendForwardMsg(ps *proxySet, destAddresses []common.Address, ethMsgCode uint64, payload []byte) error {
 	logger := pv.logger.New("func", "SendForwardMsg")
 
-	logger.Info("Sending forward msg", "ethMsgCode", ethMsgCode, "destAddresses", common.ConvertToStringSlice(destAddresses))
+	logger.Info("Sending forward msg", "ethMsgCode", ethMsgCode, "destAddresses", types.ConvertToStringSlice(destAddresses))
 
 	// Send the forward messages to the proxies
 	for _, proxy := range ps.proxiesByID {

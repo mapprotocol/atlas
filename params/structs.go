@@ -74,8 +74,6 @@ type CallMsg struct {
 // ChainConfig is stored in the database on a per block basis. This means
 // that any network, identified by its genesis block, can have its own
 // set of configuration options.
-// This configuration is intentionally not using keyed fields to force anyone
-// adding flags to the config to also have to set these fields.
 type ChainConfig struct {
 	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
 
@@ -95,33 +93,76 @@ type ChainConfig struct {
 	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
 	PetersburgBlock     *big.Int `json:"petersburgBlock,omitempty"`     // Petersburg switch block (nil = same as Constantinople)
 	IstanbulBlock       *big.Int `json:"istanbulBlock,omitempty"`       // Istanbul switch block (nil = no fork, 0 = already on istanbul)
-	EWASMBlock          *big.Int `json:"ewasmBlock,omitempty"`          // EWASM switch block (nil = no fork, 0 = already activated)
-	ChurritoBlock       *big.Int `json:"churritoBlock,omitempty"`       // Churrito switch block (nil = no fork, 0 = already activated)
-	DonutBlock          *big.Int `json:"donutBlock,omitempty"`          // Donut switch block (nil = no fork, 0 = already activated)
+	MuirGlacierBlock    *big.Int `json:"muirGlacierBlock,omitempty"`    // Eip-2384 (bomb delay) switch block (nil = no fork, 0 = already activated)
+	BerlinBlock         *big.Int `json:"berlinBlock,omitempty"`         // Berlin switch block (nil = no fork, 0 = already on berlin)
+
+	DonutBlock *big.Int `json:"donutBlock,omitempty"` // Donut switch block (nil = no fork, 0 = already activated)
+
+	YoloV3Block   *big.Int `json:"yoloV3Block,omitempty"`   // YOLO v3: Gas repricings TODO @holiman add EIP references
+	EWASMBlock    *big.Int `json:"ewasmBlock,omitempty"`    // EWASM switch block (nil = no fork, 0 = already activated)
+	CatalystBlock *big.Int `json:"catalystBlock,omitempty"` // Catalyst switch block (nil = no fork, 0 = already on catalyst)
+
+	// Various consensus engines
+	Ethash *EthashConfig `json:"ethash,omitempty"`
+	Clique *CliqueConfig `json:"clique,omitempty"`
 
 	Istanbul *IstanbulConfig `json:"istanbul,omitempty"`
 
 	// This does not belong here but passing it to every function is not possible since that breaks
 	// some implemented interfaces and introduces churn across the geth codebase.
 	FullHeaderChainAvailable bool // False for lightest Sync mode, true otherwise
+}
 
-	// Requests mock engine if true
-	Faker bool `json:"faker,omitempty"`
+// EthashConfig is the consensus engine configs for proof-of-work based sealing.
+type EthashConfig struct{}
+
+// String implements the stringer interface, returning the consensus engine details.
+func (c *EthashConfig) String() string {
+	return "ethash"
+}
+
+// CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
+type CliqueConfig struct {
+	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
+	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
+}
+
+// String implements the stringer interface, returning the consensus engine details.
+func (c *CliqueConfig) String() string {
+	return "clique"
+}
+
+// IstanbulConfig is the consensus engine configs for Istanbul based sealing.
+type IstanbulConfig struct {
+	Epoch          uint64 `json:"epoch"`                 // Epoch length to reset votes and checkpoint
+	ProposerPolicy uint64 `json:"policy"`                // The policy for proposer selection
+	LookbackWindow uint64 `json:"lookbackwindow"`        // The number of blocks to look back when calculating uptime
+	BlockPeriod    uint64 `json:"blockperiod,omitempty"` // Default minimum difference between two consecutive block's timestamps in second
+
+	// The base timeout for each Istanbul round in milliseconds. The first
+	// round will have a timeout of exactly this and subsequent rounds will
+	// have timeouts of this + additional time that increases with round
+	// number.
+	RequestTimeout uint64 `json:"requesttimeout,omitempty"`
+}
+
+// String implements the stringer interface, returning the consensus engine details.
+func (c *IstanbulConfig) String() string {
+	return "istanbul"
 }
 
 // String implements the fmt.Stringer interface.
 func (c *ChainConfig) String() string {
 	var engine interface{}
-	if !c.Faker {
-		if c.Istanbul != nil {
-			engine = c.Istanbul
-		} else {
-			engine = "unknown"
-		}
-	} else {
-		engine = "MockEngine"
+	switch {
+	case c.Ethash != nil:
+		engine = c.Ethash
+	case c.Clique != nil:
+		engine = c.Clique
+	default:
+		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v Churrito: %v, Donut: %v, Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, YOLO v3: %v, Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -133,8 +174,9 @@ func (c *ChainConfig) String() string {
 		c.ConstantinopleBlock,
 		c.PetersburgBlock,
 		c.IstanbulBlock,
-		c.ChurritoBlock,
-		c.DonutBlock,
+		c.MuirGlacierBlock,
+		c.BerlinBlock,
+		c.YoloV3Block,
 		engine,
 	)
 }
@@ -174,6 +216,11 @@ func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
 	return isForked(c.ConstantinopleBlock, num)
 }
 
+// IsMuirGlacier returns whether num is either equal to the Muir Glacier (EIP-2384) fork block or greater.
+func (c *ChainConfig) IsMuirGlacier(num *big.Int) bool {
+	return isForked(c.MuirGlacierBlock, num)
+}
+
 // IsPetersburg returns whether num is either
 // - equal to or greater than the PetersburgBlock fork block,
 // - OR is nil, and Constantinople is active
@@ -186,19 +233,19 @@ func (c *ChainConfig) IsIstanbul(num *big.Int) bool {
 	return isForked(c.IstanbulBlock, num)
 }
 
+// IsBerlin returns whether num is either equal to the Berlin fork block or greater.
+func (c *ChainConfig) IsBerlin(num *big.Int) bool {
+	return isForked(c.BerlinBlock, num) || isForked(c.YoloV3Block, num)
+}
+
+// IsCatalyst returns whether num is either equal to the Merge fork block or greater.
+func (c *ChainConfig) IsCatalyst(num *big.Int) bool {
+	return isForked(c.CatalystBlock, num)
+}
+
 // IsEWASM returns whether num represents a block number after the EWASM fork
 func (c *ChainConfig) IsEWASM(num *big.Int) bool {
 	return isForked(c.EWASMBlock, num)
-}
-
-// IsChurrito returns whether num represents a block number after the Churrito fork
-func (c *ChainConfig) IsChurrito(num *big.Int) bool {
-	return isForked(c.ChurritoBlock, num)
-}
-
-// IsDonut returns whether num represents a block number after the Donut fork
-func (c *ChainConfig) IsDonut(num *big.Int) bool {
-	return isForked(c.DonutBlock, num)
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
@@ -230,6 +277,7 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 	var lastFork fork
 	for _, cur := range []fork{
 		{name: "homesteadBlock", block: c.HomesteadBlock},
+		{name: "daoForkBlock", block: c.DAOForkBlock, optional: true},
 		{name: "eip150Block", block: c.EIP150Block},
 		{name: "eip155Block", block: c.EIP155Block},
 		{name: "eip158Block", block: c.EIP158Block},
@@ -237,8 +285,8 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 		{name: "constantinopleBlock", block: c.ConstantinopleBlock},
 		{name: "petersburgBlock", block: c.PetersburgBlock},
 		{name: "istanbulBlock", block: c.IstanbulBlock},
-		{name: "churritoBlock", block: c.ChurritoBlock},
-		{name: "donutBlock", block: c.DonutBlock},
+		{name: "muirGlacierBlock", block: c.MuirGlacierBlock, optional: true},
+		{name: "berlinBlock", block: c.BerlinBlock},
 	} {
 		if lastFork.name != "" {
 			// Next one must be higher number
@@ -290,42 +338,28 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 		return newCompatError("Constantinople fork block", c.ConstantinopleBlock, newcfg.ConstantinopleBlock)
 	}
 	if isForkIncompatible(c.PetersburgBlock, newcfg.PetersburgBlock, head) {
-		return newCompatError("Petersburg fork block", c.PetersburgBlock, newcfg.PetersburgBlock)
+		// the only case where we allow Petersburg to be set in the past is if it is equal to Constantinople
+		// mainly to satisfy fork ordering requirements which state that Petersburg fork be set if Constantinople fork is set
+		if isForkIncompatible(c.ConstantinopleBlock, newcfg.PetersburgBlock, head) {
+			return newCompatError("Petersburg fork block", c.PetersburgBlock, newcfg.PetersburgBlock)
+		}
 	}
 	if isForkIncompatible(c.IstanbulBlock, newcfg.IstanbulBlock, head) {
 		return newCompatError("Istanbul fork block", c.IstanbulBlock, newcfg.IstanbulBlock)
 	}
+	if isForkIncompatible(c.MuirGlacierBlock, newcfg.MuirGlacierBlock, head) {
+		return newCompatError("Muir Glacier fork block", c.MuirGlacierBlock, newcfg.MuirGlacierBlock)
+	}
+	if isForkIncompatible(c.BerlinBlock, newcfg.BerlinBlock, head) {
+		return newCompatError("Berlin fork block", c.BerlinBlock, newcfg.BerlinBlock)
+	}
+	if isForkIncompatible(c.YoloV3Block, newcfg.YoloV3Block, head) {
+		return newCompatError("YOLOv3 fork block", c.YoloV3Block, newcfg.YoloV3Block)
+	}
 	if isForkIncompatible(c.EWASMBlock, newcfg.EWASMBlock, head) {
 		return newCompatError("ewasm fork block", c.EWASMBlock, newcfg.EWASMBlock)
 	}
-	if isForkIncompatible(c.ChurritoBlock, newcfg.ChurritoBlock, head) {
-		return newCompatError("Churrito fork block", c.ChurritoBlock, newcfg.ChurritoBlock)
-	}
-	if isForkIncompatible(c.DonutBlock, newcfg.DonutBlock, head) {
-		return newCompatError("Donut fork block", c.DonutBlock, newcfg.DonutBlock)
-	}
 	return nil
-}
-
-// Rules ensures c's ChainID is not nil.
-func (c *ChainConfig) Rules(num *big.Int) Rules {
-	chainID := c.ChainID
-	if chainID == nil {
-		chainID = new(big.Int)
-	}
-	return Rules{
-		ChainID:          new(big.Int).Set(chainID),
-		IsHomestead:      c.IsHomestead(num),
-		IsEIP150:         c.IsEIP150(num),
-		IsEIP155:         c.IsEIP155(num),
-		IsEIP158:         c.IsEIP158(num),
-		IsByzantium:      c.IsByzantium(num),
-		IsConstantinople: c.IsConstantinople(num),
-		IsPetersburg:     c.IsPetersburg(num),
-		IsIstanbul:       c.IsIstanbul(num),
-		IsChurrito:       c.IsChurrito(num),
-		IsDonut:          c.IsDonut(num),
-	}
 }
 
 // isForkIncompatible returns true if a fork scheduled at s1 cannot be rescheduled to
@@ -350,37 +384,6 @@ func configNumEqual(x, y *big.Int) bool {
 		return x == nil
 	}
 	return x.Cmp(y) == 0
-}
-
-// IstanbulConfig is the consensus engine configs for Istanbul based sealing.
-type IstanbulConfig struct {
-	Epoch          uint64 `json:"epoch"`                 // Epoch length to reset votes and checkpoint
-	ProposerPolicy uint64 `json:"policy"`                // The policy for proposer selection
-	LookbackWindow uint64 `json:"lookbackwindow"`        // The number of blocks to look back when calculating uptime
-	BlockPeriod    uint64 `json:"blockperiod,omitempty"` // Default minimum difference between two consecutive block's timestamps in second
-
-	// The base timeout for each Istanbul round in milliseconds. The first
-	// round will have a timeout of exactly this and subsequent rounds will
-	// have timeouts of this + additional time that increases with round
-	// number.
-	RequestTimeout uint64 `json:"requesttimeout,omitempty"`
-}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *IstanbulConfig) String() string {
-	return "istanbul"
-}
-
-// Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions
-// that do not have or require information about the block.
-//
-// Rules is a one time interface meaning that it shouldn't be used in between transition
-// phases.
-type Rules struct {
-	ChainID                                                 *big.Int
-	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
-	IsByzantium, IsConstantinople, IsPetersburg, IsIstanbul bool
-	IsChurrito, IsDonut                                     bool
 }
 
 // ConfigCompatError is raised if the locally-stored blockchain is initialised with a
@@ -412,4 +415,42 @@ func newCompatError(what string, storedblock, newblock *big.Int) *ConfigCompatEr
 
 func (err *ConfigCompatError) Error() string {
 	return fmt.Sprintf("mismatching %s in database (have %d, want %d, rewindto %d)", err.What, err.StoredConfig, err.NewConfig, err.RewindTo)
+}
+
+// Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions
+// that do not have or require information about the block.
+//
+// Rules is a one time interface meaning that it shouldn't be used in between transition
+// phases.
+type Rules struct {
+	ChainID                                                 *big.Int
+	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
+	IsByzantium, IsConstantinople, IsPetersburg, IsIstanbul bool
+	IsBerlin, IsCatalyst                                    bool
+}
+
+// Rules ensures c's ChainID is not nil.
+func (c *ChainConfig) Rules(num *big.Int) Rules {
+	chainID := c.ChainID
+	if chainID == nil {
+		chainID = new(big.Int)
+	}
+	return Rules{
+		ChainID:          new(big.Int).Set(chainID),
+		IsHomestead:      c.IsHomestead(num),
+		IsEIP150:         c.IsEIP150(num),
+		IsEIP155:         c.IsEIP155(num),
+		IsEIP158:         c.IsEIP158(num),
+		IsByzantium:      c.IsByzantium(num),
+		IsConstantinople: c.IsConstantinople(num),
+		IsPetersburg:     c.IsPetersburg(num),
+		IsIstanbul:       c.IsIstanbul(num),
+		//IsChurrito:       c.IsChurrito(num),
+		//IsDonut:          c.IsDonut(num),
+	}
+}
+
+// IsDonut returns whether num represents a block number after the Donut fork
+func (c *ChainConfig) IsDonut(num *big.Int) bool {
+	return isForked(c.DonutBlock, num)
 }

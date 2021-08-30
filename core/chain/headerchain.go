@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math"
 	"math/big"
 	mrand "math/rand"
@@ -28,13 +29,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -57,7 +57,7 @@ const (
 // It is not thread safe either, the encapsulating chain structures should do
 // the necessary mutex locking/unlocking.
 type HeaderChain struct {
-	config *params.ChainConfig
+	config *params2.ChainConfig
 
 	chainDb       ethdb.Database
 	genesisHeader *types.Header
@@ -77,7 +77,7 @@ type HeaderChain struct {
 
 // NewHeaderChain creates a new HeaderChain structure. ProcInterrupt points
 // to the parent's interrupt semaphore.
-func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, engine consensus.Engine, procInterrupt func() bool) (*HeaderChain, error) {
+func NewHeaderChain(chainDb ethdb.Database, config *params2.ChainConfig, engine consensus.Engine, procInterrupt func() bool) (*HeaderChain, error) {
 	headerCache, _ := lru.New(headerCacheLimit)
 	tdCache, _ := lru.New(tdCacheLimit)
 	numberCache, _ := lru.New(numberCacheLimit)
@@ -642,7 +642,7 @@ func (hc *HeaderChain) SetGenesis(head *types.Header) {
 }
 
 // Config retrieves the header chain's chain configuration.
-func (hc *HeaderChain) Config() *params.ChainConfig { return hc.config }
+func (hc *HeaderChain) Config() *params2.ChainConfig { return hc.config }
 
 // Engine retrieves the header chain's consensus engine.
 func (hc *HeaderChain) Engine() consensus.Engine { return hc.engine }

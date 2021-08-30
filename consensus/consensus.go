@@ -24,7 +24,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -34,7 +33,7 @@ import (
 // blockchain during header verification.
 type ChainHeaderReader interface {
 	// Config retrieves the blockchain's chain configuration.
-	Config() *params.ChainConfig
+	Config() *params2.ChainConfig
 
 	// CurrentHeader retrieves the current header from the local chain.
 	CurrentHeader() *types.Header

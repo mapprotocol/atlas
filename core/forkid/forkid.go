@@ -20,6 +20,7 @@ package forkid
 import (
 	"encoding/binary"
 	"errors"
+	params2 "github.com/mapprotocol/atlas/params"
 	"hash/crc32"
 	"math"
 	"math/big"
@@ -27,9 +28,8 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 var (
@@ -47,7 +47,7 @@ var (
 // Blockchain defines all necessary method to build a forkID.
 type Blockchain interface {
 	// Config retrieves the chain's fork configuration.
-	Config() *params.ChainConfig
+	Config() *params2.ChainConfig
 
 	// Genesis retrieves the chain's genesis block.
 	Genesis() *types.Block
@@ -66,7 +66,7 @@ type ID struct {
 type Filter func(id ID) error
 
 // NewID calculates the Ethereum fork ID from the chain config, genesis hash, and head.
-func NewID(config *params.ChainConfig, genesis common.Hash, head uint64) ID {
+func NewID(config *params2.ChainConfig, genesis common.Hash, head uint64) ID {
 	// Calculate the starting checksum from the genesis hash
 	hash := crc32.ChecksumIEEE(genesis[:])
 
@@ -106,7 +106,7 @@ func NewFilter(chain Blockchain) Filter {
 }
 
 // NewStaticFilter creates a filter at block zero.
-func NewStaticFilter(config *params.ChainConfig, genesis common.Hash) Filter {
+func NewStaticFilter(config *params2.ChainConfig, genesis common.Hash) Filter {
 	head := func() uint64 { return 0 }
 	return newFilter(config, genesis, head)
 }
@@ -114,7 +114,7 @@ func NewStaticFilter(config *params.ChainConfig, genesis common.Hash) Filter {
 // newFilter is the internal version of NewFilter, taking closures as its arguments
 // instead of a chain. The reason is to allow testing it without having to simulate
 // an entire blockchain.
-func newFilter(config *params.ChainConfig, genesis common.Hash, headfn func() uint64) Filter {
+func newFilter(config *params2.ChainConfig, genesis common.Hash, headfn func() uint64) Filter {
 	// Calculate the all the valid fork hash and fork next combos
 	var (
 		forks = gatherForks(config)
@@ -212,9 +212,9 @@ func checksumToBytes(hash uint32) [4]byte {
 }
 
 // gatherForks gathers all the known forks and creates a sorted list out of them.
-func gatherForks(config *params.ChainConfig) []uint64 {
+func gatherForks(config *params2.ChainConfig) []uint64 {
 	// Gather all the fork block numbers via reflection
-	kind := reflect.TypeOf(params.ChainConfig{})
+	kind := reflect.TypeOf(params2.ChainConfig{})
 	conf := reflect.ValueOf(config).Elem()
 
 	var forks []uint64

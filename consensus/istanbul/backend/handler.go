@@ -18,17 +18,18 @@ package backend
 
 import (
 	"errors"
+	"github.com/mapprotocol/atlas/params"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/validator"
-	"github.com/celo-org/celo-blockchain/core/types"
-	"github.com/celo-org/celo-blockchain/event"
-	"github.com/celo-org/celo-blockchain/p2p"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 var (
@@ -405,7 +406,7 @@ func (sb *Backend) Handshake(peer consensus.Peer) (bool, error) {
 	sendHandshake := func() {
 		var msg *istanbul.Message
 		var err error
-		peerIsValidator := peer.PurposeIsSet(p2p.ValidatorPurpose)
+		peerIsValidator := peer.PurposeIsSet(consensus.ValidatorPurpose)
 		if peerIsValidator {
 			enodeCertMsg := sb.RetrieveEnodeCertificateMsgMap()[sb.SelfNode().ID()]
 			if enodeCertMsg != nil {
@@ -560,7 +561,7 @@ func (sb *Backend) verifyValidatorHandshakeMessage(data []byte, sig []byte) (com
 	// If the message was not signed, allow it to still be decoded.
 	// A later check will verify if the signature was empty or not.
 	if len(sig) == 0 {
-		return common.ZeroAddress, nil
+		return params.ZeroAddress, nil
 	}
 	return istanbul.GetSignatureAddress(data, sig)
 }

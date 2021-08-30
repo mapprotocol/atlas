@@ -72,14 +72,14 @@ type SimulatedBackend struct {
 
 	events *filters.EventSystem // Event system for filtering log events live
 
-	config *params.ChainConfig
+	config *params2.ChainConfig
 }
 
 // NewSimulatedBackendWithDatabase creates a new binding backend based on the given database
 // and uses a simulated blockchain for testing purposes.
 // A simulated backend always uses chainID 1337.
 func NewSimulatedBackendWithDatabase(database ethdb.Database, alloc chain.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
-	genesis := chain.Genesis{Config: params.AllEthashProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
+	genesis := chain.Genesis{Config: params2.AllEthashProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
 	genesis.MustCommit(database)
 	blockchain, _ := chain.NewBlockChain(database, nil, genesis.Config, ethash.NewFaker(), vm.Config{}, nil, nil)
 

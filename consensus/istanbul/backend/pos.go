@@ -18,26 +18,26 @@ package backend
 
 import (
 	"errors"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/uptime"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/uptime/store"
-	"github.com/celo-org/celo-blockchain/contracts"
-	"github.com/celo-org/celo-blockchain/contracts/currency"
-	"github.com/celo-org/celo-blockchain/contracts/election"
-	"github.com/celo-org/celo-blockchain/contracts/epoch_rewards"
-	"github.com/celo-org/celo-blockchain/contracts/freezer"
-	"github.com/celo-org/celo-blockchain/contracts/gold_token"
-	"github.com/celo-org/celo-blockchain/contracts/validators"
-	"github.com/celo-org/celo-blockchain/core"
-	"github.com/celo-org/celo-blockchain/core/state"
-	"github.com/celo-org/celo-blockchain/core/types"
-	"github.com/celo-org/celo-blockchain/core/vm"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/params"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
+	"github.com/mapprotocol/atlas/contracts"
+	"github.com/mapprotocol/atlas/contracts/currency"
+	"github.com/mapprotocol/atlas/contracts/election"
+	"github.com/mapprotocol/atlas/contracts/epoch_rewards"
+	"github.com/mapprotocol/atlas/contracts/freezer"
+	"github.com/mapprotocol/atlas/contracts/gold_token"
+	"github.com/mapprotocol/atlas/contracts/validators"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
 )
 
 func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB) error {
@@ -79,7 +79,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	if carbonOffsettingPartnerAddress == common.ZeroAddress {
+	if carbonOffsettingPartnerAddress == params.ZeroAddress {
 		carbonOffsettingPartnerReward = big.NewInt(0)
 	}
 
@@ -198,9 +198,9 @@ func (sb *Backend) distributeCommunityRewards(vmRunner vm.EVMRunner, communityRe
 		return err
 	}
 
-	if lowReserve && reserveAddress != common.ZeroAddress {
+	if lowReserve && reserveAddress != params.ZeroAddress {
 		return gold_token.Mint(vmRunner, reserveAddress, communityReward)
-	} else if governanceAddress != common.ZeroAddress {
+	} else if governanceAddress != params.ZeroAddress {
 		// TODO: How to split eco fund here
 		return gold_token.Mint(vmRunner, governanceAddress, communityReward)
 	}
@@ -212,7 +212,7 @@ func (sb *Backend) distributeVoterRewards(vmRunner vm.EVMRunner, valSet []istanb
 	lockedGoldAddress, err := contracts.GetRegisteredAddress(vmRunner, params.LockedGoldRegistryId)
 	if err != nil {
 		return err
-	} else if lockedGoldAddress == common.ZeroAddress {
+	} else if lockedGoldAddress == params.ZeroAddress {
 		return errors.New("Unable to fetch locked gold address for epoch rewards distribution")
 	}
 
@@ -248,7 +248,7 @@ func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) 
 	}
 	// totalSupply not yet initialized.
 	if totalSupply.Cmp(common.Big0) == 0 {
-		data, err := sb.db.Get(core.DBGenesisSupplyKey)
+		data, err := sb.db.Get(chain.DBGenesisSupplyKey)
 		if err != nil {
 			log.Error("Unable to fetch genesisSupply from db", "err", err)
 			return err

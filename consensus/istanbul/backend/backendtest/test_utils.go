@@ -18,13 +18,13 @@ package backendtest
 
 import (
 	"crypto/ecdsa"
+	"github.com/mapprotocol/atlas/core/chain"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/core"
-	"github.com/celo-org/celo-blockchain/p2p"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 type TestBackendInterface interface {
@@ -34,9 +34,9 @@ type TestBackendInterface interface {
 }
 
 type TestBackendFactory interface {
-	New(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesisCfg *core.Genesis, privateKey *ecdsa.PrivateKey) (TestBackendInterface, *istanbul.Config)
+	New(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesisCfg *chain.Genesis, privateKey *ecdsa.PrivateKey) (TestBackendInterface, *istanbul.Config)
 
-	GetGenesisAndKeys(numValidators int, isFullChain bool) (*core.Genesis, []*ecdsa.PrivateKey)
+	GetGenesisAndKeys(numValidators int, isFullChain bool) (*chain.Genesis, []*ecdsa.PrivateKey)
 }
 
 var testBackendFactoryImpl TestBackendFactory
@@ -45,11 +45,11 @@ func InitTestBackendFactory(impl TestBackendFactory) {
 	testBackendFactoryImpl = impl
 }
 
-func NewTestBackend(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesisCfg *core.Genesis, privateKey *ecdsa.PrivateKey) (TestBackendInterface, *istanbul.Config) {
+func NewTestBackend(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesisCfg *chain.Genesis, privateKey *ecdsa.PrivateKey) (TestBackendInterface, *istanbul.Config) {
 	return testBackendFactoryImpl.New(isProxy, proxiedValAddress, isProxied, genesisCfg, privateKey)
 }
 
-func GetGenesisAndKeys(numValidators int, isFullChain bool) (*core.Genesis, []*ecdsa.PrivateKey) {
+func GetGenesisAndKeys(numValidators int, isFullChain bool) (*chain.Genesis, []*ecdsa.PrivateKey) {
 	return testBackendFactoryImpl.GetGenesisAndKeys(numValidators, isFullChain)
 }
 

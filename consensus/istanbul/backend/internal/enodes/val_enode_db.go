@@ -18,6 +18,7 @@ package enodes
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/params"
 	"strings"
 	"sync"
 	"time"
@@ -25,14 +26,14 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/common/hexutil"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/backend/internal/db"
-	"github.com/celo-org/celo-blockchain/crypto"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/db"
 )
 
 // Keys in the node database.
@@ -142,7 +143,7 @@ func (vet *ValidatorEnodeDB) GetAddressFromNodeID(nodeID enode.ID) (common.Addre
 
 	entryBytes, err := vet.gdb.Get(nodeIDKey(nodeID))
 	if err != nil {
-		return common.ZeroAddress, err
+		return params.ZeroAddress, err
 	}
 	return common.BytesToAddress(entryBytes), nil
 }

@@ -5,19 +5,19 @@ package chain
 import (
 	"encoding/json"
 	"errors"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 var _ = (*genesisSpecMarshaling)(nil)
 
 func (g Genesis) MarshalJSON() ([]byte, error) {
 	type Genesis struct {
-		Config     *params.ChainConfig                         `json:"config"`
+		Config     *params2.ChainConfig                        `json:"config"`
 		Nonce      math.HexOrDecimal64                         `json:"nonce"`
 		Timestamp  math.HexOrDecimal64                         `json:"timestamp"`
 		ExtraData  hexutil.Bytes                               `json:"extraData"`
@@ -53,7 +53,7 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 
 func (g *Genesis) UnmarshalJSON(input []byte) error {
 	type Genesis struct {
-		Config     *params.ChainConfig                         `json:"config"`
+		Config     *params2.ChainConfig                        `json:"config"`
 		Nonce      *math.HexOrDecimal64                        `json:"nonce"`
 		Timestamp  *math.HexOrDecimal64                        `json:"timestamp"`
 		ExtraData  *hexutil.Bytes                              `json:"extraData"`

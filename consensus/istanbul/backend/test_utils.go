@@ -5,39 +5,39 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/core/chain"
 	"strings"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/accounts"
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus/consensustest"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/backend/backendtest"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/validator"
-	"github.com/celo-org/celo-blockchain/core"
-	"github.com/celo-org/celo-blockchain/core/rawdb"
-	"github.com/celo-org/celo-blockchain/core/state"
-	"github.com/celo-org/celo-blockchain/core/types"
-	"github.com/celo-org/celo-blockchain/core/vm"
-	"github.com/celo-org/celo-blockchain/crypto"
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	"github.com/celo-org/celo-blockchain/crypto/ecies"
-	"github.com/celo-org/celo-blockchain/params"
-	"github.com/celo-org/celo-blockchain/rlp"
-	"github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/ecies"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/backend/backendtest"
+	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 // in this test, we can set n to 1, and it means we can process Istanbul and commit a
 // block by one node. Otherwise, if n is larger than 1, we have to generate
 // other fake events to process Istanbul.
-func newBlockChain(n int, isFullChain bool) (*core.BlockChain, *Backend) {
+func newBlockChain(n int, isFullChain bool) (*chain.BlockChain, *Backend) {
 	genesis, nodeKeys := getGenesisAndKeys(n, isFullChain)
 
 	bc, be, _ := newBlockChainWithKeys(false, common.Address{}, false, genesis, nodeKeys[0])
 	return bc, be
 }
 
-func newBlockChainWithKeys(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesis *core.Genesis, privateKey *ecdsa.PrivateKey) (*core.BlockChain, *Backend, *istanbul.Config) {
+func newBlockChainWithKeys(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesis *chain.Genesis, privateKey *ecdsa.PrivateKey) (*chain.BlockChain, *Backend, *istanbul.Config) {
 	memDB := rawdb.NewMemoryDatabase()
 	config := *istanbul.DefaultConfig
 	config.ReplicaStateDBPath = ""
@@ -68,7 +68,7 @@ func newBlockChainWithKeys(isProxy bool, proxiedValAddress common.Address, isPro
 
 	genesis.MustCommit(memDB)
 
-	blockchain, err := core.NewBlockChain(memDB, nil, genesis.Config, b, vm.Config{}, nil, nil)
+	blockchain, err := chain.NewBlockChain(memDB, nil, genesis.Config, b, vm.Config{}, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +92,7 @@ func newBlockChainWithKeys(isProxy bool, proxiedValAddress common.Address, isPro
 			},
 			blockchain.Validator().ValidateState,
 			func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) {
-				if err := blockchain.InsertPreprocessedBlock(block, receipts, logs, state); err != nil {
+				if _,err := blockchain.WriteBlockWithState(block, receipts, logs, state,true); err != nil {
 					panic(fmt.Sprintf("could not InsertPreprocessedBlock: %v", err))
 				}
 			})
@@ -105,7 +105,7 @@ func newBlockChainWithKeys(isProxy bool, proxiedValAddress common.Address, isPro
 	return blockchain, b, &config
 }
 
-func getGenesisAndKeys(n int, isFullChain bool) (*core.Genesis, []*ecdsa.PrivateKey) {
+func getGenesisAndKeys(n int, isFullChain bool) (*chain.Genesis, []*ecdsa.PrivateKey) {
 	// Setup validators
 	var nodeKeys = make([]*ecdsa.PrivateKey, n)
 	validators := make([]istanbul.ValidatorData, n)
@@ -128,7 +128,7 @@ func getGenesisAndKeys(n int, isFullChain bool) (*core.Genesis, []*ecdsa.Private
 	}
 
 	// generate genesis block
-	genesis := core.MainnetGenesisBlock()
+	genesis := chain.MainnetGenesisBlock()
 	genesis.Config = params.IstanbulTestChainConfig
 	if !isFullChain {
 		genesis.Config.FullHeaderChainAvailable = false
@@ -143,7 +143,7 @@ func getGenesisAndKeys(n int, isFullChain bool) (*core.Genesis, []*ecdsa.Private
 	return genesis, nodeKeys
 }
 
-func AppendValidatorsToGenesisBlock(genesis *core.Genesis, validators []istanbul.ValidatorData) {
+func AppendValidatorsToGenesisBlock(genesis *chain.Genesis, validators []istanbul.ValidatorData) {
 	if len(genesis.ExtraData) < types.IstanbulExtraVanity {
 		genesis.ExtraData = append(genesis.ExtraData, bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity)...)
 	}
@@ -186,7 +186,7 @@ func makeHeader(parent *types.Block, config *istanbul.Config) *types.Header {
 	return header
 }
 
-func makeBlock(keys []*ecdsa.PrivateKey, chain *core.BlockChain, engine *Backend, parent *types.Block) (*types.Block, error) {
+func makeBlock(keys []*ecdsa.PrivateKey, chain *chain.BlockChain, engine *Backend, parent *types.Block) (*types.Block, error) {
 	block := makeBlockWithoutSeal(chain, engine, parent)
 
 	// Set up block subscription
@@ -214,7 +214,7 @@ func makeBlock(keys []*ecdsa.PrivateKey, chain *core.BlockChain, engine *Backend
 	return block, nil
 }
 
-func makeBlockWithoutSeal(chain *core.BlockChain, engine *Backend, parent *types.Block) *types.Block {
+func makeBlockWithoutSeal(chain *chain.BlockChain, engine *Backend, parent *types.Block) *types.Block {
 	header := makeHeader(parent, engine.config)
 	// The worker that calls Prepare is the one filling the Coinbase
 	header.Coinbase = engine.wallets().Ecdsa.Address
@@ -318,7 +318,7 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 			return blscrypto.SerializedSignature{}, err
 		}
 
-		privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+		privateKey, err := blscrypto.DeserializePrivateKey(privateKeyBytes)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
@@ -363,12 +363,12 @@ type testBackendFactoryImpl struct{}
 var TestBackendFactory backendtest.TestBackendFactory = testBackendFactoryImpl{}
 
 // New is part of TestBackendInterface.
-func (testBackendFactoryImpl) New(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesisCfg *core.Genesis, privateKey *ecdsa.PrivateKey) (backendtest.TestBackendInterface, *istanbul.Config) {
+func (testBackendFactoryImpl) New(isProxy bool, proxiedValAddress common.Address, isProxied bool, genesisCfg *chain.Genesis, privateKey *ecdsa.PrivateKey) (backendtest.TestBackendInterface, *istanbul.Config) {
 	_, be, config := newBlockChainWithKeys(isProxy, proxiedValAddress, isProxied, genesisCfg, privateKey)
 	return be, config
 }
 
 // GetGenesisAndKeys is part of TestBackendInterface
-func (testBackendFactoryImpl) GetGenesisAndKeys(numValidators int, isFullChain bool) (*core.Genesis, []*ecdsa.PrivateKey) {
+func (testBackendFactoryImpl) GetGenesisAndKeys(numValidators int, isFullChain bool) (*chain.Genesis, []*ecdsa.PrivateKey) {
 	return getGenesisAndKeys(numValidators, isFullChain)
 }

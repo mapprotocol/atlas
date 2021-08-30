@@ -20,11 +20,11 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")
@@ -37,7 +37,7 @@ type sigCache struct {
 }
 
 // MakeSigner returns a Signer based on the given chain config and block number.
-func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
+func MakeSigner(config *params2.ChainConfig, blockNumber *big.Int) Signer {
 	var signer Signer
 	switch {
 	case config.IsBerlin(blockNumber):
@@ -55,7 +55,7 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 //
 // Use this in transaction-handling code where the current block number is unknown. If you
 // have the current block number available, use MakeSigner instead.
-func LatestSigner(config *params.ChainConfig) Signer {
+func LatestSigner(config *params2.ChainConfig) Signer {
 	if config.ChainID != nil {
 		if config.BerlinBlock != nil || config.YoloV3Block != nil {
 			return NewEIP2930Signer(config.ChainID)

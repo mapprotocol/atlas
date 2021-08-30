@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/processor"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -129,7 +130,7 @@ type intervalAdjust struct {
 // and gathering the sealing result.
 type worker struct {
 	config      *Config
-	chainConfig *params.ChainConfig
+	chainConfig *params2.ChainConfig
 	engine      consensus.Engine
 	eth         Backend
 	chain       *chain.BlockChain
@@ -198,7 +199,7 @@ type worker struct {
 	blockConstructGauge metrics.Gauge
 }
 
-func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
+func newWorker(config *Config, chainConfig *params2.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
 	worker := &worker{
 		config:              config,
 		chainConfig:         chainConfig,

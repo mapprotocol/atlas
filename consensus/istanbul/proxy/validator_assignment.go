@@ -19,10 +19,11 @@ package proxy
 import (
 	"github.com/buraksezer/consistent"
 	"github.com/cespare/xxhash/v2"
+	"github.com/mapprotocol/atlas/core/types"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
 // This type stores the assignment of remote validators to proxies, as well as the
@@ -48,7 +49,7 @@ func newValAssignments() *valAssignments {
 // addValidators adds validators to valToProxy without an assigned proxy
 func (va *valAssignments) addValidators(vals []common.Address) {
 	logger := va.logger.New("func", "addValidators")
-	logger.Info("adding validators to val assignments", "new vals", common.ConvertToStringSlice(vals))
+	logger.Info("adding validators to val assignments", "new vals", types.ConvertToStringSlice(vals))
 	for _, val := range vals {
 		va.valToProxy[val] = nil
 	}
@@ -58,7 +59,7 @@ func (va *valAssignments) addValidators(vals []common.Address) {
 // them from valToProxy
 func (va *valAssignments) removeValidators(vals []common.Address) {
 	logger := va.logger.New("func", "removeValidators")
-	logger.Info("removing validators from val assignments", "removed vals", common.ConvertToStringSlice(vals))
+	logger.Info("removing validators from val assignments", "removed vals", types.ConvertToStringSlice(vals))
 	for _, val := range vals {
 		va.unassignValidator(val)
 		delete(va.valToProxy, val)
@@ -219,7 +220,7 @@ func (ch *consistentHashingPolicy) reassignValidators(valAssignments *valAssignm
 				validatorSlice = append(validatorSlice, valAddress)
 			}
 
-			outputMap[proxyID] = common.ConvertToStringSlice(validatorSlice)
+			outputMap[proxyID] = types.ConvertToStringSlice(validatorSlice)
 		}
 		logger.Info("remote validator to proxy assignment has changed", "new assignment", outputMap)
 	}

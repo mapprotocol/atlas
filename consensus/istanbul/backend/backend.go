@@ -20,37 +20,38 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/accounts"
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/backend/internal/enodes"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/backend/internal/replica"
-	istanbulCore "github.com/celo-org/celo-blockchain/consensus/istanbul/core"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/proxy"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/validator"
-	"github.com/celo-org/celo-blockchain/contracts"
-	"github.com/celo-org/celo-blockchain/contracts/election"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/enodes"
+	"github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/replica"
+	istanbulCore "github.com/mapprotocol/atlas/consensus/istanbul/core"
+	"github.com/mapprotocol/atlas/consensus/istanbul/proxy"
+	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/contracts"
+	"github.com/mapprotocol/atlas/contracts/election"
 
-	"github.com/celo-org/celo-blockchain/contracts/random"
-	"github.com/celo-org/celo-blockchain/contracts/validators"
-	"github.com/celo-org/celo-blockchain/core"
-	"github.com/celo-org/celo-blockchain/core/state"
-	"github.com/celo-org/celo-blockchain/core/types"
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	"github.com/celo-org/celo-blockchain/ethdb"
-	"github.com/celo-org/celo-blockchain/event"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/metrics"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
-	"github.com/celo-org/celo-blockchain/params"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/contracts/random"
+	"github.com/mapprotocol/atlas/contracts/validators"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 var (
@@ -72,7 +73,7 @@ func (ei EcdsaInfo) Sign(data []byte) ([]byte, error) {
 	if ei.sign == nil {
 		return nil, errInvalidSigningFn
 	}
-	return ei.sign(accounts.Account{Address: ei.Address}, accounts.MimetypeIstanbul, data)
+	return ei.sign(accounts.Account{Address: ei.Address}, "application/x-istanbul-msg", data)
 }
 
 // SignHash signs the given hash with the ecdsa account
@@ -145,7 +146,7 @@ func New(config *istanbul.Config, db ethdb.Database) consensus.Istanbul {
 	backend.aWallets.Store(&Wallets{})
 	if config.LoadTestCSVFile != "" {
 		if f, err := os.Create(config.LoadTestCSVFile); err == nil {
-			backend.csvRecorder = metrics.NewCSVRecorder(f, "blockNumber", "txCount", "gasUsed", "round",
+			backend.csvRecorder = params.NewCSVRecorder(f, "blockNumber", "txCount", "gasUsed", "round",
 				"cycle", "sleep", "consensus", "block_verify", "block_construct",
 				"sysload", "syswait", "procload")
 		}
@@ -302,7 +303,7 @@ type Backend struct {
 	cycleStart time.Time
 
 	// Consensus csv recorded for load testing
-	csvRecorder *metrics.CSVRecorder
+	csvRecorder *params.CSVRecorder
 
 	// Cache for the return values of the method RetrieveValidatorConnSet
 	cachedValidatorConnSet         map[common.Address]bool
@@ -571,7 +572,7 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (*istanbulCore.StateProces
 	}
 
 	// check block body
-	txnHash := types.DeriveSha(block.Transactions())
+	txnHash := types.DeriveSha(block.Transactions(),trie.NewStackTrie(nil))
 	if txnHash != block.Header().TxHash {
 		return nil, 0, errMismatchTxhashes
 	}
@@ -657,7 +658,7 @@ func (sb *Backend) verifyValSetDiff(proposal istanbul.Proposal, block *types.Blo
 	newValSet, err := sb.getNewValidatorSet(block.Header(), state)
 	if err != nil {
 		if len(istExtra.AddedValidators) != 0 || istExtra.RemovedValidators.BitLen() != 0 {
-			sb.logger.Error("verifyValSetDiff - Invalid val set diff.  Non empty diff when it should be empty.", "addedValidators", common.ConvertToStringSlice(istExtra.AddedValidators), "removedValidators", istExtra.RemovedValidators.Text(16))
+			sb.logger.Error("verifyValSetDiff - Invalid val set diff.  Non empty diff when it should be empty.", "addedValidators", types.ConvertToStringSlice(istExtra.AddedValidators), "removedValidators", istExtra.RemovedValidators.Text(16))
 			return errInvalidValidatorSetDiff
 		}
 	} else {
@@ -681,7 +682,7 @@ func (sb *Backend) verifyValSetDiff(proposal istanbul.Proposal, block *types.Blo
 		}
 
 		if !istanbul.CompareValidatorSlices(addedValidatorsAddresses, istExtra.AddedValidators) || removedValidators.Cmp(istExtra.RemovedValidators) != 0 || !istanbul.CompareValidatorPublicKeySlices(addedValidatorsPublicKeys, istExtra.AddedValidatorsPublicKeys) {
-			sb.logger.Error("verifyValSetDiff - Invalid val set diff. Comparison failed. ", "got addedValidators", common.ConvertToStringSlice(istExtra.AddedValidators), "got removedValidators", istExtra.RemovedValidators.Text(16), "got addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(istExtra.AddedValidatorsPublicKeys), "expected addedValidators", common.ConvertToStringSlice(addedValidatorsAddresses), "expected removedValidators", removedValidators.Text(16), "expected addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(addedValidatorsPublicKeys))
+			sb.logger.Error("verifyValSetDiff - Invalid val set diff. Comparison failed. ", "got addedValidators", types.ConvertToStringSlice(istExtra.AddedValidators), "got removedValidators", istExtra.RemovedValidators.Text(16), "got addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(istExtra.AddedValidatorsPublicKeys), "expected addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses), "expected removedValidators", removedValidators.Text(16), "expected addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(addedValidatorsPublicKeys))
 			return errInvalidValidatorSetDiff
 		}
 	}
@@ -725,7 +726,7 @@ func (sb *Backend) AuthorForBlock(number uint64) common.Address {
 		a, _ := sb.Author(h)
 		return a
 	}
-	return common.ZeroAddress
+	return params.ZeroAddress
 }
 
 // HashForBlock returns the block hash from the canonical chain for the given number.
@@ -789,14 +790,14 @@ func (sb *Backend) GetCurrentHeadBlockAndAuthor() (istanbul.Proposal, common.Add
 	block := sb.currentBlock()
 
 	if block.Number().Cmp(common.Big0) == 0 {
-		return block, common.ZeroAddress
+		return block, params.ZeroAddress
 	}
 
 	proposer, err := sb.Author(block.Header())
 
 	if err != nil {
 		sb.logger.Error("Failed to get block proposer", "err", err)
-		return nil, common.ZeroAddress
+		return nil, params.ZeroAddress
 	}
 
 	// Return header only block here since we don't need block body

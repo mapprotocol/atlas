@@ -5,19 +5,12 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 )
 
 // VMAddress is the address the VM uses to make internal calls to contracts
-var VMAddress common.Address = BytesToAddress([]byte{})
-
-// BytesToAddress returns Address with value b.
-// If b is larger than len(h), b will be cropped from the left.
-func BytesToAddress(b []byte) common.Address {
-	var a common.Address
-	a.SetBytes(b)
-	return a
-}
+var VMAddress = params.ZeroAddress
 
 // evmRunnerContext defines methods required to create an EVMRunner
 type evmRunnerContext interface {

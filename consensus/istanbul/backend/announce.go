@@ -26,15 +26,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/backend/internal/enodes"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/proxy"
-	"github.com/celo-org/celo-blockchain/crypto/ecies"
-	"github.com/celo-org/celo-blockchain/log"
-	"github.com/celo-org/celo-blockchain/p2p"
-	"github.com/celo-org/celo-blockchain/p2p/enode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/ecies"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/enodes"
+	"github.com/mapprotocol/atlas/consensus/istanbul/proxy"
 )
 
 // ==============================================
@@ -317,7 +316,7 @@ func (sb *Backend) announceThread() {
 			if shouldQuery {
 				switch queryEnodeFrequencyState {
 				case HighFreqBeforeFirstPeerState:
-					if len(sb.broadcaster.FindPeers(nil, p2p.AnyPurpose)) > 0 {
+					if len(sb.broadcaster.FindPeers(nil, consensus.AnyPurpose)) > 0 {
 						queryEnodeFrequencyState = HighFreqAfterFirstPeerState
 					}
 

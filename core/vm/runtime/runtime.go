@@ -17,22 +17,22 @@
 package runtime
 
 import (
+	params2 "github.com/mapprotocol/atlas/params"
 	"math"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // Config is a basic type specifying certain configuration flags for running
 // the EVM.
 type Config struct {
-	ChainConfig *params.ChainConfig
+	ChainConfig *params2.ChainConfig
 	Difficulty  *big.Int
 	Origin      common.Address
 	Coinbase    common.Address
@@ -51,7 +51,7 @@ type Config struct {
 // sets defaults on the config
 func setDefaults(cfg *Config) {
 	if cfg.ChainConfig == nil {
-		cfg.ChainConfig = &params.ChainConfig{
+		cfg.ChainConfig = &params2.ChainConfig{
 			ChainID:             big.NewInt(1),
 			HomesteadBlock:      new(big.Int),
 			DAOForkBlock:        new(big.Int),
