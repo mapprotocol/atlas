@@ -1,4 +1,4 @@
-package blscrypto
+package bls
 
 import (
 	"bytes"

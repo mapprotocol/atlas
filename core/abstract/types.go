@@ -19,12 +19,12 @@ package abstract
 import (
 	"context"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/event"
 )
 
 // Validator is an abstract which defines the standard for block validation. It

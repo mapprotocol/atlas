@@ -380,7 +380,7 @@ func (e *revertError) ErrorData() interface{} {
 }
 
 // CallContract executes a contract call.
-func (b *SimulatedBackend) CallContract(ctx context.Context, call params2.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (b *SimulatedBackend) CallContract(ctx context.Context, call types.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -403,7 +403,7 @@ func (b *SimulatedBackend) CallContract(ctx context.Context, call params2.CallMs
 }
 
 // PendingCallContract executes a contract call on the pending state.
-func (b *SimulatedBackend) PendingCallContract(ctx context.Context, call params2.CallMsg) ([]byte, error) {
+func (b *SimulatedBackend) PendingCallContract(ctx context.Context, call types.CallMsg) ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	defer b.pendingState.RevertToSnapshot(b.pendingState.Snapshot())
@@ -436,7 +436,7 @@ func (b *SimulatedBackend) SuggestGasPrice(ctx context.Context) (*big.Int, error
 
 // EstimateGas executes the requested code against the currently pending block/state and
 // returns the used amount of gas.
-func (b *SimulatedBackend) EstimateGas(ctx context.Context, call params2.CallMsg) (uint64, error) {
+func (b *SimulatedBackend) EstimateGas(ctx context.Context, call types.CallMsg) (uint64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -529,7 +529,7 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call params2.CallMsg
 
 // callContract implements common code between normal and pending contract calls.
 // state is modified during execution, make sure to copy it if necessary.
-func (b *SimulatedBackend) callContract(ctx context.Context, call params2.CallMsg, block *types.Block, stateDB *state.StateDB) (*processor.ExecutionResult, error) {
+func (b *SimulatedBackend) callContract(ctx context.Context, call types.CallMsg, block *types.Block, stateDB *state.StateDB) (*processor.ExecutionResult, error) {
 	// Ensure message is initialized properly.
 	if call.GasPrice == nil {
 		call.GasPrice = big.NewInt(1)
@@ -712,7 +712,7 @@ func (b *SimulatedBackend) Blockchain() *chain.BlockChain {
 // callMsg implements core.Message to allow passing it as a transaction simulator.
 type callMsg struct {
 	//ethereum.CallMsg
-	params2.CallMsg
+	types.CallMsg
 }
 
 func (m callMsg) From() common.Address         { return m.CallMsg.From }

@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // API is a user facing RPC API to allow controlling the signer and voting

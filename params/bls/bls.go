@@ -1,5 +1,8 @@
-package blscrypto
+package bls
 
+/*
+#include "bls.h"
+*/
 import "C"
 import (
 	"errors"

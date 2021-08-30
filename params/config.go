@@ -162,7 +162,7 @@ var (
 			LookbackWindow: 12,
 		},
 
-		nil,
+		true,
 	}
 
 	TestChainConfig = &ChainConfig{
@@ -193,7 +193,7 @@ var (
 			RequestTimeout: 3000,
 			LookbackWindow: 12,
 		},
-		nil,
+		true,
 	}
 
 	IstanbulTestChainConfig = &ChainConfig{

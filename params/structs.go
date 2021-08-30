@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/mapprotocol/atlas/core/types"
 	"math/big"
 )
 
@@ -56,17 +55,6 @@ func (c *RelayerMember) UnmarshalJSON(input []byte) error {
 		}
 	}*/
 	return nil
-}
-
-type CallMsg struct {
-	From     common.Address  // the sender of the 'transaction'
-	To       *common.Address // the destination contract (nil for contract creation)
-	Gas      uint64          // if 0, the call executes with near-infinite gas
-	GasPrice *big.Int        // wei <-> gas exchange ratio
-	Value    *big.Int        // amount of wei sent along with the call
-	Data     []byte          // input data, usually an ABI-encoded contract method invocation
-
-	AccessList types.AccessList // EIP-2930 access list.
 }
 
 // ChainConfig is the core config which determines the blockchain settings.

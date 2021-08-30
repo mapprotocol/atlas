@@ -20,15 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // SignerFn is a signer function callback when a contract requires a method to
@@ -134,7 +133,7 @@ func (c *BoundContract) Call(opts *CallOpts, results *[]interface{}, method stri
 		return err
 	}
 	var (
-		msg    = params2.CallMsg{From: opts.From, To: &c.address, Data: input}
+		msg    = types.CallMsg{From: opts.From, To: &c.address, Data: input}
 		ctx    = ensureContext(opts.Context)
 		code   []byte
 		output []byte
@@ -243,7 +242,7 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 			}
 		}
 		// If the contract surely has code (or code is not needed), estimate the transaction
-		msg := params2.CallMsg{From: opts.From, To: contract, GasPrice: gasPrice, Value: value, Data: input}
+		msg := types.CallMsg{From: opts.From, To: contract, GasPrice: gasPrice, Value: value, Data: input}
 		gasLimit, err = c.transactor.EstimateGas(ensureContext(opts.Context), msg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to estimate gas needed: %v", err)

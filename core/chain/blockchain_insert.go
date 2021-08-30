@@ -22,8 +22,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // insertStats tracks and reports on block insertion.

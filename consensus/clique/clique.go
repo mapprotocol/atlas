@@ -26,13 +26,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/consensus/misc"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
@@ -41,6 +36,11 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 	"golang.org/x/crypto/sha3"
 )
 
