@@ -42,6 +42,8 @@ type ABI struct {
 	Receive  Method
 }
 
+var ErrEmptyArguments = errors.New("abi: attempting to unmarshall an empty string while arguments are expected")
+
 // JSON returns a parsed ABI interface and error if it failed.
 func JSON(reader io.Reader) (ABI, error) {
 	dec := json.NewDecoder(reader)
