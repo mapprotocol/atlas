@@ -21,10 +21,10 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // handleGetBlockHeaders handles Block header query, collect the requested headers and reply

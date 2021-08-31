@@ -230,7 +230,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 
-	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock)
+	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock,chainDb)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
 	eth.APIBackend = &EthAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, eth, nil}
@@ -544,6 +544,10 @@ func (s *Ethereum) Start() error {
 	}
 	// Start the networking layer and the light server if requested
 	s.handler.Start(maxPeers)
+
+	if err := s.startAnnounce(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -551,6 +555,7 @@ func (s *Ethereum) Start() error {
 // Ethereum protocol.
 func (s *Ethereum) Stop() error {
 	// Stop all the peer-related stuff first.
+	s.stopAnnounce()
 	s.ethDialCandidates.Close()
 	s.snapDialCandidates.Close()
 	s.handler.Stop()
@@ -565,6 +570,22 @@ func (s *Ethereum) Stop() error {
 	rawdb.PopUncleanShutdownMarker(s.chainDb)
 	s.chainDb.Close()
 	s.eventMux.Stop()
+
+	return nil
+}
+
+func (s *Ethereum) startAnnounce() error {
+	if istanbul, ok := s.engine.(consensus.Istanbul); ok {
+		return istanbul.StartAnnouncing()
+	}
+
+	return nil
+}
+
+func (s *Ethereum) stopAnnounce() error {
+	if istanbul, ok := s.engine.(consensus.Istanbul); ok {
+		return istanbul.StopAnnouncing()
+	}
 
 	return nil
 }

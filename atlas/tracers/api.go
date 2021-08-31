@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/processor"
+	params2 "github.com/mapprotocol/atlas/params"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -32,18 +33,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const (
@@ -66,7 +66,7 @@ type Backend interface {
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
 	GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error)
 	RPCGasCap() uint64
-	ChainConfig() *params.ChainConfig
+	ChainConfig() *params2.ChainConfig
 	Engine() consensus.Engine
 	ChainDb() ethdb.Database
 	StateAtBlock(ctx context.Context, block *types.Block, reexec uint64, base *state.StateDB, checkLive bool) (*state.StateDB, error)
@@ -621,7 +621,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 	if config != nil && config.Overrides != nil {
 		// Copy the config, to not screw up the main config
 		// Note: the Clique-part is _not_ deep copied
-		chainConfigCopy := new(params.ChainConfig)
+		chainConfigCopy := new(params2.ChainConfig)
 		*chainConfigCopy = *chainConfig
 		chainConfig = chainConfigCopy
 		if berlin := config.LogConfig.Overrides.BerlinBlock; berlin != nil {

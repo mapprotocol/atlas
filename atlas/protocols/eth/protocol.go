@@ -23,9 +23,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/core/forkid"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // Constants to match up protocol versions and messages

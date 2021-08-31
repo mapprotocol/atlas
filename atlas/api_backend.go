@@ -6,7 +6,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributgit ed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/txsdetails"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/mapprotocol/atlas/accounts"
@@ -50,7 +51,7 @@ type EthAPIBackend struct {
 }
 
 // ChainConfig returns the active chain configuration.
-func (b *EthAPIBackend) ChainConfig() *params.ChainConfig {
+func (b *EthAPIBackend) ChainConfig() *params2.ChainConfig {
 	return b.eth.blockchain.Config()
 }
 

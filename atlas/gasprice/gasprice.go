@@ -18,15 +18,15 @@ package gasprice
 
 import (
 	"context"
-	"math/big"
-	"sort"
-	"sync"
-
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/core/types"
+	params2 "github.com/mapprotocol/atlas/params"
+	"math/big"
+	"sort"
+	"sync"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block
@@ -44,7 +44,7 @@ type Config struct {
 type OracleBackend interface {
 	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
-	ChainConfig() *params.ChainConfig
+	ChainConfig() *params2.ChainConfig
 }
 
 // Oracle recommends gas prices based on the content of recent

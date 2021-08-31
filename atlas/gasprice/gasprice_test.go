@@ -19,18 +19,19 @@ package gasprice
 import (
 	"context"
 	"github.com/mapprotocol/atlas/core/chain"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type testBackend struct {
@@ -51,7 +52,7 @@ func (b *testBackend) BlockByNumber(ctx context.Context, number rpc.BlockNumber)
 	return b.chain.GetBlockByNumber(uint64(number)), nil
 }
 
-func (b *testBackend) ChainConfig() *params.ChainConfig {
+func (b *testBackend) ChainConfig() *params2.ChainConfig {
 	return b.chain.Config()
 }
 
@@ -60,7 +61,7 @@ func newTestBackend(t *testing.T) *testBackend {
 		key, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 		addr   = crypto.PubkeyToAddress(key.PublicKey)
 		gspec  = &chain.Genesis{
-			Config: params.TestChainConfig,
+			Config: params2.TestChainConfig,
 			Alloc:  chain.GenesisAlloc{addr: {Balance: big.NewInt(math.MaxInt64)}},
 		}
 		signer = types.LatestSigner(gspec.Config)
@@ -70,7 +71,7 @@ func newTestBackend(t *testing.T) *testBackend {
 	genesis, _ := gspec.Commit(db)
 
 	// Generate testing blocks
-	blocks, _ := chain.GenerateChain(params.TestChainConfig, genesis, engine, db, 32, func(i int, b *chain.BlockGen) {
+	blocks, _ := chain.GenerateChain(params2.TestChainConfig, genesis, engine, db, 32, func(i int, b *chain.BlockGen) {
 		b.SetCoinbase(common.Address{1})
 		tx, err := types.SignTx(types.NewTransaction(b.TxNonce(addr), common.HexToAddress("deadbeef"), big.NewInt(100), 21000, big.NewInt(int64(i+1)*params.GWei), nil), signer, key)
 		if err != nil {
@@ -81,7 +82,7 @@ func newTestBackend(t *testing.T) *testBackend {
 	// Construct testing chain
 	diskdb := rawdb.NewMemoryDatabase()
 	gspec.Commit(diskdb)
-	chain, err := chain.NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
+	chain, err := chain.NewBlockChain(diskdb, nil, params2.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to create local chain, %v", err)
 	}
