@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
@@ -92,7 +93,7 @@ func newBlockChainWithKeys(isProxy bool, proxiedValAddress common.Address, isPro
 			},
 			blockchain.Validator().ValidateState,
 			func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) {
-				if _,err := blockchain.WriteBlockWithState(block, receipts, logs, state,true); err != nil {
+				if _, err := blockchain.WriteBlockWithState(block, receipts, logs, state, true); err != nil {
 					panic(fmt.Sprintf("could not InsertPreprocessedBlock: %v", err))
 				}
 			})
@@ -195,7 +196,7 @@ func makeBlock(keys []*ecdsa.PrivateKey, chain *chain.BlockChain, engine *Backen
 	defer sub.Unsubscribe()
 
 	// start seal request (this is non-blocking)
-	err := engine.Seal(chain, block,nil,nil)
+	err := engine.Seal(chain, block, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +319,7 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 			return blscrypto.SerializedSignature{}, err
 		}
 
-		privateKey, err := blscrypto.DeserializePrivateKey(privateKeyBytes)
+		privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
