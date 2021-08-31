@@ -9,9 +9,10 @@ require (
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/buraksezer/consistent v0.0.0-20191006190839-693edf70fd72
-	github.com/celo-org/celo-bls-go v0.2.4 // indirect
-	github.com/cespare/cp v1.1.1
+	github.com/celo-org/celo-blockchain v1.3.2
 	github.com/celo-org/celo-bls-go v0.2.4
+	github.com/cespare/cp v1.1.1
+	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v20.10.6+incompatible // indirect
@@ -39,6 +40,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/onsi/gomega v1.10.1
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/peterh/liner v1.2.1
 	github.com/prometheus/tsdb v0.10.0
@@ -48,6 +50,7 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4
 	github.com/stretchr/testify v1.7.0
+	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 	golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6 // indirect

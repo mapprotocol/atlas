@@ -10,7 +10,6 @@ import (
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
 	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
-	"github.com/mapprotocol/atlas/cmd/ethclient"
 )
 
 func dialEthConn() (*ethclient.Client, string) {

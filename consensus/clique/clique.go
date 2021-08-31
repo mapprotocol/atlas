@@ -41,6 +41,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	params2 "github.com/mapprotocol/atlas/params"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -187,9 +188,14 @@ type Clique struct {
 
 // New creates a Clique proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
-func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
+func New(config *params2.CliqueConfig, db ethdb.Database) *Clique {
 	// Set any missing consensus parameters to their defaults
-	conf := *config
+	// convert atlas CliqueConfig to eth CliqueConfig
+	conf := params.CliqueConfig{
+		Period: config.Period,
+		Epoch:  config.Epoch,
+	}
+
 	if conf.Epoch == 0 {
 		conf.Epoch = epochLength
 	}
