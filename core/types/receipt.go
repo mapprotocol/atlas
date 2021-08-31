@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	params2 "github.com/mapprotocol/atlas/params"
 	"io"
 	"math/big"
 	"unsafe"
+
+	params2 "github.com/mapprotocol/atlas/params"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

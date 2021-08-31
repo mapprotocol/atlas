@@ -20,7 +20,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	blscrypto "github.com/mapprotocol/atlas/bls"
+	blscrypto "github.com/celo-org/celo-bls-go/bls"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"

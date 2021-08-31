@@ -28,11 +28,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/accounts/abi/bind"
 	"github.com/mapprotocol/atlas/accounts/abi/bind/backends"
 	"github.com/mapprotocol/atlas/contracts/checkpointoracle/contract"
 	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/crypto"
 	"github.com/mapprotocol/atlas/params"
 )
 

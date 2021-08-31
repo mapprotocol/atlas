@@ -12,7 +12,7 @@ import (
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/accounts/abi/bind"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/event"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

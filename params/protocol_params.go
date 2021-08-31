@@ -1,6 +1,8 @@
 package params
 
 const (
+	DefaultGasLimit uint64 = 20000000 // Gas limit of the blocks before BlockchainParams contract is loaded.
+
 	thousand = 1000
 	million  = 1000 * 1000
 
