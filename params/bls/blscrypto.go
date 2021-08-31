@@ -11,8 +11,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+)
+
+const (
+	PUBLICKEYBYTES    = bls.PUBLICKEYBYTES
+	SIGNATUREBYTES    = bls.SIGNATUREBYTES
+	EPOCHENTROPYBYTES = bls.EPOCHENTROPYBYTES
 )
 
 var (
@@ -23,8 +30,8 @@ var (
 type SerializedPublicKey [PUBLICKEYBYTES]byte
 
 // EpochEntropyFromHash truncates the given hash to the length of epoch SNARK entropy.
-func EpochEntropyFromHash(hash common.Hash) EpochEntropy {
-	var entropy EpochEntropy
+func EpochEntropyFromHash(hash common.Hash) bls.EpochEntropy {
+	var entropy bls.EpochEntropy
 	copy(entropy[:], hash[:EPOCHENTROPYBYTES])
 	return entropy
 }
@@ -64,7 +71,7 @@ func (sig *SerializedSignature) UnmarshalJSON(input []byte) error {
 func ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 	for i := 0; i < 256; i++ {
 		modulus := big.NewInt(0)
-		modulus, ok := modulus.SetString(MODULUS377, 10)
+		modulus, ok := modulus.SetString(bls.MODULUS377, 10)
 		if !ok {
 			return nil, errors.New("can't parse modulus")
 		}
@@ -75,7 +82,7 @@ func ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 		keyBytes = append(keyBytes, privateKeyECDSABytes...)
 
 		privateKeyBLSBytes := crypto.Keccak256(keyBytes)
-		privateKeyBLSBytes[0] &= MODULUSMASK
+		privateKeyBLSBytes[0] &= bls.MODULUSMASK
 		privateKeyBLSBig := big.NewInt(0)
 		privateKeyBLSBig.SetBytes(privateKeyBLSBytes)
 		if privateKeyBLSBig.Cmp(modulus) >= 0 {
@@ -95,7 +102,7 @@ func ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 			privateKeyBytes[i], privateKeyBytes[opp] = privateKeyBytes[opp], privateKeyBytes[i]
 		}
 
-		privateKeyBLS, err := DeserializePrivateKey(privateKeyBytes)
+		privateKeyBLS, err := bls.DeserializePrivateKey(privateKeyBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +122,7 @@ func ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 }
 
 func PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
-	privateKey, err := DeserializePrivateKey(privateKeyBytes)
+	privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
 	if err != nil {
 		return SerializedPublicKey{}, err
 	}
@@ -139,22 +146,22 @@ func PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
 }
 
 func VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	publicKeyObjs := []*PublicKey{}
+	publicKeyObjs := []*bls.PublicKey{}
 	for _, publicKey := range publicKeys {
-		publicKeyObj, err := DeserializePublicKeyCached(publicKey[:])
+		publicKeyObj, err := bls.DeserializePublicKeyCached(publicKey[:])
 		if err != nil {
 			return err
 		}
 		defer publicKeyObj.Destroy()
 		publicKeyObjs = append(publicKeyObjs, publicKeyObj)
 	}
-	apk, err := AggregatePublicKeys(publicKeyObjs)
+	apk, err := bls.AggregatePublicKeys(publicKeyObjs)
 	if err != nil {
 		return err
 	}
 	defer apk.Destroy()
 
-	signatureObj, err := DeserializeSignature(signature)
+	signatureObj, err := bls.DeserializeSignature(signature)
 	if err != nil {
 		return err
 	}
@@ -165,9 +172,9 @@ func VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte,
 }
 
 func AggregateSignatures(signatures [][]byte) ([]byte, error) {
-	signatureObjs := []*Signature{}
+	signatureObjs := []*bls.Signature{}
 	for _, signature := range signatures {
-		signatureObj, err := DeserializeSignature(signature)
+		signatureObj, err := bls.DeserializeSignature(signature)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +182,7 @@ func AggregateSignatures(signatures [][]byte) ([]byte, error) {
 		signatureObjs = append(signatureObjs, signatureObj)
 	}
 
-	asig, err := AggregateSignatures2(signatureObjs)
+	asig, err := bls.AggregateSignatures(signatureObjs)
 	if err != nil {
 		return nil, err
 	}
@@ -190,13 +197,13 @@ func AggregateSignatures(signatures [][]byte) ([]byte, error) {
 }
 
 func VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	publicKeyObj, err := DeserializePublicKeyCached(publicKey[:])
+	publicKeyObj, err := bls.DeserializePublicKeyCached(publicKey[:])
 	if err != nil {
 		return err
 	}
 	defer publicKeyObj.Destroy()
 
-	signatureObj, err := DeserializeSignature(signature)
+	signatureObj, err := bls.DeserializeSignature(signature)
 	if err != nil {
 		return err
 	}
@@ -207,9 +214,9 @@ func VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []
 }
 
 func EncodeEpochSnarkData(newValSet []SerializedPublicKey, maximumNonSigners uint32, epochIndex uint16) ([]byte, []byte, error) {
-	pubKeys := []*PublicKey{}
+	pubKeys := []*bls.PublicKey{}
 	for _, pubKey := range newValSet {
-		publicKeyObj, err := DeserializePublicKeyCached(pubKey[:])
+		publicKeyObj, err := bls.DeserializePublicKeyCached(pubKey[:])
 		if err != nil {
 			return nil, nil, err
 		}
@@ -218,14 +225,14 @@ func EncodeEpochSnarkData(newValSet []SerializedPublicKey, maximumNonSigners uin
 		pubKeys = append(pubKeys, publicKeyObj)
 	}
 
-	message, err := EncodeEpochToBytes(epochIndex, maximumNonSigners, pubKeys)
+	message, err := bls.EncodeEpochToBytes(epochIndex, maximumNonSigners, pubKeys)
 	return message, nil, err
 }
 
-func EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash EpochEntropy) ([]byte, []byte, error) {
-	pubKeys := []*PublicKey{}
+func EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash bls.EpochEntropy) ([]byte, []byte, error) {
+	pubKeys := []*bls.PublicKey{}
 	for _, pubKey := range newValSet {
-		publicKeyObj, err := DeserializePublicKeyCached(pubKey[:])
+		publicKeyObj, err := bls.DeserializePublicKeyCached(pubKey[:])
 		if err != nil {
 			return nil, nil, err
 		}
@@ -234,7 +241,7 @@ func EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigner
 		pubKeys = append(pubKeys, publicKeyObj)
 	}
 
-	return EncodeEpochToBytesCIP22(epochIndex, round, blockHash, parentHash, maximumNonSigners, maxValidators, pubKeys)
+	return bls.EncodeEpochToBytesCIP22(epochIndex, round, blockHash, parentHash, maximumNonSigners, maxValidators, pubKeys)
 }
 
 func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
@@ -247,7 +254,7 @@ func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignatu
 }
 
 func UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
-	publicKey, err := DeserializePublicKeyCached(serialized[:])
+	publicKey, err := bls.DeserializePublicKeyCached(serialized[:])
 	if err != nil {
 		return nil, err
 	}
