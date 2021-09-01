@@ -15,6 +15,7 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	"math/big"
 	"time"
 )
 
@@ -55,18 +56,18 @@ func prepareBlock(w *worker) (*blockState, error) {
 	}
 
 	txFeeRecipient := w.txFeeRecipient
-	//if !w.chainConfig.IsDonut(header.Number) && w.txFeeRecipient != w.coinbase {
-	//	txFeeRecipient = w.coinbase
-	//	log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the coinbase.")
-	//}
+	if !w.chainConfig.IsDonut(header.Number) && w.txFeeRecipient != w.coinbase {
+		txFeeRecipient = w.coinbase
+		log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the coinbase.")
+	}
 
 	// Only set the coinbase if our consensus engine is running (avoid spurious block rewards)
-	//if w.isRunning() {
-	//	if txFeeRecipient == (common.Address{}) {
-	//		return nil, errors.New("Refusing to mine without etherbase")
-	//	}
-	//	header.Coinbase = txFeeRecipient
-	//}
+	if w.isRunning() {
+		if txFeeRecipient == (common.Address{}) {
+			return nil, errors.New("Refusing to mine without etherbase")
+		}
+		header.Coinbase = txFeeRecipient
+	}
 	// Note: The parent seal will not be set when not validating
 	if err := w.engine.Prepare(w.chain, header); err != nil {
 		log.Error("Failed to prepare header for mining", "err", err)
@@ -345,3 +346,12 @@ func (b *blockState) finalizeAndAssemble(w *worker) (*types.Block, error) {
 //		return currencyManager.CmpValues(tx1.GasPrice(), tx1.FeeCurrency(), tx2.GasPrice(), tx2.FeeCurrency())
 //	}
 //}
+
+// totalFees computes total consumed fees in ETH. Block transactions and receipts have to have the same order.
+func totalFees(block *types.Block, receipts []*types.Receipt) *big.Float {
+	feesWei := new(big.Int)
+	for i, tx := range block.Transactions() {
+		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), tx.GasPrice()))
+	}
+	return new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Ether)))
+}

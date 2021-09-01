@@ -177,22 +177,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		},
 	},
 	{
-		Name: "MINER",
-		Flags: []cli.Flag{
-			utils.MiningEnabledFlag,
-			utils.MinerThreadsFlag,
-			utils.MinerNotifyFlag,
-			utils.MinerNotifyFullFlag,
-			utils.MinerGasPriceFlag,
-			utils.MinerGasTargetFlag,
-			utils.MinerGasLimitFlag,
-			utils.MinerEtherbaseFlag,
-			utils.MinerExtraDataFlag,
-			utils.MinerRecommitIntervalFlag,
-			utils.MinerNoVerfiyFlag,
-		},
-	},
-	{
 		Name: "GAS PRICE ORACLE",
 		Flags: []cli.Flag{
 			utils.GpoBlocksFlag,

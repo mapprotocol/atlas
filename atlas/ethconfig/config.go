@@ -80,10 +80,10 @@ var Defaults = Config{
 	TrieTimeout:             60 * time.Minute,
 	SnapshotCache:           102,
 	Miner: miner.Config{
-		GasFloor: 8000000,
-		GasCeil:  8000000,
-		GasPrice: big.NewInt(params.GWei),
-		Recommit: 3 * time.Second,
+		//GasFloor: 8000000,
+		//GasCeil:  8000000,
+		//GasPrice: big.NewInt(params.GWei),
+		//Recommit: 3 * time.Second,
 	},
 	TxPool:      txsdetails.DefaultTxPoolConfig,
 	RPCGasCap:   25000000,
@@ -210,7 +210,7 @@ type Config struct {
 func CreateConsensusEngine(stack *node.Node, chainConfig *params2.ChainConfig, config *ethash.Config, notify []string, noverify bool, db ethdb.Database) consensus.Engine {
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
-		return clique.New((*params.CliqueConfig)(chainConfig.Clique), db)
+		return clique.New((*params2.CliqueConfig)((*params.CliqueConfig)(chainConfig.Clique)), db)
 	}
 	// Otherwise assume proof-of-work
 	switch config.PowMode {

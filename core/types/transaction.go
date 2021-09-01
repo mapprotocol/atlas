@@ -19,7 +19,9 @@ package types
 import (
 	"bytes"
 	"container/heap"
+	"encoding/json"
 	"errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -55,6 +57,39 @@ type Transaction struct {
 	from atomic.Value
 }
 
+func toEthCompatibleRlpList(data txdata) ethCompatibleTxRlpList {
+	return ethCompatibleTxRlpList{
+		AccountNonce: data.AccountNonce,
+		Price:        data.Price,
+		GasLimit:     data.GasLimit,
+		Recipient:    data.Recipient,
+		Amount:       data.Amount,
+		Payload:      data.Payload,
+		V:            data.V,
+		R:            data.R,
+		S:            data.S,
+	}
+}
+
+func fromEthCompatibleRlpList(data ethCompatibleTxRlpList) txdata {
+	return txdata{
+		AccountNonce:        data.AccountNonce,
+		Price:               data.Price,
+		GasLimit:            data.GasLimit,
+		FeeCurrency:         nil,
+		GatewayFeeRecipient: nil,
+		GatewayFee:          big.NewInt(0),
+		Recipient:           data.Recipient,
+		Amount:              data.Amount,
+		Payload:             data.Payload,
+		V:                   data.V,
+		R:                   data.R,
+		S:                   data.S,
+		Hash:                nil, // txdata.Hash is calculated and saved inside tx.Hash()
+		EthCompatible:       true,
+	}
+}
+
 // NewTx creates a new transaction.
 func NewTx(inner TxData) *Transaction {
 	tx := new(Transaction)
@@ -80,6 +115,157 @@ type TxData interface {
 
 	rawSignatureValues() (v, r, s *big.Int)
 	setSignatureValues(chainID, v, r, s *big.Int)
+}
+
+type txdata struct {
+	AccountNonce        uint64          `json:"nonce"    gencodec:"required"`
+	Price               *big.Int        `json:"gasPrice" gencodec:"required"`
+	GasLimit            uint64          `json:"gas"      gencodec:"required"`
+	FeeCurrency         *common.Address `json:"feeCurrency" rlp:"nil"`         // nil means native currency
+	GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient" rlp:"nil"` // nil means no gateway fee is paid
+	GatewayFee          *big.Int        `json:"gatewayFee"`
+	Recipient           *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
+	Amount              *big.Int        `json:"value"    gencodec:"required"`
+	Payload             []byte          `json:"input"    gencodec:"required"`
+
+	// Signature values
+	V *big.Int `json:"v" gencodec:"required"`
+	R *big.Int `json:"r" gencodec:"required"`
+	S *big.Int `json:"s" gencodec:"required"`
+
+	// This is only used when marshaling to JSON.
+	Hash *common.Hash `json:"hash" rlp:"-"`
+
+	// Whether this is an ethereum-compatible transaction (i.e. with FeeCurrency, GatewayFeeRecipient and GatewayFee omitted)
+	EthCompatible bool `json:"ethCompatible" rlp:"-"`
+}
+
+// MarshalJSON marshals as JSON.
+func (t txdata) MarshalJSON() ([]byte, error) {
+	type txdata struct {
+		AccountNonce        hexutil.Uint64  `json:"nonce"    gencodec:"required"`
+		Price               *hexutil.Big    `json:"gasPrice" gencodec:"required"`
+		GasLimit            hexutil.Uint64  `json:"gas"      gencodec:"required"`
+		FeeCurrency         *common.Address `json:"feeCurrency" rlp:"nil"`
+		GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient" rlp:"nil"`
+		GatewayFee          *hexutil.Big    `json:"gatewayFee"`
+		Recipient           *common.Address `json:"to"       rlp:"nil"`
+		Amount              *hexutil.Big    `json:"value"    gencodec:"required"`
+		Payload             hexutil.Bytes   `json:"input"    gencodec:"required"`
+		V                   *hexutil.Big    `json:"v" gencodec:"required"`
+		R                   *hexutil.Big    `json:"r" gencodec:"required"`
+		S                   *hexutil.Big    `json:"s" gencodec:"required"`
+		Hash                *common.Hash    `json:"hash" rlp:"-"`
+		EthCompatible       bool            `json:"ethCompatible" rlp:"-"`
+	}
+	var enc txdata
+	enc.AccountNonce = hexutil.Uint64(t.AccountNonce)
+	enc.Price = (*hexutil.Big)(t.Price)
+	enc.GasLimit = hexutil.Uint64(t.GasLimit)
+	enc.FeeCurrency = t.FeeCurrency
+	enc.GatewayFeeRecipient = t.GatewayFeeRecipient
+	enc.GatewayFee = (*hexutil.Big)(t.GatewayFee)
+	enc.Recipient = t.Recipient
+	enc.Amount = (*hexutil.Big)(t.Amount)
+	enc.Payload = t.Payload
+	enc.V = (*hexutil.Big)(t.V)
+	enc.R = (*hexutil.Big)(t.R)
+	enc.S = (*hexutil.Big)(t.S)
+	enc.Hash = t.Hash
+	enc.EthCompatible = t.EthCompatible
+	return json.Marshal(&enc)
+}
+
+// UnmarshalJSON unmarshals from JSON.
+func (t *txdata) UnmarshalJSON(input []byte) error {
+	type txdata struct {
+		AccountNonce        *hexutil.Uint64 `json:"nonce"    gencodec:"required"`
+		Price               *hexutil.Big    `json:"gasPrice" gencodec:"required"`
+		GasLimit            *hexutil.Uint64 `json:"gas"      gencodec:"required"`
+		FeeCurrency         *common.Address `json:"feeCurrency" rlp:"nil"`
+		GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient" rlp:"nil"`
+		GatewayFee          *hexutil.Big    `json:"gatewayFee"`
+		Recipient           *common.Address `json:"to"       rlp:"nil"`
+		Amount              *hexutil.Big    `json:"value"    gencodec:"required"`
+		Payload             *hexutil.Bytes  `json:"input"    gencodec:"required"`
+		V                   *hexutil.Big    `json:"v" gencodec:"required"`
+		R                   *hexutil.Big    `json:"r" gencodec:"required"`
+		S                   *hexutil.Big    `json:"s" gencodec:"required"`
+		Hash                *common.Hash    `json:"hash" rlp:"-"`
+		EthCompatible       *bool           `json:"ethCompatible" rlp:"-"`
+	}
+	var dec txdata
+	if err := json.Unmarshal(input, &dec); err != nil {
+		return err
+	}
+	if dec.AccountNonce == nil {
+		return errors.New("missing required field 'nonce' for txdata")
+	}
+	t.AccountNonce = uint64(*dec.AccountNonce)
+	if dec.Price == nil {
+		return errors.New("missing required field 'gasPrice' for txdata")
+	}
+	t.Price = (*big.Int)(dec.Price)
+	if dec.GasLimit == nil {
+		return errors.New("missing required field 'gas' for txdata")
+	}
+	t.GasLimit = uint64(*dec.GasLimit)
+	if dec.FeeCurrency != nil {
+		t.FeeCurrency = dec.FeeCurrency
+	}
+	if dec.GatewayFeeRecipient != nil {
+		t.GatewayFeeRecipient = dec.GatewayFeeRecipient
+	}
+	if dec.GatewayFee != nil {
+		t.GatewayFee = (*big.Int)(dec.GatewayFee)
+	}
+	if dec.Recipient != nil {
+		t.Recipient = dec.Recipient
+	}
+	if dec.Amount == nil {
+		return errors.New("missing required field 'value' for txdata")
+	}
+	t.Amount = (*big.Int)(dec.Amount)
+	if dec.Payload == nil {
+		return errors.New("missing required field 'input' for txdata")
+	}
+	t.Payload = *dec.Payload
+	if dec.V == nil {
+		return errors.New("missing required field 'v' for txdata")
+	}
+	t.V = (*big.Int)(dec.V)
+	if dec.R == nil {
+		return errors.New("missing required field 'r' for txdata")
+	}
+	t.R = (*big.Int)(dec.R)
+	if dec.S == nil {
+		return errors.New("missing required field 's' for txdata")
+	}
+	t.S = (*big.Int)(dec.S)
+	if dec.Hash != nil {
+		t.Hash = dec.Hash
+	}
+	if dec.EthCompatible != nil {
+		t.EthCompatible = *dec.EthCompatible
+	}
+	return nil
+}
+
+// ethCompatibleTxRlpList is used for RLP encoding/decoding of eth-compatible transactions.
+// As such, it:
+// (a) excludes the Celo-only fields,
+// (b) doesn't need the Hash or EthCompatible fields, and
+// (c) doesn't need the `json` or `gencodec` tags
+type ethCompatibleTxRlpList struct {
+	AccountNonce uint64
+	Price        *big.Int
+	GasLimit     uint64
+	Recipient    *common.Address `rlp:"nil"` // nil means contract creation
+	Amount       *big.Int
+	Payload      []byte
+	V            *big.Int
+	R            *big.Int
+	S            *big.Int
 }
 
 // EncodeRLP implements rlp.Encoder
