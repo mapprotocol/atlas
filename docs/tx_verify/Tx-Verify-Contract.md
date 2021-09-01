@@ -70,8 +70,8 @@ judge whether the transaction is true and valid by verifying the transaction rec
 #### output parameters
 | parameter| type         | comment |
 | -------- | ------------ | ------- |
-| success | *big.Int     | if the verification is successful, is true |
-| message | *big.Int     | if the verification is successful, is empty |
+| success | bool          | if the verification is successful, is true |
+| message | string        | if the verification is successful, is empty |
 
 ### example
 

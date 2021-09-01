@@ -28,6 +28,7 @@ type TxParams struct {
 	To    []byte
 	Value *big.Int
 }
+
 type TxProve struct {
 	Tx          *TxParams
 	Receipt     *types.Receipt
@@ -55,10 +56,10 @@ func (v *Verify) Verify(srcChain, dstChain *big.Int, txProveBytes []byte) error 
 	if err != nil {
 		return err
 	}
-
 	if err := v.verifyTxParams(srcChain, dstChain, txProve.Tx, lg); err != nil {
 		return err
 	}
+
 	receiptsRoot, err := v.getReceiptsRoot(rawdb.ChainType(srcChain.Uint64()), txProve.BlockNumber)
 	if err != nil {
 		return err
