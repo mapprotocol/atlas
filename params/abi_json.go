@@ -70,7 +70,18 @@ const TxVerifyABIJSON = `[
 			}
 		],
 		"name": "txVerify",
-		"outputs": [],
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "success",
+				"type": "bool"
+			},
+			{
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	}

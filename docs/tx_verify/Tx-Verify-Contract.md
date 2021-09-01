@@ -35,7 +35,18 @@ tx verify contract is deployed at address:
       }
     ],
     "name": "txVerify",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "message",
+        "type": "string"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   }
@@ -48,7 +59,7 @@ tx verify contract is deployed at address:
 
 judge whether the transaction is true and valid by verifying the transaction receipt
 
-#### parameters
+#### input parameters
 
 | parameter| type         | comment |
 | -------- | ------------ | ------- |
@@ -56,8 +67,15 @@ judge whether the transaction is true and valid by verifying the transaction rec
 | DstChain | *big.Int     | destination chain identification|
 | TxProve  | [CrossTxProve](https://mapprotocol.github.io/atlas/tx_verify/Tx-Verify) | cross chain transaction prove information |
 
+#### output parameters
+| parameter| type         | comment |
+| -------- | ------------ | ------- |
+| success | *big.Int     | if the verification is successful, is true |
+| message | *big.Int     | if the verification is successful, is empty |
+
 ### example
-```go
+
+```
 package main
 
 import (
@@ -78,10 +96,11 @@ type BaseParams struct {
 }
 
 type CrossTxProve struct {
-	Tx      *BaseParams
-	Receipt *types.Receipt
-	Prove   light.NodeList
-	TxIndex uint
+	Tx          *BaseParams
+	Receipt     *types.Receipt
+	Prove       light.NodeList
+	BlockNumber uint64
+	TxIndex     uint
 }
 
 func example() {

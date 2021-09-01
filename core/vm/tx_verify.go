@@ -46,6 +46,8 @@ func RunTxVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 
 	if err != nil {
 		log.Error("run tx verify contract failed", "method.name", method.Name, "error", err)
+	} else {
+		log.Info("run tx verify contract succeed", "method.name", method.Name)
 	}
 	return ret, err
 }
@@ -58,6 +60,22 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	}{}
 
 	method, _ := abiTxVerify.Methods[TxVerify]
+	defer func() {
+		var (
+			packErr error
+			message string
+			success = true
+		)
+
+		if err != nil {
+			success, message = false, err.Error()
+		}
+		ret, packErr = method.Outputs.Pack(success, message)
+		if packErr != nil {
+			log.Error("txVerify outputs pack failed", "error", packErr.Error())
+		}
+	}()
+
 	unpack, err := method.Inputs.Unpack(input)
 	if err != nil {
 		return nil, err

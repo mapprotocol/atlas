@@ -2,41 +2,38 @@ package ethereum
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/params"
+	"log"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
 )
 
-// EventHash event hash
-// todo replace
-var EventHash = common.Hash{}
+var (
+	RouterContractAddr = common.HexToAddress("0x531d3c9de79339be8548ec4461a913c1050535da")
+	EventHash          = common.HexToHash("0x155e433be3576195943c515e1096620bc754e11b3a4b60fda7c4628caf373635")
+)
 
 type TxParams struct {
 	From  []byte
 	To    []byte
 	Value *big.Int
 }
-
-//type Chain struct {
-//	SrcChain *big.Int
-//	DstChain *big.Int
-//}
-
 type TxProve struct {
-	Tx               *TxParams
-	Receipt          *types.Receipt
-	Prove            light.NodeList
-	TransactionIndex uint
+	Tx          *TxParams
+	Receipt     *types.Receipt
+	Prove       light.NodeList
+	BlockNumber uint64
+	TxIndex     uint
 }
 
 type Verify struct {
@@ -48,15 +45,21 @@ func (v *Verify) Verify(srcChain, dstChain *big.Int, txProveBytes []byte) error 
 		return err
 	}
 
-	log, number, err := v.getLogAndBlockNumber(txProve.Receipt.Logs)
+	// debug log
+	for i, lg := range txProve.Receipt.Logs {
+		ls, _ := json.Marshal(lg)
+		log.Printf("receipt log-%d: %s\n", i, ls)
+	}
+
+	lg, err := v.queryLog(txProve.Receipt.Logs)
 	if err != nil {
 		return err
 	}
 
-	if err := v.verifyTxParams(srcChain, dstChain, txProve.Tx, log); err != nil {
+	if err := v.verifyTxParams(srcChain, dstChain, txProve.Tx, lg); err != nil {
 		return err
 	}
-	receiptsRoot, err := v.getReceiptsRoot(rawdb.ChainType(srcChain.Uint64()), number)
+	receiptsRoot, err := v.getReceiptsRoot(rawdb.ChainType(srcChain.Uint64()), txProve.BlockNumber)
 	if err != nil {
 		return err
 	}
@@ -72,46 +75,43 @@ func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
 	return &txProve, nil
 }
 
-func (v *Verify) getLogAndBlockNumber(logs []*types.Log) (*types.Log, uint64, error) {
-	for _, log := range logs {
-		if bytes.Equal(log.Address.Bytes(), params.TxVerifyAddress.Bytes()) {
-			if bytes.Equal(log.Topics[0].Bytes(), EventHash.Bytes()) {
-				return log, log.BlockNumber, nil
+func (v *Verify) queryLog(logs []*types.Log) (*types.Log, error) {
+	for _, lg := range logs {
+		if bytes.Equal(lg.Address.Bytes(), RouterContractAddr.Bytes()) {
+			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
+				return lg, nil
 			}
 		}
 	}
-	return nil, 0, errors.New("not found match log")
+	return nil, errors.New("not found match log")
 }
 
 func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *types.Log) error {
-	if len(log.Topics) < 5 {
-		return errors.New("verify tx params failed, the log.topics length must be 5")
+	if len(log.Topics) < 4 {
+		return errors.New("verify tx params failed, the log.Topics`s length cannot be less than 4")
 	}
 
-	// todo
 	//from := strings.ToLower(tx.From.String())
-	topics2 := strings.ToLower(log.Topics[1].String())
-	if !bytes.Equal(tx.From, common.Hex2Bytes(topics2)) {
-		return errors.New("verify tx params failed, From")
+	if !bytes.Equal(common.BytesToHash(tx.From).Bytes(), common.HexToHash(log.Topics[2].Hex()).Bytes()) {
+		return errors.New("verify tx params failed, invalid from")
 	}
-
-	// todo
 	//to := strings.ToLower(tx.To.String())
-	topics3 := strings.ToLower(log.Topics[2].String())
-	if !bytes.Equal(tx.To, common.Hex2Bytes(topics3)) {
-		return errors.New("verify tx params failed")
-	}
-	if !bytes.Equal(common.BigToHash(tx.Value).Bytes(), log.Topics[4].Bytes()) {
-		return errors.New("verify tx params failed， Value")
+	if !bytes.Equal(common.BytesToHash(tx.To).Bytes(), log.Topics[3].Bytes()) {
+		return errors.New("verify tx params failed, invalid to")
 	}
 
-	// todo data split
-	//log.Data
-	if !bytes.Equal(common.BigToHash(srcChain).Bytes(), log.Topics[0].Bytes()) {
-		return errors.New("verify tx params failed, SrcChain")
+	if len(log.Data) < 128 {
+		return errors.New("verify tx params failed, log.Data length cannot be less than 128")
 	}
-	if !bytes.Equal(common.BigToHash(dstChain).Bytes(), log.Topics[1].Bytes()) {
-		return errors.New("verify tx params failed, DstChain")
+
+	if !bytes.Equal(common.BigToHash(tx.Value).Bytes(), log.Data[32:64]) {
+		return errors.New("verify tx params failed， invalid value")
+	}
+	if !bytes.Equal(common.BigToHash(srcChain).Bytes(), log.Data[64:96]) {
+		return errors.New("verify tx params failed, invalid srcChain")
+	}
+	if !bytes.Equal(common.BigToHash(dstChain).Bytes(), log.Data[96:128]) {
+		return errors.New("verify tx params failed, invalid dstChain")
 	}
 
 	return nil
@@ -130,7 +130,7 @@ func (v *Verify) getReceiptsRoot(chain rawdb.ChainType, blockNumber uint64) (com
 }
 
 func (v *Verify) verifyProof(receiptsRoot common.Hash, txProve *TxProve) error {
-	key, err := rlp.EncodeToBytes(txProve.TransactionIndex)
+	key, err := rlp.EncodeToBytes(txProve.TxIndex)
 	if err != nil {
 		return err
 	}
