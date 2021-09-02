@@ -13,13 +13,11 @@ key info details:
 
 ```
 type CrossTxProve struct {
-	Tx           *TxParams
-	Receipt      *types.Receipt
-	Prove        light.NodeList
-	TxIndex      uint
-	BlockNumber  uint64
-	CoinAddr     common.Address
-	ContractAddr common.Address
+	Tx          *TxParams
+	Receipt     *types.Receipt
+	Prove       light.NodeList
+	TxIndex     uint
+	BlockNumber uint64
 }
 
 
@@ -106,7 +104,3 @@ func (db *NodeSet) NodeList() NodeList {
 'CrossTxProve'.'TxIndex' the index of the current transaction in the block transaction list.
 
 'CrossTxProve'.'BlockNumber' the block to which the current transaction belongs.
-
-'CrossTxProve'.'CoinAddr' the address of the token contract.
-
-'CrossTxProve'.'ContractAddr' the address of the contract that generated the cross-chain transaction event.
