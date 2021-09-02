@@ -63,11 +63,14 @@ judge whether the transaction is true and valid by verifying the transaction rec
 
 | parameter| type         | comment |
 | -------- | ------------ | ------- |
+| Router   | Address      | address of the contract that generated the cross-chain transaction event |
+| Coin     | Address      | the address of the token contract |
 | SrcChain | *big.Int     | source chain identification |
 | DstChain | *big.Int     | destination chain identification|
 | TxProve  | [CrossTxProve](https://mapprotocol.github.io/atlas/tx_verify/Tx-Verify) | cross chain transaction prove information |
 
 #### output parameters
+
 | parameter| type         | comment |
 | -------- | ------------ | ------- |
 | success | bool          | if the verification is successful, is true |
@@ -105,6 +108,8 @@ type CrossTxProve struct {
 
 func example() {
 	var (
+	    coin     = common.Address{}
+	    router   = common.Address{}
 		srcChain = big.NewInt(1)
 		dstChain = big.NewInt(211)
 	)
@@ -115,7 +120,7 @@ func example() {
 	}
 
 	ABITxVerify, _ := abi.JSON(strings.NewReader(""))
-	input, err := ABITxVerify.Pack("txVerify", srcChain, dstChain, txProve)
+	input, err := ABITxVerify.Pack("txVerify", router, coin, srcChain, dstChain, txProve)
 	if err != nil {
 		panic(err)
 	}
