@@ -13,10 +13,11 @@ key info details:
 
 ```
 type CrossTxProve struct {
-	Tx      *TxParams
-	Receipt *types.Receipt
-	Prove   light.NodeList
-	TxIndex uint
+	Tx          *TxParams
+	Receipt     *types.Receipt
+	Prove       light.NodeList
+	TxIndex     uint
+	BlockNumber uint64
 }
 
 
@@ -101,3 +102,5 @@ func (db *NodeSet) NodeList() NodeList {
 ```
 
 'CrossTxProve'.'TxIndex' the index of the current transaction in the block transaction list.
+
+'CrossTxProve'.'BlockNumber' the block to which the current transaction belongs.

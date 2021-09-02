@@ -35,7 +35,18 @@ tx verify contract is deployed at address:
       }
     ],
     "name": "txVerify",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "message",
+        "type": "string"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   }
@@ -48,16 +59,26 @@ tx verify contract is deployed at address:
 
 judge whether the transaction is true and valid by verifying the transaction receipt
 
-#### parameters
+#### input parameters
 
 | parameter| type         | comment |
 | -------- | ------------ | ------- |
+| Router   | Address      | address of the contract that generated the cross-chain transaction event |
+| Coin     | Address      | the address of the token contract |
 | SrcChain | *big.Int     | source chain identification |
 | DstChain | *big.Int     | destination chain identification|
 | TxProve  | [CrossTxProve](https://mapprotocol.github.io/atlas/tx_verify/Tx-Verify) | cross chain transaction prove information |
 
+#### output parameters
+
+| parameter| type         | comment |
+| -------- | ------------ | ------- |
+| success | bool          | if the verification is successful, is true |
+| message | string        | if the verification is successful, is empty |
+
 ### example
-```go
+
+```
 package main
 
 import (
@@ -78,14 +99,17 @@ type BaseParams struct {
 }
 
 type CrossTxProve struct {
-	Tx      *BaseParams
-	Receipt *types.Receipt
-	Prove   light.NodeList
-	TxIndex uint
+	Tx          *BaseParams
+	Receipt     *types.Receipt
+	Prove       light.NodeList
+	BlockNumber uint64
+	TxIndex     uint
 }
 
 func example() {
 	var (
+	    coin     = common.Address{}
+	    router   = common.Address{}
 		srcChain = big.NewInt(1)
 		dstChain = big.NewInt(211)
 	)
@@ -96,7 +120,7 @@ func example() {
 	}
 
 	ABITxVerify, _ := abi.JSON(strings.NewReader(""))
-	input, err := ABITxVerify.Pack("txVerify", srcChain, dstChain, txProve)
+	input, err := ABITxVerify.Pack("txVerify", router, coin, srcChain, dstChain, txProve)
 	if err != nil {
 		panic(err)
 	}

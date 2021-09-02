@@ -4,10 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/txverify"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/params"
 	"log"
 	"math/big"
 	"testing"
@@ -19,7 +15,11 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/mapprotocol/atlas/chains/txverify/ethereum"
+
+	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/chains/txverify"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var ReceiptsJSON = `[
@@ -202,10 +202,6 @@ func TestReceiptsRootAndProof(t *testing.T) {
 		srcChain = big.NewInt(1)
 		dstChain = big.NewInt(211)
 	)
-
-	if err := new(ethereum.Verify).Verify(srcChain, dstChain, getTxProve()); err != nil {
-		t.Fatal(err)
-	}
 
 	group, err := chains.ChainType2ChainGroup(rawdb.ChainType(srcChain.Uint64()))
 	if err != nil {
