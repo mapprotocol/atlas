@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	RouterContractAddr = common.HexToAddress("0x531d3c9de79339be8548ec4461a913c1050535da")
-	EventHash          = common.HexToHash("0x155e433be3576195943c515e1096620bc754e11b3a4b60fda7c4628caf373635")
+	// EventHash cross-chain transaction event hash
+	EventHash = common.HexToHash("0x155e433be3576195943c515e1096620bc754e11b3a4b60fda7c4628caf373635")
 )
 
 type TxParams struct {
@@ -30,11 +30,13 @@ type TxParams struct {
 }
 
 type TxProve struct {
-	Tx          *TxParams
-	Receipt     *types.Receipt
-	Prove       light.NodeList
-	BlockNumber uint64
-	TxIndex     uint
+	Tx           *TxParams
+	Receipt      *types.Receipt
+	Prove        light.NodeList
+	BlockNumber  uint64
+	TxIndex      uint
+	CoinAddr     common.Address // the address of the token contract
+	ContractAddr common.Address // address of the contract that generated the cross-chain transaction event
 }
 
 type Verify struct {
@@ -52,7 +54,7 @@ func (v *Verify) Verify(srcChain, dstChain *big.Int, txProveBytes []byte) error 
 		log.Printf("receipt log-%d: %s\n", i, ls)
 	}
 
-	lg, err := v.queryLog(txProve.Receipt.Logs)
+	lg, err := v.queryLog(txProve.ContractAddr, txProve.Receipt.Logs)
 	if err != nil {
 		return err
 	}
@@ -76,9 +78,9 @@ func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
 	return &txProve, nil
 }
 
-func (v *Verify) queryLog(logs []*types.Log) (*types.Log, error) {
+func (v *Verify) queryLog(contractAddr common.Address, logs []*types.Log) (*types.Log, error) {
 	for _, lg := range logs {
-		if bytes.Equal(lg.Address.Bytes(), RouterContractAddr.Bytes()) {
+		if bytes.Equal(lg.Address.Bytes(), contractAddr.Bytes()) {
 			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
 				return lg, nil
 			}
