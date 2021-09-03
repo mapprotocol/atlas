@@ -8,4 +8,4 @@
 .DS_Store
 
 # used by the Makefile
-/build/bin/
+build/bin/
