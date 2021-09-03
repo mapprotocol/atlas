@@ -1,14 +1,15 @@
-package vm
+package ethereum
 
 import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
+
 	"log"
 	"math/big"
 	"testing"
 
+	//sm "github.com/cch123/supermonkey"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -18,11 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"gopkg.in/urfave/cli.v1"
 
-	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/chains/txverify"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/params"
 )
 
 var ReceiptsJSON = `[
@@ -60,26 +57,6 @@ var ReceiptsJSON = `[
   }
 ]`
 
-var (
-	fromAddr  = common.HexToAddress("0x1aec262a9429eb9167ac4033aaf8b4239c2743fe")
-	toAddr    = common.HexToAddress("0x970e05ffbb2c4a3b80082e82b24f48a29a9c7651")
-	SendValue = big.NewInt(588)
-)
-
-type TxParams struct {
-	From  []byte
-	To    []byte
-	Value *big.Int
-}
-
-type TxProve struct {
-	Tx               *TxParams
-	Receipt          *types.Receipt
-	Prove            light.NodeList
-	BlockNumber      uint64
-	TransactionIndex uint
-}
-
 func dialConn() *ethclient.Client {
 	conn, err := ethclient.Dial("http://192.168.10.215:8545")
 	if err != nil {
@@ -105,40 +82,37 @@ func getTransactionsHashByBlockNumber(conn *ethclient.Client, number *big.Int) [
 }
 
 func getReceiptsByTxsHash(conn *ethclient.Client, txsHash []common.Hash) []*types.Receipt {
-	//rs := make([]*types.Receipt, 0, len(txsHash))
-	//for _, h := range txsHash {
-	//	r, err := conn.TransactionReceipt(context.Background(), h)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	if r == nil {
-	//		panic("failed to connect to the eth node, please check the network")
-	//	}
-	//	rs = append(rs, r)
-	//}
-	//return rs
-
-	return GetReceiptsFromJSON()
+	rs := make([]*types.Receipt, 0, len(txsHash))
+	for _, h := range txsHash {
+		r, err := conn.TransactionReceipt(context.Background(), h)
+		if err != nil {
+			panic(err)
+		}
+		if r == nil {
+			panic("failed to connect to the eth node, please check the network")
+		}
+		rs = append(rs, r)
+	}
+	return rs
 }
 
-func GetReceiptsFromJSON() []*types.Receipt {
+func GetReceiptsFromJSON(receiptsJSON string) []*types.Receipt {
 	var rs []*types.Receipt
-	if err := json.Unmarshal([]byte(ReceiptsJSON), &rs); err != nil {
+	if err := json.Unmarshal([]byte(receiptsJSON), &rs); err != nil {
 		panic(err)
 	}
 	return rs
 }
 
-func getTxProve() []byte {
-	var (
-		blockNumber           = big.NewInt(273)
-		transactionIndex uint = 0
-	)
+func getTxProve(blockNumber uint64, txIndex uint, receiptsJSON string, txParams *TxParams) []byte {
 
-	// 调用以太坊接口获取 receipts
+	// get receipts from eth node
 	//conn := dialConn()
 	//txsHash := getTransactionsHashByBlockNumber(conn, blockNumber)
-	receipts := getReceiptsByTxsHash(nil, nil)
+	//receipts := getReceiptsByTxsHash(conn, txsHash)
+
+	// get receipts from json
+	receipts := GetReceiptsFromJSON(receiptsJSON)
 
 	// 根据 receipts 生成 trie
 	tr, err := trie.New(common.Hash{}, trie.NewDatabase(memorydb.New()))
@@ -159,7 +133,7 @@ func getTxProve() []byte {
 	}
 
 	proof := light.NewNodeSet()
-	key, err := rlp.EncodeToBytes(transactionIndex)
+	key, err := rlp.EncodeToBytes(txIndex)
 	if err != nil {
 		panic(err)
 	}
@@ -169,14 +143,14 @@ func getTxProve() []byte {
 
 	txProve := TxProve{
 		Tx: &TxParams{
-			From:  fromAddr.Bytes(),
-			To:    toAddr.Bytes(),
-			Value: SendValue,
+			From:  txParams.From,
+			To:    txParams.To,
+			Value: txParams.Value,
 		},
-		Receipt:          receipts[transactionIndex],
-		Prove:            proof.NodeList(),
-		BlockNumber:      blockNumber.Uint64(),
-		TransactionIndex: transactionIndex,
+		Receipt:     receipts[txIndex],
+		Prove:       proof.NodeList(),
+		BlockNumber: blockNumber,
+		TxIndex:     txIndex,
 	}
 
 	input, err := rlp.EncodeToBytes(txProve)
@@ -186,31 +160,54 @@ func getTxProve() []byte {
 	return input
 }
 
-func TestReceiptsRootAndProof(t *testing.T) {
-	var (
-		srcChain = big.NewInt(1)
-		dstChain = big.NewInt(211)
-		router   = common.HexToAddress("0xd6199276959b95a68c1ee30e8569f5fe060903a6")
-	)
-
-	group, err := chains.ChainType2ChainGroup(rawdb.ChainType(srcChain.Uint64()))
-	if err != nil {
-		t.Fatal(err)
+func TestVerify_Verify(t *testing.T) {
+	type args struct {
+		router       common.Address
+		srcChain     *big.Int
+		dstChain     *big.Int
+		blockNumber  uint64
+		txIndex      uint
+		receiptsJSON string
+		txParams     *TxParams
 	}
-
-	set := flag.NewFlagSet("test", 0)
-	chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
-
-	v, err := txverify.Factory(group)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name            string
+		args            args
+		wantErr         bool
+		wantReceiptHash common.Hash
+	}{
+		{
+			name: "",
+			args: args{
+				router:       common.HexToAddress("0xd6199276959b95a68c1ee30e8569f5fe060903a6"),
+				srcChain:     big.NewInt(10),
+				dstChain:     big.NewInt(211),
+				blockNumber:  273,
+				txIndex:      0,
+				receiptsJSON: ReceiptsJSON,
+				txParams: &TxParams{
+					From:  common.HexToAddress("0x1aec262a9429eb9167ac4033aaf8b4239c2743fe").Bytes(),
+					To:    common.HexToAddress("0x970e05ffbb2c4a3b80082e82b24f48a29a9c7651").Bytes(),
+					Value: big.NewInt(588),
+				},
+			},
+			wantErr:         false,
+			wantReceiptHash: common.HexToHash("0x27022c6416c6a79e82c97f1d25f90b8543ea15fc5adfe11ec941d5ab0dec6d28"),
+		},
 	}
-	if err := v.Verify(router, srcChain, dstChain, getTxProve()); err != nil {
-		t.Fatal(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			//patch := sm.PatchByFullSymbolName("github.com/mapprotocol/atlas/chains/txverify/ethereum.(*Verify).getReceiptsRoot", func(chain rawdb.ChainType, blockNumber uint64) (common.Hash, error) {
+			//	return tt.wantReceiptHash, nil
+			//})
+			//defer patch.Unpatch()
+
+			set := flag.NewFlagSet("test", 0)
+			chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
+			txProve := getTxProve(tt.args.blockNumber, tt.args.txIndex, tt.args.receiptsJSON, tt.args.txParams)
+			if err := new(Verify).Verify(tt.args.router, tt.args.srcChain, tt.args.dstChain, txProve); (err != nil) != tt.wantErr {
+				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
-}
-
-func TestAddr(t *testing.T) {
-	fmt.Println("============================== addr: ", params.TxVerifyAddress)
-
 }

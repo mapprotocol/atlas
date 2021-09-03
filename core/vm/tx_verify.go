@@ -1,10 +1,12 @@
 package vm
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -54,6 +56,8 @@ func RunTxVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 
 func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	args := struct {
+		Router   common.Address
+		Coin     common.Address
 		SrcChain *big.Int
 		DstChain *big.Int
 		TxProve  []byte
@@ -84,6 +88,13 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		return nil, err
 	}
 
+	// params check
+	if bytes.Equal(args.Router.Bytes(), common.Address{}.Bytes()) {
+		return nil, errors.New("router address is empty")
+	}
+	if bytes.Equal(args.Coin.Bytes(), common.Address{}.Bytes()) {
+		return nil, errors.New("router address is empty")
+	}
 	if !chains.IsSupportedChain(rawdb.ChainType(args.DstChain.Uint64())) {
 		return nil, ErrNotSupportChain
 	}
@@ -96,5 +107,5 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if err != nil {
 		return nil, err
 	}
-	return nil, v.Verify(args.SrcChain, args.DstChain, args.TxProve)
+	return nil, v.Verify(args.Router, args.SrcChain, args.DstChain, args.TxProve)
 }
