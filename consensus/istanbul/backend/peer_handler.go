@@ -17,7 +17,7 @@
 package backend
 
 import (
-	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/p2p"
 	"sync"
 	"time"
 
@@ -117,14 +117,14 @@ func (vph *validatorPeerHandler) AddValidatorPeer(node *enode.Node, address comm
 		return
 	}
 	if valConnSet[address] && valConnSet[vph.sb.ValidatorAddress()] {
-		vph.sb.p2pserver.AddPeer(node, consensus.ValidatorPurpose)
-		vph.sb.p2pserver.AddTrustedPeer(node, consensus.ValidatorPurpose)
+		vph.sb.p2pserver.AddPeer(node, p2p.ValidatorPurpose)
+		vph.sb.p2pserver.AddTrustedPeer(node, p2p.ValidatorPurpose)
 	}
 }
 
 func (vph *validatorPeerHandler) RemoveValidatorPeer(node *enode.Node) {
-	vph.sb.p2pserver.RemovePeer(node, consensus.ValidatorPurpose)
-	vph.sb.p2pserver.RemoveTrustedPeer(node, consensus.ValidatorPurpose)
+	vph.sb.p2pserver.RemovePeer(node, p2p.ValidatorPurpose)
+	vph.sb.p2pserver.RemoveTrustedPeer(node, p2p.ValidatorPurpose)
 }
 
 func (vph *validatorPeerHandler) ReplaceValidatorPeers(newNodes []*enode.Node) {
@@ -134,7 +134,7 @@ func (vph *validatorPeerHandler) ReplaceValidatorPeers(newNodes []*enode.Node) {
 	}
 
 	// Remove old Validator Peers
-	for existingPeerID, existingPeer := range vph.sb.broadcaster.FindPeers(nil, consensus.ValidatorPurpose) {
+	for existingPeerID, existingPeer := range vph.sb.broadcaster.FindPeers(nil, p2p.ValidatorPurpose) {
 		if !nodeIDSet[existingPeerID] {
 			vph.RemoveValidatorPeer(existingPeer.Node())
 		}
@@ -143,23 +143,23 @@ func (vph *validatorPeerHandler) ReplaceValidatorPeers(newNodes []*enode.Node) {
 	if vph.MaintainValConnections() {
 		// Add new Validator Peers (adds all the nodes in newNodes.  Note that add is noOp on already existent ones)
 		for _, newNode := range newNodes {
-			vph.sb.p2pserver.AddPeer(newNode, consensus.ValidatorPurpose)
-			vph.sb.p2pserver.AddTrustedPeer(newNode, consensus.ValidatorPurpose)
+			vph.sb.p2pserver.AddPeer(newNode, p2p.ValidatorPurpose)
+			vph.sb.p2pserver.AddTrustedPeer(newNode, p2p.ValidatorPurpose)
 		}
 	}
 }
 
 func (vph *validatorPeerHandler) ClearValidatorPeers() {
-	for _, peer := range vph.sb.broadcaster.FindPeers(nil, consensus.ValidatorPurpose) {
-		vph.sb.p2pserver.RemovePeer(peer.Node(), consensus.ValidatorPurpose)
-		vph.sb.p2pserver.RemoveTrustedPeer(peer.Node(), consensus.ValidatorPurpose)
+	for _, peer := range vph.sb.broadcaster.FindPeers(nil, p2p.ValidatorPurpose) {
+		vph.sb.p2pserver.RemovePeer(peer.Node(), p2p.ValidatorPurpose)
+		vph.sb.p2pserver.RemoveTrustedPeer(peer.Node(), p2p.ValidatorPurpose)
 	}
 }
 
-func (sb *Backend) AddPeer(node *enode.Node, purpose consensus.PurposeFlag) {
+func (sb *Backend) AddPeer(node *enode.Node, purpose p2p.PurposeFlag) {
 	sb.p2pserver.AddPeer(node, purpose)
 }
 
-func (sb *Backend) RemovePeer(node *enode.Node, purpose consensus.PurposeFlag) {
+func (sb *Backend) RemovePeer(node *enode.Node, purpose p2p.PurposeFlag) {
 	sb.p2pserver.RemovePeer(node, purpose)
 }

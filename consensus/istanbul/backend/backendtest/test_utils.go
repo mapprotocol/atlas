@@ -21,10 +21,10 @@ import (
 	"github.com/mapprotocol/atlas/core/chain"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 type TestBackendInterface interface {

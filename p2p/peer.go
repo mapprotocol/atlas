@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/mapprotocol/atlas/consensus"
 	"io"
 	"net"
 	"sort"
@@ -73,42 +72,42 @@ type Peer struct {
 	events *event.Feed
 
 	purposesMu sync.Mutex
-	purposes   consensus.PurposeFlag
+	purposes   PurposeFlag
 
 	Server *Server
 }
 
-func (p *Peer) AddPurpose(purpose consensus.PurposeFlag) {
+func (p *Peer) AddPurpose(purpose PurposeFlag) {
 	p.purposesMu.Lock()
 	defer p.purposesMu.Unlock()
 
 	// assumes we are still connected...
-	if purpose.IsSet(consensus.ValidatorPurpose) && !p.purposes.IsSet(consensus.ValidatorPurpose) {
+	if purpose.IsSet(ValidatorPurpose) && !p.purposes.IsSet(ValidatorPurpose) {
 		activeValidatorsPeerGauge.Inc(1)
 	}
-	if purpose.IsSet(consensus.ProxyPurpose) && !p.purposes.IsSet(consensus.ProxyPurpose) {
+	if purpose.IsSet(ProxyPurpose) && !p.purposes.IsSet(ProxyPurpose) {
 		activeProxiesPeerGauge.Inc(1)
 	}
 
 	p.purposes = p.purposes.Add(purpose)
 }
 
-func (p *Peer) RemovePurpose(purpose consensus.PurposeFlag) {
+func (p *Peer) RemovePurpose(purpose PurposeFlag) {
 	p.purposesMu.Lock()
 	defer p.purposesMu.Unlock()
 
 	// assumes we are still connected...
-	if purpose.IsSet(consensus.ValidatorPurpose) && p.purposes.IsSet(consensus.ValidatorPurpose) {
+	if purpose.IsSet(ValidatorPurpose) && p.purposes.IsSet(ValidatorPurpose) {
 		activeValidatorsPeerGauge.Dec(1)
 	}
-	if purpose.IsSet(consensus.ProxyPurpose) && p.purposes.IsSet(consensus.ProxyPurpose) {
+	if purpose.IsSet(ProxyPurpose) && p.purposes.IsSet(ProxyPurpose) {
 		activeProxiesPeerGauge.Dec(1)
 	}
 
 	p.purposes = p.purposes.Remove(purpose)
 }
 
-func (p *Peer) HasPurpose(purpose consensus.PurposeFlag) bool {
+func (p *Peer) HasPurpose(purpose PurposeFlag) bool {
 	return p.purposes.IsSet(purpose)
 }
 
@@ -213,10 +212,10 @@ loop:
 
 	// Decrease connection metrics for proxies & validators
 	p.purposesMu.Lock()
-	if p.purposes.IsSet(consensus.ValidatorPurpose) {
+	if p.purposes.IsSet(ValidatorPurpose) {
 		activeValidatorsPeerGauge.Dec(1)
 	}
-	if p.purposes.IsSet(consensus.ProxyPurpose) {
+	if p.purposes.IsSet(ProxyPurpose) {
 		activeProxiesPeerGauge.Dec(1)
 	}
 
@@ -383,6 +382,20 @@ func (p *Peer) Info() *PeerInfo {
 	return info
 }
 
+// RunningCap returns true if the peer is actively connected using any of the
+// enumerated versions of a specific protocol, meaning that at least one of the
+// versions is supported by both this node and the peer p.
+func (p *Peer) RunningCap(protocol string, versions []uint) bool {
+	if proto, ok := p.running[protocol]; ok {
+		for _, ver := range versions {
+			if proto.Version == ver {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type protoRW struct {
 	Protocol
 	in     chan Msg        // receives read messages
@@ -486,7 +499,7 @@ func countMatchingProtocols(protocols []Protocol, caps []Cap) int {
 	return n
 }
 
-func newPeer(log log.Logger, conn *conn, protocols []Protocol, purpose consensus.PurposeFlag, server *Server) *Peer {
+func newPeer(log log.Logger, conn *conn, protocols []Protocol, purpose PurposeFlag, server *Server) *Peer {
 	protomap := matchProtocols(protocols, conn.caps, conn)
 	p := &Peer{
 		rw:       conn,
@@ -501,10 +514,10 @@ func newPeer(log log.Logger, conn *conn, protocols []Protocol, purpose consensus
 	}
 
 	// Increase connection metrics for proxies & validators
-	if p.purposes.IsSet(consensus.ValidatorPurpose) {
+	if p.purposes.IsSet(ValidatorPurpose) {
 		activeValidatorsPeerGauge.Inc(1)
 	}
-	if p.purposes.IsSet(consensus.ProxyPurpose) {
+	if p.purposes.IsSet(ProxyPurpose) {
 		activeProxiesPeerGauge.Inc(1)
 	}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 // This function will return the peers with the addresses in the "destAddresses" parameter.
@@ -35,7 +36,7 @@ func (sb *Backend) getPeersFromDestAddresses(destAddresses []common.Address) map
 			}
 		}
 	}
-	return sb.broadcaster.FindPeers(targets, consensus.AnyPurpose)
+	return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
 }
 
 // Multicast implements istanbul.Backend.Multicast
@@ -83,7 +84,7 @@ func (sb *Backend) Gossip(payload []byte, ethMsgCode uint64) error {
 	logger := sb.logger.New("func", "Gossip")
 
 	// Get all connected peers
-	peersToSendMsg := sb.broadcaster.FindPeers(nil, consensus.AnyPurpose)
+	peersToSendMsg := sb.broadcaster.FindPeers(nil, p2p.AnyPurpose)
 
 	// Mark that this node gossiped/processed this message, so that it will ignore it if
 	// one of it's peers sends the message to it.

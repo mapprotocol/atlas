@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"github.com/mapprotocol/atlas/p2p"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -316,7 +317,7 @@ func (sb *Backend) announceThread() {
 			if shouldQuery {
 				switch queryEnodeFrequencyState {
 				case HighFreqBeforeFirstPeerState:
-					if len(sb.broadcaster.FindPeers(nil, consensus.AnyPurpose)) > 0 {
+					if len(sb.broadcaster.FindPeers(nil, p2p.AnyPurpose)) > 0 {
 						queryEnodeFrequencyState = HighFreqAfterFirstPeerState
 					}
 

@@ -29,12 +29,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -47,7 +47,7 @@ type MockBroadcaster struct{}
 func (b *MockBroadcaster) Enqueue(id string, block *types.Block) {
 }
 
-func (b *MockBroadcaster) FindPeers(targets map[enode.ID]bool, purpose consensus.PurposeFlag) map[enode.ID]consensus.Peer {
+func (b *MockBroadcaster) FindPeers(targets map[enode.ID]bool, purpose p2p.PurposeFlag) map[enode.ID]consensus.Peer {
 	return make(map[enode.ID]consensus.Peer)
 }
 
@@ -78,20 +78,20 @@ func (serv *MockP2PServer) Self() *enode.Node {
 	return serv.Node
 }
 
-func (serv *MockP2PServer) AddPeer(node *enode.Node, purpose consensus.PurposeFlag) {}
+func (serv *MockP2PServer) AddPeer(node *enode.Node, purpose p2p.PurposeFlag) {}
 
-func (serv *MockP2PServer) RemovePeer(node *enode.Node, purpose consensus.PurposeFlag) {}
+func (serv *MockP2PServer) RemovePeer(node *enode.Node, purpose p2p.PurposeFlag) {}
 
-func (serv *MockP2PServer) AddTrustedPeer(node *enode.Node, purpose consensus.PurposeFlag) {}
+func (serv *MockP2PServer) AddTrustedPeer(node *enode.Node, purpose p2p.PurposeFlag) {}
 
-func (serv *MockP2PServer) RemoveTrustedPeer(node *enode.Node, purpose consensus.PurposeFlag) {}
+func (serv *MockP2PServer) RemoveTrustedPeer(node *enode.Node, purpose p2p.PurposeFlag) {}
 
 type MockPeer struct {
 	node     *enode.Node
-	purposes consensus.PurposeFlag
+	purposes p2p.PurposeFlag
 }
 
-func NewMockPeer(node *enode.Node, purposes consensus.PurposeFlag) *MockPeer {
+func NewMockPeer(node *enode.Node, purposes p2p.PurposeFlag) *MockPeer {
 	mockPeer := &MockPeer{node: node, purposes: purposes}
 
 	return mockPeer
@@ -117,7 +117,7 @@ func (mp *MockPeer) Inbound() bool {
 	return false
 }
 
-func (mp *MockPeer) PurposeIsSet(purpose consensus.PurposeFlag) bool {
+func (mp *MockPeer) PurposeIsSet(purpose p2p.PurposeFlag) bool {
 	return true
 }
 

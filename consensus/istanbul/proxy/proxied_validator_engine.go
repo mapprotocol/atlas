@@ -18,6 +18,7 @@ package proxy
 
 import (
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
 	"sync"
 	"time"
 
@@ -70,10 +71,10 @@ type BackendForProxiedValidatorEngine interface {
 	RetrieveValidatorConnSet() (map[common.Address]bool, error)
 
 	// AddPeer will add a static peer
-	AddPeer(node *enode.Node, purpose consensus.PurposeFlag)
+	AddPeer(node *enode.Node, purpose p2p.PurposeFlag)
 
 	// RemovePeer will remove a static peer
-	RemovePeer(node *enode.Node, purpose consensus.PurposeFlag)
+	RemovePeer(node *enode.Node, purpose p2p.PurposeFlag)
 
 	// GetProxiedValidatorEngine returns the proxied validator engine created for this Backend.  This should only be used for the unit tests.
 	GetProxiedValidatorEngine() ProxiedValidatorEngine
@@ -229,7 +230,7 @@ func (pv *proxiedValidatorEngine) RegisterProxyPeer(proxyPeer consensus.Peer) er
 	}
 
 	logger := pv.logger.New("func", "RegisterProxyPeer")
-	if proxyPeer.PurposeIsSet(consensus.ProxyPurpose) {
+	if proxyPeer.PurposeIsSet(p2p.ProxyPurpose) {
 		logger.Info("Got new proxy peer", "proxyPeer", proxyPeer)
 		select {
 		case pv.addProxyPeer <- proxyPeer:
@@ -249,7 +250,7 @@ func (pv *proxiedValidatorEngine) UnregisterProxyPeer(proxyPeer consensus.Peer) 
 		return istanbul.ErrStoppedProxiedValidatorEngine
 	}
 
-	if proxyPeer.PurposeIsSet(consensus.ProxyPurpose) {
+	if proxyPeer.PurposeIsSet(p2p.ProxyPurpose) {
 		select {
 		case pv.removeProxyPeer <- proxyPeer:
 		case <-pv.quit:
@@ -413,7 +414,7 @@ loop:
 				}
 				log.Info("Adding proxy node", "proxyNode", proxyNode, "proxyID", proxyID)
 				ps.addProxy(proxyNode)
-				pv.backend.AddPeer(proxyNode.InternalNode, consensus.ProxyPurpose)
+				pv.backend.AddPeer(proxyNode.InternalNode, p2p.ProxyPurpose)
 			}
 
 		case rmProxyNodes := <-pv.removeProxies:
@@ -440,7 +441,7 @@ loop:
 					pv.backend.UpdateAnnounceVersion()
 					pv.sendValEnodeShareMsgs(ps)
 				}
-				pv.backend.RemovePeer(proxy.node, consensus.ProxyPurpose)
+				pv.backend.RemovePeer(proxy.node, p2p.ProxyPurpose)
 			}
 
 		case connectedPeer := <-pv.addProxyPeer:

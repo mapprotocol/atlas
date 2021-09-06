@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/p2p/netutil"
-	"github.com/mapprotocol/atlas/consensus"
 	"net"
 	"sort"
 	"sync"
@@ -227,7 +226,7 @@ func (srv *Server) inboundCount() int {
 // AddPeer connects to the given node and maintains the connection until the
 // server is shut down. If the connection fails for any reason, the server will
 // attempt to reconnect the peer.
-func (srv *Server) AddPeer(node *enode.Node, purpose consensus.PurposeFlag) {
+func (srv *Server) AddPeer(node *enode.Node, purpose PurposeFlag) {
 	select {
 	case srv.addstatic <- &nodeArgs{node: node, purpose: purpose}:
 	case <-srv.quit:
@@ -235,7 +234,7 @@ func (srv *Server) AddPeer(node *enode.Node, purpose consensus.PurposeFlag) {
 }
 
 // RemovePeer disconnects from the given node
-func (srv *Server) RemovePeer(node *enode.Node, purpose consensus.PurposeFlag) {
+func (srv *Server) RemovePeer(node *enode.Node, purpose PurposeFlag) {
 	done := make(chan struct{})
 	select {
 	case srv.removestatic <- removestaticArgs{nodeArgs: &nodeArgs{node: node, purpose: purpose}, done: done}:
@@ -246,7 +245,7 @@ func (srv *Server) RemovePeer(node *enode.Node, purpose consensus.PurposeFlag) {
 
 // AddTrustedPeer adds the given node to a reserved whitelist which allows the
 // node to always connect, even if the slot are full.
-func (srv *Server) AddTrustedPeer(node *enode.Node, purpose consensus.PurposeFlag) {
+func (srv *Server) AddTrustedPeer(node *enode.Node, purpose PurposeFlag) {
 	select {
 	case srv.addtrusted <- &nodeArgs{node: node, purpose: purpose}:
 	case <-srv.quit:
@@ -254,7 +253,7 @@ func (srv *Server) AddTrustedPeer(node *enode.Node, purpose consensus.PurposeFla
 }
 
 // RemoveTrustedPeer removes the given node from the trusted peer set.
-func (srv *Server) RemoveTrustedPeer(node *enode.Node, purpose consensus.PurposeFlag) {
+func (srv *Server) RemoveTrustedPeer(node *enode.Node, purpose PurposeFlag) {
 	select {
 	case srv.removetrusted <- &nodeArgs{node: node, purpose: purpose}:
 	case <-srv.quit:
@@ -569,23 +568,23 @@ func (srv *Server) run() {
 	defer srv.dialsched.stop()
 
 	var (
-		static       = make(map[enode.ID]consensus.PurposeFlag, len(srv.StaticNodes))
+		static       = make(map[enode.ID]PurposeFlag, len(srv.StaticNodes))
 		peers        = make(map[enode.ID]*Peer)
 		inboundCount = 0
-		trusted      = make(map[enode.ID]consensus.PurposeFlag, len(srv.TrustedNodes))
+		trusted      = make(map[enode.ID]PurposeFlag, len(srv.TrustedNodes))
 	)
 	// Put trusted nodes into a map to speed up checks.
 	// Trusted peers are loaded on startup or added via AddTrustedPeer RPC.
 	for _, n := range srv.TrustedNodes {
-		trusted[n.ID()] = consensus.ExplicitTrustedPurpose
+		trusted[n.ID()] = ExplicitTrustedPurpose
 	}
 
 	// Put static nodes specified in a file into a map.
 	for _, n := range srv.StaticNodes {
-		static[n.ID()] = consensus.ExplicitStaticPurpose
+		static[n.ID()] = ExplicitStaticPurpose
 	}
 
-	addStatic := func(n *enode.Node, purpose consensus.PurposeFlag) {
+	addStatic := func(n *enode.Node, purpose PurposeFlag) {
 		newPurpose := static[n.ID()].Add(purpose)
 		static[n.ID()] = newPurpose
 
@@ -597,7 +596,7 @@ func (srv *Server) run() {
 		srv.dialsched.addStatic(n)
 	}
 
-	removeStatic := func(n *enode.Node, purpose consensus.PurposeFlag, done chan<- struct{}) {
+	removeStatic := func(n *enode.Node, purpose PurposeFlag, done chan<- struct{}) {
 		newPurpose := static[n.ID()].Remove(purpose)
 		disconnecting := false
 		if newPurpose.HasNoPurpose() {
@@ -632,7 +631,7 @@ func (srv *Server) run() {
 		}
 	}
 
-	addTrusted := func(n *enode.Node, purpose consensus.PurposeFlag) {
+	addTrusted := func(n *enode.Node, purpose PurposeFlag) {
 		trusted[n.ID()] = trusted[n.ID()].Add(purpose)
 
 		// Mark any already-connected peer as trusted
@@ -643,7 +642,7 @@ func (srv *Server) run() {
 		}
 	}
 
-	removeTrusted := func(n *enode.Node, purpose consensus.PurposeFlag) {
+	removeTrusted := func(n *enode.Node, purpose PurposeFlag) {
 		newPurpose := trusted[n.ID()].Remove(purpose)
 
 		if newPurpose.HasNoPurpose() {
@@ -973,7 +972,7 @@ func (srv *Server) checkpoint(c *conn, stage chan<- *conn) error {
 	return <-c.cont
 }
 
-func (srv *Server) launchPeer(c *conn, purpose consensus.PurposeFlag) *Peer {
+func (srv *Server) launchPeer(c *conn, purpose PurposeFlag) *Peer {
 	p := newPeer(srv.log, c, srv.Protocols, purpose, srv)
 	if srv.EnableMsgEvents {
 		// If message events are enabled, pass the peerFeed
@@ -1067,7 +1066,7 @@ type transport interface {
 
 type nodeArgs struct {
 	node    *enode.Node
-	purpose consensus.PurposeFlag
+	purpose PurposeFlag
 }
 
 type removestaticArgs struct {
@@ -1229,4 +1228,57 @@ func peersInfo(peers []*Peer) []*PeerInfo {
 		}
 	}
 	return infos
+}
+
+const (
+	NoPurpose              PurposeFlag = 0
+	ExplicitStaticPurpose              = 1 << 0
+	ExplicitTrustedPurpose             = 1 << 1
+	ValidatorPurpose                   = 1 << 2
+	ProxyPurpose                       = 1 << 3
+	AnyPurpose                         = ExplicitStaticPurpose | ExplicitTrustedPurpose | ValidatorPurpose | ProxyPurpose // This value should be the bitwise OR of all possible PurposeFlag values
+)
+
+// Note that this type is NOT threadsafe.  The reason that it is not is that it's read and written
+// only by the p2p server's single threaded event loop.
+type PurposeFlag uint32
+
+func (pf PurposeFlag) Add(f PurposeFlag) PurposeFlag {
+	return pf | f
+}
+
+func (pf PurposeFlag) Remove(f PurposeFlag) PurposeFlag {
+	return pf & ^f
+}
+
+func (pf PurposeFlag) IsSet(f PurposeFlag) bool {
+	return (pf & f) != 0
+}
+
+func (pf PurposeFlag) HasNoPurpose() bool {
+	return pf == NoPurpose
+}
+
+func (pf PurposeFlag) HasPurpose() bool {
+	return pf != NoPurpose
+}
+
+func (pf PurposeFlag) String() string {
+	s := ""
+	if pf.IsSet(ExplicitStaticPurpose) {
+		s += "-ExplicitStaticPurpose"
+	}
+	if pf.IsSet(ExplicitTrustedPurpose) {
+		s += "-ExplicitTrustedPurpose"
+	}
+	if pf.IsSet(ValidatorPurpose) {
+		s += "-ValidatorPurpose"
+	}
+	if pf.IsSet(ProxyPurpose) {
+		s += "-ProxyPurpose"
+	}
+	if s != "" {
+		s = s[1:]
+	}
+	return s
 }

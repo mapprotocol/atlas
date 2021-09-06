@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -47,6 +48,10 @@ type Msg struct {
 	meterCap  Cap    // Protocol name and version for egress metering
 	meterCode uint64 // Message within protocol for egress metering
 	meterSize uint32 // Compressed message size for ingress metering
+}
+
+func (msg Msg) Time() time.Time {
+	return msg.ReceivedAt
 }
 
 // Decode parses the RLP content of a message into
@@ -164,4 +169,35 @@ func newMsgEventer(rw MsgReadWriter, feed *event.Feed, peerID enode.ID, proto, r
 		remoteAddress: remote,
 		localAddress:  local,
 	}
+}
+
+// ExpectMsg reads a message from r and verifies that its
+// code and encoded RLP content match the provided values.
+// If content is nil, the payload is discarded and not verified.
+func ExpectMsg(r MsgReader, code uint64, content interface{}) error {
+	msg, err := r.ReadMsg()
+	if err != nil {
+		return err
+	}
+	if msg.Code != code {
+		return fmt.Errorf("message code mismatch: got %d, expected %d", msg.Code, code)
+	}
+	if content == nil {
+		return msg.Discard()
+	}
+	contentEnc, err := rlp.EncodeToBytes(content)
+	if err != nil {
+		panic("content encode error: " + err.Error())
+	}
+	if int(msg.Size) != len(contentEnc) {
+		return fmt.Errorf("message size mismatch: got %d, want %d", msg.Size, len(contentEnc))
+	}
+	actualContent, err := ioutil.ReadAll(msg.Payload)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(actualContent, contentEnc) {
+		return fmt.Errorf("message payload mismatch:\ngot:  %x\nwant: %x", actualContent, contentEnc)
+	}
+	return nil
 }

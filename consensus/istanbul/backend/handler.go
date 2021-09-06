@@ -23,13 +23,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 var (
@@ -406,7 +406,7 @@ func (sb *Backend) Handshake(peer consensus.Peer) (bool, error) {
 	sendHandshake := func() {
 		var msg *istanbul.Message
 		var err error
-		peerIsValidator := peer.PurposeIsSet(consensus.ValidatorPurpose)
+		peerIsValidator := peer.PurposeIsSet(p2p.ValidatorPurpose)
 		if peerIsValidator {
 			enodeCertMsg := sb.RetrieveEnodeCertificateMsgMap()[sb.SelfNode().ID()]
 			if enodeCertMsg != nil {

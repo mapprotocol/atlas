@@ -23,11 +23,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/mapprotocol/atlas/helper/debug"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/helper/debug"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 // apis returns the collection of built-in RPC APIs.
@@ -74,7 +74,7 @@ func (api *privateAdminAPI) AddPeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.AddPeer(node)
+	server.AddPeer(node, p2p.ExplicitStaticPurpose)
 	return true, nil
 }
 
@@ -90,7 +90,7 @@ func (api *privateAdminAPI) RemovePeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.RemovePeer(node)
+	server.RemovePeer(node, p2p.ExplicitStaticPurpose)
 	return true, nil
 }
 
@@ -105,7 +105,7 @@ func (api *privateAdminAPI) AddTrustedPeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.AddTrustedPeer(node)
+	server.AddTrustedPeer(node, p2p.ExplicitTrustedPurpose)
 	return true, nil
 }
 
@@ -121,7 +121,7 @@ func (api *privateAdminAPI) RemoveTrustedPeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.RemoveTrustedPeer(node)
+	server.RemoveTrustedPeer(node, p2p.ExplicitTrustedPurpose)
 	return true, nil
 }
 

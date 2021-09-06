@@ -59,7 +59,6 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/metrics/exp"
 	"github.com/ethereum/go-ethereum/metrics/influxdb"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/p2p/netutil"
@@ -67,6 +66,7 @@ import (
 	pcsclite "github.com/gballet/go-libpcsclite"
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/miner"
+	"github.com/mapprotocol/atlas/p2p"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"gopkg.in/urfave/cli.v1"
 )
