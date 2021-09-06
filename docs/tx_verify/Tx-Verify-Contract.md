@@ -19,6 +19,16 @@ tx verify contract is deployed at address:
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "router",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "coin",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "srcChain",
         "type": "uint256"
