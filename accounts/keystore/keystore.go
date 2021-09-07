@@ -24,6 +24,9 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
+	"github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/crypto/ecies"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -32,11 +35,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 var (
@@ -504,4 +507,66 @@ func zeroKey(k *ecdsa.PrivateKey) {
 	for i := range b {
 		b[i] = 0
 	}
+}
+
+// Decrypt decrypts an ECIES ciphertext.
+func (ks *KeyStore) Decrypt(a accounts.Account, c, s1, s2 []byte) ([]byte, error) {
+	// Look up the key to sign with and abort if it cannot be found
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	unlockedKey, found := ks.unlocked[a.Address]
+	if !found {
+		return nil, ErrLocked
+	}
+	// Import the ECDSA key as an ECIES key and decrypt the data.
+	eciesKey := ecies.ImportECDSA(unlockedKey.PrivateKey)
+	return eciesKey.Decrypt(c, s1, s2)
+}
+
+func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+	// Look up the key to sign with and abort if it cannot be found
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	unlockedKey, found := ks.unlocked[a.Address]
+	if !found {
+		return blscrypto.SerializedSignature{}, ErrLocked
+	}
+
+	privateKeyBytes, err := blscrypto.ECDSAToBLS(unlockedKey.PrivateKey)
+	if err != nil {
+		return blscrypto.SerializedSignature{}, err
+	}
+
+	privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+	if err != nil {
+		return blscrypto.SerializedSignature{}, err
+	}
+	defer privateKey.Destroy()
+
+	signature, err := privateKey.SignMessage(msg, extraData, useComposite, cip22)
+	if err != nil {
+		return blscrypto.SerializedSignature{}, err
+	}
+	defer signature.Destroy()
+	signatureBytes, err := signature.Serialize()
+	if err != nil {
+		return blscrypto.SerializedSignature{}, err
+	}
+
+	return blscrypto.SerializedSignatureFromBytes(signatureBytes)
+}
+
+// Retrieve the ECDSA public key for a given account.
+func (ks *KeyStore) GetPublicKey(a accounts.Account) (*ecdsa.PublicKey, error) {
+	// Look up the key to sign with and abort if it cannot be found
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	unlockedKey, found := ks.unlocked[a.Address]
+	if !found {
+		return nil, ErrLocked
+	}
+	return &unlockedKey.PrivateKey.PublicKey, nil
 }

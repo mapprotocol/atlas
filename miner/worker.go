@@ -57,7 +57,6 @@ const (
 	// intervalAdjustBias is applied during the new resubmit interval calculation in favor of
 	// increasing upper limit or decreasing lower limit so that the limit can be reachable.
 	intervalAdjustBias = 200 * 1000.0 * 1000.0
-
 )
 
 // task contains all information for consensus engine sealing and result submitting.
@@ -88,8 +87,8 @@ type worker struct {
 	chainHeadSub event.Subscription
 
 	// Channels
-	startCh            chan struct{}
-	exitCh             chan struct{}
+	startCh chan struct{}
+	exitCh  chan struct{}
 
 	mu             sync.RWMutex // The lock used to protect the coinbase and extra fields
 	coinbase       common.Address
@@ -103,9 +102,9 @@ type worker struct {
 	running int32 // The indicator whether the consensus engine is running or not.
 
 	// Test hooks
-	newTaskHook  func(*task)                        // Method to call upon receiving a new sealing task.
-	skipSealHook func(*task) bool                   // Method to decide whether skipping the sealing.
-	fullTaskHook func()                             // Method to call before pushing the full sealing task.
+	newTaskHook  func(*task)      // Method to call upon receiving a new sealing task.
+	skipSealHook func(*task) bool // Method to decide whether skipping the sealing.
+	fullTaskHook func()           // Method to call before pushing the full sealing task.
 
 	// Needed for randomness
 	db ethdb.Database
@@ -115,18 +114,18 @@ type worker struct {
 
 func newWorker(config *Config, chainConfig *params2.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
 	worker := &worker{
-		config:              config,
-		chainConfig:         chainConfig,
-		engine:              engine,
-		eth:                 eth,
-		mux:                 mux,
-		chain:               eth.BlockChain(),
+		config:      config,
+		chainConfig: chainConfig,
+		engine:      engine,
+		eth:         eth,
+		mux:         mux,
+		chain:       eth.BlockChain(),
 
-		txsCh:               make(chan core.NewTxsEvent, txChanSize),
-		chainHeadCh:         make(chan core.ChainHeadEvent, chainHeadChanSize),
+		txsCh:       make(chan core.NewTxsEvent, txChanSize),
+		chainHeadCh: make(chan core.ChainHeadEvent, chainHeadChanSize),
 
-		exitCh:              make(chan struct{}),
-		startCh:             make(chan struct{}, 1),
+		exitCh:  make(chan struct{}),
+		startCh: make(chan struct{}, 1),
 
 		db:                  db,
 		blockConstructGauge: metrics.NewRegisteredGauge("miner/worker/block_construct", nil),
@@ -135,7 +134,6 @@ func newWorker(config *Config, chainConfig *params2.ChainConfig, engine consensu
 	worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
 	// Subscribe events for blockchain
 	worker.chainHeadSub = eth.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
-
 
 	go worker.mainLoop()
 
@@ -235,9 +233,9 @@ func (w *worker) mainLoop() {
 
 		if w.isRunning() {
 			// engine.NewWork posts the FinalCommitted Event to IBFT to signal the start of the next round
-			//if h, ok := w.engine.(consensus.Handler); ok {
-			//	h.NewWork()
-			//}
+			if h, ok := w.engine.(consensus.Handler); ok {
+				h.NewWork()
+			}
 
 			go func() {
 				w.constructAndSubmitNewBlock(taskCtx)
@@ -425,7 +423,7 @@ func (w *worker) submitTaskToEngine(task *task) {
 		return
 	}
 
-	if err := w.engine.Seal(w.chain, task.block,nil,nil); err != nil {
+	if err := w.engine.Seal(w.chain, task.block, nil, nil); err != nil {
 		log.Warn("Block sealing failed", "err", err)
 	}
 }

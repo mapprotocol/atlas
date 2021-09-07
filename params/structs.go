@@ -99,6 +99,9 @@ type ChainConfig struct {
 	// This does not belong here but passing it to every function is not possible since that breaks
 	// some implemented interfaces and introduces churn across the geth codebase.
 	FullHeaderChainAvailable bool // False for lightest Sync mode, true otherwise
+
+	// Requests mock engine if true
+	Faker bool `json:"faker,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.

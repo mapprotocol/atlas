@@ -34,6 +34,8 @@ import (
 	"github.com/mapprotocol/atlas/core/txsdetails"
 	"github.com/mapprotocol/atlas/core/types"
 	params2 "github.com/mapprotocol/atlas/params"
+	"math/big"
+	"time"
 )
 
 // Backend wraps all methods required for mining.
@@ -44,14 +46,14 @@ type Backend interface {
 
 // Config is the configuration parameters of mining.
 type Config struct {
-	Etherbase  common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
+	Etherbase common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
 	//Notify     []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in ethash).
 	//NotifyFull bool           `toml:",omitempty"` // Notify with pending block headers instead of work packages
-	ExtraData  hexutil.Bytes  `toml:",omitempty"` // Block extra data set by the miner
-	//GasFloor   uint64         // Target gas floor for mined blocks.
-	//GasCeil    uint64         // Target gas ceiling for mined blocks.
-	//GasPrice   *big.Int       // Minimum gas price for mining a transaction
-	//Recommit   time.Duration  // The time interval for miner to re-create mining work.
+	ExtraData hexutil.Bytes `toml:",omitempty"` // Block extra data set by the miner
+	GasFloor  uint64        // Target gas floor for mined blocks.
+	GasCeil   uint64        // Target gas ceiling for mined blocks.
+	GasPrice  *big.Int      // Minimum gas price for mining a transaction
+	Recommit  time.Duration // The time interval for miner to re-create mining work.
 	//Noverify   bool           // Disable remote mining solution verification(only useful in ethash).
 }
 
@@ -187,8 +189,10 @@ func (miner *Miner) update() {
 	}
 }
 
-func (miner *Miner) Start(coinbase common.Address) {
-	miner.startCh <- coinbase
+func (miner *Miner) Start(validator common.Address, txFeeRecipient common.Address) {
+	miner.SetEtherbase(validator)
+	miner.SetTxFeeRecipient(txFeeRecipient)
+	miner.startCh <- validator
 }
 
 func (miner *Miner) Stop() {
@@ -269,4 +273,3 @@ func (miner *Miner) SetTxFeeRecipient(addr common.Address) {
 func (miner *Miner) SubscribePendingLogs(ch chan<- []*types.Log) event.Subscription {
 	return miner.worker.pendingLogsFeed.Subscribe(ch)
 }
-

@@ -20,7 +20,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
 	"net"
 	"runtime"
@@ -203,7 +202,7 @@ func (e *MockEngine) FinalizeAndAssemble(chain consensus.ChainHeaderReader, head
 
 	// Header seems complete, assemble into a block and return
 	//return types.NewBlock(header, txs, nil, receipts, randomness), nil
-	return types.NewBlock(header, txs, nil, receipts, trie.NewStackTrie(nil)), nil
+	return types.NewBlock(header, txs, receipts, randomness), nil
 }
 
 func (e *MockEngine) Author(header *types.Header) (common.Address, error) {

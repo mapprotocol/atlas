@@ -163,6 +163,7 @@ var (
 		},
 
 		true,
+		true,
 	}
 
 	TestChainConfig = &ChainConfig{
@@ -194,6 +195,7 @@ var (
 			LookbackWindow: 12,
 		},
 		true,
+		true,
 	}
 
 	IstanbulTestChainConfig = &ChainConfig{
@@ -222,6 +224,7 @@ var (
 			RequestTimeout: 1000,
 			BlockPeriod:    1,
 		},
+		true,
 		false,
 	}
 )

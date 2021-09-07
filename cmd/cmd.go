@@ -67,12 +67,12 @@ var (
 		utils.SmartCardDaemonPathFlag,
 		utils.OverrideBerlinFlag,
 		utils.EthashCacheDirFlag,
-		utils.EthashCachesInMemoryFlag,
-		utils.EthashCachesOnDiskFlag,
+		//utils.EthashCachesInMemoryFlag,
+		//utils.EthashCachesOnDiskFlag,
 		utils.EthashCachesLockMmapFlag,
-		utils.EthashDatasetDirFlag,
-		utils.EthashDatasetsInMemoryFlag,
-		utils.EthashDatasetsOnDiskFlag,
+		//utils.EthashDatasetDirFlag,
+		//utils.EthashDatasetsInMemoryFlag,
+		//utils.EthashDatasetsOnDiskFlag,
 		utils.EthashDatasetsLockMmapFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
@@ -211,7 +211,7 @@ func init() {
 		makedagCommand,
 		versionCommand,
 		licenseCommand,
-		// See config.go
+		// See config2.go
 		dumpConfigCommand,
 		// see dbcmd.go
 		dbCommand,

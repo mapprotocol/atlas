@@ -25,8 +25,6 @@ import (
 	"github.com/mapprotocol/atlas/core/vm"
 )
 
-
-
 // NewEVMBlockContext creates a new context for use in the EVM.
 func NewEVMBlockContext(header *types.Header, chain abstract.ChainContext, author *common.Address) vm.BlockContext {
 	// If we don't have an explicit author (i.e. not mining), extract from the header
@@ -43,7 +41,7 @@ func NewEVMBlockContext(header *types.Header, chain abstract.ChainContext, autho
 		Coinbase:    beneficiary,
 		BlockNumber: new(big.Int).Set(header.Number),
 		Time:        new(big.Int).SetUint64(header.Time),
-		Difficulty:  new(big.Int).Set(header.Difficulty),
+		Difficulty:  new(big.Int).Set(header.Number),
 		GasLimit:    header.GasLimit,
 	}
 }

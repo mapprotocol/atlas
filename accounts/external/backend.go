@@ -17,19 +17,21 @@
 package external
 
 import (
+	"crypto/ecdsa"
 	"fmt"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/signer/core"
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 type ExternalBackend struct {
@@ -258,4 +260,23 @@ func (api *ExternalSigner) pingVersion() (string, error) {
 		return "", err
 	}
 	return v, nil
+}
+
+func (api *ExternalSigner) Decrypt(account accounts.Account, c, s1, s2 []byte) ([]byte, error) {
+	return nil, accounts.ErrNotSupported
+}
+
+func (api *ExternalSigner) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+	return blscrypto.SerializedSignature{}, accounts.ErrNotSupported
+}
+
+// SignHash is not implemented for the external signer
+//
+// DEPRECATED, use SignData in future releases.
+func (api *ExternalSigner) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
+	panic("SignHash not implemented for the external signer")
+}
+
+func (api *ExternalSigner) GetPublicKey(account accounts.Account) (*ecdsa.PublicKey, error) {
+	return nil, accounts.ErrNotSupported
 }

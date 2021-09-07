@@ -17,12 +17,15 @@
 package keystore
 
 import (
+	"crypto/ecdsa"
+	"github.com/ethereum/go-ethereum/log"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original
@@ -30,6 +33,44 @@ import (
 type keystoreWallet struct {
 	account  accounts.Account // Single account contained in this wallet
 	keystore *KeyStore        // Keystore where the account originates from
+}
+
+func (w *keystoreWallet) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
+	return w.signHash(account, hash)
+}
+
+func (w *keystoreWallet) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+	// Make sure the requested account is contained within
+	if !w.Contains(account) {
+		log.Debug(accounts.ErrUnknownAccount.Error(), "account", account)
+		return blscrypto.SerializedSignature{}, accounts.ErrUnknownAccount
+	}
+	// Account seems valid, request the keystore to sign
+	return w.keystore.SignBLS(account, msg, extraData, useComposite, cip22)
+}
+
+func (w *keystoreWallet) GetPublicKey(account accounts.Account) (*ecdsa.PublicKey, error) {
+	// Make sure the requested account is contained within
+	if !w.Contains(account) {
+		log.Debug(accounts.ErrUnknownAccount.Error(), "account", account)
+		return nil, accounts.ErrUnknownAccount
+	}
+	// Account seems valid, request the public key
+	return w.keystore.GetPublicKey(account)
+}
+
+// Decrypt decrypts an ECIES ciphertext.
+func (w *keystoreWallet) Decrypt(account accounts.Account, c, s1, s2 []byte) ([]byte, error) {
+	if account.Address != w.account.Address {
+		log.Debug(accounts.ErrUnknownAccount.Error(), "account", account)
+		return nil, accounts.ErrUnknownAccount
+	}
+	if account.URL != (accounts.URL{}) && account.URL != w.account.URL {
+		log.Debug(accounts.ErrUnknownAccount.Error(), "account", account)
+		return nil, accounts.ErrUnknownAccount
+	}
+	// Account seems valid, request the keystore to sign
+	return w.keystore.Decrypt(account, c, s1, s2)
 }
 
 // URL implements accounts.Wallet, returning the URL of the account within.

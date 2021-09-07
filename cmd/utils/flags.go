@@ -49,8 +49,6 @@ import (
 	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/atlas/tracers"
 	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/consensus/clique"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/helper/flags"
@@ -273,35 +271,35 @@ var (
 		Name:  "ethash.cachedir",
 		Usage: "Directory to store the ethash verification caches (default = inside the datadir)",
 	}
-	EthashCachesInMemoryFlag = cli.IntFlag{
-		Name:  "ethash.cachesinmem",
-		Usage: "Number of recent ethash caches to keep in memory (16MB each)",
-		Value: ethconfig.Defaults.Ethash.CachesInMem,
-	}
-	EthashCachesOnDiskFlag = cli.IntFlag{
-		Name:  "ethash.cachesondisk",
-		Usage: "Number of recent ethash caches to keep on disk (16MB each)",
-		Value: ethconfig.Defaults.Ethash.CachesOnDisk,
-	}
+	//EthashCachesInMemoryFlag = cli.IntFlag{
+	//	Name:  "ethash.cachesinmem",
+	//	Usage: "Number of recent ethash caches to keep in memory (16MB each)",
+	//	Value: ethconfig.Defaults.Ethash.CachesInMem,
+	//}
+	//EthashCachesOnDiskFlag = cli.IntFlag{
+	//	Name:  "ethash.cachesondisk",
+	//	Usage: "Number of recent ethash caches to keep on disk (16MB each)",
+	//	Value: ethconfig.Defaults.Ethash.CachesOnDisk,
+	//}
 	EthashCachesLockMmapFlag = cli.BoolFlag{
 		Name:  "ethash.cacheslockmmap",
 		Usage: "Lock memory maps of recent ethash caches",
 	}
-	EthashDatasetDirFlag = DirectoryFlag{
-		Name:  "ethash.dagdir",
-		Usage: "Directory to store the ethash mining DAGs",
-		Value: DirectoryString(ethconfig.Defaults.Ethash.DatasetDir),
-	}
-	EthashDatasetsInMemoryFlag = cli.IntFlag{
-		Name:  "ethash.dagsinmem",
-		Usage: "Number of recent ethash mining DAGs to keep in memory (1+GB each)",
-		Value: ethconfig.Defaults.Ethash.DatasetsInMem,
-	}
-	EthashDatasetsOnDiskFlag = cli.IntFlag{
-		Name:  "ethash.dagsondisk",
-		Usage: "Number of recent ethash mining DAGs to keep on disk (1+GB each)",
-		Value: ethconfig.Defaults.Ethash.DatasetsOnDisk,
-	}
+	//EthashDatasetDirFlag = DirectoryFlag{
+	//	Name:  "ethash.dagdir",
+	//	Usage: "Directory to store the ethash mining DAGs",
+	//	Value: DirectoryString(ethconfig.Defaults.Ethash.DatasetDir),
+	//}
+	//EthashDatasetsInMemoryFlag = cli.IntFlag{
+	//	Name:  "ethash.dagsinmem",
+	//	Usage: "Number of recent ethash mining DAGs to keep in memory (1+GB each)",
+	//	Value: ethconfig.Defaults.Ethash.DatasetsInMem,
+	//}
+	//EthashDatasetsOnDiskFlag = cli.IntFlag{
+	//	Name:  "ethash.dagsondisk",
+	//	Usage: "Number of recent ethash mining DAGs to keep on disk (1+GB each)",
+	//	Value: ethconfig.Defaults.Ethash.DatasetsOnDisk,
+	//}
 	EthashDatasetsLockMmapFlag = cli.BoolFlag{
 		Name:  "ethash.dagslockmmap",
 		Usage: "Lock memory maps for recent ethash mining DAGs",
@@ -975,9 +973,9 @@ func setLes(ctx *cli.Context, cfg *ethconfig.Config) {
 	if ctx.GlobalIsSet(LightNoPruneFlag.Name) {
 		cfg.LightNoPrune = ctx.GlobalBool(LightNoPruneFlag.Name)
 	}
-	if ctx.GlobalIsSet(LightNoSyncServeFlag.Name) {
-		cfg.LightNoSyncServe = ctx.GlobalBool(LightNoSyncServeFlag.Name)
-	}
+	//if ctx.GlobalIsSet(LightNoSyncServeFlag.Name) {
+	//	cfg.LightNoSyncServe = ctx.GlobalBool(LightNoSyncServeFlag.Name)
+	//}
 }
 
 // MakeDatabaseHandles raises out the number of allowed file handles per process
@@ -1265,32 +1263,32 @@ func setTxPool(ctx *cli.Context, cfg *txsdetails.TxPoolConfig) {
 	}
 }
 
-func setEthash(ctx *cli.Context, cfg *ethconfig.Config) {
-	if ctx.GlobalIsSet(EthashCacheDirFlag.Name) {
-		cfg.Ethash.CacheDir = ctx.GlobalString(EthashCacheDirFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashDatasetDirFlag.Name) {
-		cfg.Ethash.DatasetDir = ctx.GlobalString(EthashDatasetDirFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashCachesInMemoryFlag.Name) {
-		cfg.Ethash.CachesInMem = ctx.GlobalInt(EthashCachesInMemoryFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashCachesOnDiskFlag.Name) {
-		cfg.Ethash.CachesOnDisk = ctx.GlobalInt(EthashCachesOnDiskFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashCachesLockMmapFlag.Name) {
-		cfg.Ethash.CachesLockMmap = ctx.GlobalBool(EthashCachesLockMmapFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashDatasetsInMemoryFlag.Name) {
-		cfg.Ethash.DatasetsInMem = ctx.GlobalInt(EthashDatasetsInMemoryFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashDatasetsOnDiskFlag.Name) {
-		cfg.Ethash.DatasetsOnDisk = ctx.GlobalInt(EthashDatasetsOnDiskFlag.Name)
-	}
-	if ctx.GlobalIsSet(EthashDatasetsLockMmapFlag.Name) {
-		cfg.Ethash.DatasetsLockMmap = ctx.GlobalBool(EthashDatasetsLockMmapFlag.Name)
-	}
-}
+//func setEthash(ctx *cli.Context, cfg *ethconfig.Config) {
+//	if ctx.GlobalIsSet(EthashCacheDirFlag.Name) {
+//		cfg.Ethash.CacheDir = ctx.GlobalString(EthashCacheDirFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashDatasetDirFlag.Name) {
+//		cfg.Ethash.DatasetDir = ctx.GlobalString(EthashDatasetDirFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashCachesInMemoryFlag.Name) {
+//		cfg.Ethash.CachesInMem = ctx.GlobalInt(EthashCachesInMemoryFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashCachesOnDiskFlag.Name) {
+//		cfg.Ethash.CachesOnDisk = ctx.GlobalInt(EthashCachesOnDiskFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashCachesLockMmapFlag.Name) {
+//		cfg.Ethash.CachesLockMmap = ctx.GlobalBool(EthashCachesLockMmapFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashDatasetsInMemoryFlag.Name) {
+//		cfg.Ethash.DatasetsInMem = ctx.GlobalInt(EthashDatasetsInMemoryFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashDatasetsOnDiskFlag.Name) {
+//		cfg.Ethash.DatasetsOnDisk = ctx.GlobalInt(EthashDatasetsOnDiskFlag.Name)
+//	}
+//	if ctx.GlobalIsSet(EthashDatasetsLockMmapFlag.Name) {
+//		cfg.Ethash.DatasetsLockMmap = ctx.GlobalBool(EthashDatasetsLockMmapFlag.Name)
+//	}
+//}
 
 func setMiner(ctx *cli.Context, cfg *miner.Config) {
 	//if ctx.GlobalIsSet(MinerNotifyFlag.Name) {
@@ -1401,7 +1399,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setEtherbase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO, ctx.GlobalString(SyncModeFlag.Name) == "light")
 	setTxPool(ctx, &cfg.TxPool)
-	setEthash(ctx, cfg)
+	//setEthash(ctx, cfg)
 	//setMiner(ctx, &cfg.Miner)
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
@@ -1450,11 +1448,11 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.NoPrefetch = ctx.GlobalBool(CacheNoPrefetchFlag.Name)
 	}
 	// Read the value from the flag no matter if it's set or not.
-	cfg.Preimages = ctx.GlobalBool(CachePreimagesFlag.Name)
-	if cfg.NoPruning && !cfg.Preimages {
-		cfg.Preimages = true
-		log.Info("Enabling recording of key preimages since archive mode is used")
-	}
+	//cfg.Preimages = ctx.GlobalBool(CachePreimagesFlag.Name)
+	//if cfg.NoPruning && !cfg.Preimages {
+	//	cfg.Preimages = true
+	//	log.Info("Enabling recording of key preimages since archive mode is used")
+	//}
 	if ctx.GlobalIsSet(TxLookupLimitFlag.Name) {
 		cfg.TxLookupLimit = ctx.GlobalUint64(TxLookupLimitFlag.Name)
 	}
@@ -1508,16 +1506,16 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.GlobalIsSet(RPCGlobalTxFeeCapFlag.Name) {
 		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCapFlag.Name)
 	}
-	if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
-		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
-	} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
-		urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
-		if urls == "" {
-			cfg.EthDiscoveryURLs = []string{}
-		} else {
-			cfg.EthDiscoveryURLs = SplitAndTrim(urls)
-		}
-	}
+	//if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
+	//	cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
+	//} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
+	//	urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
+	//	if urls == "" {
+	//		cfg.EthDiscoveryURLs = []string{}
+	//	} else {
+	//		cfg.EthDiscoveryURLs = SplitAndTrim(urls)
+	//	}
+	//}
 	// Override any default configs for hard coded networks.
 	switch {
 	case ctx.GlobalBool(MainnetFlag.Name):
@@ -1631,16 +1629,16 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 // SetDNSDiscoveryDefaults configures DNS discovery with the given URL if
 // no URLs are set.
 func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
-	if cfg.EthDiscoveryURLs != nil {
+	if cfg.DiscoveryURLs != nil {
 		return // already set through flags/config
 	}
+
 	protocol := "all"
 	if cfg.SyncMode == downloader.LightSync {
 		protocol = "les"
 	}
-	if url := params2.KnownDNSNetwork(genesis, protocol); url != "" {
-		cfg.EthDiscoveryURLs = []string{url}
-		cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
+	if url := params.KnownDNSNetwork(genesis, protocol); url != "" {
+		cfg.DiscoveryURLs = []string{url}
 	}
 }
 
@@ -1767,23 +1765,23 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *chain2.BlockChain, ch
 		Fatalf("%v", err)
 	}
 	var engine consensus.Engine
-	if config.Clique != nil {
-		engine = clique.New(config.Clique, chainDb)
-	} else {
-		engine = ethash.NewFaker()
-		if !ctx.GlobalBool(FakePoWFlag.Name) {
-			engine = ethash.New(ethash.Config{
-				CacheDir:         stack.ResolvePath(ethconfig.Defaults.Ethash.CacheDir),
-				CachesInMem:      ethconfig.Defaults.Ethash.CachesInMem,
-				CachesOnDisk:     ethconfig.Defaults.Ethash.CachesOnDisk,
-				CachesLockMmap:   ethconfig.Defaults.Ethash.CachesLockMmap,
-				DatasetDir:       stack.ResolvePath(ethconfig.Defaults.Ethash.DatasetDir),
-				DatasetsInMem:    ethconfig.Defaults.Ethash.DatasetsInMem,
-				DatasetsOnDisk:   ethconfig.Defaults.Ethash.DatasetsOnDisk,
-				DatasetsLockMmap: ethconfig.Defaults.Ethash.DatasetsLockMmap,
-			}, nil, false)
-		}
-	}
+	//if config.Clique != nil {
+	//	engine = clique.New(config.Clique, chainDb)
+	//} else {
+	//	engine = ethash.NewFaker()
+	//	if !ctx.GlobalBool(FakePoWFlag.Name) {
+	//		engine = ethash.New(ethash.Config{
+	//			CacheDir:         stack.ResolvePath(ethconfig.Defaults.Ethash.CacheDir),
+	//			CachesInMem:      ethconfig.Defaults.Ethash.CachesInMem,
+	//			CachesOnDisk:     ethconfig.Defaults.Ethash.CachesOnDisk,
+	//			CachesLockMmap:   ethconfig.Defaults.Ethash.CachesLockMmap,
+	//			DatasetDir:       stack.ResolvePath(ethconfig.Defaults.Ethash.DatasetDir),
+	//			DatasetsInMem:    ethconfig.Defaults.Ethash.DatasetsInMem,
+	//			DatasetsOnDisk:   ethconfig.Defaults.Ethash.DatasetsOnDisk,
+	//			DatasetsLockMmap: ethconfig.Defaults.Ethash.DatasetsLockMmap,
+	//		}, nil, false)
+	//	}
+	//}
 	if gcmode := ctx.GlobalString(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}

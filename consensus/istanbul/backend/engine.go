@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
 	"time"
 
@@ -461,7 +460,7 @@ func (sb *Backend) LookbackWindow(header *types.Header, state *state.StateDB) ui
 //
 // Note: The block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
-func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
+func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction) {
 	start := time.Now()
 	defer sb.finalizationTimer.UpdateSince(start)
 
@@ -501,9 +500,9 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 //
 // Note: The block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
-func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,  uncles []*types.Header, receipts []*types.Receipt/* randomness *types.Randomness*/) (*types.Block, error) {
+func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, receipts []*types.Receipt, randomness *types.Randomness) (*types.Block, error) {
 
-	sb.Finalize(chain, header, state, txs,nil)
+	sb.Finalize(chain, header, state, txs)
 
 	// Add extra receipt for Block's Internal Transaction Logs
 	if len(state.GetLogs(common.Hash{})) > 0 {
@@ -514,7 +513,7 @@ func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	}
 
 	// Assemble and return the final block for sealing
-	block := types.NewBlock(header, txs, nil,receipts, trie.NewStackTrie(nil))
+	block := types.NewBlock(header, txs, receipts, randomness)
 	return block, nil
 }
 
@@ -535,7 +534,7 @@ func (sb *Backend) checkIsValidSigner(chain consensus.ChainHeaderReader, header 
 
 // Seal generates a new block for the given input block with the local miner's
 // seal place on top and submits it the the consensus engine.
-func (sb *Backend) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
+func (sb *Backend) Seal(chain consensus.ChainHeaderReader, block *types.Block) error {
 
 	header := block.Header()
 

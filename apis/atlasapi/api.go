@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"math/big"
 	"strings"
 	"time"
@@ -41,8 +42,6 @@ import (
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/accounts/scwallet"
 	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
-	"github.com/mapprotocol/atlas/consensus/clique"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/rawdb"
@@ -684,56 +683,6 @@ func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Ha
 	return nil, err
 }
 
-// GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index. When fullTx is true
-// all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.BlockByNumber(ctx, blockNr)
-	if block != nil {
-		uncles := block.Uncles()
-		if index >= hexutil.Uint(len(uncles)) {
-			log.Debug("Requested uncle not found", "number", blockNr, "hash", block.Hash(), "index", index)
-			return nil, nil
-		}
-		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcMarshalBlock(ctx, block, false, false)
-	}
-	return nil, err
-}
-
-// GetUncleByBlockHashAndIndex returns the uncle block for the given block hash and index. When fullTx is true
-// all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.BlockByHash(ctx, blockHash)
-	if block != nil {
-		uncles := block.Uncles()
-		if index >= hexutil.Uint(len(uncles)) {
-			log.Debug("Requested uncle not found", "number", block.Number(), "hash", blockHash, "index", index)
-			return nil, nil
-		}
-		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcMarshalBlock(ctx, block, false, false)
-	}
-	return nil, err
-}
-
-// GetUncleCountByBlockNumber returns number of uncles in the block for the given block number
-func (s *PublicBlockChainAPI) GetUncleCountByBlockNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
-		n := hexutil.Uint(len(block.Uncles()))
-		return &n
-	}
-	return nil
-}
-
-// GetUncleCountByBlockHash returns number of uncles in the block for the given block hash
-func (s *PublicBlockChainAPI) GetUncleCountByBlockHash(ctx context.Context, blockHash common.Hash) *hexutil.Uint {
-	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		n := hexutil.Uint(len(block.Uncles()))
-		return &n
-	}
-	return nil
-}
-
 // GetCode returns the code stored at the given address in the state for the given block number.
 func (s *PublicBlockChainAPI) GetCode(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -1143,16 +1092,16 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // RPCMarshalHeader converts the given header to the RPC output .
 func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 	return map[string]interface{}{
-		"number":           (*hexutil.Big)(head.Number),
-		"hash":             head.Hash(),
-		"parentHash":       head.ParentHash,
-		"nonce":            head.Nonce,
-		"mixHash":          head.MixDigest,
-		"sha3Uncles":       head.UncleHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.Root,
-		"miner":            head.Coinbase,
-		"difficulty":       (*hexutil.Big)(head.Difficulty),
+		"number":     (*hexutil.Big)(head.Number),
+		"hash":       head.Hash(),
+		"parentHash": head.ParentHash,
+		"nonce":      head.Nonce,
+		"mixHash":    head.MixDigest,
+		//"sha3Uncles":       head.UncleHash,
+		"logsBloom": head.Bloom,
+		"stateRoot": head.Root,
+		"miner":     head.Coinbase,
+		//"difficulty":       (*hexutil.Big)(head.Difficulty),
 		"extraData":        hexutil.Bytes(head.Extra),
 		"size":             hexutil.Uint64(head.Size()),
 		"gasLimit":         hexutil.Uint64(head.GasLimit),
@@ -1189,12 +1138,12 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool) (map[string]i
 		}
 		fields["transactions"] = transactions
 	}
-	uncles := block.Uncles()
-	uncleHashes := make([]common.Hash, len(uncles))
-	for i, uncle := range uncles {
-		uncleHashes[i] = uncle.Hash()
-	}
-	fields["uncles"] = uncleHashes
+	//uncles := block.Uncles()
+	//uncleHashes := make([]common.Hash, len(uncles))
+	//for i, uncle := range uncles {
+	//	uncleHashes[i] = uncle.Hash()
+	//}
+	//fields["uncles"] = uncleHashes
 
 	return fields, nil
 }
@@ -1979,39 +1928,39 @@ func (api *PublicDebugAPI) GetBlockRlp(ctx context.Context, number uint64) (stri
 //
 // This is a temporary method to debug the externalsigner integration,
 // TODO: Remove this method when the integration is mature
-func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address common.Address, number uint64) (common.Address, error) {
-	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
-	if block == nil {
-		return common.Address{}, fmt.Errorf("block #%d not found", number)
-	}
-	header := block.Header()
-	header.Extra = make([]byte, 32+65)
-	encoded := clique.CliqueRLP(header)
-
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: address}
-	wallet, err := api.b.AccountManager().Find(account)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	signature, err := wallet.SignData(account, accounts.MimetypeClique, encoded)
-	if err != nil {
-		return common.Address{}, err
-	}
-	sealHash := clique.SealHash(header).Bytes()
-	log.Info("test signing of clique block",
-		"Sealhash", fmt.Sprintf("%x", sealHash),
-		"signature", fmt.Sprintf("%x", signature))
-	pubkey, err := crypto.Ecrecover(sealHash, signature)
-	if err != nil {
-		return common.Address{}, err
-	}
-	var signer common.Address
-	copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
-
-	return signer, nil
-}
+//func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address common.Address, number uint64) (common.Address, error) {
+//	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
+//	if block == nil {
+//		return common.Address{}, fmt.Errorf("block #%d not found", number)
+//	}
+//	header := block.Header()
+//	header.Extra = make([]byte, 32+65)
+//	encoded := clique.CliqueRLP(header)
+//
+//	// Look up the wallet containing the requested signer
+//	account := accounts.Account{Address: address}
+//	wallet, err := api.b.AccountManager().Find(account)
+//	if err != nil {
+//		return common.Address{}, err
+//	}
+//
+//	signature, err := wallet.SignData(account, accounts.MimetypeClique, encoded)
+//	if err != nil {
+//		return common.Address{}, err
+//	}
+//	sealHash := clique.SealHash(header).Bytes()
+//	log.Info("test signing of clique block",
+//		"Sealhash", fmt.Sprintf("%x", sealHash),
+//		"signature", fmt.Sprintf("%x", signature))
+//	pubkey, err := crypto.Ecrecover(sealHash, signature)
+//	if err != nil {
+//		return common.Address{}, err
+//	}
+//	var signer common.Address
+//	copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
+//
+//	return signer, nil
+//}
 
 // PrintBlock retrieves a block and returns its pretty printed form.
 func (api *PublicDebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {

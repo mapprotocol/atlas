@@ -20,6 +20,7 @@ package consensus
 import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/p2p"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
@@ -77,7 +78,7 @@ type Engine interface {
 
 	// VerifyUncles verifies that the given block's uncles conform to the consensus
 	// rules of a given engine.
-	VerifyUncles(chain ChainReader, block *types.Block) error
+	//VerifyUncles(chain ChainReader, block *types.Block) error
 
 	// Prepare initializes the consensus fields of a block header according to the
 	// rules of a particular engine. The changes are executed inline.
@@ -88,23 +89,21 @@ type Engine interface {
 	//
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
-	Finalize(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
-		uncles []*types.Header)
+	Finalize(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction)
 
 	// FinalizeAndAssemble runs any post-transaction state modifications (e.g. block
 	// rewards) and assembles the final block.
 	//
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
-	FinalizeAndAssemble(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
-		uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error)
+	FinalizeAndAssemble(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, receipts []*types.Receipt, randomness *types.Randomness) (*types.Block, error)
 
 	// Seal generates a new sealing request for the given input block and pushes
 	// the result into the given channel.
 	//
 	// Note, the method returns immediately and will send the result async. More
 	// than one result may also be returned depending on the consensus algorithm.
-	Seal(chain ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error
+	Seal(chain ChainHeaderReader, block *types.Block) error
 
 	// SealHash returns the hash of a block prior to it being sealed.
 	SealHash(header *types.Header) common.Hash
@@ -213,27 +212,27 @@ type ChainContext interface {
 	NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner
 }
 
-//// Handler should be implemented if the consensus needs to handle and send peer messages
-//type Handler interface {
-//	// NewWork handles a new work event from the miner
-//	NewWork() error
-//
-//	// HandleMsg handles a message from peer
-//	HandleMsg(address common.Address, data p2p.Msg, peer Peer) (bool, error)
-//
-//	// SetBroadcaster sets the broadcaster to send message to peers
-//	SetBroadcaster(Broadcaster)
-//
-//	// SetP2PServer sets the p2p server to connect/disconnect to/from peers
-//	SetP2PServer(P2PServer)
-//
-//	// RegisterPeer will notify the consensus engine that a new peer has been added
-//	RegisterPeer(peer Peer, fromProxiedNode bool) error
-//
-//	// UnregisterPeer will notify the consensus engine that a new peer has been removed
-//	UnregisterPeer(peer Peer, fromProxiedNode bool)
-//
-//	// Handshake will begin a handshake with a new peer. It returns if the peer
-//	// has identified itself as a validator and should bypass any max peer checks.
-//	Handshake(peer Peer) (bool, error)
-//}
+// Handler should be implemented if the consensus needs to handle and send peer messages
+type Handler interface {
+	// NewWork handles a new work event from the miner
+	NewWork() error
+
+	// HandleMsg handles a message from peer
+	HandleMsg(address common.Address, data p2p.Msg, peer Peer) (bool, error)
+
+	// SetBroadcaster sets the broadcaster to send message to peers
+	SetBroadcaster(Broadcaster)
+
+	// SetP2PServer sets the p2p server to connect/disconnect to/from peers
+	SetP2PServer(P2PServer)
+
+	// RegisterPeer will notify the consensus engine that a new peer has been added
+	RegisterPeer(peer Peer, fromProxiedNode bool) error
+
+	// UnregisterPeer will notify the consensus engine that a new peer has been removed
+	UnregisterPeer(peer Peer, fromProxiedNode bool)
+
+	// Handshake will begin a handshake with a new peer. It returns if the peer
+	// has identified itself as a validator and should bypass any max peer checks.
+	Handshake(peer Peer) (bool, error)
+}

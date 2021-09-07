@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 	params2 "github.com/mapprotocol/atlas/params"
 	"os"
 	"runtime"
@@ -24,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/mapprotocol/atlas/cmd/utils"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	//"github.com/mapprotocol/atlas/consensus/ethash"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -80,11 +81,11 @@ func makecache(ctx *cli.Context) error {
 	if len(args) != 2 {
 		utils.Fatalf(`Usage: atlas makecache <block number> <outputdir>`)
 	}
-	block, err := strconv.ParseUint(args[0], 0, 64)
-	if err != nil {
-		utils.Fatalf("Invalid block number: %v", err)
-	}
-	ethash.MakeCache(block, args[1])
+	//block, err := strconv.ParseUint(args[0], 0, 64)
+	//if err != nil {
+	//	utils.Fatalf("Invalid block number: %v", err)
+	//}
+	//ethash.MakeCache(block, args[1])
 
 	return nil
 }
