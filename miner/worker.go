@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
@@ -398,7 +397,7 @@ func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core
 
 }
 
-//updatePendingBlock updates pending snapshot block and state.
+// updatePendingBlock updates pending snapshot block and state.
 func (w *worker) updatePendingBlock(b *blockState) {
 	w.snapshotMu.Lock()
 	defer w.snapshotMu.Unlock()
@@ -406,9 +405,8 @@ func (w *worker) updatePendingBlock(b *blockState) {
 	w.snapshotBlock = types.NewBlock(
 		b.header,
 		b.txs,
-		nil,
 		b.receipts,
-		trie.NewStackTrie(nil), //b.randomness,
+		b.randomness,
 	)
 
 	w.snapshotState = b.state.Copy()
@@ -423,7 +421,7 @@ func (w *worker) submitTaskToEngine(task *task) {
 		return
 	}
 
-	if err := w.engine.Seal(w.chain, task.block, nil, nil); err != nil {
+	if err := w.engine.Seal(w.chain, task.block); err != nil {
 		log.Warn("Block sealing failed", "err", err)
 	}
 }

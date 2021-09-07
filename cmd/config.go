@@ -22,7 +22,6 @@ import (
 	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	params2 "github.com/mapprotocol/atlas/params"
-	"math/big"
 	"os"
 	"reflect"
 	"unicode"
@@ -150,9 +149,12 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, atlasConfig) {
 // makeFullNode loads atlas configuration and creates the Ethereum backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
-	if ctx.GlobalIsSet(utils.OverrideBerlinFlag.Name) {
-		cfg.Eth.OverrideBerlin = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideBerlinFlag.Name))
-	}
+	//if ctx.GlobalIsSet(utils.OverrideChurritoFlag.Name) {
+	//	cfg.Eth.OverrideChurrito = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideChurritoFlag.Name))
+	//}
+	//if ctx.GlobalIsSet(utils.OverrideDonutFlag.Name) {
+	//	cfg.Eth.OverrideDonut = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideDonutFlag.Name))
+	//}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 	chainsdb.NewStoreDb(ctx, cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles)
 	// Configure catalyst.

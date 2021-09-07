@@ -177,7 +177,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 			hash = header.Hash()
 		}
 		number := header.Number.Uint64()
-		newTD.Add(newTD, header.Difficulty)
+		newTD.Add(newTD, big.NewInt(1))
 
 		// If the header is already known, skip it, otherwise store
 		if !hc.HasHeader(hash, number) {
