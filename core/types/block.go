@@ -74,13 +74,11 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 // Header represents a block header in the Ethereum blockchain.
 type Header struct {
 	ParentHash common.Hash `json:"parentHash"       gencodec:"required"`
-	//UncleHash   common.Hash    `json:"sha3Uncles"       gencodec:"required"`
 	Coinbase    common.Address `json:"miner"            gencodec:"required"`
 	Root        common.Hash    `json:"stateRoot"        gencodec:"required"`
 	TxHash      common.Hash    `json:"transactionsRoot" gencodec:"required"`
 	ReceiptHash common.Hash    `json:"receiptsRoot"     gencodec:"required"`
 	Bloom       Bloom          `json:"logsBloom"        gencodec:"required"`
-	//Difficulty  *big.Int       `json:"difficulty"       gencodec:"required"`
 	Number    *big.Int    `json:"number"           gencodec:"required"`
 	GasLimit  uint64      `json:"gasLimit"         gencodec:"required"`
 	GasUsed   uint64      `json:"gasUsed"          gencodec:"required"`
@@ -92,7 +90,6 @@ type Header struct {
 
 // field type overrides for gencodec
 type headerMarshaling struct {
-	//	Difficulty *hexutil.Big
 	Number   *hexutil.Big
 	GasLimit hexutil.Uint64
 	GasUsed  hexutil.Uint64
@@ -253,7 +250,6 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 	})
 }
 
-//func (b *Block) Uncles() []*Header          { return b.uncles }
 func (b *Block) Transactions() Transactions { return b.transactions }
 
 func (b *Block) Transaction(hash common.Hash) *Transaction {
@@ -269,7 +265,6 @@ func (b *Block) Number() *big.Int { return new(big.Int).Set(b.header.Number) }
 func (b *Block) GasLimit() uint64 { return b.header.GasLimit }
 func (b *Block) GasUsed() uint64  { return b.header.GasUsed }
 
-//func (b *Block) Difficulty() *big.Int { return new(big.Int).Add(b.header.Number, big.NewInt(1)) }
 func (b *Block) TotalDifficulty() *big.Int { return new(big.Int).Add(b.header.Number, big.NewInt(1)) }
 func (b *Block) Time() uint64              { return b.header.Time }
 
@@ -283,7 +278,7 @@ func (b *Block) ParentHash() common.Hash  { return b.header.ParentHash }
 func (b *Block) TxHash() common.Hash      { return b.header.TxHash }
 func (b *Block) ReceiptHash() common.Hash { return b.header.ReceiptHash }
 
-//func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
+
 func (b *Block) Extra() []byte { return common.CopyBytes(b.header.Extra) }
 
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
@@ -315,13 +310,6 @@ func (c *writeCounter) Write(b []byte) (int, error) {
 	*c += writeCounter(len(b))
 	return len(b), nil
 }
-
-//func CalcUncleHash(uncles []*Header) common.Hash {
-//	if len(uncles) == 0 {
-//		return EmptyUncleHash
-//	}
-//	return rlpHash(uncles)
-//}
 
 // WithSeal returns a new block with the data from b but the header replaced with
 // the sealed one.
