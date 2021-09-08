@@ -66,7 +66,7 @@ func GetCarbonOffsettingPartnerAddress(vmRunner vm.EVMRunner) (common.Address, e
 	var carbonOffsettingPartner common.Address
 	err := carbonOffsettingPartnerMethod.Query(vmRunner, &carbonOffsettingPartner)
 	if err != nil {
-		return common.ZeroAddress, err
+		return params.ZeroAddress, err
 	}
 	return carbonOffsettingPartner, nil
 }

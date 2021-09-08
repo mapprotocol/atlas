@@ -130,8 +130,8 @@ func DistributeEpochRewards(vmRunner vm.EVMRunner, groups []common.Address, maxT
 			return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
 		})
 
-		lesser := common.ZeroAddress
-		greater := common.ZeroAddress
+		lesser := params.ZeroAddress
+		greater := params.ZeroAddress
 		for j, voteTotal := range voteTotals {
 			if voteTotal.Group == group {
 				if j > 0 {

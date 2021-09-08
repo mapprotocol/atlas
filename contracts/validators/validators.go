@@ -17,10 +17,11 @@ package validators
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	blscrypto "github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"
@@ -90,7 +91,7 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 		if len(blsKey) != blscrypto.PUBLICKEYBYTES {
 			return nil, fmt.Errorf("length of bls public key incorrect. Expected %d, got %d", blscrypto.PUBLICKEYBYTES, len(blsKey))
 		}
-		blsKeyFixedSize := blscrypto.SerializedPublicKey{}
+		blsKeyFixedSize := bls.SerializedPublicKey{}
 		copy(blsKeyFixedSize[:], blsKey)
 		validator := istanbul.ValidatorData{
 			Address:      addr,
