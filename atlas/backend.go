@@ -26,6 +26,7 @@ import (
 	istanbulBackend "github.com/mapprotocol/atlas/consensus/istanbul/backend"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/indexer"
+	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/txsdetails"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
@@ -237,6 +238,17 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if eth.handler, err = newHandler(chainConfig, checkpoint, config.SyncMode, config.NetworkId, eth.eventMux, eth.txPool, eth.engine, eth.blockchain, chainDb, cacheLimit, config.Whitelist, stack.Server(), nil); err != nil {
 		return nil, err
 	}
+
+	// If the engine is istanbul, then inject the blockchain
+	if istanbul, isIstanbul := eth.engine.(*istanbulBackend.Backend); isIstanbul {
+		istanbul.SetChain(
+			eth.blockchain, eth.blockchain.CurrentBlock,
+			func(hash common.Hash) (*state.StateDB, error) {
+				stateRoot := eth.blockchain.GetHeaderByHash(hash).Root
+				return eth.blockchain.StateAt(stateRoot)
+			})
+	}
+
 	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock,chainDb)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
