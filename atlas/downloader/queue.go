@@ -65,9 +65,11 @@ type fetchResult struct {
 	pending int32 // Flag telling what deliveries are outstanding
 
 	Header       *types.Header
-	Uncles       []*types.Header
+//	Uncles       []*types.Header
 	Transactions types.Transactions
 	Receipts     types.Receipts
+	Randomness     *types.Randomness
+	EpochSnarkData *types.EpochSnarkData
 }
 
 func newFetchResult(header *types.Header, fastSync bool) *fetchResult {
@@ -366,9 +368,7 @@ func (q *queue) Results(block bool) []*fetchResult {
 	for _, result := range results {
 		// Recalculate the result item weights to prevent memory exhaustion
 		size := result.Header.Size()
-		for _, uncle := range result.Uncles {
-			size += uncle.Size()
-		}
+
 		for _, receipt := range result.Receipts {
 			size += receipt.Size()
 		}
@@ -780,14 +780,12 @@ func (q *queue) DeliverHeaders(id string, headers []*types.Header, headerProcCh 
 // DeliverBodies injects a block body retrieval response into the results queue.
 // The method returns the number of blocks bodies accepted from the delivery and
 // also wakes any threads waiting for data delivery.
-func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLists [][]*types.Header) (int, error) {
+func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, randomnessList []*types.Randomness, epochSnarkDataList []*types.EpochSnarkData) (int, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+
 	validate := func(index int, header *types.Header) error {
 		if types.DeriveSha(types.Transactions(txLists[index]), trie.NewStackTrie(nil)) != header.TxHash {
-			return errInvalidBody
-		}
-		if types.CalcUncleHash(uncleLists[index]) != header.UncleHash {
 			return errInvalidBody
 		}
 		return nil
@@ -795,7 +793,8 @@ func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLi
 
 	reconstruct := func(index int, result *fetchResult) {
 		result.Transactions = txLists[index]
-		result.Uncles = uncleLists[index]
+		result.Randomness = randomnessList[index]
+		result.EpochSnarkData = epochSnarkDataList[index]
 		result.SetBodyDone()
 	}
 	return q.deliver(id, q.blockTaskPool, q.blockTaskQueue, q.blockPendPool,

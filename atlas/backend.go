@@ -20,7 +20,10 @@ package atlas
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	istanbulBackend "github.com/mapprotocol/atlas/consensus/istanbul/backend"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/indexer"
 	"github.com/mapprotocol/atlas/core/txsdetails"
@@ -36,8 +39,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/dnsdisc"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -48,21 +49,21 @@ import (
 	"github.com/mapprotocol/atlas/atlas/filters"
 	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/atlas/protocols/eth"
-	"github.com/mapprotocol/atlas/atlas/protocols/snap"
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/consensus/clique"
+	mockEngine "github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/bloombits"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state/pruner"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/miner"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 // Config contains the configuration options of the ETH protocol.
 // Deprecated: use ethconfig.Config instead.
-type Config = ethconfig.Config
+//type Config = Config
 
 // Ethereum implements the Ethereum full node service.
 type Ethereum struct {
@@ -71,9 +72,10 @@ type Ethereum struct {
 	// Handlers
 	txPool             *txsdetails.TxPool
 	blockchain         *chain.BlockChain
-	handler            *handler
-	ethDialCandidates  enode.Iterator
-	snapDialCandidates enode.Iterator
+	handler            *ProtocolManager
+	//ethDialCandidates  enode.Iterator
+	//snapDialCandidates enode.Iterator
+	dialCandidates  enode.Iterator
 
 	// DB interfaces
 	chainDb ethdb.Database // Block chain database
@@ -91,6 +93,9 @@ type Ethereum struct {
 	miner     *miner.Miner
 	gasPrice  *big.Int
 	etherbase common.Address
+
+	txFeeRecipient common.Address
+	blsbase        common.Address
 
 	networkID     uint64
 	netRPCService *atlasapi.PublicNetAPI
@@ -110,10 +115,10 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if !config.SyncMode.IsValid() {
 		return nil, fmt.Errorf("invalid sync mode %d", config.SyncMode)
 	}
-	//if config.Miner.GasPrice == nil || config.Miner.GasPrice.Cmp(common.Big0) <= 0 {
-	//	log.Warn("Sanitizing invalid miner gas price", "provided", config.Miner.GasPrice, "updated", ethconfig.Defaults.Miner.GasPrice)
-	//	config.Miner.GasPrice = new(big.Int).Set(ethconfig.Defaults.Miner.GasPrice)
-	//}
+	if config.Miner.GasPrice == nil || config.Miner.GasPrice.Cmp(common.Big0) <= 0 {
+		log.Warn("Sanitizing invalid miner gas price", "provided", config.Miner.GasPrice, "updated", ethconfig.Defaults.Miner.GasPrice)
+		config.Miner.GasPrice = new(big.Int).Set(ethconfig.Defaults.Miner.GasPrice)
+	}
 	if config.NoPruning && config.TrieDirtyCache > 0 {
 		if config.SnapshotCache > 0 {
 			config.TrieCleanCache += config.TrieDirtyCache * 3 / 5
@@ -126,7 +131,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	log.Info("Allocated trie memory caches", "clean", common.StorageSize(config.TrieCleanCache)*1024*1024, "dirty", common.StorageSize(config.TrieDirtyCache)*1024*1024)
 
 	// Transfer mining-related config to the ethash config.
-	ethashConfig := config.Ethash
+	//ethashConfig := config.Ethash
 	//ethashConfig.NotifyFull = config.Miner.NotifyFull
 
 	// Assemble the Ethereum object
@@ -134,7 +139,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
-	chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideBerlin)
+	chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideChurrito)
 	if _, ok := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
 	}
@@ -148,7 +153,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		chainDb:           chainDb,
 		eventMux:          stack.EventMux(),
 		accountManager:    stack.AccountManager(),
-		engine:            ethconfig.CreateConsensusEngine(stack, chainConfig, &ethashConfig, nil, false, chainDb),
+		engine:            CreateConsensusEngine(stack, chainConfig, config, chainDb),
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
 		//gasPrice:          config.Miner.GasPrice,
@@ -190,7 +195,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			TrieDirtyDisabled:   config.NoPruning,
 			TrieTimeLimit:       config.TrieTimeout,
 			SnapshotLimit:       config.SnapshotCache,
-			Preimages:           config.Preimages,
+			//Preimages:           config.Preimages,
 		}
 	)
 	eth.blockchain, err = chain.NewBlockChain(chainDb, cacheConfig, chainConfig, eth.engine, vmConfig, eth.shouldPreserve, &config.TxLookupLimit)
@@ -216,20 +221,22 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if checkpoint == nil {
 		checkpoint = params.TrustedCheckpoints[genesisHash]
 	}
-	if eth.handler, err = newHandler(&handlerConfig{
-		Database:   chainDb,
-		Chain:      eth.blockchain,
-		TxPool:     eth.txPool,
-		Network:    config.NetworkId,
-		Sync:       config.SyncMode,
-		BloomCache: uint64(cacheLimit),
-		EventMux:   eth.eventMux,
-		Checkpoint: checkpoint,
-		Whitelist:  config.Whitelist,
-	}); err != nil {
+	//if eth.handler, err = newHandler(&handlerConfig{
+	//	Database:   chainDb,
+	//	Chain:      eth.blockchain,
+	//	TxPool:     eth.txPool,
+	//	Network:    config.NetworkId,
+	//	Sync:       config.SyncMode,
+	//	BloomCache: uint64(cacheLimit),
+	//	EventMux:   eth.eventMux,
+	//	Checkpoint: checkpoint,
+	//	Whitelist:  config.Whitelist,
+	//}); err != nil {
+	//	return nil, err
+	//}
+	if eth.handler, err = newHandler(chainConfig, checkpoint, config.SyncMode, config.NetworkId, eth.eventMux, eth.txPool, eth.engine, eth.blockchain, chainDb, cacheLimit, config.Whitelist, stack.Server(), nil); err != nil {
 		return nil, err
 	}
-
 	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock,chainDb)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
@@ -239,17 +246,21 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
-		//gpoParams.Default = config.Miner.GasPrice
+		gpoParams.Default = config.Miner.GasPrice
 	}
 	eth.APIBackend.gpo = gasprice.NewOracle(eth.APIBackend, gpoParams)
 
 	// Setup DNS discovery iterators.
-	dnsclient := dnsdisc.NewClient(dnsdisc.Config{})
-	eth.ethDialCandidates, err = dnsclient.NewIterator(eth.config.EthDiscoveryURLs...)
-	if err != nil {
-		return nil, err
-	}
-	eth.snapDialCandidates, err = dnsclient.NewIterator(eth.config.SnapDiscoveryURLs...)
+	//dnsclient := dnsdisc.NewClient(dnsdisc.Config{})
+	//eth.ethDialCandidates, err = dnsclient.NewIterator(eth.config.EthDiscoveryURLs...)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//eth.snapDialCandidates, err = dnsclient.NewIterator(eth.config.SnapDiscoveryURLs...)
+	//if err != nil {
+	//	return nil, err
+	//}
+	eth.dialCandidates, err = eth.setupDiscovery(&stack.Config().P2P)
 	if err != nil {
 		return nil, err
 	}
@@ -378,6 +389,29 @@ func (s *Ethereum) Etherbase() (eb common.Address, err error) {
 	return common.Address{}, fmt.Errorf("etherbase must be explicitly specified")
 }
 
+func (s *Ethereum) TxFeeRecipient() (common.Address, error) {
+	s.lock.RLock()
+	txFeeRecipient := s.txFeeRecipient
+	s.lock.RUnlock()
+
+	if txFeeRecipient != (common.Address{}) {
+		return txFeeRecipient, nil
+	}
+	return common.Address{}, fmt.Errorf("txFeeRecipient must be explicitly specified")
+}
+
+func (s *Ethereum) BLSbase() (eb common.Address, err error) {
+	s.lock.RLock()
+	blsbase := s.blsbase
+	s.lock.RUnlock()
+
+	if blsbase != (common.Address{}) {
+		return blsbase, nil
+	}
+
+	return s.Etherbase()
+}
+
 // isLocalBlock checks whether the specified block is mined
 // by local miner accounts.
 //
@@ -410,25 +444,7 @@ func (s *Ethereum) isLocalBlock(block *types.Block) bool {
 // during the chain reorg depending on whether the author of block
 // is a local account.
 func (s *Ethereum) shouldPreserve(block *types.Block) bool {
-	// The reason we need to disable the self-reorg preserving for clique
-	// is it can be probable to introduce a deadlock.
-	//
-	// e.g. If there are 7 available signers
-	//
-	// r1   A
-	// r2     B
-	// r3       C
-	// r4         D
-	// r5   A      [X] F G
-	// r6    [X]
-	//
-	// In the round5, the inturn signer E is offline, so the worst case
-	// is A, F and G sign the block of round5 and reject the block of opponents
-	// and in the round6, the last available signer B is offline, the whole
-	// network is stuck.
-	if _, ok := s.engine.(*clique.Clique); ok {
-		return false
-	}
+
 	return s.isLocalBlock(block)
 }
 
@@ -439,6 +455,15 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.lock.Unlock()
 
 	s.miner.SetEtherbase(etherbase)
+}
+
+// SetTxFeeRecipient sets the mining reward address.
+func (s *Ethereum) SetTxFeeRecipient(txFeeRecipient common.Address) {
+	s.lock.Lock()
+	s.txFeeRecipient = txFeeRecipient
+	s.lock.Unlock()
+
+	s.miner.SetTxFeeRecipient(txFeeRecipient)
 }
 
 // StartMining starts the miner with the given number of CPU threads. If mining
@@ -456,36 +481,65 @@ func (s *Ethereum) StartMining(threads int) error {
 		}
 		th.SetThreads(threads)
 	}
-	// If the miner was not running, initialize it
+
 	if !s.IsMining() {
-		// Propagate the initial price point to the transaction pool
-		s.lock.RLock()
-		price := s.gasPrice
-		s.lock.RUnlock()
-		s.txPool.SetGasPrice(price)
 
 		// Configure the local mining address
-		eb, err := s.Etherbase()
+		validator, err := s.Etherbase()
 		if err != nil {
-			log.Error("Cannot start mining without etherbase", "err", err)
-			return fmt.Errorf("etherbase missing: %v", err)
+			log.Error("Cannot start mining without validator", "err", err)
+			return fmt.Errorf("validator missing: %v", err)
 		}
-		if clique, ok := s.engine.(*clique.Clique); ok {
-			wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
+
+		txFeeRecipient, err := s.TxFeeRecipient()
+		if err != nil {
+			log.Error("Cannot start mining without txFeeRecipient", "err", err)
+			return fmt.Errorf("txFeeRecipient missing: %v", err)
+		}
+
+		blsbase, err := s.BLSbase()
+		if err != nil {
+			log.Error("Cannot start mining without blsbase", "err", err)
+			return fmt.Errorf("blsbase missing: %v", err)
+		}
+
+		if istanbul, isIstanbul := s.engine.(*istanbulBackend.Backend); isIstanbul {
+			valAccount := accounts.Account{Address: validator}
+			wallet, err := s.accountManager.Find(valAccount)
 			if wallet == nil || err != nil {
-				log.Error("Etherbase account unavailable locally", "err", err)
+				log.Error("Validator account unavailable locally", "err", err)
 				return fmt.Errorf("signer missing: %v", err)
 			}
-			clique.Authorize(eb, wallet.SignData)
+			publicKey, err := wallet.GetPublicKey(valAccount)
+			if err != nil {
+				return fmt.Errorf("ECDSA public key missing: %v", err)
+			}
+			blswallet, err := s.accountManager.Find(accounts.Account{Address: blsbase})
+			if blswallet == nil || err != nil {
+				log.Error("BLSbase account unavailable locally", "err", err)
+				return fmt.Errorf("BLS signer missing: %v", err)
+			}
+
+			istanbul.Authorize(validator, blsbase, publicKey, wallet.Decrypt, wallet.SignData, blswallet.SignBLS, wallet.SignHash)
+
+			if istanbul.IsProxiedValidator() {
+				if err := istanbul.StartProxiedValidatorEngine(); err != nil {
+					log.Error("Error in starting proxied validator engine", "err", err)
+					return err
+				}
+			}
 		}
+
 		// If mining is started, we can disable the transaction rejection mechanism
 		// introduced to speed sync times.
 		atomic.StoreUint32(&s.handler.acceptTxs, 1)
 
-		go s.miner.Start(eb)
+		go s.miner.Start(validator, txFeeRecipient)
 	}
 	return nil
 }
+
+
 
 // StopMining terminates the miner, both at the consensus engine level as well as
 // at the block creation level.
@@ -501,16 +555,35 @@ func (s *Ethereum) StopMining() {
 	s.miner.Stop()
 }
 
+func (s *Ethereum) startAnnounce() error {
+	if istanbul, ok := s.engine.(consensus.Istanbul); ok {
+		return istanbul.StartAnnouncing()
+	}
+
+	return nil
+}
+
+func (s *Ethereum) stopAnnounce() error {
+	if istanbul, ok := s.engine.(consensus.Istanbul); ok {
+		return istanbul.StopAnnouncing()
+	}
+
+	return nil
+}
+
 func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
 func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
 func (s *Ethereum) AccountManager() *accounts.Manager { return s.accountManager }
-func (s *Ethereum) BlockChain() *chain.BlockChain     { return s.blockchain }
-func (s *Ethereum) TxPool() *txsdetails.TxPool        { return s.txPool }
+func (s *Ethereum) BlockChain() *chain.BlockChain { return s.blockchain }
+func (s *Ethereum) Config() *ethconfig.Config     { return s.config }
+func (s *Ethereum) TxPool() *txsdetails.TxPool    { return s.txPool }
 func (s *Ethereum) EventMux() *event.TypeMux     { return s.eventMux }
 func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
 func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
 func (s *Ethereum) IsListening() bool                  { return true } // Always listening
+func (s *Ethereum) EthVersion() int                     { return int(istanbul.ProtocolVersions[0]) }
+func (s *Ethereum) NetVersion() uint64                  { return s.networkID }
 func (s *Ethereum) Downloader() *downloader.Downloader { return s.handler.downloader }
 func (s *Ethereum) Synced() bool                       { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
 func (s *Ethereum) ArchiveMode() bool                   { return s.config.NoPruning }
@@ -519,9 +592,11 @@ func (s *Ethereum) BloomIndexer() *indexer.ChainIndexer { return s.bloomIndexer 
 // Protocols returns all the currently configured
 // network protocols to start.
 func (s *Ethereum) Protocols() []p2p.Protocol {
-	protos := eth.MakeProtocols((*ethHandler)(s.handler), s.networkID, s.ethDialCandidates)
-	if s.config.SnapshotCache > 0 {
-		protos = append(protos, snap.MakeProtocols((*snapHandler)(s.handler), s.snapDialCandidates)...)
+	protos := make([]p2p.Protocol, len(istanbul.ProtocolVersions))
+	for i, vsn := range istanbul.ProtocolVersions {
+		protos[i] = s.handler.makeProtocol(vsn)
+		protos[i].Attributes = []enr.Entry{s.currentEthEntry()}
+		protos[i].DialCandidates = s.dialCandidates
 	}
 	return protos
 }
@@ -556,8 +631,6 @@ func (s *Ethereum) Start() error {
 func (s *Ethereum) Stop() error {
 	// Stop all the peer-related stuff first.
 	s.stopAnnounce()
-	s.ethDialCandidates.Close()
-	s.snapDialCandidates.Close()
 	s.handler.Stop()
 
 	// Then stop everything else.
@@ -574,18 +647,23 @@ func (s *Ethereum) Stop() error {
 	return nil
 }
 
-func (s *Ethereum) startAnnounce() error {
-	if istanbul, ok := s.engine.(consensus.Istanbul); ok {
-		return istanbul.StartAnnouncing()
-	}
 
+
+// CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
+func CreateConsensusEngine(stack *node.Node, chainConfig *params2.ChainConfig, config *ethconfig.Config, db ethdb.Database) consensus.Engine {
+	if chainConfig.Faker {
+		return mockEngine.NewFaker()
+	}
+	// If Istanbul is requested, set it up
+	if chainConfig.Istanbul != nil {
+		log.Debug("Setting up Istanbul consensus engine")
+		if err := istanbul.ApplyParamsChainConfigToConfig(chainConfig, &config.Istanbul); err != nil {
+			log.Crit("Invalid Configuration for Istanbul Engine", "err", err)
+		}
+
+		return istanbulBackend.New(&config.Istanbul, db)
+	}
+	log.Error(fmt.Sprintf("Only Istanbul Consensus is supported: %v", chainConfig))
 	return nil
 }
 
-func (s *Ethereum) stopAnnounce() error {
-	if istanbul, ok := s.engine.(consensus.Istanbul); ok {
-		return istanbul.StopAnnouncing()
-	}
-
-	return nil
-}

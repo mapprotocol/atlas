@@ -206,7 +206,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 	}
 
 	// Create the block.
-	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, nil /* uncles */, env.receipts)
+	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions,  env.receipts,nil)
 	if err != nil {
 		return nil, err
 	}
@@ -255,19 +255,19 @@ func insertBlockParamsToBlock(params executableData) (*types.Block, error) {
 	number.SetUint64(params.Number)
 	header := &types.Header{
 		ParentHash:  params.ParentHash,
-		UncleHash:   types.EmptyUncleHash,
+	//	UncleHash:   types.EmptyUncleHash,
 		Coinbase:    params.Miner,
 		Root:        params.StateRoot,
 		TxHash:      types.DeriveSha(types.Transactions(txs), trie.NewStackTrie(nil)),
 		ReceiptHash: params.ReceiptRoot,
 		Bloom:       types.BytesToBloom(params.LogsBloom),
-		Difficulty:  big.NewInt(1),
+	//	Difficulty:  big.NewInt(1),
 		Number:      number,
 		GasLimit:    params.GasLimit,
 		GasUsed:     params.GasUsed,
 		Time:        params.Timestamp,
 	}
-	block := types.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */)
+	block := types.NewBlockWithHeader(header).WithBody(txs, nil,nil)
 	return block, nil
 }
 

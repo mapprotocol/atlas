@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/miner"
@@ -49,7 +48,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapshotCache           int
 		Preimages               bool
 		Miner                   miner.Config
-		Ethash                  ethash.Config
+		//Ethash                  ethash.Config
 		TxPool                  txsdetails.TxPoolConfig
 		GPO                     gasprice.Config
 		EnablePreimageRecording bool
@@ -65,8 +64,8 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.Genesis = c.Genesis
 	enc.NetworkId = c.NetworkId
 	enc.SyncMode = c.SyncMode
-	enc.EthDiscoveryURLs = c.EthDiscoveryURLs
-	enc.SnapDiscoveryURLs = c.SnapDiscoveryURLs
+	//enc.EthDiscoveryURLs = c.EthDiscoveryURLs
+	//enc.SnapDiscoveryURLs = c.SnapDiscoveryURLs
 	enc.NoPruning = c.NoPruning
 	enc.NoPrefetch = c.NoPrefetch
 	enc.TxLookupLimit = c.TxLookupLimit
@@ -76,8 +75,8 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.LightEgress = c.LightEgress
 	enc.LightPeers = c.LightPeers
 	enc.LightNoPrune = c.LightNoPrune
-	enc.LightNoSyncServe = c.LightNoSyncServe
-	enc.SyncFromCheckpoint = c.SyncFromCheckpoint
+	//enc.LightNoSyncServe = c.LightNoSyncServe
+	//enc.SyncFromCheckpoint = c.SyncFromCheckpoint
 	enc.UltraLightServers = c.UltraLightServers
 	enc.UltraLightFraction = c.UltraLightFraction
 	enc.UltraLightOnlyAnnounce = c.UltraLightOnlyAnnounce
@@ -91,9 +90,9 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.TrieDirtyCache = c.TrieDirtyCache
 	enc.TrieTimeout = c.TrieTimeout
 	enc.SnapshotCache = c.SnapshotCache
-	enc.Preimages = c.Preimages
+	//enc.Preimages = c.Preimages
 	enc.Miner = c.Miner
-	enc.Ethash = c.Ethash
+	//enc.Ethash = c.Ethash
 	enc.TxPool = c.TxPool
 	enc.GPO = c.GPO
 	enc.EnablePreimageRecording = c.EnablePreimageRecording
@@ -141,7 +140,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		SnapshotCache           *int
 		Preimages               *bool
 		Miner                   *miner.Config
-		Ethash                  *ethash.Config
+		//Ethash                  *ethash.Config
 		TxPool                  *txsdetails.TxPoolConfig
 		GPO                     *gasprice.Config
 		EnablePreimageRecording *bool
@@ -166,12 +165,12 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.SyncMode != nil {
 		c.SyncMode = *dec.SyncMode
 	}
-	if dec.EthDiscoveryURLs != nil {
-		c.EthDiscoveryURLs = dec.EthDiscoveryURLs
-	}
-	if dec.SnapDiscoveryURLs != nil {
-		c.SnapDiscoveryURLs = dec.SnapDiscoveryURLs
-	}
+	//if dec.EthDiscoveryURLs != nil {
+	//	c.EthDiscoveryURLs = dec.EthDiscoveryURLs
+	//}
+	//if dec.SnapDiscoveryURLs != nil {
+	//	c.SnapDiscoveryURLs = dec.SnapDiscoveryURLs
+	//}
 	if dec.NoPruning != nil {
 		c.NoPruning = *dec.NoPruning
 	}
@@ -199,12 +198,12 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.LightNoPrune != nil {
 		c.LightNoPrune = *dec.LightNoPrune
 	}
-	if dec.LightNoSyncServe != nil {
-		c.LightNoSyncServe = *dec.LightNoSyncServe
-	}
-	if dec.SyncFromCheckpoint != nil {
-		c.SyncFromCheckpoint = *dec.SyncFromCheckpoint
-	}
+	//if dec.LightNoSyncServe != nil {
+	//	c.LightNoSyncServe = *dec.LightNoSyncServe
+	//}
+	//if dec.SyncFromCheckpoint != nil {
+	//	c.SyncFromCheckpoint = *dec.SyncFromCheckpoint
+	//}
 	if dec.UltraLightServers != nil {
 		c.UltraLightServers = dec.UltraLightServers
 	}
@@ -244,15 +243,15 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.SnapshotCache != nil {
 		c.SnapshotCache = *dec.SnapshotCache
 	}
-	if dec.Preimages != nil {
-		c.Preimages = *dec.Preimages
-	}
+	//if dec.Preimages != nil {
+	//	c.Preimages = *dec.Preimages
+	//}
 	if dec.Miner != nil {
 		c.Miner = *dec.Miner
 	}
-	if dec.Ethash != nil {
-		c.Ethash = *dec.Ethash
-	}
+	//if dec.Ethash != nil {
+	//	c.Ethash = *dec.Ethash
+	//}
 	if dec.TxPool != nil {
 		c.TxPool = *dec.TxPool
 	}

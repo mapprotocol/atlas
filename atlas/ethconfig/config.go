@@ -1,45 +1,17 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
-// Package ethconfig contains the configuration of the ETH and LES protocols.
 package ethconfig
 
 import (
-	"math/big"
-	"os"
-	"os/user"
-	"path/filepath"
-	"runtime"
-	"time"
-
-	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
-	params2 "github.com/mapprotocol/atlas/params"
-
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/gasprice"
-	"github.com/mapprotocol/atlas/cmd/node"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/consensus/clique"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/txsdetails"
 	"github.com/mapprotocol/atlas/miner"
+	params2 "github.com/mapprotocol/atlas/params"
+	"math/big"
+	"time"
 )
 
 // FullNodeGPO contains default gasprice oracle settings for full node.
@@ -59,15 +31,6 @@ var LightClientGPO = gasprice.Config{
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
 	SyncMode: downloader.FastSync,
-	Ethash: ethash.Config{
-		CacheDir:         "ethash",
-		CachesInMem:      2,
-		CachesOnDisk:     3,
-		CachesLockMmap:   false,
-		DatasetsInMem:    1,
-		DatasetsOnDisk:   2,
-		DatasetsLockMmap: false,
-	},
 	NetworkId:               params2.MainnetNetWorkID,
 	TxLookupLimit:           2350000,
 	LightPeers:              100,
@@ -80,10 +43,10 @@ var Defaults = Config{
 	TrieTimeout:             60 * time.Minute,
 	SnapshotCache:           102,
 	Miner: miner.Config{
-		//GasFloor: 8000000,
-		//GasCeil:  8000000,
-		//GasPrice: big.NewInt(params.GWei),
-		//Recommit: 3 * time.Second,
+		GasFloor: 8000000,
+		GasCeil:  8000000,
+		GasPrice: big.NewInt(params.GWei),
+		Recommit: 3 * time.Second,
 	},
 	TxPool:      txsdetails.DefaultTxPoolConfig,
 	RPCGasCap:   25000000,
@@ -91,30 +54,52 @@ var Defaults = Config{
 	RPCTxFeeCap: 1, // 1 ether
 }
 
-func init() {
-	home := os.Getenv("HOME")
-	if home == "" {
-		if user, err := user.Current(); err == nil {
-			home = user.HomeDir
-		}
-	}
-	if runtime.GOOS == "darwin" {
-		Defaults.Ethash.DatasetDir = filepath.Join(home, "Library", "Ethash")
-	} else if runtime.GOOS == "windows" {
-		localappdata := os.Getenv("LOCALAPPDATA")
-		if localappdata != "" {
-			Defaults.Ethash.DatasetDir = filepath.Join(localappdata, "Ethash")
-		} else {
-			Defaults.Ethash.DatasetDir = filepath.Join(home, "AppData", "Local", "Ethash")
-		}
-	} else {
-		Defaults.Ethash.DatasetDir = filepath.Join(home, ".ethash")
-	}
+//func init() {
+//	home := os.Getenv("HOME")
+//	if home == "" {
+//		if user, err := user.Current(); err == nil {
+//			home = user.HomeDir
+//		}
+//	}
+//	if runtime.GOOS == "darwin" {
+//		Defaults.Ethash.DatasetDir = filepath.Join(home, "Library", "Ethash")
+//	} else if runtime.GOOS == "windows" {
+//		localappdata := os.Getenv("LOCALAPPDATA")
+//		if localappdata != "" {
+//			Defaults.Ethash.DatasetDir = filepath.Join(localappdata, "Ethash")
+//		} else {
+//			Defaults.Ethash.DatasetDir = filepath.Join(home, "AppData", "Local", "Ethash")
+//		}
+//	} else {
+//		Defaults.Ethash.DatasetDir = filepath.Join(home, ".ethash")
+//	}
+//}
+
+// DefaultConfig contains default settings for use on the Ethereum main net.
+var DefaultConfig = Config{
+	SyncMode:                downloader.FastSync,
+	NetworkId:               1,
+	LightPeers:              100,
+	LightServ:               0,
+	UltraLightFraction:      75,
+	DatabaseCache:           512,
+	TrieCleanCache:          154,
+	TrieCleanCacheJournal:   "triecache",
+	TrieCleanCacheRejournal: 60 * time.Minute,
+	TrieDirtyCache:          256,
+	TrieTimeout:             60 * time.Minute,
+	SnapshotCache:           102,
+	GatewayFee:              big.NewInt(0),
+
+	TxPool:      txsdetails.DefaultTxPoolConfig,
+	RPCGasCap:   25000000,
+	RPCTxFeeCap: 500, // 500 celo
+
+	Istanbul: *istanbul.DefaultConfig,
 }
 
 //go:generate gencodec -type Config -formats toml -out gen_config.go
 
-// Config contains configuration options for of the ETH and LES protocols.
 type Config struct {
 	// The genesis block, which is inserted if the database is empty.
 	// If nil, the Ethereum main net block is used.
@@ -126,8 +111,7 @@ type Config struct {
 
 	// This can be set to list of enrtree:// URLs which will be queried for
 	// for nodes to connect to.
-	EthDiscoveryURLs  []string
-	SnapDiscoveryURLs []string
+	DiscoveryURLs []string
 
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand
@@ -138,13 +122,18 @@ type Config struct {
 	Whitelist map[uint64]common.Hash `toml:"-"`
 
 	// Light client options
-	LightServ          int  `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
-	LightIngress       int  `toml:",omitempty"` // Incoming bandwidth limit for light servers
-	LightEgress        int  `toml:",omitempty"` // Outgoing bandwidth limit for light servers
-	LightPeers         int  `toml:",omitempty"` // Maximum number of LES client peers
-	LightNoPrune       bool `toml:",omitempty"` // Whether to disable light chain pruning
-	LightNoSyncServe   bool `toml:",omitempty"` // Whether to serve light clients before syncing
-	SyncFromCheckpoint bool `toml:",omitempty"` // Whether to sync the header chain from the configured checkpoint
+	LightServ    int  `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
+	LightIngress int  `toml:",omitempty"` // Incoming bandwidth limit for light servers
+	LightEgress  int  `toml:",omitempty"` // Outgoing bandwidth limit for light servers
+	LightPeers   int  `toml:",omitempty"` // Maximum number of LES client peers
+	LightNoPrune bool `toml:",omitempty"` // Whether to disable light chain pruning
+	// Minimum gateway fee value to serve a transaction from a light client
+	GatewayFee *big.Int `toml:",omitempty"`
+	// Validator is the address used to sign consensus messages. Also the address for block transaction rewards.
+	Validator common.Address `toml:",omitempty"`
+	// TxFeeRecipient is the GatewayFeeRecipient light clients need to specify in order for their transactions to be accepted by this node.
+	TxFeeRecipient common.Address `toml:",omitempty"`
+	BLSbase        common.Address `toml:",omitempty"`
 
 	// Ultra Light client options
 	UltraLightServers      []string `toml:",omitempty"` // List of trusted ultra light servers
@@ -163,22 +152,18 @@ type Config struct {
 	TrieDirtyCache          int
 	TrieTimeout             time.Duration
 	SnapshotCache           int
-	Preimages               bool
 
 	// Mining options
 	Miner miner.Config
 
-	// Ethash options
-	Ethash ethash.Config
-
 	// Transaction pool options
 	TxPool txsdetails.TxPoolConfig
 
-	// Gas Price Oracle options
-	GPO gasprice.Config
-
 	// Enables tracking of SHA3 preimages in the VM
 	EnablePreimageRecording bool
+
+	// Istanbul options
+	Istanbul istanbul.Config
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
@@ -190,11 +175,11 @@ type Config struct {
 	EVMInterpreter string
 
 	// RPCGasCap is the global gas cap for eth-call variants.
-	RPCGasCap uint64
+	RPCGasCap uint64 `toml:",omitempty"`
 
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transction variants. The unit is ether.
-	RPCTxFeeCap float64
+	RPCTxFeeCap float64 `toml:",omitempty"`
 
 	// Checkpoint is a hardcoded checkpoint which can be nil.
 	Checkpoint *params.TrustedCheckpoint `toml:",omitempty"`
@@ -202,37 +187,12 @@ type Config struct {
 	// CheckpointOracle is the configuration for checkpoint oracle.
 	CheckpointOracle *params.CheckpointOracleConfig `toml:",omitempty"`
 
-	// Berlin block override (TODO: remove after the fork)
-	OverrideBerlin *big.Int `toml:",omitempty"`
-}
+	// Churrito block override (TODO: remove after the fork)
+	OverrideChurrito *big.Int `toml:",omitempty"`
 
-// CreateConsensusEngine creates a consensus engine for the given chain configuration.
-func CreateConsensusEngine(stack *node.Node, chainConfig *params2.ChainConfig, config *ethash.Config, notify []string, noverify bool, db ethdb.Database) consensus.Engine {
-	// If proof-of-authority is requested, set it up
-	if chainConfig.Clique != nil {
-		return clique.New((*params2.CliqueConfig)((*params.CliqueConfig)(chainConfig.Clique)), db)
-	}
-	// Otherwise assume proof-of-work
-	switch config.PowMode {
-	case ethash.ModeFake:
-		log.Warn("Ethash used in fake mode")
-	case ethash.ModeTest:
-		log.Warn("Ethash used in test mode")
-	case ethash.ModeShared:
-		log.Warn("Ethash used in shared mode")
-	}
-	engine := ethash.New(ethash.Config{
-		PowMode:          config.PowMode,
-		CacheDir:         stack.ResolvePath(config.CacheDir),
-		CachesInMem:      config.CachesInMem,
-		CachesOnDisk:     config.CachesOnDisk,
-		CachesLockMmap:   config.CachesLockMmap,
-		DatasetDir:       config.DatasetDir,
-		DatasetsInMem:    config.DatasetsInMem,
-		DatasetsOnDisk:   config.DatasetsOnDisk,
-		DatasetsLockMmap: config.DatasetsLockMmap,
-		NotifyFull:       config.NotifyFull,
-	}, notify, noverify)
-	engine.SetThreads(-1) // Disable CPU mining
-	return engine
+	// Donut block override (TODO: remove after the fork)
+	OverrideDonut *big.Int `toml:",omitempty"`
+
+	// Gas Price Oracle options
+	GPO gasprice.Config
 }
