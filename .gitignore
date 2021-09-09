@@ -8,6 +8,6 @@
 .DS_Store
 
 # used by the Makefile
-build/bin/atlas
+build/bin/*
 
 data

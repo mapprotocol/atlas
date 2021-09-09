@@ -378,6 +378,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 func DefaultGenesisBlock() *Genesis {
 	dr := defaultRelayer()
 	for addr, allc := range genesisRegisterProxyContract() {
+		// add genesis contract to allc
 		dr[addr] = allc
 	}
 
@@ -393,13 +394,18 @@ func DefaultGenesisBlock() *Genesis {
 
 // DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
 func DefaultTestnetGenesisBlock() *Genesis {
+	dr := defaultRelayer()
+	for addr, allc := range genesisRegisterProxyContract() {
+		// add genesis contract to allc
+		dr[addr] = allc
+	}
 	return &Genesis{
 		Config:     params2.TestnetConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,
 		Difficulty: big.NewInt(1000000),
-		Alloc:      defaultRelayer(),
+		Alloc:      dr,
 	}
 }
 
