@@ -36,6 +36,7 @@ var (
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
 		Ethash:              new(params.EthashConfig),
 	}
 
@@ -54,6 +55,7 @@ var (
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
 		Ethash:              new(params.EthashConfig),
 	}
 
@@ -72,6 +74,7 @@ var (
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
 		Ethash:              new(params.EthashConfig),
 	}
 	MainnetNetWorkID uint64 = 211
@@ -98,8 +101,7 @@ var (
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
-		YoloV3Block:         nil,
-		EWASMBlock:          nil,
+		LondonBlock:         big.NewInt(0),
 		CatalystBlock:       nil,
 		Ethash:              new(params.EthashConfig),
 		Clique:              nil,

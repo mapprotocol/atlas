@@ -134,7 +134,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
-	chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideBerlin)
+	chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideLondon)
 	if _, ok := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
 	}
@@ -178,8 +178,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	var (
 		vmConfig = vm.Config{
 			EnablePreimageRecording: config.EnablePreimageRecording,
-			EWASMInterpreter:        config.EWASMInterpreter,
-			EVMInterpreter:          config.EVMInterpreter,
 		}
 		cacheConfig = &chain.CacheConfig{
 			TrieCleanLimit:      config.TrieCleanCache,
@@ -504,15 +502,15 @@ func (s *Ethereum) StopMining() {
 func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
 func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
-func (s *Ethereum) AccountManager() *accounts.Manager { return s.accountManager }
-func (s *Ethereum) BlockChain() *chain.BlockChain     { return s.blockchain }
-func (s *Ethereum) TxPool() *txsdetails.TxPool        { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux     { return s.eventMux }
-func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
-func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
-func (s *Ethereum) IsListening() bool                  { return true } // Always listening
-func (s *Ethereum) Downloader() *downloader.Downloader { return s.handler.downloader }
-func (s *Ethereum) Synced() bool                       { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
+func (s *Ethereum) AccountManager() *accounts.Manager   { return s.accountManager }
+func (s *Ethereum) BlockChain() *chain.BlockChain       { return s.blockchain }
+func (s *Ethereum) TxPool() *txsdetails.TxPool          { return s.txPool }
+func (s *Ethereum) EventMux() *event.TypeMux            { return s.eventMux }
+func (s *Ethereum) Engine() consensus.Engine            { return s.engine }
+func (s *Ethereum) ChainDb() ethdb.Database             { return s.chainDb }
+func (s *Ethereum) IsListening() bool                   { return true } // Always listening
+func (s *Ethereum) Downloader() *downloader.Downloader  { return s.handler.downloader }
+func (s *Ethereum) Synced() bool                        { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
 func (s *Ethereum) ArchiveMode() bool                   { return s.config.NoPruning }
 func (s *Ethereum) BloomIndexer() *indexer.ChainIndexer { return s.bloomIndexer }
 

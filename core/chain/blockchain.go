@@ -35,12 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/state/snapshot"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -49,6 +43,12 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
 )
 
 var (
@@ -75,10 +75,9 @@ var (
 	blockExecutionTimer  = metrics.NewRegisteredTimer("chain/execution", nil)
 	blockWriteTimer      = metrics.NewRegisteredTimer("chain/write", nil)
 
-	blockReorgMeter         = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
-	blockReorgAddMeter      = metrics.NewRegisteredMeter("chain/reorg/add", nil)
-	blockReorgDropMeter     = metrics.NewRegisteredMeter("chain/reorg/drop", nil)
-
+	blockReorgMeter     = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
+	blockReorgAddMeter  = metrics.NewRegisteredMeter("chain/reorg/add", nil)
+	blockReorgDropMeter = metrics.NewRegisteredMeter("chain/reorg/drop", nil)
 
 	blockPrefetchExecuteTimer   = metrics.NewRegisteredTimer("chain/prefetch/executes", nil)
 	blockPrefetchInterruptMeter = metrics.NewRegisteredMeter("chain/prefetch/interrupts", nil)
@@ -1789,8 +1788,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 		}
 		// If the header is a banned one, straight out abort
 		if BadHashes[block.Hash()] {
-			bc.reportBlock(block, nil, core.ErrBlacklistedHash)
-			return it.index, core.ErrBlacklistedHash
+			bc.reportBlock(block, nil, core.ErrBannedHash)
+			return it.index, core.ErrBannedHash
 		}
 		// If the block is known (in the middle of the chain), it's a special case for
 		// Clique blocks where they can share state among each other, so importing an

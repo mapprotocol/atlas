@@ -24,11 +24,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 const (
@@ -833,15 +833,17 @@ func (f *BlockFetcher) importBlocks(peer string, block *types.Block) {
 // internal state.
 func (f *BlockFetcher) forgetHash(hash common.Hash) {
 	// Remove all pending announces and decrement DOS counters
-	for _, announce := range f.announced[hash] {
-		f.announces[announce.origin]--
-		if f.announces[announce.origin] <= 0 {
-			delete(f.announces, announce.origin)
+	if announceMap, ok := f.announced[hash]; ok {
+		for _, announce := range announceMap {
+			f.announces[announce.origin]--
+			if f.announces[announce.origin] <= 0 {
+				delete(f.announces, announce.origin)
+			}
 		}
-	}
-	delete(f.announced, hash)
-	if f.announceChangeHook != nil {
-		f.announceChangeHook(hash, false)
+		delete(f.announced, hash)
+		if f.announceChangeHook != nil {
+			f.announceChangeHook(hash, false)
+		}
 	}
 	// Remove any pending fetches and decrement the DOS counters
 	if announce := f.fetching[hash]; announce != nil {

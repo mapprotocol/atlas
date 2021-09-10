@@ -21,20 +21,20 @@ import (
 	"github.com/mapprotocol/atlas/core/abstract"
 	"sync/atomic"
 
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // statePrefetcher is a basic Prefetcher, which blindly executes a block on top
 // of an arbitrary state with the goal of prefetching potentially useful state
 // data from disk before the main block processor start executing.
 type statePrefetcher struct {
-	config *params.ChainConfig // Chain configuration options
-	bc     abstract.ChainContext   // Canonical block chain
-	engine consensus.Engine    // Consensus engine used for block rewards
+	config *params.ChainConfig   // Chain configuration options
+	bc     abstract.ChainContext // Canonical block chain
+	engine consensus.Engine      // Consensus engine used for block rewards
 }
 
 // NewStatePrefetcher initialises a new statePrefetcher.
@@ -65,11 +65,11 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 			return
 		}
 		// Convert the transaction into an executable message and pre-cache its sender
-		msg, err := tx.AsMessage(signer)
+		msg, err := tx.AsMessage(signer, header.BaseFee)
 		if err != nil {
 			return // Also invalid block, bail out
 		}
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
+		statedb.Prepare(tx.Hash(), i)
 		if err := precacheTransaction(msg, p.config, gaspool, statedb, header, evm); err != nil {
 			return // Ugh, something went horribly wrong, bail out
 		}
