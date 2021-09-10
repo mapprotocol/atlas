@@ -44,7 +44,7 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 		err = errors.New("execution reverted")
 	}
 	if err != nil {
-		log.Warn("PreCompiledContract error code", "code", err)
+		log.Warn("PreCompiledContract error", "code", err)
 	}
 	return ret, err
 }
@@ -61,7 +61,7 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	from := contract.CallerAddress
 	if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0 { //if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0
 		log.Error("register balance insufficient", "address", contract.CallerAddress, "Value", args.Value)
-		return nil, errors.New("invalid input for register")
+		return nil, errors.New("invalid input for register, register balance insufficient")
 	}
 	register := NewRegisterImpl()
 	err = register.Load(evm.StateDB, params.RelayerAddress)
@@ -71,12 +71,12 @@ func register(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	}
 	err = register.InsertAccount2(evm.Context.BlockNumber.Uint64(), from, args.Value)
 	if err != nil {
-		log.Error("register", "address", contract.CallerAddress, "Value", args.Value, "error", err)
+		log.Error("use register method fail", "address", contract.CallerAddress, "Value", args.Value, "error", err)
 		return nil, err
 	}
 	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
-		log.Error("register save state error", "error", err)
+		log.Error("contract save state error", "error", err)
 		return nil, err
 	}
 	addLockedBalance(evm.StateDB, from, args.Value)
@@ -102,7 +102,7 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 
 	if evm.StateDB.GetUnlockedBalance(from).Cmp(args.Value) < 0 {
 		log.Error("register balance insufficient", "address", contract.CallerAddress, "Value", args.Value)
-		return nil, errors.New("invalid input for register")
+		return nil, errors.New("invalid input for register, register balance insufficient")
 	}
 
 	register := NewRegisterImpl()
@@ -114,14 +114,14 @@ func append_(evm *EVM, contract *Contract, input []byte) (ret []byte, err error)
 
 	err = register.AppendAmount(evm.Context.BlockNumber.Uint64(), from, args.Value)
 	if err != nil {
-		log.Error("register extra", "address", contract.CallerAddress, "Value", args.Value, "error", err)
+		log.Error("use append method fail", "address", contract.CallerAddress, "Value", args.Value, "error", err)
 		return nil, err
 	}
 
 	addLockedBalance(evm.StateDB, from, args.Value)
 	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
-		log.Error("register save state error", "error", err)
+		log.Error("contract save state error", "error", err)
 		return nil, err
 	}
 
@@ -154,19 +154,19 @@ func withdraw(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		return nil, err
 	}
 	if evm.StateDB.GetLockedBalance(from).Cmp(args.Value) < 0 {
-		log.Error("register balance insufficient", "address", args.Value, "value", args.Value)
+		log.Error("locked balance insufficient", "address", args.Value, "value", args.Value)
 		return nil, ErrInsufficientBalance
 	}
 
 	log.Info("register withdraw", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
 	err = register.RedeemAccount(evm.Context.BlockNumber.Uint64(), from, args.Value)
 	if err != nil {
-		log.Error("register withdraw error", "address", from, "Value", args.Value, "err", err)
+		log.Error("use withdraw method fail", "address", from, "Value", args.Value, "err", err)
 	}
 
 	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
-		log.Error("register save state error", "error", err)
+		log.Error("contract save state error", "error", err)
 		return nil, err
 	}
 	subLockedBalance(evm.StateDB, from, args.Value)
@@ -201,12 +201,12 @@ func unregister(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 	err = register.CancelAccount(evm.Context.BlockNumber.Uint64(), from, args.Value)
 	log.Info("unregistered", "number", evm.Context.BlockNumber.Uint64(), "address", contract.CallerAddress, "Value", args.Value)
 	if err != nil {
-		log.Error("unregistered error", "address", from, "Value", args.Value, "err", err)
+		log.Error("use unregistered method fail", "address", from, "Value", args.Value, "err", err)
 		return nil, err
 	}
 	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
-		log.Error("register save state error", "error", err)
+		log.Error("contract save state error", "error", err)
 		return nil, err
 	}
 
@@ -266,7 +266,7 @@ func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 	register := NewRegisterImpl()
 	err = register.Load(evm.StateDB, params.RelayerAddress)
 	if err != nil {
-		log.Error("register load error", "error", err)
+		log.Error("contract load error", "error", err)
 		return nil, err
 	}
 	acc := false
