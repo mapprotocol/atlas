@@ -22,12 +22,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-	"strings"
-
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/vm"
 	params2 "github.com/mapprotocol/atlas/params"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -36,7 +34,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -439,19 +436,8 @@ func SingleGenesisBlock(faucet common.Address) *Genesis {
 		Alloc:      dc,
 	}
 }
-func decodePrealloc(data string) GenesisAlloc {
-	var p []struct{ Addr, Balance *big.Int }
-	if err := rlp.NewStream(strings.NewReader(data), 0).Decode(&p); err != nil {
-		panic(err)
-	}
-	ga := make(GenesisAlloc, len(p))
-	for _, account := range p {
-		ga[common.BigToAddress(account.Addr)] = GenesisAccount{Balance: account.Balance}
-	}
-	return ga
-}
 
-var relayer []common.Address = []common.Address{
+var relayer = []common.Address{
 	common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
 	common.HexToAddress("0x32CD75ca677e9C37FD989272afA8504CB8F6eB52"),
 	common.HexToAddress("0x3e3429F72450A39CE227026E8DdeF331E9973E4d"),
@@ -496,16 +482,16 @@ func defaultRelayer2() []*RelayerMember {
 	key9 := hexutil.MustDecode("0x04068f90a637a5de1830203f02fe9b197b0db9ae6d5bf71cc3668b5f5f9e8da09c432949f0e0e9746579ee6c49346b65ccf275924f1ab0909dadc27a479385b284")
 	key10 := hexutil.MustDecode("0x04242019bb0969a3de7adcef74012e76dbb6830b244589551488ca36cbe6e1782c68a1d87d29eac3b29d78b5c45b9f04b31d978957a94e65ddd9208fe9c638abe7")
 	cm := []*RelayerMember{
-		&RelayerMember{Coinbase: relayer[0], Publickey: key1},
-		&RelayerMember{Coinbase: relayer[1], Publickey: key2},
-		&RelayerMember{Coinbase: relayer[2], Publickey: key3},
-		&RelayerMember{Coinbase: relayer[3], Publickey: key4},
-		&RelayerMember{Coinbase: relayer[4], Publickey: key5},
-		&RelayerMember{Coinbase: relayer[5], Publickey: key6},
-		&RelayerMember{Coinbase: relayer[6], Publickey: key7},
-		&RelayerMember{Coinbase: relayer[7], Publickey: key8},
-		&RelayerMember{Coinbase: relayer[8], Publickey: key9},
-		&RelayerMember{Coinbase: relayer[9], Publickey: key10},
+		{Coinbase: relayer[0], Publickey: key1},
+		{Coinbase: relayer[1], Publickey: key2},
+		{Coinbase: relayer[2], Publickey: key3},
+		{Coinbase: relayer[3], Publickey: key4},
+		{Coinbase: relayer[4], Publickey: key5},
+		{Coinbase: relayer[5], Publickey: key6},
+		{Coinbase: relayer[6], Publickey: key7},
+		{Coinbase: relayer[7], Publickey: key8},
+		{Coinbase: relayer[8], Publickey: key9},
+		{Coinbase: relayer[9], Publickey: key10},
 	}
 	return cm
 }

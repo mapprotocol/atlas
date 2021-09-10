@@ -18,6 +18,7 @@ package types
 
 import (
 	"bytes"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math"
 	"math/big"
 	"reflect"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -229,11 +229,11 @@ func TestDeriveFields(t *testing.T) {
 	hash := common.BytesToHash([]byte{0x03, 0x14})
 
 	clearComputedFieldsOnReceipts(t, receipts)
-	if err := receipts.DeriveFields(params.TestChainConfig, hash, number.Uint64(), txs); err != nil {
+	if err := receipts.DeriveFields(params2.TestChainConfig, hash, number.Uint64(), txs); err != nil {
 		t.Fatalf("DeriveFields(...) = %v, want <nil>", err)
 	}
 	// Iterate over all the computed fields and check that they're correct
-	signer := MakeSigner(params.TestChainConfig, number)
+	signer := MakeSigner(params2.TestChainConfig, number)
 
 	logIndex := uint(0)
 	for i := range receipts {

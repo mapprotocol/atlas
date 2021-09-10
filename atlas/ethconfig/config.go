@@ -34,6 +34,7 @@ var Defaults = Config{
 	NetworkId:               params2.MainnetNetWorkID,
 	TxLookupLimit:           2350000,
 	LightPeers:              100,
+	LightServ:               0,
 	UltraLightFraction:      75,
 	DatabaseCache:           512,
 	TrieCleanCache:          154,
@@ -42,6 +43,7 @@ var Defaults = Config{
 	TrieDirtyCache:          256,
 	TrieTimeout:             60 * time.Minute,
 	SnapshotCache:           102,
+	GatewayFee:              big.NewInt(0),
 	Miner: miner.Config{
 		GasFloor: 8000000,
 		GasCeil:  8000000,
@@ -52,6 +54,7 @@ var Defaults = Config{
 	RPCGasCap:   25000000,
 	GPO:         FullNodeGPO,
 	RPCTxFeeCap: 1, // 1 ether
+	Istanbul: *istanbul.DefaultConfig,
 }
 
 //func init() {
@@ -74,29 +77,6 @@ var Defaults = Config{
 //		Defaults.Ethash.DatasetDir = filepath.Join(home, ".ethash")
 //	}
 //}
-
-// DefaultConfig contains default settings for use on the Ethereum main net.
-var DefaultConfig = Config{
-	SyncMode:                downloader.FastSync,
-	NetworkId:               1,
-	LightPeers:              100,
-	LightServ:               0,
-	UltraLightFraction:      75,
-	DatabaseCache:           512,
-	TrieCleanCache:          154,
-	TrieCleanCacheJournal:   "triecache",
-	TrieCleanCacheRejournal: 60 * time.Minute,
-	TrieDirtyCache:          256,
-	TrieTimeout:             60 * time.Minute,
-	SnapshotCache:           102,
-	GatewayFee:              big.NewInt(0),
-
-	TxPool:      txsdetails.DefaultTxPoolConfig,
-	RPCGasCap:   25000000,
-	RPCTxFeeCap: 500, // 500 celo
-
-	Istanbul: *istanbul.DefaultConfig,
-}
 
 //go:generate gencodec -type Config -formats toml -out gen_config.go
 

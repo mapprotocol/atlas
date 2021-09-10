@@ -91,9 +91,7 @@ var (
 	ZeroAddress                  = BytesToAddress([]byte{})
 	RegistrySmartContractAddress = common.HexToAddress("0x000000000000000000000000000000000000ce10")
 
-	// Celo registered contract IDs.
-	// The names are taken from celo-monorepo/packages/protocol/lib/registry-utils.ts
-	AttestationsRegistryId         = makeRegistryId("Attestations")
+	//AttestationsRegistryId         = makeRegistryId("Attestations")
 	BlockchainParametersRegistryId = makeRegistryId("BlockchainParameters")
 	ElectionRegistryId             = makeRegistryId("Election")
 	EpochRewardsRegistryId         = makeRegistryId("EpochRewards")
@@ -107,7 +105,7 @@ var (
 	ReserveRegistryId              = makeRegistryId("Reserve")
 	SortedOraclesRegistryId        = makeRegistryId("SortedOracles")
 	StableTokenRegistryId          = makeRegistryId("StableToken")
-	TransferWhitelistRegistryId    = makeRegistryId("TransferWhitelist")
+	//TransferWhitelistRegistryId    = makeRegistryId("TransferWhitelist")
 	ValidatorsRegistryId           = makeRegistryId("Validators")
 
 	// Function is "getOrComputeTobinTax()"
