@@ -22,8 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/abstract"
-	"github.com/mapprotocol/atlas/core/processor"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -32,18 +30,21 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/mapprotocol/atlas/apis/atlasapi"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/abstract"
+	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
 )
 
 const (
@@ -180,13 +181,6 @@ type StdTraceConfig struct {
 	TxHash common.Hash
 }
 
-// txTraceContext is the contextual infos about a transaction before it gets run.
-type txTraceContext struct {
-	index int         // Index of the transaction within the block
-	hash  common.Hash // Hash of the transaction
-	block common.Hash // Hash of the block containing the transaction
-}
-
 // txTraceResult is the result of a single transaction trace.
 type txTraceResult struct {
 	Result interface{} `json:"result,omitempty"` // Trace results produced by the tracer
@@ -273,11 +267,11 @@ func (api *API) traceChain(ctx context.Context, start, end *types.Block, config 
 				blockCtx := processor.NewEVMBlockContext(task.block.Header(), api.chainContext(localctx), nil)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
-					msg, _ := tx.AsMessage(signer)
-					txctx := &txTraceContext{
-						index: i,
-						hash:  tx.Hash(),
-						block: task.block.Hash(),
+					msg, _ := tx.AsMessage(signer, task.block.BaseFee())
+					txctx := &Context{
+						BlockHash: task.block.Hash(),
+						TxIndex:   i,
+						TxHash:    tx.Hash(),
 					}
 					res, err := api.traceTx(localctx, msg, txctx, blockCtx, task.statedb, config)
 					if err != nil {
@@ -525,11 +519,11 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 			defer pend.Done()
 			// Fetch and execute the next transaction trace tasks
 			for task := range jobs {
-				msg, _ := txs[task.index].AsMessage(signer)
-				txctx := &txTraceContext{
-					index: task.index,
-					hash:  txs[task.index].Hash(),
-					block: blockHash,
+				msg, _ := txs[task.index].AsMessage(signer, block.BaseFee())
+				txctx := &Context{
+					BlockHash: blockHash,
+					TxIndex:   task.index,
+					TxHash:    txs[task.index].Hash(),
 				}
 				res, err := api.traceTx(ctx, msg, txctx, blockCtx, task.statedb, config)
 				if err != nil {
@@ -547,8 +541,8 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 		jobs <- &txTraceTask{statedb: statedb.Copy(), index: i}
 
 		// Generate the next state snapshot fast without tracing
-		msg, _ := tx.AsMessage(signer)
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
+		msg, _ := tx.AsMessage(signer, block.BaseFee())
+		statedb.Prepare(tx.Hash(), i)
 		vmenv := vm.NewEVM(blockCtx, processor.NewEVMTxContext(msg), statedb, api.backend.ChainConfig(), vm.Config{})
 		if _, err := processor.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(msg.Gas())); err != nil {
 			failed = err
@@ -632,7 +626,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 	for i, tx := range block.Transactions() {
 		// Prepare the trasaction for un-traced execution
 		var (
-			msg, _    = tx.AsMessage(signer)
+			msg, _    = tx.AsMessage(signer, block.BaseFee())
 			txContext = processor.NewEVMTxContext(msg)
 			vmConf    vm.Config
 			dump      *os.File
@@ -662,7 +656,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 		}
 		// Execute the transaction and flush any traces to disk
 		vmenv := vm.NewEVM(vmctx, txContext, statedb, chainConfig, vmConf)
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
+		statedb.Prepare(tx.Hash(), i)
 		_, err = processor.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(msg.Gas()))
 		if writer != nil {
 			writer.Flush()
@@ -720,10 +714,10 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 	if err != nil {
 		return nil, err
 	}
-	txctx := &txTraceContext{
-		index: int(index),
-		hash:  hash,
-		block: blockHash,
+	txctx := &Context{
+		BlockHash: blockHash,
+		TxIndex:   int(index),
+		TxHash:    hash,
 	}
 	return api.traceTx(ctx, msg, txctx, vmctx, statedb, config)
 }
@@ -732,7 +726,7 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 // created during the execution of EVM if the given transaction was added on
 // top of the provided block and returns them as a JSON object.
 // You can provide -2 as a block number to trace on top of the pending block.
-func (api *API) TraceCall(ctx context.Context, args atlasapi.CallArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
+func (api *API) TraceCall(ctx context.Context, args atlasapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
 	// Try to retrieve the specified block
 	var (
 		err   error
@@ -764,7 +758,10 @@ func (api *API) TraceCall(ctx context.Context, args atlasapi.CallArgs, blockNrOr
 		}
 	}
 	// Execute the trace
-	msg := args.ToMessage(api.backend.RPCGasCap())
+	msg, err := args.ToMessage(api.backend.RPCGasCap(), block.BaseFee())
+	if err != nil {
+		return nil, err
+	}
 	vmctx := processor.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil)
 
 	var traceConfig *TraceConfig
@@ -776,13 +773,13 @@ func (api *API) TraceCall(ctx context.Context, args atlasapi.CallArgs, blockNrOr
 			Reexec:    config.Reexec,
 		}
 	}
-	return api.traceTx(ctx, msg, new(txTraceContext), vmctx, statedb, traceConfig)
+	return api.traceTx(ctx, msg, new(Context), vmctx, statedb, traceConfig)
 }
 
 // traceTx configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment. The return value will
 // be tracer dependent.
-func (api *API) traceTx(ctx context.Context, message processor.Message, txctx *txTraceContext, vmctx vm.BlockContext, statedb *state.StateDB, config *TraceConfig) (interface{}, error) {
+func (api *API) traceTx(ctx context.Context, message processor.Message, txctx *Context, vmctx vm.BlockContext, statedb *state.StateDB, config *TraceConfig) (interface{}, error) {
 	// Assemble the structured logger or the JavaScript tracer
 	var (
 		tracer    vm.Tracer
@@ -799,7 +796,7 @@ func (api *API) traceTx(ctx context.Context, message processor.Message, txctx *t
 			}
 		}
 		// Constuct the JavaScript tracer to execute with
-		if tracer, err = New(*config.Tracer, txContext); err != nil {
+		if tracer, err = New(*config.Tracer, txctx); err != nil {
 			return nil, err
 		}
 		// Handle timeouts and RPC cancellations
@@ -819,10 +816,10 @@ func (api *API) traceTx(ctx context.Context, message processor.Message, txctx *t
 		tracer = vm.NewStructLogger(config.LogConfig)
 	}
 	// Run the transaction with tracing enabled.
-	vmenv := vm.NewEVM(vmctx, txContext, statedb, api.backend.ChainConfig(), vm.Config{Debug: true, Tracer: tracer})
+	vmenv := vm.NewEVM(vmctx, txContext, statedb, api.backend.ChainConfig(), vm.Config{Debug: true, Tracer: tracer, NoBaseFee: true})
 
 	// Call Prepare to clear out the statedb access list
-	statedb.Prepare(txctx.hash, txctx.block, txctx.index)
+	statedb.Prepare(txctx.TxHash, txctx.TxIndex)
 
 	result, err := processor.ApplyMessage(vmenv, message, new(core.GasPool).AddGas(message.Gas()))
 	if err != nil {

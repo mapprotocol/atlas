@@ -23,12 +23,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/atlas/downloader"
-	"github.com/mapprotocol/atlas/atlas/protocols/eth"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/atlas/downloader"
+	"github.com/mapprotocol/atlas/atlas/protocols/eth"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 const (
@@ -54,7 +54,7 @@ func (h *handler) syncTransactions(p *eth.Peer) {
 	//
 	// TODO(karalabe): Figure out if we could get away with random order somehow
 	var txs types.Transactions
-	pending, _ := h.txpool.Pending()
+	pending, _ := h.txpool.Pending(false)
 	for _, batch := range pending {
 		txs = append(txs, batch...)
 	}

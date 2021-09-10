@@ -27,6 +27,9 @@ type Header struct {
 	Extra       []byte           `json:"extraData"        gencodec:"required"`
 	MixDigest   common.Hash      `json:"mixHash"`
 	Nonce       types.BlockNonce `json:"nonce"`
+
+	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
+	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
 }
 
 func (eh *Header) Hash() common.Hash {

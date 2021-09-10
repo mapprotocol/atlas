@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,29 +14,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package runtime
+package misc
 
 import (
-	"github.com/mapprotocol/atlas/core/processor"
-	"github.com/mapprotocol/atlas/core/vm"
+	"errors"
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/params"
 )
 
-func NewEnv(cfg *Config) *vm.EVM {
-	txContext := vm.TxContext{
-		Origin:   cfg.Origin,
-		GasPrice: cfg.GasPrice,
+// VerifyGaslimit verifies the header gas limit according increase/decrease
+// in relation to the parent gas limit.
+func VerifyGaslimit(parentGasLimit, headerGasLimit uint64) error {
+	// Verify that the gas limit remains within allowed bounds
+	diff := int64(parentGasLimit) - int64(headerGasLimit)
+	if diff < 0 {
+		diff *= -1
 	}
-	blockContext := vm.BlockContext{
-		CanTransfer: processor.CanTransfer,
-		Transfer:    processor.Transfer,
-		GetHash:     cfg.GetHashFn,
-		Coinbase:    cfg.Coinbase,
-		BlockNumber: cfg.BlockNumber,
-		Time:        cfg.Time,
-		Difficulty:  cfg.Difficulty,
-		GasLimit:    cfg.GasLimit,
-		BaseFee:     cfg.BaseFee,
+	limit := parentGasLimit / params.GasLimitBoundDivisor
+	if uint64(diff) >= limit {
+		return fmt.Errorf("invalid gas limit: have %d, want %d +-= %d", headerGasLimit, parentGasLimit, limit-1)
 	}
-
-	return vm.NewEVM(blockContext, txContext, cfg.State, cfg.ChainConfig, cfg.EVMConfig)
+	if headerGasLimit < params.MinGasLimit {
+		return errors.New("invalid gas limit below 5000")
+	}
+	return nil
 }

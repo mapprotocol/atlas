@@ -22,18 +22,21 @@ import (
 	"fmt"
 	"math/big"
 	"time"
-	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
+
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/atlas"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/cmd/node"
 	chainParams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/atlas"
+	"github.com/mapprotocol/atlas/cmd/node"
+	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // Register adds catalyst APIs to the node.
@@ -80,8 +83,10 @@ type blockExecutionEnv struct {
 
 func (env *blockExecutionEnv) commitTransaction(tx *types.Transaction, coinbase common.Address) error {
 	vmconfig := *env.chain.GetVMConfig()
+	snap := env.state.Snapshot()
 	receipt, err := processor.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
 	if err != nil {
+		env.state.RevertToSnapshot(snap)
 		return err
 	}
 	env.txs = append(env.txs, tx)
@@ -126,7 +131,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		time.Sleep(wait)
 	}
 
-	pending, err := pool.Pending()
+	pending, err := pool.Pending(true)
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +149,9 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		Extra:      []byte{},
 		Time:       params.Timestamp,
 	}
+	if config := api.atlas.BlockChain().Config(); config.IsLondon(header.Number) {
+		header.BaseFee = misc.CalcBaseFee(config, parent.Header())
+	}
 	err = api.atlas.Engine().Prepare(bc, header)
 	if err != nil {
 		return nil, err
@@ -156,7 +164,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 
 	var (
 		signer       = types.MakeSigner(bc.Config(), header.Number)
-		txHeap       = types.NewTransactionsByPriceAndNonce(signer, pending)
+		txHeap       = types.NewTransactionsByPriceAndNonce(signer, pending, nil)
 		transactions []*types.Transaction
 	)
 	for {
@@ -173,7 +181,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		from, _ := types.Sender(signer, tx)
 
 		// Execute the transaction
-		env.state.Prepare(tx.Hash(), common.Hash{}, env.tcount)
+		env.state.Prepare(tx.Hash(), env.tcount)
 		err = env.commitTransaction(tx, coinbase)
 		switch err {
 		case core.ErrGasLimitReached:
@@ -245,7 +253,7 @@ func decodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 	return txs, nil
 }
 
-func insertBlockParamsToBlock(params executableData) (*types.Block, error) {
+func insertBlockParamsToBlock(config *chainParams.ChainConfig, parent *types.Header, params executableData) (*types.Block, error) {
 	txs, err := decodeTransactions(params.Transactions)
 	if err != nil {
 		return nil, err
@@ -267,6 +275,9 @@ func insertBlockParamsToBlock(params executableData) (*types.Block, error) {
 		GasUsed:     params.GasUsed,
 		Time:        params.Timestamp,
 	}
+	if config.IsLondon(number) {
+		header.BaseFee = misc.CalcBaseFee(config, parent)
+	}
 	block := types.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */)
 	return block, nil
 }
@@ -279,11 +290,10 @@ func (api *consensusAPI) NewBlock(params executableData) (*newBlockResponse, err
 	if parent == nil {
 		return &newBlockResponse{false}, fmt.Errorf("could not find parent %x", params.ParentHash)
 	}
-	block, err := insertBlockParamsToBlock(params)
+	block, err := insertBlockParamsToBlock(api.atlas.BlockChain().Config(), parent.Header(), params)
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = api.atlas.BlockChain().InsertChainWithoutSealVerification(block)
 	return &newBlockResponse{err == nil}, err
 }

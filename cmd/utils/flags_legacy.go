@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mapprotocol/atlas/cmd/node"
 	"gopkg.in/urfave/cli.v1"
+
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
+	"github.com/mapprotocol/atlas/cmd/node"
 )
 
 var ShowDeprecated = cli.Command{
@@ -33,10 +35,17 @@ var ShowDeprecated = cli.Command{
 	Description: "Show flags that have been deprecated and will soon be removed",
 }
 
-var DeprecatedFlags = []cli.Flag{}
+var DeprecatedFlags = []cli.Flag{
+	LegacyMinerGasTargetFlag,
+	NoUSBFlag,
+}
 
 var (
 	// (Deprecated May 2020, shown in aliased flags section)
+	NoUSBFlag = cli.BoolFlag{
+		Name:  "nousb",
+		Usage: "Disables monitoring for and managing USB hardware wallets (deprecated)",
+	}
 	LegacyRPCEnabledFlag = cli.BoolFlag{
 		Name:  "rpc",
 		Usage: "Enable the HTTP-RPC server (deprecated and will be removed June 2021, use --http)",
@@ -66,6 +75,12 @@ var (
 		Usage: "API's offered over the HTTP-RPC interface (deprecated and will be removed June 2021, use --http.api)",
 		Value: "",
 	}
+	// (Deprecated July 2021, shown in aliased flags section)
+	LegacyMinerGasTargetFlag = cli.Uint64Flag{
+		Name:  "miner.gastarget",
+		Usage: "Target gas floor for mined blocks (deprecated)",
+		Value: ethconfig.Defaults.Miner.GasFloor,
+	}
 )
 
 // showDeprecated displays deprecated flags that will be soon removed from the codebase.
@@ -74,7 +89,8 @@ func showDeprecated(*cli.Context) {
 	fmt.Println("The following flags are deprecated and will be removed in the future!")
 	fmt.Println("--------------------------------------------------------------------")
 	fmt.Println()
-	// TODO remove when there are newly deprecated flags
-	fmt.Println("no deprecated flags to show at this time")
+	for _, flag := range DeprecatedFlags {
+		fmt.Println(flag.String())
+	}
 	fmt.Println()
 }
