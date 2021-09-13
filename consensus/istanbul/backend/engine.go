@@ -535,7 +535,6 @@ func (sb *Backend) checkIsValidSigner(chain consensus.ChainHeaderReader, header 
 // Seal generates a new block for the given input block with the local miner's
 // seal place on top and submits it the the consensus engine.
 func (sb *Backend) Seal(chain consensus.ChainHeaderReader, block *types.Block) error {
-
 	header := block.Header()
 
 	// Bail out if we're unauthorized to sign a block
@@ -668,6 +667,11 @@ func (sb *Backend) StartValidating() error {
 	}
 
 	if sb.hasBadBlock == nil || sb.processBlock == nil || sb.validateState == nil {
+		sb.logger.Warn("Must SetCallBacks prior to StartValidating",
+			"hasBadBlock", sb.hasBadBlock,
+			"processBlock", sb.processBlock,
+			"validateState", sb.validateState,
+		)
 		return errors.New("Must SetCallBacks prior to StartValidating")
 	}
 

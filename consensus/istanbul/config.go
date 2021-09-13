@@ -18,6 +18,7 @@ package istanbul
 
 import (
 	"fmt"
+
 	params2 "github.com/mapprotocol/atlas/params"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -92,7 +93,7 @@ var DefaultConfig = &Config{
 	//ValidatorEnodeDBPath:           "validatorenodes",
 	//VersionCertificateDBPath:       "versioncertificates",
 	//RoundStateDBPath:               "roundstates",
-	Validator:                      false,
+	Validator:                      true, // as miner~~
 	Replica:                        false,
 	Proxy:                          false,
 	Proxied:                        false,

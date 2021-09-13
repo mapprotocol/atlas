@@ -18,13 +18,14 @@ package miner
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/mapprotocol/atlas/core/chain"
 	params2 "github.com/mapprotocol/atlas/params"
-	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
@@ -57,6 +58,16 @@ const (
 	// increasing upper limit or decreasing lower limit so that the limit can be reachable.
 	intervalAdjustBias = 200 * 1000.0 * 1000.0
 )
+
+// callBackEngine is a subset of the consensus.Istanbul interface. It is used over consensus.Istanbul to enable sealing
+// for the MockEngine (which implements this and the engine interface, but not the full istanbul interface).
+type callBackEngine interface {
+	// SetCallBacks sets call back functions
+	SetCallBacks(hasBadBlock func(common.Hash) bool,
+		processBlock func(*types.Block, *state.StateDB) (types.Receipts, []*types.Log, uint64, error),
+		validateState func(*types.Block, *state.StateDB, types.Receipts, uint64) error,
+		onNewConsensusBlock func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB)) error
+}
 
 // task contains all information for consensus engine sealing and result submitting.
 type task struct {
@@ -184,8 +195,33 @@ func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
 	w.startCh <- struct{}{}
 
+	if cbEngine, ok := w.engine.(callBackEngine); ok {
+		cbEngine.SetCallBacks(w.chain.HasBadBlock,
+			func(block *types.Block, state *state.StateDB) (types.Receipts, []*types.Log, uint64, error) {
+				return w.chain.Processor().Process(block, state, *w.chain.GetVMConfig())
+			},
+			w.chain.Validator().ValidateState,
+			func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) {
+				if _, err := w.chain.WriteBlockWithState(block, receipts, logs, state, false); err != nil {
+					if err == core.ErrNotHeadBlock {
+						log.Warn("Tried to insert duplicated produced block", "blockNumber", block.Number(), "hash", block.Hash(), "err", err)
+					} else {
+						log.Error("Failed to insert produced block", "blockNumber", block.Number(), "hash", block.Hash(), "err", err)
+					}
+					return
+				}
+				log.Info("Successfully produced new block", "number", block.Number(), "hash", block.Hash())
+
+				if err := w.mux.Post(core.NewMinedBlockEvent{Block: block}); err != nil {
+					log.Error("Error when posting NewMinedBlockEvent", "err", err)
+				}
+			})
+	}
+
 	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
+		log.Info("worker start isPrimary")
 		if istanbul.IsPrimary() {
+			log.Info("startValidating")
 			istanbul.StartValidating()
 		}
 	}
@@ -291,6 +327,7 @@ func (w *worker) constructAndSubmitNewBlock(ctx context.Context) {
 
 	// Initialize the block.
 	b, err := prepareBlock(w)
+	log.Info("preparedBlock", "sb-random", b.randomness)
 	if err != nil {
 		log.Error("Failed to create mining context", "err", err)
 		return

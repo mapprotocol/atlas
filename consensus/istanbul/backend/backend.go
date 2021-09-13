@@ -20,12 +20,13 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ethereum/go-ethereum/trie"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts"
@@ -164,6 +165,7 @@ func New(config *istanbul.Config, db ethdb.Database) consensus.Istanbul {
 		},
 	)
 
+	logger.Warn("config.Validator", "is", config.Validator)
 	if config.Validator {
 		rs, err := replica.NewState(config.Replica, config.ReplicaStateDBPath, backend.StartValidating, backend.StopValidating)
 		if err != nil {
@@ -586,7 +588,7 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (*istanbulCore.StateProces
 	}
 
 	// check block body
-	txnHash := types.DeriveSha(block.Transactions(),trie.NewStackTrie(nil))
+	txnHash := types.DeriveSha(block.Transactions(), trie.NewStackTrie(nil))
 	if txnHash != block.Header().TxHash {
 		return nil, 0, errMismatchTxhashes
 	}
