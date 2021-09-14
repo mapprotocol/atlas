@@ -219,9 +219,14 @@ var (
 		Usage: "Megabytes of memory allocated to bloom-filter for pruning",
 		Value: 2048,
 	}
-	OverrideBerlinFlag = cli.Uint64Flag{
-		Name:  "override.berlin",
-		Usage: "Manually specify Berlin fork-block, overriding the bundled setting",
+	//OverrideBerlinFlag = cli.Uint64Flag{
+	//	Name:  "override.berlin",
+	//	Usage: "Manually specify Berlin fork-block, overriding the bundled setting",
+	//}
+	TxFeeRecipientFlag = cli.StringFlag{
+		Name:  "tx-fee-recipient",
+		Usage: "Public address for block transaction fees and gateway fees",
+		Value: "0",
 	}
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
@@ -402,10 +407,29 @@ var (
 		Name:  "cache.preimages",
 		Usage: "Enable recording the SHA3/keccak preimages of trie keys",
 	}
+	// Miner settings
+	MiningEnabledFlag = cli.BoolFlag{
+		Name:  "mine",
+		Usage: "Enable mining",
+	}
 	MinerEtherbaseFlag = cli.StringFlag{
 		Name:  "miner.etherbase",
 		Usage: "Public address for block mining rewards (default = first account)",
 		Value: "0",
+	}
+	MinerExtraDataFlag = cli.StringFlag{
+		Name:  "miner.extradata",
+		Usage: "Block extra data set by the miner (default = client version)",
+	}
+	MinerThreadsFlag = cli.IntFlag{
+		Name:  "miner.threads",
+		Usage: "Number of CPU threads to use for mining",
+		Value: 0,
+	}
+	MinerGasPriceFlag = BigFlag{
+		Name:  "miner.gasprice",
+		Usage: "Minimum gas price for mining a transaction",
+		Value: ethconfig.Defaults.Miner.GasPrice,
 	}
 	// Account settings
 	UnlockedAccountFlag = cli.StringFlag{
@@ -1295,18 +1319,18 @@ func setMiner(ctx *cli.Context, cfg *miner.Config) {
 	//	cfg.Notify = strings.Split(ctx.GlobalString(MinerNotifyFlag.Name), ",")
 	//}
 	//cfg.NotifyFull = ctx.GlobalBool(MinerNotifyFullFlag.Name)
-	//if ctx.GlobalIsSet(MinerExtraDataFlag.Name) {
-	//	cfg.ExtraData = []byte(ctx.GlobalString(MinerExtraDataFlag.Name))
-	//}
+	if ctx.GlobalIsSet(MinerExtraDataFlag.Name) {
+		cfg.ExtraData = []byte(ctx.GlobalString(MinerExtraDataFlag.Name))
+	}
 	//if ctx.GlobalIsSet(MinerGasTargetFlag.Name) {
 	//	cfg.GasFloor = ctx.GlobalUint64(MinerGasTargetFlag.Name)
 	//}
 	//if ctx.GlobalIsSet(MinerGasLimitFlag.Name) {
 	//	cfg.GasCeil = ctx.GlobalUint64(MinerGasLimitFlag.Name)
 	//}
-	//if ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-	//	cfg.GasPrice = GlobalBig(ctx, MinerGasPriceFlag.Name)
-	//}
+	if ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
+		cfg.GasPrice = GlobalBig(ctx, MinerGasPriceFlag.Name)
+	}
 	//if ctx.GlobalIsSet(MinerRecommitIntervalFlag.Name) {
 	//	cfg.Recommit = ctx.GlobalDuration(MinerRecommitIntervalFlag.Name)
 	//}
@@ -1399,8 +1423,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setEtherbase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO, ctx.GlobalString(SyncModeFlag.Name) == "light")
 	setTxPool(ctx, &cfg.TxPool)
+	setTxFeeRecipient(ctx, ks, cfg)
 	//setEthash(ctx, cfg)
-	//setMiner(ctx, &cfg.Miner)
+	setMiner(ctx, &cfg.Miner)
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
 
@@ -1855,5 +1880,29 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 			}
 		}
 		return action(ctx)
+	}
+}
+
+// setTxFeeRecipient retrieves the txFeeRecipient address either from the directly specified
+// command line flags or from the keystore if CLI indexed.
+// `TxFeeRecipient` is the address earned block transaction fees are sent to.
+func setTxFeeRecipient(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
+	if ctx.GlobalIsSet(TxFeeRecipientFlag.Name) {
+		if !ctx.GlobalIsSet(MinerEtherbaseFlag.Name) {
+			Fatalf("`etherbase` and `tx-fee-recipient` flag should not be used together. `miner.validator` and `tx-fee-recipient` constitute both of `etherbase`' functions")
+		}
+		txFeeRecipient := ctx.GlobalString(TxFeeRecipientFlag.Name)
+
+		// Convert the txFeeRecipient into an address and configure it
+		if txFeeRecipient != "" {
+			account, err := MakeAddress(ks, txFeeRecipient)
+			if err != nil {
+				Fatalf("Invalid txFeeRecipient: %v", err)
+			}
+			cfg.TxFeeRecipient = account.Address
+		}
+	} else {
+		// Backwards compatibility. If the miner was set by the "etherbase" flag, both should have the same info
+		cfg.TxFeeRecipient = cfg.Miner.Etherbase
 	}
 }

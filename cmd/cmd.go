@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/atlas"
 	"os"
 	"sort"
 	"strconv"
@@ -65,7 +66,7 @@ var (
 		utils.NoUSBFlag,
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
-		utils.OverrideBerlinFlag,
+		//utils.OverrideBerlinFlag,
 		utils.EthashCacheDirFlag,
 		//utils.EthashCachesInMemoryFlag,
 		//utils.EthashCachesOnDiskFlag,
@@ -137,6 +138,12 @@ var (
 		utils.EVMInterpreterFlag,
 		configFileFlag,
 		utils.CatalystFlag,
+		utils.MiningEnabledFlag,
+		utils.MinerEtherbaseFlag,
+		utils.MinerExtraDataFlag,
+		utils.MinerThreadsFlag,
+		utils.MinerGasPriceFlag,
+		utils.TxFeeRecipientFlag,
 	}
 
 	rpcFlags = []cli.Flag{
@@ -379,6 +386,25 @@ func startNode(ctx *cli.Context, stack *node.Node, backend atlasapi.Backend) {
 				}
 			}
 		}()
+	}
+	// Start auxiliary services if enabled
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.SingleFlag.Name) {
+		// Mining only makes sense if a full Ethereum node is running
+		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
+			utils.Fatalf("Light clients do not support mining")
+		}
+		ethBackend, ok := backend.(*atlas.EthAPIBackend)
+		if !ok {
+			utils.Fatalf("Ethereum service not running: %v", err)
+		}
+		// Set the gas price to the limits from the CLI and start mining
+		gasprice := utils.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)
+		ethBackend.TxPool().SetGasPrice(gasprice)
+		// start mining
+		threads := ctx.GlobalInt(utils.MinerThreadsFlag.Name)
+		if err := ethBackend.StartMining(threads); err != nil {
+			utils.Fatalf("Failed to start mining: %v", err)
+		}
 	}
 
 }

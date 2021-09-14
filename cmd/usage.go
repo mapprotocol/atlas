@@ -51,6 +51,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			utils.IdentityFlag,
 			utils.LightKDFFlag,
 			utils.WhitelistFlag,
+			utils.TxFeeRecipientFlag,
 		},
 	},
 	{
@@ -174,6 +175,16 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			utils.NetrestrictFlag,
 			utils.NodeKeyFileFlag,
 			utils.NodeKeyHexFlag,
+		},
+	},
+	{
+		Name: "MINER",
+		Flags: []cli.Flag{
+			utils.MiningEnabledFlag,
+			utils.MinerEtherbaseFlag,
+			utils.MinerExtraDataFlag,
+			utils.MinerGasPriceFlag,
+			utils.MinerThreadsFlag,
 		},
 	},
 	{
