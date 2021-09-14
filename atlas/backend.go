@@ -159,6 +159,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		networkID:         config.NetworkId,
 		//gasPrice:          config.Miner.GasPrice,
 		etherbase:         config.Miner.Etherbase,
+		txFeeRecipient:    config.TxFeeRecipient,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      indexer.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		p2pServer:         stack.Server(),
