@@ -202,7 +202,7 @@ func (w *worker) start() {
 			},
 			w.chain.Validator().ValidateState,
 			func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) {
-				if _, err := w.chain.WriteBlockWithState(block, receipts, logs, state, false); err != nil {
+				if err := w.chain.InsertPreprocessedBlock(block, receipts, logs, state); err != nil {
 					if err == core.ErrNotHeadBlock {
 						log.Warn("Tried to insert duplicated produced block", "blockNumber", block.Number(), "hash", block.Hash(), "err", err)
 					} else {
@@ -219,9 +219,7 @@ func (w *worker) start() {
 	}
 
 	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
-		log.Info("worker start isPrimary")
 		if istanbul.IsPrimary() {
-			log.Info("startValidating")
 			istanbul.StartValidating()
 		}
 	}
@@ -327,7 +325,6 @@ func (w *worker) constructAndSubmitNewBlock(ctx context.Context) {
 
 	// Initialize the block.
 	b, err := prepareBlock(w)
-	log.Info("preparedBlock", "sb-random", b.randomness)
 	if err != nil {
 		log.Error("Failed to create mining context", "err", err)
 		return

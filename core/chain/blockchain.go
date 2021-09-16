@@ -20,13 +20,9 @@ package chain
 import (
 	"errors"
 	"fmt"
+
 	params2 "github.com/mapprotocol/atlas/params"
 
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/abstract"
-	"github.com/mapprotocol/atlas/core/processor"
-	"github.com/mapprotocol/atlas/core/txsdetails"
-	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -34,6 +30,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/abstract"
+	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/txsdetails"
+	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
@@ -46,6 +48,8 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/state/snapshot"
@@ -1455,6 +1459,21 @@ func (bc *BlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EV
 	return vmcontext.NewEVMRunner(bc, header, state)
 }
 
+// InsertPreprocessedBlock inserts a block which is already processed.
+// It can only insert the new Head block
+func (bc *BlockChain) InsertPreprocessedBlock(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) error {
+	bc.chainmu.Lock()
+	defer bc.chainmu.Unlock()
+
+	// check we are trying to insert the NEXT block
+	if block.Header().ParentHash != bc.CurrentHeader().Hash() {
+		return core.ErrNotHeadBlock
+	}
+
+	_, err := bc.writeBlockWithState(block, receipts, logs, state, true)
+	return err
+}
+
 // WriteBlockWithState writes the block and all associated state to the database.
 func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) (status WriteStatus, err error) {
 	bc.chainmu.Lock()
@@ -1476,13 +1495,13 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 			log.Error("Found two blocks with same height", "old", hash, "new", block.Hash())
 		}
 
-		//lookbackWindow := istEngine.LookbackWindow(block.Header(), state)
+		lookbackWindow := istEngine.LookbackWindow(block.Header(), state)
 
-		//uptimeMonitor := uptime.NewMonitor(store.New(bc.db), bc.chainConfig.Istanbul.Epoch, lookbackWindow)
-		//err = uptimeMonitor.ProcessBlock(block)
-		//if err != nil {
-		//	return NonStatTy, err
-		//}
+		uptimeMonitor := uptime.NewMonitor(store.New(bc.db), bc.chainConfig.Istanbul.Epoch, lookbackWindow)
+		err = uptimeMonitor.ProcessBlock(block)
+		if err != nil {
+			return NonStatTy, err
+		}
 
 		blockAuthor, err := istEngine.Author(block.Header())
 		if err != nil {
@@ -2621,5 +2640,6 @@ func (bc *BlockChain) RecoverRandomnessCache(commitment common.Hash, commitmentB
 // HasBadBlock returns whether the block with the hash is a bad block
 func (bc *BlockChain) HasBadBlock(hash common.Hash) bool {
 
-	return true //bc.badBlocks.Contains(hash)
+	//bc.badBlocks.Contains(hash)
+	return false
 }
