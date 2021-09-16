@@ -1459,9 +1459,8 @@ func (bc *BlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EV
 	return vmcontext.NewEVMRunner(bc, header, state)
 }
 
-// InsertPreprocessedBlock inserts a block which is already processed.
-// It can only insert the new Head block
-func (bc *BlockChain) InsertPreprocessedBlock(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) error {
+// WriteBlockWithState writes the block and all associated state to the database.
+func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) error {
 	bc.chainmu.Lock()
 	defer bc.chainmu.Unlock()
 
@@ -1472,14 +1471,6 @@ func (bc *BlockChain) InsertPreprocessedBlock(block *types.Block, receipts []*ty
 
 	_, err := bc.writeBlockWithState(block, receipts, logs, state, true)
 	return err
-}
-
-// WriteBlockWithState writes the block and all associated state to the database.
-func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) (status WriteStatus, err error) {
-	bc.chainmu.Lock()
-	defer bc.chainmu.Unlock()
-
-	return bc.writeBlockWithState(block, receipts, logs, state, emitHeadEvent)
 }
 
 // writeBlockWithState writes the block and all associated state to the database,

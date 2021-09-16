@@ -65,7 +65,7 @@ func (ev *evmRunner) ExecuteFrom(sender, recipient common.Address, input []byte,
 func (ev *evmRunner) Query(recipient common.Address, input []byte, gas uint64) (ret []byte, err error) {
 	evm := ev.newEVM(VMAddress)
 	if ev.dontMeterGas {
-		//evm.StopGasMetering()
+		evm.StopGasMetering()
 	}
 	ret, _, err = evm.StaticCall(vm.AccountRef(evm.Origin), recipient, input, gas)
 	return ret, err
