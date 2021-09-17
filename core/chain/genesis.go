@@ -48,15 +48,14 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 // Genesis specifies the header fields, state of a genesis block. It also defines hard
 // fork switch-over blocks through the chain configuration.
 type Genesis struct {
-	Config     *params2.ChainConfig `json:"config"`
-	Nonce      uint64               `json:"nonce"`
-	Timestamp  uint64               `json:"timestamp"`
-	ExtraData  []byte               `json:"extraData"`
-	GasLimit   uint64               `json:"gasLimit"   gencodec:"required"`
-	Difficulty *big.Int             `json:"difficulty" gencodec:"required"`
-	Mixhash    common.Hash          `json:"mixHash"`
-	Coinbase   common.Address       `json:"coinbase"`
-	Alloc      GenesisAlloc         `json:"alloc"      gencodec:"required"`
+	Config    *params2.ChainConfig `json:"config"`
+	Nonce     uint64               `json:"nonce"`
+	Timestamp uint64               `json:"timestamp"`
+	ExtraData []byte               `json:"extraData"`
+	GasLimit  uint64               `json:"gasLimit"   gencodec:"required"`
+	Mixhash   common.Hash          `json:"mixHash"`
+	Coinbase  common.Address       `json:"coinbase"`
+	Alloc     GenesisAlloc         `json:"alloc"      gencodec:"required"`
 
 	// These fields are used for consensus tests. Please don't use them
 	// in actual genesis blocks.
@@ -339,7 +338,7 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 	if err := config.CheckConfigForkOrder(); err != nil {
 		return nil, err
 	}
-	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), g.Difficulty)
+	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), block.TotalDifficulty())
 	rawdb.WriteBlock(db, block)
 	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
 	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
@@ -380,12 +379,11 @@ func DefaultGenesisBlock() *Genesis {
 	}
 
 	return &Genesis{
-		Config:     params2.MainnetChainConfig,
-		Nonce:      66,
-		ExtraData:  hexutil.MustDecode(mainnetExtraData),
-		GasLimit:   50000000,
-		Difficulty: big.NewInt(1200000),
-		Alloc:      dr,
+		Config:    params2.MainnetChainConfig,
+		Nonce:     66,
+		ExtraData: hexutil.MustDecode(mainnetExtraData),
+		GasLimit:  50000000,
+		Alloc:     dr,
 	}
 }
 
@@ -397,12 +395,11 @@ func DefaultTestnetGenesisBlock() *Genesis {
 		dr[addr] = allc
 	}
 	return &Genesis{
-		Config:     params2.TestnetConfig,
-		Nonce:      66,
-		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
-		GasLimit:   16777216,
-		Difficulty: big.NewInt(1000000),
-		Alloc:      dr,
+		Config:    params2.TestnetConfig,
+		Nonce:     66,
+		ExtraData: hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
+		GasLimit:  16777216,
+		Alloc:     dr,
 	}
 }
 
@@ -412,11 +409,10 @@ func DevnetGenesisBlock(faucet common.Address) *Genesis {
 	defaultBalance, _ := new(big.Int).SetString("100000000000000000000000000", 10)
 	dc[faucet] = GenesisAccount{Balance: defaultBalance}
 	return &Genesis{
-		Config:     params2.DevnetConfig,
-		ExtraData:  []byte{1, 2, 3},
-		GasLimit:   11500000,
-		Difficulty: big.NewInt(1000000),
-		Alloc:      dc,
+		Config:    params2.DevnetConfig,
+		ExtraData: []byte{1, 2, 3},
+		GasLimit:  11500000,
+		Alloc:     dc,
 	}
 }
 
@@ -429,11 +425,10 @@ func SingleGenesisBlock(faucet common.Address) *Genesis {
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
 	return &Genesis{
-		Config:     &config,
-		ExtraData:  append(append(make([]byte, 32), faucet[:]...), make([]byte, crypto.SignatureLength)...),
-		GasLimit:   11500000,
-		Difficulty: big.NewInt(1),
-		Alloc:      dc,
+		Config:    &config,
+		ExtraData: append(append(make([]byte, 32), faucet[:]...), make([]byte, crypto.SignatureLength)...),
+		GasLimit:  11500000,
+		Alloc:     dc,
 	}
 }
 
