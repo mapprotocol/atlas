@@ -39,6 +39,7 @@ func RunTxVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 
 	data := input[4:]
 	switch method.Name {
+	// input[:4] 0x7df27c0b
 	case TxVerify:
 		ret, err = txVerify(evm, contract, data)
 	default:
@@ -63,7 +64,7 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		TxProve  []byte
 	}{}
 
-	method, _ := abiTxVerify.Methods[TxVerify]
+	method := abiTxVerify.Methods[TxVerify]
 	defer func() {
 		var (
 			packErr error
@@ -74,6 +75,25 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		if err != nil {
 			success, message = false, err.Error()
 		}
+		// In general, the Pack operation will not fail. Here we can choose to ignore Pack operation error.
+		// This is not absolute, so use a new value to receive the Pack operation error,
+		// and record the error in the log when the error is not nil.
+		/*
+			1. ret, packErr = method.Outputs.Pack(success, message)
+				packErr == nil
+					ret == {true, ""}, err == nil
+					ret == {false, "... error"}, err == errors.New("... error")
+				packErr != nil
+					ret == nil, err == nil  // unexpected
+					ret == nil, err == errors.New("... error")
+
+			2. ret, err` = method.Outputs.Pack(success, message)
+				err` == nil
+					ret == {true, ""}, err == nil
+					ret == {false, "... error"}, err == nil  // unexpected
+				err` != nil
+					ret == nil, err == errors.New("pack error ...")
+		*/
 		ret, packErr = method.Outputs.Pack(success, message)
 		if packErr != nil {
 			log.Error("txVerify outputs pack failed", "error", packErr.Error())
@@ -87,6 +107,7 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if err := method.Inputs.Copy(&args, unpack); err != nil {
 		return nil, err
 	}
+	log.Info("txVerify input params", "router", args.Router, "coin", args.Coin, "srcChain", args.SrcChain, "dstChain", args.DstChain)
 
 	// params check
 	if bytes.Equal(args.Router.Bytes(), common.Address{}.Bytes()) {
