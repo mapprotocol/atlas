@@ -2208,6 +2208,56 @@ func (s *PublicRelayerAPI) GetSyncNumber(ctx context.Context, address common.Add
 	return num, nil
 }
 
+func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.Int, error) {
+	bn := rpc.LatestBlockNumber
+	statedb, _, err := s.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
+	if err != nil {
+		return nil, err
+	}
+	if statedb == nil {
+		return nil, errors.New("failed to get state by number")
+	}
+
+	if epochID == 0 {
+		register := vm.NewRegisterImpl()
+		if err := register.Load(statedb, params2.RelayerAddress); err != nil {
+			return nil, err
+		}
+		epochID = register.GetCurrentEpochID()
+	}
+
+	hs := new(vm.HeaderStore)
+	if err := hs.Load(statedb, params2.HeaderStoreAddress); err != nil {
+		return nil, err
+	}
+	return hs.LoadReward(epochID, relayer), nil
+}
+
+func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (uint64, error) {
+	bn := rpc.LatestBlockNumber
+	statedb, _, err := s.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
+	if err != nil {
+		return 0, err
+	}
+	if statedb == nil {
+		return 0, errors.New("failed to get state by number")
+	}
+
+	if epochID == 0 {
+		register := vm.NewRegisterImpl()
+		if err := register.Load(statedb, params2.RelayerAddress); err != nil {
+			return 0, err
+		}
+		epochID = register.GetCurrentEpochID()
+	}
+
+	hs := new(vm.HeaderStore)
+	if err := hs.Load(statedb, params2.HeaderStoreAddress); err != nil {
+		return 0, err
+	}
+	return hs.LoadSyncTimes(epochID, relayer), nil
+}
+
 type PublicHeaderStoreAPI struct {
 	b Backend
 }

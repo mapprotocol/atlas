@@ -564,6 +564,10 @@ func (i *RegisterImpl) getCurrentEpochInfo() []*EpochIDInfo {
 	return epochs
 }
 
+func (i *RegisterImpl) GetCurrentEpochID() uint64 {
+	return i.getCurrentEpoch()
+}
+
 func (i *RegisterImpl) GetCurrentEpochInfo() ([]*EpochIDInfo, uint64) {
 	return i.getCurrentEpochInfo(), i.getCurrentEpoch()
 }
