@@ -14,6 +14,7 @@ Validators gather transactions received from other nodes and execute any associa
 ## Running a private miner
 In a private network setting, you need to encode a types.IstanbulExtra data struct with rlp.
 and put it into the extraData field of the genesis block.
+- types.IstanbulExtra introduction
 ```
 type IstanbulExtra struct {
 	// AddedValidators are the validators that have been added in the block
@@ -30,8 +31,98 @@ type IstanbulExtra struct {
 	ParentAggregatedSeal IstanbulAggregatedSeal
 }
 ```
-in the types.IstanbulExtra data struct,we can assigned the validators at the first epoch by providing 
+- example for encoding types.IstanbulExtra
+
+```
+package test
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	"math/big"
+	"testing"
+)
+
+func TestEncodeData(t *testing.T) {
+	// set the account number at least 4
+	ads := make([]common.Address, 0)
+	sliceOfAddressHexStr := []string{
+		"0x1c0eDab88dbb72B119039c4d14b1663525b3aC15",
+		"0x16FdBcAC4D4Cc24DCa47B9b80f58155a551ca2aF",
+		"0x2dC45799000ab08E60b7441c36fCC74060Ccbe11",
+		"0x6C5938B49bACDe73a8Db7C3A7DA208846898BFf5",
+	}
+
+	for _, s := range sliceOfAddressHexStr {
+		ads = append(ads, common.HexToAddress(s))
+	}
+
+	// account public key
+	apks := make([]blscrypto.SerializedPublicKey, 0)
+	sliceOfBlsPubKeyHexStr := []string{
+		"0xbe77f945929d5dd3fe99aa825df0f5b1e8ea11786333b4492a8624a4d08dcee0e89df327359e8ec3f2d8ae01e938b7003414aa2d6523ffa02fde42b278cbae311fd39f1fbcad8e3188442ea31dee662389599751f8e73b99215cefc2e0003f81",
+		"0x4f38a71fb13ab20f7bbfc2749ab15d775b7729842d967ca4f4115d1fcb3f378c892d073344f84e2abd8995a16eeee8004f4e588c30261e08a5dae70c581f904ea86b574bfe279222cf6b7913bebb0d3bd6c2bbe2e2ea1d338f145c4d95b99201",
+		"0x8cf3bfcbfc76e9a99b70cad65ae51f8a8972e3e230445a55c8cf6b96dea7a2d0d970e3545e1316554d5d3b0a53582800ad4de92e3b06b62aa6f7677fdc2885a90b75fd80e2db2775512d8f3d3900aabae5b0525786d65615994b07afe7f69481",
+		"0x1bbb8eb14a7f5dddc9de3356ce4247dab8e554fa83cd33e663db148b5d2dd14485f090978c84074154b450329de06b018eac04113ede1eedadf891ee862877af92a648c162be62182db90e8c83f8fd154fc14f13676bcb1fe3503260b6261a01",
+	}
+
+	for _, s := range sliceOfBlsPubKeyHexStr {
+		pk1 := blscrypto.SerializedPublicKey{}
+		pk1.UnmarshalText([]byte(s))
+		apks = append(apks, pk1)
+	}
+
+	ist := types.IstanbulExtra{
+		AddedValidators:           ads,
+		AddedValidatorsPublicKeys: apks,
+		RemovedValidators:         big.NewInt(0),
+		Seal:                      []byte(""),
+		AggregatedSeal:            types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+	}
+
+	payload, err := rlp.EncodeToBytes(&ist)
+	if err != nil {
+		fmt.Printf("encode failed: %#v", err.Error())
+		return
+	}
+
+	finalExtra := append(bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity), payload...)
+
+	fmt.Printf("finalExtra :%s\n", hexutil.Encode(finalExtra))
+}
+```
+We get encoding data from above example, and Copy it to func `DefaultGenesisBlock` that its path is  `atlas/core/chain/genesis.go`, like under example  
+```
+// encoded data
+const mainnetExtraData = "0x0000000000000000000000000000000000000000000000000000000000000000f901ebf854941c0edab88dbb72b119039c4d14b1663525b3ac159416fdbcac4d4cc24dca47b9b80f58155a551ca2af942dc45799000ab08e60b7441c36fcc74060ccbe11946c5938b49bacde73a8db7c3a7da208846898bff5f90188b860be77f945929d5dd3fe99aa825df0f5b1e8ea11786333b4492a8624a4d08dcee0e89df327359e8ec3f2d8ae01e938b7003414aa2d6523ffa02fde42b278cbae311fd39f1fbcad8e3188442ea31dee662389599751f8e73b99215cefc2e0003f81b8604f38a71fb13ab20f7bbfc2749ab15d775b7729842d967ca4f4115d1fcb3f378c892d073344f84e2abd8995a16eeee8004f4e588c30261e08a5dae70c581f904ea86b574bfe279222cf6b7913bebb0d3bd6c2bbe2e2ea1d338f145c4d95b99201b8608cf3bfcbfc76e9a99b70cad65ae51f8a8972e3e230445a55c8cf6b96dea7a2d0d970e3545e1316554d5d3b0a53582800ad4de92e3b06b62aa6f7677fdc2885a90b75fd80e2db2775512d8f3d3900aabae5b0525786d65615994b07afe7f69481b8601bbb8eb14a7f5dddc9de3356ce4247dab8e554fa83cd33e663db148b5d2dd14485f090978c84074154b450329de06b018eac04113ede1eedadf891ee862877af92a648c162be62182db90e8c83f8fd154fc14f13676bcb1fe3503260b6261a018080c3808080c3808080"
+// add our config
+func DefaultGenesisBlock() *Genesis {
+	dr := defaultRelayer()
+	for addr, allc := range genesisRegisterProxyContract() {
+		// add genesis contract to allc
+		dr[addr] = allc
+	}
+
+	return &Genesis{
+		Config:    params2.MainnetChainConfig,
+		Nonce:     66,
+		ExtraData: hexutil.MustDecode(mainnetExtraData),
+		GasLimit:  50000000,
+		Alloc:     dr,
+	}
+}
+```
+
+In the types.IstanbulExtra data struct,we can assigned the validators at the first epoch by providing 
 addresses and BLS public keys.
+
+In here, you can build it.
 
 To start a `atlas` instance for mining, run it with all your usual flags, extended
 by:
