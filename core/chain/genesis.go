@@ -275,6 +275,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 
 	//////////////////////////////////pro compiled////////////////////////////////////
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
+	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(g.Number))
 	register := vm.NewRegisterImpl()
 	hh := g.Number
 	relayer := defaultRelayer2()
