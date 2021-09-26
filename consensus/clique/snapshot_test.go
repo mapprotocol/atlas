@@ -20,15 +20,16 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"github.com/mapprotocol/atlas/core/chain"
+	"math/big"
 	"sort"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // testerAccountPool is a pool to maintain currently active tester accounts,
@@ -395,6 +396,7 @@ func TestClique(t *testing.T) {
 		// Create the genesis block with the initial set of signers
 		genesis := &chain.Genesis{
 			ExtraData: make([]byte, extraVanity+common.AddressLength*len(signers)+extraSeal),
+			BaseFee:   big.NewInt(params.InitialBaseFee),
 		}
 		for j, signer := range signers {
 			copy(genesis.ExtraData[extraVanity+j*common.AddressLength:], signer[:])
