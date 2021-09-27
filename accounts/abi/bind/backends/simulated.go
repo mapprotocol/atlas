@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	mockEngine "github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/processor"
 	params2 "github.com/mapprotocol/atlas/params"
@@ -39,7 +40,6 @@ import (
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/accounts/abi/bind"
 	"github.com/mapprotocol/atlas/atlas/filters"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/bloombits"
 	"github.com/mapprotocol/atlas/core/rawdb"
@@ -81,7 +81,7 @@ type SimulatedBackend struct {
 func NewSimulatedBackendWithDatabase(database ethdb.Database, alloc chain.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
 	genesis := chain.Genesis{Config: params2.AllEthashProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
 	genesis.MustCommit(database)
-	blockchain, _ := chain.NewBlockChain(database, nil, genesis.Config, ethash.NewFaker(), vm.Config{}, nil, nil)
+	blockchain, _ := chain.NewBlockChain(database, nil, genesis.Config, mockEngine.NewFaker(), vm.Config{}, nil, nil)
 
 	backend := &SimulatedBackend{
 		database:   database,
@@ -127,7 +127,7 @@ func (b *SimulatedBackend) Rollback() {
 }
 
 func (b *SimulatedBackend) rollback() {
-	blocks, _ := chain.GenerateChain(b.config, b.blockchain.CurrentBlock(), ethash.NewFaker(), b.database, 1, func(int, *chain.BlockGen) {})
+	blocks, _ := chain.GenerateChain(b.config, b.blockchain.CurrentBlock(), mockEngine.NewFaker(), b.database, 1, func(int, *chain.BlockGen) {})
 
 	b.pendingBlock = blocks[0]
 	b.pendingState, _ = state.New(b.pendingBlock.Root(), b.blockchain.StateCache(), nil)
@@ -575,7 +575,7 @@ func (b *SimulatedBackend) SendTransaction(ctx context.Context, tx *types.Transa
 	}
 
 	// Include tx in chain.
-	blocks, _ := chain.GenerateChain(b.config, block, ethash.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
+	blocks, _ := chain.GenerateChain(b.config, block, mockEngine.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
 		for _, tx := range b.pendingBlock.Transactions() {
 			block.AddTxWithChain(b.blockchain, tx)
 		}
@@ -693,7 +693,7 @@ func (b *SimulatedBackend) AdjustTime(adjustment time.Duration) error {
 		return errors.New("Could not adjust time on non-empty block")
 	}
 
-	blocks, _ := chain.GenerateChain(b.config, b.blockchain.CurrentBlock(), ethash.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
+	blocks, _ := chain.GenerateChain(b.config, b.blockchain.CurrentBlock(), mockEngine.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
 		block.OffsetTime(int64(adjustment.Seconds()))
 	})
 	stateDB, _ := b.blockchain.State()
