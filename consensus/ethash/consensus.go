@@ -710,20 +710,8 @@ var (
 // reward. The total reward consists of the static block reward and rewards for
 // included uncles. The coinbase of each uncle block is also rewarded.
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header) {
-	// Skip block reward in catalyst mode
-	if config.IsCatalyst(header.Number) {
-		return
-	}
-	// Select the correct block reward based on chain progression
-	blockReward := FrontierBlockReward
-	if config.IsByzantium(header.Number) {
-		blockReward = ByzantiumBlockReward
-	}
-	if config.IsConstantinople(header.Number) {
-		blockReward = ConstantinopleBlockReward
-	}
 	// Accumulate the rewards for the miner and any included uncles
-	minerReward, relayerReward := getReward(blockReward)
+	minerReward, relayerReward := getReward()
 	height := header.Number.Uint64()
 	epoch := vm.GetEpochFromHeight(height)
 	hs := vm.NewHeaderStore()
@@ -731,9 +719,9 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		log.Error("accumulateRewards load header store failed", "err", err)
 	}
 
-	hs.AddEpochReward(epoch.EpochID, relayerReward)
 	if height == epoch.EndHeight {
-		rs := hs.CalcReward(epoch.EpochID, hs.GetEpochReward(epoch.EpochID))
+		rewardOfEpoch := new(big.Int).Mul(new(big.Int).SetUint64(params2.NewEpochLength), relayerReward)
+		rs := hs.CalcReward(epoch.EpochID, rewardOfEpoch)
 		for addr, r := range rs {
 			hs.StoreReward(epoch.EpochID, addr, r)
 			state.AddBalance(addr, r)
@@ -744,21 +732,11 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		log.Crit("store failed, ", "err", err)
 	}
 
-	r := new(big.Int)
-	for _, uncle := range uncles {
-		r.Add(uncle.Number, big8)
-		r.Sub(r, header.Number)
-		r.Mul(r, blockReward)
-		r.Div(r, big8)
-		state.AddBalance(uncle.Coinbase, r)
-
-		r.Div(blockReward, big32)
-		minerReward.Add(minerReward, r)
-	}
 	state.AddBalance(header.Coinbase, minerReward)
 }
 
-func getReward(blockReward *big.Int) (minerReward, relayerReward *big.Int) {
+func getReward() (minerReward, relayerReward *big.Int) {
+	blockReward := new(big.Int).Set(ConstantinopleBlockReward)
 	reward := new(big.Int).Div(blockReward, big.NewInt(100))
 	minerReward = new(big.Int).Mul(reward, big.NewInt(MinerRewardPercentage))
 	relayerReward = new(big.Int).Mul(reward, big.NewInt(RelayerRewardPercentage))
