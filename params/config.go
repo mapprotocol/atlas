@@ -22,7 +22,7 @@ var (
 
 var (
 	MainnetChainConfig = &params.ChainConfig{
-		ChainID:             big.NewInt(211),
+		ChainID:             big.NewInt(177),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        big.NewInt(0),
 		DAOForkSupport:      true,
@@ -77,7 +77,7 @@ var (
 		LondonBlock:         big.NewInt(0),
 		Ethash:              new(params.EthashConfig),
 	}
-	MainnetNetWorkID uint64 = 211
+	MainnetNetWorkID uint64 = 177
 	TestnetWorkID    uint64 = 212
 	DevnetWorkID     uint64 = 213
 	SingleWorkID     uint64 = 214
