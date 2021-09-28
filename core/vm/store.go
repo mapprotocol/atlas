@@ -250,19 +250,19 @@ func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.
 	relayers := h.GetSortedRelayers(epochID)
 	rewards := make(map[common.Address]*big.Int, len(relayers))
 
+	totalSyncTimes := uint64(0)
+	for _, s := range h.epoch2syncInfo[epochID] {
+		totalSyncTimes += s.Times
+	}
+	singleBlockReward := new(big.Int).Quo(allAmount, new(big.Int).SetUint64(totalSyncTimes))
+
 	for i, r := range relayers {
 		if i == len(relayers)-1 {
 			rewards[r] = residualReward
 			break
 		}
 
-		totalSyncTimes := uint64(0)
-		for _, s := range h.epoch2syncInfo[epochID] {
-			totalSyncTimes += s.Times
-		}
-
 		times := h.LoadSyncTimes(epochID, r)
-		singleBlockReward := new(big.Int).Quo(allAmount, new(big.Int).SetUint64(totalSyncTimes))
 		relayerReward := new(big.Int).Mul(singleBlockReward, new(big.Int).SetUint64(times))
 		residualReward = new(big.Int).Sub(residualReward, relayerReward)
 		rewards[r] = relayerReward
