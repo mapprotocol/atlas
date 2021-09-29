@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MainNetChainID    uint64 = 211
+	MainNetChainID    uint64 = 177
 	TestNetChainID    uint64 = 212
 	DevNetChainID     uint64 = 213
 	SingleNodeChainID uint64 = 214
@@ -22,7 +22,7 @@ var (
 
 var (
 	MainnetChainConfig = &params.ChainConfig{
-		ChainID:             big.NewInt(177),
+		ChainID:             big.NewInt(int64(MainNetChainID)),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        big.NewInt(0),
 		DAOForkSupport:      true,
