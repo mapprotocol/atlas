@@ -322,11 +322,11 @@ func TestStateDB(t *testing.T) {
 	fmt.Println("------------------------------")
 	statedb.GetOrNewStateObject(params2.RelayerAddress)
 	hs := NewHeaderStore()
-	hs.epoch2reward[11233] = big.NewInt(11233)
+	//hs.epoch2reward[11233] = big.NewInt(11233)
 	if err := hs.Store(statedb, params2.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
-	hs.epoch2reward[2] = big.NewInt(2)
+	//hs.epoch2reward[2] = big.NewInt(2)
 	if err := hs.Load(statedb, params2.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}

@@ -47,9 +47,7 @@ const (
 
 // Ethash proof-of-work protocol constants.
 var (
-	FrontierBlockReward           = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	ByzantiumBlockReward          = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
-	ConstantinopleBlockReward     = big.NewInt(2e+18) // Block reward in wei for successfully mining a block upward from Constantinople
+	BlockReward                   = big.NewInt(2e+18) // Block reward in wei for successfully mining a block
 	maxUncles                     = 2                 // Maximum number of uncles allowed in a single block
 	allowedFutureBlockTimeSeconds = int64(15)         // Max seconds from current time allowed for blocks, before they're considered future blocks
 
@@ -602,30 +600,8 @@ func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.
 	if err != nil {
 		log.Debug("relayers' selection fail")
 	}
-	err = ethash.finalizeGas(state, header.Number, big.NewInt(0))
-	if err != nil {
-		log.Debug("relayers' gas issued fail")
-	}
-	accumulateRewards(chain.Config(), state, header, uncles)
+	accumulateRewards(state, header)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
-}
-
-func (ethash *Ethash) finalizeGas(state *state.StateDB, number *big.Int, feeAmount *big.Int) error {
-	if feeAmount == nil || feeAmount.Uint64() == 0 {
-		return nil
-	}
-	epoch := vm.GetEpochFromHeight(number.Uint64())
-	relayer := vm.GetRelayersByEpoch(state, epoch.EpochID, number.Uint64())
-	relayerGas := big.NewInt(0)
-	if len(relayer) == 0 {
-		return errors.New("not have relayerGas")
-	}
-	relayerGas = new(big.Int).Div(feeAmount, big.NewInt(int64(len(relayer))))
-	for _, v := range relayer {
-		state.AddBalance(v.Coinbase, relayerGas)
-		LogPrint("relayerGas's gas award", v.Coinbase, relayerGas)
-	}
-	return nil
 }
 
 //LogPrint log debug
@@ -700,43 +676,36 @@ func (ethash *Ethash) SealHash(header *types.Header) (hash common.Hash) {
 	return hash
 }
 
-// Some weird constants to avoid constant memory allocs for them.
-var (
-	big8  = big.NewInt(8)
-	big32 = big.NewInt(32)
-)
-
 // AccumulateRewards credits the coinbase of the given block with the mining
 // reward. The total reward consists of the static block reward and rewards for
 // included uncles. The coinbase of each uncle block is also rewarded.
-func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header) {
-	// Accumulate the rewards for the miner and any included uncles
+func accumulateRewards(state *state.StateDB, header *types.Header) {
 	minerReward, relayerReward := getReward()
 	height := header.Number.Uint64()
 	epoch := vm.GetEpochFromHeight(height)
-	hs := vm.NewHeaderStore()
-	if err := hs.Load(state, params2.HeaderStoreAddress); err != nil {
-		log.Error("accumulateRewards load header store failed", "err", err)
-	}
 
 	if height == epoch.EndHeight {
+		hs := vm.NewHeaderStore()
+		if err := hs.Load(state, params2.HeaderStoreAddress); err != nil {
+			log.Error("accumulateRewards load header store failed", "err", err)
+		}
 		rewardOfEpoch := new(big.Int).Mul(new(big.Int).SetUint64(params2.NewEpochLength), relayerReward)
 		rs := hs.CalcReward(epoch.EpochID, rewardOfEpoch)
 		for addr, r := range rs {
 			hs.StoreReward(epoch.EpochID, addr, r)
 			state.AddBalance(addr, r)
-			log.Info("Give out rewards ", "relayer", addr, "reward", r)
+			log.Info("give out rewards ", "relayer", addr, "reward", r)
 		}
-	}
-	if err := hs.Store(state, params2.HeaderStoreAddress); err != nil {
-		log.Crit("store failed, ", "err", err)
+		if err := hs.Store(state, params2.HeaderStoreAddress); err != nil {
+			log.Crit("store failed, ", "err", err)
+		}
 	}
 
 	state.AddBalance(header.Coinbase, minerReward)
 }
 
 func getReward() (minerReward, relayerReward *big.Int) {
-	blockReward := new(big.Int).Set(ConstantinopleBlockReward)
+	blockReward := new(big.Int).Set(BlockReward)
 	reward := new(big.Int).Div(blockReward, big.NewInt(100))
 	minerReward = new(big.Int).Mul(reward, big.NewInt(MinerRewardPercentage))
 	relayerReward = new(big.Int).Mul(reward, big.NewInt(RelayerRewardPercentage))
