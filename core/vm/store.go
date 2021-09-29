@@ -62,24 +62,13 @@ type HeaderStore struct {
 
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
-		epoch2reward:        make(map[uint64]*big.Int),
 		height2receiveTimes: make(map[uint64]uint64),
 		epoch2syncInfo:      make(map[uint64][]*RelayerSyncInfo),
 	}
 }
 
-func (h *HeaderStore) SetEpoch2reward(epochID uint64) {
-	if _, ok := h.epoch2reward[epochID]; !ok {
-		h.epoch2reward[epochID] = big.NewInt(0)
-	}
-}
-
 func CloneHeaderStore(src *HeaderStore) (dst *HeaderStore, err error) {
 	dst = NewHeaderStore()
-	err = DeepCopy(src.epoch2reward, &dst.epoch2reward)
-	if err != nil {
-		return nil, err
-	}
 	err = DeepCopy(src.height2receiveTimes, &dst.height2receiveTimes)
 	if err != nil {
 		return nil, err
@@ -129,7 +118,7 @@ func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 			return err
 		}
 		hs = *cp
-		h.epoch2reward, h.height2receiveTimes, h.epoch2syncInfo = hs.epoch2reward, hs.height2receiveTimes, hs.epoch2syncInfo
+		h.height2receiveTimes, h.epoch2syncInfo = hs.height2receiveTimes, hs.epoch2syncInfo
 		return nil
 	}
 
@@ -143,25 +132,8 @@ func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
 		return err
 	}
 	hsCache.Cache.Add(hash, clone)
-	h.epoch2reward, h.height2receiveTimes, h.epoch2syncInfo = hs.epoch2reward, hs.height2receiveTimes, hs.epoch2syncInfo
+	h.height2receiveTimes, h.epoch2syncInfo = hs.height2receiveTimes, hs.epoch2syncInfo
 	return nil
-}
-
-func (h *HeaderStore) AddEpochReward(epochID uint64, reward *big.Int) {
-	r := h.epoch2reward[epochID]
-	if r == nil {
-		h.epoch2reward[epochID] = new(big.Int).Add(big.NewInt(0), reward)
-		return
-	}
-	h.epoch2reward[epochID] = new(big.Int).Add(r, reward)
-}
-
-func (h *HeaderStore) GetEpochReward(epochID uint64) *big.Int {
-	r := h.epoch2reward[epochID]
-	if r == nil {
-		return big.NewInt(0)
-	}
-	return r
 }
 
 func (h *HeaderStore) GetReceiveTimes(height uint64) uint64 {
@@ -253,6 +225,9 @@ func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.
 	totalSyncTimes := uint64(0)
 	for _, s := range h.epoch2syncInfo[epochID] {
 		totalSyncTimes += s.Times
+	}
+	if totalSyncTimes == 0 {
+		return rewards
 	}
 	singleBlockReward := new(big.Int).Quo(allAmount, new(big.Int).SetUint64(totalSyncTimes))
 
