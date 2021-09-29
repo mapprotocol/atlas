@@ -540,6 +540,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
 	if pool.currentMaxGas < tx.Gas() {
+		log.Error("max gas limit exceeded", "pool.currentMaxGas", pool.currentMaxGas, "tx.Gas()", tx.Gas())
 		return ErrGasLimit
 	}
 	// Make sure the transaction is signed properly.
@@ -1197,7 +1198,6 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 	pool.currentState = statedb
 	pool.pendingNonces = newTxNoncer(statedb)
 	pool.currentMaxGas = newHead.GasLimit
-
 	// Inject any transactions discarded due to reorgs
 	log.Debug("Reinjecting stale transactions", "count", len(reinject))
 	SenderCacher.recover(pool.signer, reinject)

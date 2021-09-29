@@ -15,7 +15,8 @@ Validators gather transactions received from other nodes and execute any associa
 ## How to become validator 
 
 Encode types.IstanbulExtra with params you define and put it into the extraData field of the genesis block.
-In the types.IstanbulExtra, we can assign the validators at the first epoch by providing addresses and BLS public keys.
+In the types.IstanbulExtra, we can assign the validators at the `first epoch` by providing addresses and BLS public keys.
+After rlp encoded, maximum size extra data should not exceed `32`.
 
 - types.IstanbulExtra struct
 ```
@@ -25,8 +26,10 @@ type IstanbulExtra struct {
 	// AddedValidatorsPublicKeys are the BLS public keys for the validators added in the block
 	AddedValidatorsPublicKeys []blscrypto.SerializedPublicKey
 	// RemovedValidators is a bitmap having an active bit for each removed validator in the block
+	// It use binary of big.Int to record removed validators, and number of big.Int is meaningless. 
 	RemovedValidators *big.Int
-	// Seal is an ECDSA signature by the proposer, it's created when proposer packs block  
+	// Seal is an ECDSA signature by the proposer, it's created when proposer packs block
+	// the seal is used for other validators verify legality of block.  
 	Seal []byte
 	// AggregatedSeal contains the aggregated BLS signature created via IBFT consensus.
 	AggregatedSeal IstanbulAggregatedSeal
@@ -117,7 +120,7 @@ func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:    params2.MainnetChainConfig,
 		Nonce:     66,
-		// this is our encoded data
+		// this is our encoded data, maximum size extra data may be 32 after Genesis.
 		ExtraData: hexutil.MustDecode(mainnetExtraData),
 		GasLimit:  50000000,
 		Alloc:     dr,
@@ -131,7 +134,7 @@ Build it! go version cannot be less than 1.15.
 To start a `atlas` instance for mining, run it with all your usual flags, extended by:
 
 ```shell
-$ atlas <usual-flags> --datadir ./data1 --ipcpath data1 --port 20201 --unlock 0x6c5938b49bacde73a8db7c3a7da208846898bff5 --password ./data1/pass --mine --miner.etherbase 0x6c5938b49bacde73a8db7c3a7da208846898bff5 console
+$ atlas <usual-flags> --datadir ./data1 --ipcpath data1 --port 20201 --unlock 0x6c5938b49bacde73a8db7c3a7da208846898bff5 --mine --miner.etherbase 0x6c5938b49bacde73a8db7c3a7da208846898bff5 console
 ```
 
 Repeat four times to start up four different nodes, `miner.etherbase` params is just address we defined, `unlock` params is the same as `miner.etherbase`, 
@@ -148,7 +151,7 @@ admin.addPeer("enode://40d2dc2a51298f3d9e2eabea17ae20781cb65ceb351681db6ab45e808
 
 ## Mine role
 
-Epoch lengths in Mainnet are set to be the number of blocks produced in `a day`.
+Epoch lengths in Mainnet are set to be the number of blocks produced in `a day`, i.e. `30000 blocks`.
 As a result, votes may need to be activated up to `24 hours` after they are cast.
 At the end of the epoch following your vote activation, you may receive voter rewards.
 The protocol elects a maximum of `100` Validators. At each epoch, every elected Validator must be re-elected to continue.
