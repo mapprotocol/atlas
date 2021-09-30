@@ -77,7 +77,7 @@ judge whether the transaction is true and valid by verifying the transaction rec
 | Coin     | Address      | the address of the token contract |
 | SrcChain | *big.Int     | source chain identification |
 | DstChain | *big.Int     | destination chain identification|
-| TxProve  | [CrossTxProve](https://mapprotocol.github.io/atlas/tx_verify/Tx-Verify) | cross chain transaction prove information |
+| TxProve  | []byte       | cross chain transaction prove information, RLP encode of [CrossTxProve](https://mapprotocol.github.io/atlas/tx_verify/Tx-Verify) |
 
 #### output parameters
 
@@ -102,14 +102,14 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-type BaseParams struct {
-	From  common.Address
-	To    common.Address
+type TxBaseParams struct {
+	From  []byte
+	To    []byte
 	Value *big.Int
 }
 
 type CrossTxProve struct {
-	Tx          *BaseParams
+	Tx          *TxBaseParams
 	Receipt     *types.Receipt
 	Prove       light.NodeList
 	BlockNumber uint64
@@ -118,10 +118,10 @@ type CrossTxProve struct {
 
 func example() {
 	var (
-	    coin     = common.Address{}
-	    router   = common.Address{}
-		srcChain = big.NewInt(1)
-		dstChain = big.NewInt(211)
+	    coin     = common.Address{}.Bytes()
+	    router   = common.Address{}.Bytes()
+	    srcChain = big.NewInt(1)
+	    dstChain = big.NewInt(211)
 	)
 
 	txProve, err := rlp.EncodeToBytes(CrossTxProve{})

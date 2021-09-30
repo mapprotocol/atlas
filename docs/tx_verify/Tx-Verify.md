@@ -13,15 +13,15 @@ key info details:
 
 ```
 type CrossTxProve struct {
-	Tx          *TxParams
+	Tx          *TxBaseParams
 	Receipt     *types.Receipt
 	Prove       light.NodeList
-	TxIndex     uint
 	BlockNumber uint64
+	TxIndex     uint
 }
 
 
-type BaseParams struct {
+type TxBaseParams struct {
 	From     []byte
 	To       []byte
 	Value    *big.Int
