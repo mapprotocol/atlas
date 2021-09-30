@@ -8,7 +8,27 @@ sort: 1
 
 ### 1. Running atlas
 
-Going `atlas -h` can get help infos.
+Atlas run introduce
+Project address: https://github.com/mapprotocol/atlas.git
+Download method: git clone https://github.com/mapprotocol/atlas.git
+compile：
+
+- Enter the Atlas Project and execute "make" command to compile the project
+- If the compilation is successful, the following message will be prompted:：
+  Done building.
+  Run "./build/bin/atlas" to launch atlas.
+
+Run project：Enter the Atlas Project and execute the following commands
+./build/bin/atlas --datadir /root/atlas_node/data  --rpc --rpcaddr "0.0.0.0" --rpcapi "eth,relayer,header,net,debug,txpool,personal" --mine --miner.threads 1  --rpccorsdomain "*" console
+
+- --datadir /root/atlas_node/data   Specify the project database path
+- --rpc   Turn on RPC service
+- --rpcaddr "0.0.0.0" RPC server listening address
+- --rpcapi "eth,relayer,header,net,debug,txpool,personal"      Specify the http-rpc API interface to be called. By default, there are only eth, net and Web3
+- --mine Open mining service
+- --miner.threads 1 Specifies the number of mining threads
+- --rpccorsdomain "*" Specify a comma separated list of domain names from which requests can be received
+-  console Open the console
 
 ### 2. Deploy contract to ethereum and atlas
 (1). Deploy [USDT](https://github.com/mapprotocol/contracts/blob/884cc2b64ff14c01fa60251851537e2f877a14a2/contracts/Usdt.sol)
@@ -90,3 +110,4 @@ The Atlas main network address is https://rpc-poc-1.maplabs.io, and the address 
 on Atlas is 0xC8EBb59E097148399D67601038a6c6Aaa6416aF9. Using the above address, you can use the remix or Go program to 
 call the balanceOf of the MapERC20 contract to check the balance.
 
+### 7.[How to configure the starting point of the synchronization block header](https://mapprotocol.github.io/atlas/chains_config/ChainsConfig.html)
