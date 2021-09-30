@@ -2,13 +2,13 @@
 sort: 4
 ---
 
-# Atlas V0.2
+# Makalu PoC-1
 
-Atlas v0.2 continues to use the POW consensus algorithm and basic block structure, and uses light client verification to 
+Makalu PoC-1（Atlas v0.2） continues to use the POW consensus algorithm and basic block structure, and uses light client verification to 
 verify on-chain transactions on the opposite chain. In order to achieve the purpose of cross-chain transaction data (assets).
 
-Atlas v0.2 currently supports the realization of Ethereum Ropsten testnet chain assets (USDT) cross-chain to Atlas chain 
-assets in a completely decentralized manner. The atlas v0.2 architecture is mainly composed of three parts, Including 
+Makalu PoC-1 currently supports the realization of Ethereum Ropsten testnet chain assets (USDT) cross-chain to Atlas chain 
+assets in a completely decentralized manner. The Makalu PoC-1 architecture is mainly composed of three parts, Including 
 on-chain contracts, relayers and main chain networks. Currently, only one-way data verification function to Atlas is supported.
 
 The on-chain contract is used to define the cross-chain entry of messages between the main chain networks and the burn and mint processes of assets.

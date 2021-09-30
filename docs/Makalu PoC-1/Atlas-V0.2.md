@@ -2,7 +2,7 @@
 sort: 1
 ---
 
-# Atlas V0.2
+# Makalu PoC-1
 
 ## Build your own network and send cross-chain transactions
 
