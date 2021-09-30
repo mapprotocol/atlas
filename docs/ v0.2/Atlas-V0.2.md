@@ -66,9 +66,9 @@ To check the balance of the account, we can call the balanceOf of the MapERC20 c
 
 #### Atlas  address:
 
-| network  | address |
-| -------- | ------  |
-| mainnet  | https://rpc-poc-1.maplabs.io |
+| network  | address | chainid | networkid |
+| -------- | ------  | ------ | ------ |
+| mainnet  | https://rpc-poc-1.maplabs.io | 177 | 177 |
 
 #### Contract address:
 
