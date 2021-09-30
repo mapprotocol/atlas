@@ -63,14 +63,17 @@ After the above steps, you have completed a cross-chain transaction. Now let's v
 To check the balance of the account, we can call the balanceOf of the MapERC20 contract deployed on atlas.
 
 ## Use our existing network to send cross-chain transactions
-####Contract address:
 
+#### Atlas  address:
+| network  | address |
+| -------- | ------  |
+| mainnet  | https://rpc-poc-1.maplabs.io |
+
+#### Contract address:
 | contract| address |
 | -------- | ------ |
 | Atlas MapRouter | 0xC8EBb59E097148399D67601038a6c6Aaa6416aF9 |
 | Ropsten MapRouter | 0x23dd5A89C3ea51601b0674a4fA6eC6B3B14d0B7a|
-
-#### Atlas mainnet address: https://rpc-poc-1.maplabs.io
 
 Now that we have deployed a cross-chain transaction contract on Ropsten, you can directly call.
 Let's take a look at how to send a cross-chain transaction in Ropsten.
