@@ -48,8 +48,9 @@ const (
 
 // Transaction is an Ethereum transaction.
 type Transaction struct {
-	inner TxData    // Consensus contents of a transaction
-	time  time.Time // Time first seen locally (spam avoidance)
+	inner TxData // Consensus contents of a transaction
+	//data txdata    // Consensus contents of a transaction
+	time time.Time // Time first seen locally (spam avoidance)
 
 	// caches
 	hash atomic.Value
@@ -709,12 +710,22 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 	return msg, err
 }
 
-func (m Message) From() common.Address   { return m.from }
-func (m Message) To() *common.Address    { return m.to }
-func (m Message) GasPrice() *big.Int     { return m.gasPrice }
-func (m Message) Value() *big.Int        { return m.amount }
-func (m Message) Gas() uint64            { return m.gasLimit }
-func (m Message) Nonce() uint64          { return m.nonce }
-func (m Message) Data() []byte           { return m.data }
-func (m Message) AccessList() AccessList { return m.accessList }
-func (m Message) CheckNonce() bool       { return m.checkNonce }
+func (m Message) From() common.Address               { return m.from }
+func (m Message) To() *common.Address                { return m.to }
+func (m Message) GasPrice() *big.Int                 { return m.gasPrice }
+func (m Message) Value() *big.Int                    { return m.amount }
+func (m Message) Gas() uint64                        { return m.gasLimit }
+func (m Message) Nonce() uint64                      { return m.nonce }
+func (m Message) Data() []byte                       { return m.data }
+func (m Message) AccessList() AccessList             { return m.accessList }
+func (m Message) CheckNonce() bool                   { return m.checkNonce }
+func (tx *Transaction) FeeCurrency() *common.Address { return nil }
+func (tx *Transaction) Fee() *big.Int {
+	return Fee(tx.GasPrice(), tx.Gas(), nil)
+}
+
+// Fee calculates the transaction fee (gasLimit * gasPrice + gatewayFee)
+func Fee(gasPrice *big.Int, gasLimit uint64, gatewayFee *big.Int) *big.Int {
+	gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))
+	return gasFee.Add(gasFee, gatewayFee)
+}

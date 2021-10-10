@@ -18,12 +18,11 @@ package txsdetails
 
 import (
 	"container/heap"
-	"math"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/mapprotocol/atlas/core/types"
 	"math/big"
 	"sort"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 )
 
 // nonceHeap is a heap.Interface implementation over 64bit unsigned integers for
@@ -250,6 +249,11 @@ type txList struct {
 	strict bool         // Whether nonces are strictly continuous or not
 	txs    *txSortedMap // Heap indexed sorted hash map of the transactions
 
+	nativecostcap       *big.Int                    // Price of the highest costing transaction paid with native fees (reset only if exceeds balance)
+	nativegaspricefloor *big.Int                    // Lowest gas price minimum in the native currency
+	feecaps             map[common.Address]*big.Int // Price of the highest costing transaction per fee currency (reset only if exceeds balance)
+	gaspricefloors      map[common.Address]*big.Int // Lowest gas price minimum per currency (reset only if it is below the gpm)
+
 	costcap *big.Int // Price of the highest costing transaction (reset only if exceeds balance)
 	gascap  uint64   // Gas limit of the highest spending transaction (reset only if exceeds block limit)
 }
@@ -261,6 +265,7 @@ func newTxList(strict bool) *txList {
 		strict:  strict,
 		txs:     newTxSortedMap(),
 		costcap: new(big.Int),
+		feecaps: make(map[common.Address]*big.Int),
 	}
 }
 
@@ -293,6 +298,27 @@ func (l *txList) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Tran
 	}
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
+
+	if feeCurrency := tx.FeeCurrency(); feeCurrency == nil {
+		if cost := tx.Cost(); l.nativecostcap.Cmp(cost) < 0 {
+			l.nativecostcap = cost
+		}
+		if gasPrice := tx.GasPrice(); l.nativegaspricefloor == nil || l.nativegaspricefloor.Cmp(gasPrice) > 0 {
+			l.nativegaspricefloor = gasPrice
+		}
+	} else {
+		fee := tx.Fee()
+		if oldFee, ok := l.feecaps[*feeCurrency]; !ok || oldFee.Cmp(fee) < 0 {
+			l.feecaps[*feeCurrency] = fee
+		}
+		if gasFloor, ok := l.gaspricefloors[*feeCurrency]; !ok || gasFloor.Cmp(tx.GasPrice()) > 0 {
+			l.gaspricefloors[*feeCurrency] = tx.GasPrice()
+		}
+		if value := tx.Value(); l.nativecostcap.Cmp(value) < 0 {
+			l.nativecostcap = value
+		}
+	}
+
 	if cost := tx.Cost(); l.costcap.Cmp(cost) < 0 {
 		l.costcap = cost
 	}
@@ -319,6 +345,26 @@ func (l *txList) Forward(threshold uint64) types.Transactions {
 // is lower than the costgas cap, the caps will be reset to a new high after removing
 // the newly invalidated transactions.
 func (l *txList) Filter(costLimit *big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
+	// check if we can bail & lower caps & raise floors at the same time
+	canBail := true
+	// Ensure that the cost cap <= the cost limit
+	if l.nativecostcap.Cmp(costLimit) > 0 {
+		canBail = false
+		l.nativecostcap = new(big.Int).Set(costLimit)
+	}
+
+	// Ensure that each cost cap <= the per currency cost limit.
+	//for feeCurrency, feeLimit := range feeLimits {
+	//	if l.feecaps[feeCurrency].Cmp(feeLimit) > 0 {
+	//		canBail = false
+	//		l.feecaps[feeCurrency] = new(big.Int).Set(feeLimit)
+	//	}
+	//}
+
+	if canBail {
+		return nil, nil
+	}
+
 	// If all transactions are below the threshold, short circuit
 	if l.costcap.Cmp(costLimit) <= 0 && l.gascap <= gasLimit {
 		return nil, nil
@@ -561,3 +607,565 @@ func (l *txPricedList) Reheap() {
 	}, false, true) // Only iterate remotes
 	heap.Init(l.remotes)
 }
+
+// FeeCurrencies returns a list of each fee currency used to pay for gas in the txList
+func (l *txList) FeeCurrencies() []common.Address {
+	var feeCurrencies []common.Address
+	for feeCurrency := range l.feecaps {
+		feeCurrencies = append(feeCurrencies, feeCurrency)
+	}
+	return feeCurrencies
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+// txPricedList is a price-sorted heap to allow operating on transactions pool
+// contents in a price-incrementing way.
+//type txPricedList struct {
+//	ctx                 *atomic.Value
+//	all                 *txLookup                     // Pointer to the map of all transactions
+//	nonNilCurrencyHeaps map[common.Address]*priceHeap // Heap of prices of all the stored non-nil currency transactions
+//	nilCurrencyHeap     *priceHeap                    // Heap of prices of all the stored nil currency transactions
+//	stales              int                           // Number of stale price points to (re-heap trigger)
+//}
+//
+//// newTxPricedList creates a new price-sorted transaction heap.
+//func newTxPricedList(all *txLookup, ctx *atomic.Value) *txPricedList {
+//	return &txPricedList{
+//		ctx:                 ctx,
+//		all:                 all,
+//		nonNilCurrencyHeaps: make(map[common.Address]*priceHeap),
+//		nilCurrencyHeap:     new(priceHeap),
+//	}
+//}
+//
+//// Gets the price heap for the given currency
+//func (l *txPricedList) getPriceHeap(tx *types.Transaction) *priceHeap {
+//	feeCurrency := tx.FeeCurrency()
+//	if feeCurrency == nil {
+//		return l.nilCurrencyHeap
+//	} else {
+//		if _, ok := l.nonNilCurrencyHeaps[*feeCurrency]; !ok {
+//			l.nonNilCurrencyHeaps[*feeCurrency] = new(priceHeap)
+//		}
+//		return l.nonNilCurrencyHeaps[*feeCurrency]
+//	}
+//}
+//
+//// Put inserts a new transaction into the heap.
+//func (l *txPricedList) Put(tx *types.Transaction) {
+//	pHeap := l.getPriceHeap(tx)
+//	heap.Push(pHeap, tx)
+//}
+//
+//// Removed notifies the prices transaction list that an old transaction dropped
+//// from the pool. The list will just keep a counter of stale objects and update
+//// the heap if a large enough ratio of transactions go stale.
+//func (l *txPricedList) Removed(count int) {
+//	// Bump the stale counter, but exit if still too low (< 25%)
+//	l.stales += count
+//	if l.stales <= l.Len()/4 {
+//		return
+//	}
+//	// Seems we've reached a critical number of stale transactions, reheap
+//	reheapNilCurrencyHeap := make(priceHeap, 0, l.all.nilCurrencyTxCurrCount)
+//
+//	reheapNonNilCurrencyMap := make(map[common.Address]*priceHeap)
+//	for feeCurrency, count := range l.all.nonNilCurrencyTxCurrCount {
+//		reheapNonNilCurrencyHeap := make(priceHeap, 0, count)
+//		reheapNonNilCurrencyMap[feeCurrency] = &reheapNonNilCurrencyHeap
+//	}
+//
+//	l.stales, l.nonNilCurrencyHeaps, l.nilCurrencyHeap = 0, reheapNonNilCurrencyMap, &reheapNilCurrencyHeap
+//	l.all.Range(func(hash common.Hash, tx *types.Transaction) bool {
+//		pHeap := l.getPriceHeap(tx)
+//		*pHeap = append(*pHeap, tx)
+//		return true
+//	})
+//
+//	for _, h := range l.nonNilCurrencyHeaps {
+//		heap.Init(h)
+//	}
+//
+//	heap.Init(l.nilCurrencyHeap)
+//}
+//
+//// Cap finds all the transactions below the given celo gold price threshold, drops them
+//// from the priced list and returns them for further removal from the entire pool.
+//func (l *txPricedList) Cap(cgThreshold *big.Int, local *accountSet) types.Transactions {
+//	drop := make(types.Transactions, 0, 128) // Remote underpriced transactions to drop
+//	save := make(types.Transactions, 0, 64)  // Local underpriced transactions to keep
+//
+//	for l.Len() > 0 {
+//		// Discard stale transactions if found during cleanup
+//		tx := l.pop()
+//		if l.all.Get(tx.Hash()) == nil {
+//			l.stales--
+//			continue
+//		}
+//
+//		if ctx := l.ctx.Load().(txPoolContext); ctx.CmpValues(tx.GasPrice(), tx.FeeCurrency(), cgThreshold, nil) >= 0 {
+//			save = append(save, tx)
+//			break
+//		}
+//
+//		// Non stale transaction found, discard unless local
+//		if local.containsTx(tx) {
+//			save = append(save, tx)
+//		} else {
+//			drop = append(drop, tx)
+//		}
+//	}
+//	for _, tx := range save {
+//		l.Put(tx)
+//	}
+//	return drop
+//}
+//
+//// Underpriced checks whether a transaction is cheaper than (or as cheap as) the
+//// lowest priced transaction currently being tracked.
+//func (l *txPricedList) Underpriced(tx *types.Transaction, local *accountSet) bool {
+//	// Local transactions cannot be underpriced
+//	if local.containsTx(tx) {
+//		return false
+//	}
+//	// Discard stale price points if found at the heap start
+//	for l.Len() > 0 {
+//		head := l.getMinPricedTx()
+//		if l.all.Get(head.Hash()) == nil {
+//			l.stales--
+//			l.pop()
+//			continue
+//		}
+//		break
+//	}
+//	// Check if the transaction is underpriced or not
+//	if l.Len() == 0 {
+//		log.Error("Pricing query for empty pool") // This cannot happen, print to catch programming errors
+//		return false
+//	}
+//
+//	cheapest := l.getMinPricedTx()
+//	ctx := l.ctx.Load().(txPoolContext)
+//	return ctx.CmpValues(cheapest.GasPrice(), cheapest.FeeCurrency(), tx.GasPrice(), tx.FeeCurrency()) >= 0
+//}
+//
+//// getAllPriceHeaps returns a slice of all the price heaps for each currency
+//// plus the nil currency heap
+//func (l *txPricedList) getAllPriceHeaps() []*priceHeap {
+//	heaps := make([]*priceHeap, 0, len(l.nonNilCurrencyHeaps)+1)
+//	for _, h := range l.nonNilCurrencyHeaps {
+//		heaps = append(heaps, h)
+//	}
+//	heaps = append(heaps, l.nilCurrencyHeap)
+//	return heaps
+//}
+//
+//// phsLen returns the sum of all of the heaps sizes
+//func phsLen(heaps []*priceHeap) int {
+//	len := 0
+//	for _, h := range heaps {
+//		len += h.Len()
+//	}
+//	return len
+//}
+//
+//// Discard finds a number of most underpriced transactions, removes them from the
+//// priced list and returns them for further removal from the entire pool.
+//func (l *txPricedList) Discard(slots int, local *accountSet) types.Transactions {
+//	heaps := l.getAllPriceHeaps()
+//	totalItems := phsLen(heaps)
+//	// If we have some local accountset, those will not be discarded
+//	if !local.empty() {
+//		// In case the list is filled to the brim with 'local' txs, we do this
+//		// little check to avoid unpacking / repacking the heap later on, which
+//		// is very expensive
+//		discardable := 0
+//		for _, items := range heaps {
+//			for _, tx := range *items {
+//				if !local.containsTx(tx) {
+//					discardable++
+//				}
+//				if discardable >= slots {
+//					break
+//				}
+//			}
+//		}
+//		if slots > discardable {
+//			slots = discardable
+//		}
+//	}
+//	if slots == 0 {
+//		return nil
+//	}
+//	drop := make(types.Transactions, 0, slots)            // Remote underpriced transactions to drop
+//	save := make(types.Transactions, 0, totalItems-slots) // Local underpriced transactions to keep
+//
+//	for l.Len() > 0 && slots > 0 {
+//		// Discard stale transactions if found during cleanup
+//		tx := l.pop()
+//		if l.all.Get(tx.Hash()) == nil {
+//			l.stales--
+//			continue
+//		}
+//		// Non stale transaction found, discard unless local
+//		if local.containsTx(tx) {
+//			save = append(save, tx)
+//		} else {
+//			drop = append(drop, tx)
+//			slots -= numSlots(tx)
+//		}
+//	}
+//	for _, tx := range save {
+//		l.Put(tx)
+//	}
+//	return drop
+//}
+//
+//// Retrieves the heap with the lowest normalized price at it's head
+//func (l *txPricedList) getHeapWithMinHead() (*priceHeap, *types.Transaction) {
+//	// Initialize it to the nilCurrencyHeap
+//	var cheapestHeap *priceHeap
+//	var cheapestTxn *types.Transaction
+//
+//	if len(*l.nilCurrencyHeap) > 0 {
+//		cheapestHeap = l.nilCurrencyHeap
+//		cheapestTxn = []*types.Transaction(*l.nilCurrencyHeap)[0]
+//	}
+//
+//	ctx := l.ctx.Load().(txPoolContext)
+//	for _, priceHeap := range l.nonNilCurrencyHeaps {
+//		if len(*priceHeap) > 0 {
+//			if cheapestHeap == nil {
+//				cheapestHeap = priceHeap
+//				cheapestTxn = []*types.Transaction(*cheapestHeap)[0]
+//			} else {
+//				txn := []*types.Transaction(*priceHeap)[0]
+//				if ctx.CmpValues(txn.GasPrice(), txn.FeeCurrency(), cheapestTxn.GasPrice(), cheapestTxn.FeeCurrency()) < 0 {
+//					cheapestHeap = priceHeap
+//				}
+//			}
+//		}
+//	}
+//
+//	return cheapestHeap, cheapestTxn
+//}
+//
+//// Retrieves the tx with the lowest normalized price among all the heaps
+//func (l *txPricedList) getMinPricedTx() *types.Transaction {
+//	_, minTx := l.getHeapWithMinHead()
+//
+//	return minTx
+//}
+//
+//// Retrieves the total number of txns within the priced list
+//func (l *txPricedList) Len() int {
+//	totalLen := len(*l.nilCurrencyHeap)
+//	for _, h := range l.nonNilCurrencyHeaps {
+//		totalLen += len(*h)
+//	}
+//
+//	return totalLen
+//}
+//
+//// Pops the tx with the lowest normalized price.
+//func (l *txPricedList) pop() *types.Transaction {
+//	cheapestHeap, _ := l.getHeapWithMinHead()
+//
+//	if cheapestHeap != nil {
+//		return heap.Pop(cheapestHeap).(*types.Transaction)
+//	} else {
+//		return nil
+//	}
+//}
+//
+//// txList is a "list" of transactions belonging to an account, sorted by account
+//// nonce. The same type can be used both for storing contiguous transactions for
+//// the executable/pending queue; and for storing gapped transactions for the non-
+//// executable/future queue, with minor behavioral changes.
+//type txList struct {
+//	strict bool         // Whether nonces are strictly continuous or not
+//	txs    *txSortedMap // Heap indexed sorted hash map of the transactions
+//
+//	nativecostcap       *big.Int                    // Price of the highest costing transaction paid with native fees (reset only if exceeds balance)
+//	feecaps             map[common.Address]*big.Int // Price of the highest costing transaction per fee currency (reset only if exceeds balance)
+//	nativegaspricefloor *big.Int                    // Lowest gas price minimum in the native currency
+//	gaspricefloors      map[common.Address]*big.Int // Lowest gas price minimum per currency (reset only if it is below the gpm)
+//	gascap              uint64                      // Gas limit of the highest spending transaction (reset only if exceeds block limit)
+//
+//	ctx *atomic.Value // transaction pool context
+//}
+//
+//// newTxList create a new transaction list for maintaining nonce-indexable fast,
+//// gapped, sortable transaction lists.
+//func newTxList(strict bool, ctx *atomic.Value) *txList {
+//	return &txList{
+//		ctx:                 ctx,
+//		strict:              strict,
+//		txs:                 newTxSortedMap(),
+//		nativecostcap:       new(big.Int),
+//		feecaps:             make(map[common.Address]*big.Int),
+//		nativegaspricefloor: nil,
+//		gaspricefloors:      make(map[common.Address]*big.Int),
+//	}
+//}
+//
+//// Overlaps returns whether the transaction specified has the same nonce as one
+//// already contained within the list.
+//func (l *txList) Overlaps(tx *types.Transaction) bool {
+//	return l.txs.Get(tx.Nonce()) != nil
+//}
+//
+//// FeeCurrencies returns a list of each fee currency used to pay for gas in the txList
+//func (l *txList) FeeCurrencies() []common.Address {
+//	var feeCurrencies []common.Address
+//	for feeCurrency := range l.feecaps {
+//		feeCurrencies = append(feeCurrencies, feeCurrency)
+//	}
+//	return feeCurrencies
+//}
+//
+//// Add tries to insert a new transaction into the list, returning whether the
+//// transaction was accepted, and if yes, any previous transaction it replaced.
+////
+//// If the new transaction is accepted into the list, the lists' cost, gas and
+//// gasPriceMinimum thresholds are also potentially updated.
+//func (l *txList) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transaction) {
+//	// If there's an older better transaction, abort
+//	old := l.txs.Get(tx.Nonce())
+//	if old != nil {
+//		var oldPrice, newPrice *big.Int
+//		// Short circuit conversion if both are the same currency
+//		if old.FeeCurrency() == tx.FeeCurrency() {
+//			oldPrice = old.GasPrice()
+//			newPrice = tx.GasPrice()
+//		} else {
+//			ctx := l.ctx.Load().(txPoolContext)
+//			if fc := old.FeeCurrency(); fc != nil {
+//				currency, err := ctx.GetCurrency(fc)
+//				if err != nil {
+//					return false, nil
+//				}
+//				oldPrice = currency.ToCELO(old.GasPrice())
+//			} else {
+//				oldPrice = old.GasPrice()
+//			}
+//			if fc := tx.FeeCurrency(); fc != nil {
+//				currency, err := ctx.GetCurrency(fc)
+//				if err != nil {
+//					return false, nil
+//				}
+//				newPrice = currency.ToCELO(tx.GasPrice())
+//			} else {
+//				newPrice = tx.GasPrice()
+//			}
+//		}
+//		// threshold = oldGP * (100 + priceBump) / 100
+//		a := big.NewInt(100 + int64(priceBump))
+//		a = a.Mul(a, oldPrice)
+//		b := big.NewInt(100)
+//		threshold := a.Div(a, b)
+//		// Have to ensure that the new gas price is higher than the old gas
+//		// price as well as checking the percentage threshold to ensure that
+//		// this is accurate for low (Wei-level) gas price replacements
+//		if oldPrice.Cmp(newPrice) >= 0 || threshold.Cmp(newPrice) > 0 {
+//			return false, nil
+//		}
+//	}
+//	// Otherwise overwrite the old transaction with the current one
+//	// caps can only increase and floors can only decrease in this function
+//	l.txs.Put(tx)
+//	if feeCurrency := tx.FeeCurrency(); feeCurrency == nil {
+//		if cost := tx.Cost(); l.nativecostcap.Cmp(cost) < 0 {
+//			l.nativecostcap = cost
+//		}
+//		if gasPrice := tx.GasPrice(); l.nativegaspricefloor == nil || l.nativegaspricefloor.Cmp(gasPrice) > 0 {
+//			l.nativegaspricefloor = gasPrice
+//		}
+//	} else {
+//		fee := tx.Fee()
+//		if oldFee, ok := l.feecaps[*feeCurrency]; !ok || oldFee.Cmp(fee) < 0 {
+//			l.feecaps[*feeCurrency] = fee
+//		}
+//		if gasFloor, ok := l.gaspricefloors[*feeCurrency]; !ok || gasFloor.Cmp(tx.GasPrice()) > 0 {
+//			l.gaspricefloors[*feeCurrency] = tx.GasPrice()
+//		}
+//		if value := tx.Value(); l.nativecostcap.Cmp(value) < 0 {
+//			l.nativecostcap = value
+//		}
+//	}
+//	if gas := tx.Gas(); l.gascap < gas {
+//		l.gascap = gas
+//	}
+//	return true, old
+//}
+//
+//// Forward removes all transactions from the list with a nonce lower than the
+//// provided threshold. Every removed transaction is returned for any post-removal
+//// maintenance.
+//func (l *txList) Forward(threshold uint64) types.Transactions {
+//	return l.txs.Forward(threshold)
+//}
+//
+//// Filter removes all transactions from the list with a cost or gas limit higher
+//// than the provided thresholds. Every removed transaction is returned for any
+//// post-removal maintenance. Strict-mode invalidated transactions are also
+//// returned.
+////
+//// This method uses the cached costcap and gascap to quickly decide if there's even
+//// a point in calculating all the costs or if the balance covers all. If the threshold
+//// is lower than the costgas cap, the caps will be reset to a new high after removing
+//func (l *txList) Filter(nativeCostLimit *big.Int, feeLimits map[common.Address]*big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
+//
+//	// check if we can bail & lower caps & raise floors at the same time
+//	canBail := true
+//	// Ensure that the cost cap <= the cost limit
+//	if l.nativecostcap.Cmp(nativeCostLimit) > 0 {
+//		canBail = false
+//		l.nativecostcap = new(big.Int).Set(nativeCostLimit)
+//	}
+//
+//	// Ensure that the gas cap <= the gas limit
+//	if l.gascap > gasLimit {
+//		canBail = false
+//		l.gascap = gasLimit
+//	}
+//	// Ensure that each cost cap <= the per currency cost limit.
+//	for feeCurrency, feeLimit := range feeLimits {
+//		if l.feecaps[feeCurrency].Cmp(feeLimit) > 0 {
+//			canBail = false
+//			l.feecaps[feeCurrency] = new(big.Int).Set(feeLimit)
+//		}
+//	}
+//
+//	if canBail {
+//		return nil, nil
+//	}
+//
+//	// Filter out all the transactions above the account's funds
+//	removed := l.txs.Filter(func(tx *types.Transaction) bool {
+//		if feeCurrency := tx.FeeCurrency(); feeCurrency == nil {
+//			log.Trace("Transaction Filter", "hash", tx.Hash(), "Fee currency", tx.FeeCurrency(), "Cost", tx.Cost(), "Cost Limit", nativeCostLimit, "Gas", tx.Gas(), "Gas Limit", gasLimit)
+//			return tx.Cost().Cmp(nativeCostLimit) > 0 || tx.Gas() > gasLimit
+//		} else {
+//			feeLimit := feeLimits[*feeCurrency]
+//			fee := tx.Fee()
+//			log.Trace("Transaction Filter", "hash", tx.Hash(), "Fee currency", tx.FeeCurrency(), "Value", tx.Value(), "Cost Limit", feeLimit, "Gas", tx.Gas(), "Gas Limit", gasLimit)
+//
+//			// If any of the following is true, the transaction is invalid
+//			// The fees are greater than or equal to the balance in the currency
+//			return fee.Cmp(feeLimit) >= 0 ||
+//				// The value of the tx is greater than the native balance of the account
+//				tx.Value().Cmp(nativeCostLimit) > 0 ||
+//				// The gas used is greater than the gas limit
+//				tx.Gas() > gasLimit
+//		}
+//	})
+//
+//	// If the list was strict, filter anything above the lowest nonce
+//	var invalids types.Transactions
+//
+//	if l.strict && len(removed) > 0 {
+//		lowest := uint64(math.MaxUint64)
+//		for _, tx := range removed {
+//			if nonce := tx.Nonce(); lowest > nonce {
+//				lowest = nonce
+//			}
+//		}
+//		invalids = l.txs.Filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
+//	}
+//	return removed, invalids
+//}
+//
+//// FilterOnGasLimit removes all transactions from the list with a gas limit higher
+//// than the provided thresholds. Every removed transaction is returned for any
+//// post-removal maintenance. Strict-mode invalidated transactions are also
+//// returned.
+////
+//// This method uses the cached gascap to quickly decide if there's even
+//// a point in calculating all the gas used
+//func (l *txList) FilterOnGasLimit(gasLimit uint64) (types.Transactions, types.Transactions) {
+//	// We can bail if the gas cap <= the gas limit
+//	if l.gascap <= gasLimit {
+//		return nil, nil
+//	}
+//	l.gascap = gasLimit
+//
+//	// Filter out all the transactions above the account's funds
+//	removed := l.txs.Filter(func(tx *types.Transaction) bool {
+//		return tx.Gas() > gasLimit
+//	})
+//
+//	if len(removed) == 0 {
+//		return nil, nil
+//	}
+//	var invalids types.Transactions
+//	// If the list was strict, filter anything above the lowest nonce
+//	if l.strict {
+//		lowest := uint64(math.MaxUint64)
+//		for _, tx := range removed {
+//			if nonce := tx.Nonce(); lowest > nonce {
+//				lowest = nonce
+//			}
+//		}
+//		invalids = l.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
+//	}
+//	l.txs.reheap()
+//	return removed, invalids
+//}
+//
+//// Cap places a hard limit on the number of items, returning all transactions
+//// exceeding that limit.
+//func (l *txList) Cap(threshold int) types.Transactions {
+//	return l.txs.Cap(threshold)
+//}
+//
+//// Remove deletes a transaction from the maintained list, returning whether the
+//// transaction was found, and also returning any transaction invalidated due to
+//// the deletion (strict mode only).
+//func (l *txList) Remove(tx *types.Transaction) (bool, types.Transactions) {
+//	// Remove the transaction from the set
+//	nonce := tx.Nonce()
+//	if removed := l.txs.Remove(nonce); !removed {
+//		return false, nil
+//	}
+//	// In strict mode, filter out non-executable transactions
+//	if l.strict {
+//		return true, l.txs.Filter(func(tx *types.Transaction) bool { return tx.Nonce() > nonce })
+//	}
+//	return true, nil
+//}
+//
+//// Ready retrieves a sequentially increasing list of transactions starting at the
+//// provided nonce that is ready for processing. The returned transactions will be
+//// removed from the list.
+////
+//// Note, all transactions with nonces lower than start will also be returned to
+//// prevent getting into and invalid state. This is not something that should ever
+//// happen but better to be self correcting than failing!
+//func (l *txList) Ready(start uint64) types.Transactions {
+//	return l.txs.Ready(start)
+//}
+//
+//// Len returns the length of the transaction list.
+//func (l *txList) Len() int {
+//	return l.txs.Len()
+//}
+//
+//// Empty returns whether the list of transactions is empty or not.
+//func (l *txList) Empty() bool {
+//	return l.Len() == 0
+//}
+//
+//// Flatten creates a nonce-sorted slice of transactions based on the loosely
+//// sorted internal representation. The result of the sorting is cached in case
+//// it's requested again before any modifications are made to the contents.
+//func (l *txList) Flatten() types.Transactions {
+//	return l.txs.Flatten()
+//}
+//
+//// LastElement returns the last element of a flattened list, thus, the
+//// transaction with the highest nonce
+//func (l *txList) LastElement() *types.Transaction {
+//	return l.txs.LastElement()
+//}
