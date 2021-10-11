@@ -8,8 +8,8 @@ sort: 1
 
 Every node can participate as a relayer to proposal new blocks with account (100 relayer only).
 Depending on the performance,the registered accounts will be elected as relayer every epoch (about 10000 block number).
-And election time is before 200 block number in the current epoch.
-If relayer not completes task (about synchronising 1000 block) in current epoch, it will be not elected as relayer next epoch.
+The election time is before 200 block number in the current epoch.
+If relayer not completes a task (about synchronising 1000 block) in the current epoch, it will be not elected as relayer next epoch.
 
 ## Contract Address
 
@@ -234,7 +234,7 @@ relayer contract is deployed at address:
 ### register
 
 One node can participate as a relayer to proposal new blocks with `register` function. To
-become relayer, you need to `register` at leaste 100000 `eth` coins.
+become relayer, you need to `register` at least 100000 `eth` coins.
 
 `register` function inputs 1 item:
 
