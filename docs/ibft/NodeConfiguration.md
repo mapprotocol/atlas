@@ -9,6 +9,7 @@ In the types.IstanbulExtra, we can assign the validators at the `first epoch` by
 After rlp encoded, maximum size extra data should not exceed `32`.
 
 - types.IstanbulExtra struct
+
 ```
 type IstanbulExtra struct {
 	// AddedValidators are the validators that have been added in the block
@@ -29,6 +30,7 @@ type IstanbulExtra struct {
 ```
 
 - encode example
+
 ```
 package test
 
@@ -97,6 +99,7 @@ func TestEncodeData(t *testing.T) {
 ```
 
 - Copy data to func `DefaultGenesisBlock`, the path is  `atlas/core/chain/genesis.go`
+
 ```
 // this is our encoded data
 const mainnetExtraData = "0x0000000000000000000000000000000000000000000000000000000000000000f901ebf854941c0edab88dbb72b119039c4d14b1663525b3ac159416fdbcac4d4cc24dca47b9b80f58155a551ca2af942dc45799000ab08e60b7441c36fcc74060ccbe11946c5938b49bacde73a8db7c3a7da208846898bff5f90188b860be77f945929d5dd3fe99aa825df0f5b1e8ea11786333b4492a8624a4d08dcee0e89df327359e8ec3f2d8ae01e938b7003414aa2d6523ffa02fde42b278cbae311fd39f1fbcad8e3188442ea31dee662389599751f8e73b99215cefc2e0003f81b8604f38a71fb13ab20f7bbfc2749ab15d775b7729842d967ca4f4115d1fcb3f378c892d073344f84e2abd8995a16eeee8004f4e588c30261e08a5dae70c581f904ea86b574bfe279222cf6b7913bebb0d3bd6c2bbe2e2ea1d338f145c4d95b99201b8608cf3bfcbfc76e9a99b70cad65ae51f8a8972e3e230445a55c8cf6b96dea7a2d0d970e3545e1316554d5d3b0a53582800ad4de92e3b06b62aa6f7677fdc2885a90b75fd80e2db2775512d8f3d3900aabae5b0525786d65615994b07afe7f69481b8601bbb8eb14a7f5dddc9de3356ce4247dab8e554fa83cd33e663db148b5d2dd14485f090978c84074154b450329de06b018eac04113ede1eedadf891ee862877af92a648c162be62182db90e8c83f8fd154fc14f13676bcb1fe3503260b6261a018080c3808080c3808080"
@@ -132,6 +135,7 @@ it's better to has different `datadir` params every node, `ipcpath` params shoul
 
 After started up, input command `admin.nodeInfo` to get `enode` in atlas console, use command `admin.addPeer` to link four different nodes and wait for mining blocks.
 - example
+
 ```
 admin.addPeer("enode://cb63c953384918826f4a9413ce54e255918027fe78e6ed1f65ce9705e2c434c57b6e8307044601d098489d243a298984afa4c7a8dcc862b38fc604e4050699e9@127.0.0.1:21221")
 admin.addPeer("enode://60e990d0b4ff7c8d9c0403feb7637c4d3f21f7a38777b776501bb09be05622a1ed1090da9cb77ba850fb6fcdea5416e84edcf0477cab8d81b2d19e6c1a813888@127.0.0.1:21222")

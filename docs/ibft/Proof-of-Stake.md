@@ -30,7 +30,7 @@ Thereafter, it assigns the seat to the group that would ‘pay’, if its next v
 There is a minimum target and a maximum cap on the number of active validators that may be selected.
 If the minimum target is not reached, the election aborts and no change is made to the validator set this epoch.
 
-### Validator number and Reward
+## Validator number and Reward
 
 The participators make these decisions by locking MAP and voting for Validator Groups, intermediaries that sit between voters and Validators.
 Every Validator Group has an ordered list of up to `5` candidate Validators.
