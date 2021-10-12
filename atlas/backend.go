@@ -27,7 +27,6 @@ import (
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/indexer"
 	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"runtime"
@@ -71,7 +70,7 @@ type Ethereum struct {
 	config *ethconfig.Config
 
 	// Handlers
-	txPool             *txsdetails.TxPool
+	txPool             *chain.TxPool
 	blockchain         *chain.BlockChain
 	handler            *ProtocolManager
 	//ethDialCandidates  enode.Iterator
@@ -215,7 +214,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if config.TxPool.Journal != "" {
 		config.TxPool.Journal = stack.ResolvePath(config.TxPool.Journal)
 	}
-	eth.txPool = txsdetails.NewTxPool(config.TxPool, chainConfig, eth.blockchain)
+	eth.txPool = chain.NewTxPool(config.TxPool, chainConfig, eth.blockchain)
 
 	// Permit the downloader to use the trie cache allowance during fast sync
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
@@ -589,9 +588,9 @@ func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
 func (s *Ethereum) AccountManager() *accounts.Manager { return s.accountManager }
 func (s *Ethereum) BlockChain() *chain.BlockChain { return s.blockchain }
-func (s *Ethereum) Config() *ethconfig.Config     { return s.config }
-func (s *Ethereum) TxPool() *txsdetails.TxPool    { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux     { return s.eventMux }
+func (s *Ethereum) Config() *ethconfig.Config { return s.config }
+func (s *Ethereum) TxPool() *chain.TxPool     { return s.txPool }
+func (s *Ethereum) EventMux() *event.TypeMux  { return s.eventMux }
 func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
 func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
 func (s *Ethereum) IsListening() bool                  { return true } // Always listening

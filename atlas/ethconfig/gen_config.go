@@ -4,14 +4,13 @@ package ethconfig
 
 import (
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/miner"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // MarshalTOML marshals as TOML.
@@ -49,7 +48,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		Preimages               bool
 		Miner                   miner.Config
 		//Ethash                  ethash.Config
-		TxPool                  txsdetails.TxPoolConfig
+		TxPool                  chain.TxPoolConfig
 		GPO                     gasprice.Config
 		EnablePreimageRecording bool
 		DocRoot                 string `toml:"-"`
@@ -141,7 +140,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		Preimages               *bool
 		Miner                   *miner.Config
 		//Ethash                  *ethash.Config
-		TxPool                  *txsdetails.TxPoolConfig
+		TxPool                  *chain.TxPoolConfig
 		GPO                     *gasprice.Config
 		EnablePreimageRecording *bool
 		DocRoot                 *string `toml:"-"`

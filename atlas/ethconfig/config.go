@@ -7,7 +7,6 @@ import (
 	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"github.com/mapprotocol/atlas/miner"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
@@ -50,11 +49,11 @@ var Defaults = Config{
 		GasPrice: big.NewInt(params.GWei),
 		Recommit: 3 * time.Second,
 	},
-	TxPool:      txsdetails.DefaultTxPoolConfig,
+	TxPool:      chain.DefaultTxPoolConfig,
 	RPCGasCap:   25000000,
 	GPO:         FullNodeGPO,
 	RPCTxFeeCap: 1, // 1 ether
-	Istanbul: *istanbul.DefaultConfig,
+	Istanbul:    *istanbul.DefaultConfig,
 }
 
 //func init() {
@@ -137,7 +136,7 @@ type Config struct {
 	Miner miner.Config
 
 	// Transaction pool options
-	TxPool txsdetails.TxPoolConfig
+	TxPool chain.TxPoolConfig
 
 	// Enables tracking of SHA3 preimages in the VM
 	EnablePreimageRecording bool

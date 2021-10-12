@@ -20,20 +20,19 @@ package catalyst
 import (
 	"errors"
 	"fmt"
-	"math/big"
-	"time"
-	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/atlas"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/cmd/node"
 	chainParams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/atlas"
+	"github.com/mapprotocol/atlas/cmd/node"
+	"github.com/mapprotocol/atlas/core"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"math/big"
+	"time"
 )
 
 // Register adds catalyst APIs to the node.
@@ -80,7 +79,7 @@ type blockExecutionEnv struct {
 
 func (env *blockExecutionEnv) commitTransaction(tx *types.Transaction, coinbase common.Address) error {
 	vmconfig := *env.chain.GetVMConfig()
-	receipt, err := processor.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
+	receipt, err := chain2.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
 	if err != nil {
 		return err
 	}
