@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package processor
+package chain
 
 import (
 	"fmt"
@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/state"
@@ -35,13 +36,13 @@ import (
 //
 // StateProcessor implements Processor.
 type StateProcessor struct {
-	config *params2.ChainConfig    // Chain configuration options
-	bc     abstract.ChainProcessor // Canonical block chain
-	engine consensus.Engine        // Consensus engine used for block rewards
+	config *params2.ChainConfig // Chain configuration options
+	bc     *BlockChain          // Canonical block chain
+	engine consensus.Engine     // Consensus engine used for block rewards
 }
 
 // NewStateProcessor initialises a new StateProcessor.
-func NewStateProcessor(config *params2.ChainConfig, bc abstract.ChainProcessor, engine consensus.Engine) *StateProcessor {
+func NewStateProcessor(config *params2.ChainConfig, bc *BlockChain, engine consensus.Engine) *StateProcessor {
 	return &StateProcessor{
 		config: config,
 		bc:     bc,
@@ -62,7 +63,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		usedGas  = new(uint64)
 		header   = block.Header()
 		allLogs  []*types.Log
-		gp       = new(core.GasPool).AddGas(block.GasLimit())
+		vmRunner = p.bc.NewEVMRunner(block.Header(), statedb)
+		gp       = new(core.GasPool).AddGas(blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner))
 	)
 	// Mutate the block and state according to any hard-fork specs
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {

@@ -17,7 +17,7 @@
 package runtime
 
 import (
-	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/vm"
 )
 
@@ -27,8 +27,8 @@ func NewEnv(cfg *Config) *vm.EVM {
 		GasPrice: cfg.GasPrice,
 	}
 	blockContext := vm.BlockContext{
-		CanTransfer: processor.CanTransfer,
-		Transfer:    processor.Transfer,
+		CanTransfer: chain.CanTransfer,
+		Transfer:    chain.Transfer,
 		GetHash:     cfg.GetHashFn,
 		Coinbase:    cfg.Coinbase,
 		BlockNumber: cfg.BlockNumber,

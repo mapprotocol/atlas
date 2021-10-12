@@ -18,22 +18,22 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core/processor"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/asm"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 func TestDefaults(t *testing.T) {
@@ -294,7 +294,7 @@ func TestBlockhash(t *testing.T) {
 	input := common.Hex2Bytes("f8a8fd6d")
 	chain := &dummyChain{}
 	ret, _, err := Execute(data, input, &Config{
-		GetHashFn:   processor.GetHashFn(header, chain),
+		GetHashFn:   chain2.GetHashFn(header, chain),
 		BlockNumber: new(big.Int).Set(header.Number),
 	})
 	if err != nil {

@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	params2 "github.com/mapprotocol/atlas/params"
 	"io"
 	"io/ioutil"
@@ -321,12 +320,12 @@ var (
 	TxPoolJournalFlag = cli.StringFlag{
 		Name:  "txpool.journal",
 		Usage: "Disk journal for local transaction to survive node restarts",
-		Value: txsdetails.DefaultTxPoolConfig.Journal,
+		Value: chain2.DefaultTxPoolConfig.Journal,
 	}
 	TxPoolRejournalFlag = cli.DurationFlag{
 		Name:  "txpool.rejournal",
 		Usage: "Time interval to regenerate the local transaction journal",
-		Value: txsdetails.DefaultTxPoolConfig.Rejournal,
+		Value: chain2.DefaultTxPoolConfig.Rejournal,
 	}
 	TxPoolPriceLimitFlag = cli.Uint64Flag{
 		Name:  "txpool.pricelimit",
@@ -1244,7 +1243,7 @@ func setGPO(ctx *cli.Context, cfg *gasprice.Config, light bool) {
 	}
 }
 
-func setTxPool(ctx *cli.Context, cfg *txsdetails.TxPoolConfig) {
+func setTxPool(ctx *cli.Context, cfg *chain2.TxPoolConfig) {
 	if ctx.GlobalIsSet(TxPoolLocalsFlag.Name) {
 		locals := strings.Split(ctx.GlobalString(TxPoolLocalsFlag.Name), ",")
 		for _, account := range locals {

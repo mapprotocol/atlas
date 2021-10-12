@@ -18,15 +18,18 @@ package miner
 
 import (
 	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"math/big"
 	"math/rand"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/clique"
 	"github.com/mapprotocol/atlas/consensus/ethash"
@@ -34,10 +37,6 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -51,7 +50,7 @@ const (
 
 var (
 	// Test chain configurations
-	testTxPoolConfig  txsdetails.TxPoolConfig
+	testTxPoolConfig  chain2.TxPoolConfig
 	ethashChainConfig *params.ChainConfig
 	cliqueChainConfig *params.ChainConfig
 
@@ -75,7 +74,7 @@ var (
 )
 
 func init() {
-	testTxPoolConfig = txsdetails.DefaultTxPoolConfig
+	testTxPoolConfig = chain2.DefaultTxPoolConfig
 	testTxPoolConfig.Journal = ""
 	ethashChainConfig = params.TestChainConfig
 	cliqueChainConfig = params.TestChainConfig
@@ -108,7 +107,7 @@ func init() {
 // testWorkerBackend implements worker.Backend interfaces and wraps all information needed during the testing.
 type testWorkerBackend struct {
 	db         ethdb.Database
-	txPool     *txsdetails.TxPool
+	txPool     *chain2.TxPool
 	chain      *chain2.BlockChain
 	testTxFeed event.Feed
 	genesis    *chain2.Genesis
@@ -135,7 +134,7 @@ func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine 
 	genesis := gspec.MustCommit(db)
 
 	chain, _ := chain2.NewBlockChain(db, &chain2.CacheConfig{TrieDirtyDisabled: true}, gspec.Config, engine, vm.Config{}, nil, nil)
-	txpool := txsdetails.NewTxPool(testTxPoolConfig, chainConfig, chain)
+	txpool := chain2.NewTxPool(testTxPoolConfig, chainConfig, chain)
 
 	// Generate a small n-block chain and an uncle block for it
 	if n > 0 {
@@ -164,7 +163,7 @@ func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine 
 }
 
 func (b *testWorkerBackend) BlockChain() *chain2.BlockChain { return b.chain }
-func (b *testWorkerBackend) TxPool() *txsdetails.TxPool     { return b.txPool }
+func (b *testWorkerBackend) TxPool() *chain2.TxPool         { return b.txPool }
 
 func (b *testWorkerBackend) newRandomUncle() *types.Block {
 	var parent *types.Block

@@ -19,7 +19,6 @@ package chain
 import (
 	"fmt"
 	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/processor"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
@@ -99,7 +98,7 @@ func (b *BlockGen) AddTxWithChain(bc *BlockChain, tx *types.Transaction) {
 		b.SetCoinbase(common.Address{})
 	}
 	b.statedb.Prepare(tx.Hash(), common.Hash{}, len(b.txs))
-	receipt, err := processor.ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vm.Config{})
+	receipt, err := ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vm.Config{})
 	if err != nil {
 		panic(err)
 	}

@@ -19,29 +19,28 @@ package miner
 
 import (
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/consensus/clique"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/mapprotocol/atlas/atlas/downloader"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/trie"
 )
 
 type mockBackend struct {
 	bc     *chain.BlockChain
-	txPool *txsdetails.TxPool
+	txPool *chain.TxPool
 }
 
-func NewMockBackend(bc *chain.BlockChain, txPool *txsdetails.TxPool) *mockBackend {
+func NewMockBackend(bc *chain.BlockChain, txPool *chain.TxPool) *mockBackend {
 	return &mockBackend{
 		bc:     bc,
 		txPool: txPool,
@@ -52,7 +51,7 @@ func (m *mockBackend) BlockChain() *chain.BlockChain {
 	return m.bc
 }
 
-func (m *mockBackend) TxPool() *txsdetails.TxPool {
+func (m *mockBackend) TxPool() *chain.TxPool {
 	return m.txPool
 }
 
@@ -254,7 +253,7 @@ func createMiner(t *testing.T) (*Miner, *event.TypeMux) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(chainDB), nil)
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
-	pool := txsdetails.NewTxPool(testTxPoolConfig, chainConfig, blockchain)
+	pool := chain.NewTxPool(testTxPoolConfig, chainConfig, blockchain)
 	backend := NewMockBackend(bc, pool)
 	// Create event Mux
 	mux := new(event.TypeMux)

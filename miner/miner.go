@@ -31,7 +31,6 @@ import (
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"github.com/mapprotocol/atlas/core/types"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
@@ -41,7 +40,7 @@ import (
 // Backend wraps all methods required for mining.
 type Backend interface {
 	BlockChain() *chain.BlockChain
-	TxPool() *txsdetails.TxPool
+	TxPool() *chain.TxPool
 }
 
 // Config is the configuration parameters of mining.

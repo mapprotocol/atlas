@@ -14,14 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package txsdetails
+package chain
 
 import (
 	"errors"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	"github.com/mapprotocol/atlas/contracts/currency"
 	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/vm"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math"
@@ -578,7 +577,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	//}
 
 	// Ensure the transaction has more gas than the basic tx fee.
-	intrGas, err := processor.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, pool.istanbul)
+	intrGas, err := IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, pool.istanbul)
 	if err != nil {
 		return err
 	}

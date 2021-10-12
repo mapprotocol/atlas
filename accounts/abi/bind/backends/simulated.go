@@ -22,7 +22,6 @@ import (
 	"fmt"
 	mockEngine "github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sync"
@@ -349,7 +348,7 @@ func (b *SimulatedBackend) PendingCodeAt(ctx context.Context, contract common.Ad
 	return b.pendingState.GetCode(contract), nil
 }
 
-func newRevertError(result *processor.ExecutionResult) *revertError {
+func newRevertError(result *chain.ExecutionResult) *revertError {
 	reason, errUnpack := abi.UnpackRevert(result.Revert())
 	err := errors.New("execution reverted")
 	if errUnpack == nil {
@@ -475,7 +474,7 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call types.CallMsg) 
 	cap = hi
 
 	// Create a helper to check if a gas allowance results in an executable transaction
-	executable := func(gas uint64) (bool, *processor.ExecutionResult, error) {
+	executable := func(gas uint64) (bool, *chain.ExecutionResult, error) {
 		call.Gas = gas
 
 		snapshot := b.pendingState.Snapshot()
@@ -529,7 +528,7 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call types.CallMsg) 
 
 // callContract implements common code between normal and pending contract calls.
 // state is modified during execution, make sure to copy it if necessary.
-func (b *SimulatedBackend) callContract(ctx context.Context, call types.CallMsg, block *types.Block, stateDB *state.StateDB) (*processor.ExecutionResult, error) {
+func (b *SimulatedBackend) callContract(ctx context.Context, call types.CallMsg, block *types.Block, stateDB *state.StateDB) (*chain.ExecutionResult, error) {
 	// Ensure message is initialized properly.
 	if call.GasPrice == nil {
 		call.GasPrice = big.NewInt(1)
@@ -546,14 +545,14 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call types.CallMsg,
 	// Execute the call.
 	msg := callMsg{call}
 
-	txContext := processor.NewEVMTxContext(msg)
-	evmContext := processor.NewEVMBlockContext(block.Header(), b.blockchain, nil)
+	txContext := chain.NewEVMTxContext(msg)
+	evmContext := chain.NewEVMBlockContext(block.Header(), b.blockchain, nil)
 	// Create a new environment which holds all relevant information
 	// about the transaction and calling mechanisms.
 	vmEnv := vm.NewEVM(evmContext, txContext, stateDB, b.config, vm.Config{})
 	gasPool := new(core.GasPool).AddGas(math.MaxUint64)
 
-	return processor.NewStateTransition(vmEnv, msg, gasPool).TransitionDb()
+	return chain.NewStateTransition(vmEnv, msg, gasPool).TransitionDb()
 }
 
 // SendTransaction updates the pending block to include the given transaction.

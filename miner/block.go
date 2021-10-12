@@ -11,7 +11,7 @@ import (
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	"github.com/mapprotocol/atlas/contracts/random"
 	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -284,7 +284,7 @@ func (b *blockState) commitTransaction(w *worker, tx *types.Transaction, txFeeRe
 	snap := b.state.Snapshot()
 	//vmRunner := w.chain.NewEVMRunner(b.header, b.state)
 
-	receipt, err := processor.ApplyTransaction(
+	receipt, err := chain.ApplyTransaction(
 		w.chainConfig,
 		w.chain,
 		&txFeeRecipient,

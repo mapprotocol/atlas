@@ -507,13 +507,16 @@ func (tx *Transaction) Hash() common.Hash {
 // Size returns the true RLP encoded storage size of the transaction, either by
 // encoding and returning it, or returning a previously cached value.
 func (tx *Transaction) Size() common.StorageSize {
-	if size := tx.size.Load(); size != nil {
-		return size.(common.StorageSize)
+	if tx != nil {
+		if size := tx.size.Load(); size != nil {
+			return size.(common.StorageSize)
+		}
+		c := writeCounter(0)
+		rlp.Encode(&c, &tx.inner)
+		tx.size.Store(common.StorageSize(c))
+		return common.StorageSize(c)
 	}
-	c := writeCounter(0)
-	rlp.Encode(&c, &tx.inner)
-	tx.size.Store(common.StorageSize(c))
-	return common.StorageSize(c)
+	return 0
 }
 
 // WithSignature returns a new transaction with the given signature.
