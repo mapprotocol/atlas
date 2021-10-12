@@ -18,7 +18,6 @@ package chain
 
 import (
 	"container/heap"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
@@ -1379,7 +1378,6 @@ func (l *txPricedList) Removed(count int) {
 	if l.all.nilCurrencyTxCurrCount > uint64(l.Len()) {
 		l.all.nilCurrencyTxCurrCount = uint64(l.Len())
 	}
-	fmt.Println("l.all.nilCurrencyTxCurrCount", l.all.nilCurrencyTxCurrCount)
 	// Seems we've reached a critical number of stale transactions, reheap
 	reheapNilCurrencyHeap := make(priceHeap, 0, l.all.nilCurrencyTxCurrCount)
 
