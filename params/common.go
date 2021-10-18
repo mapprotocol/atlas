@@ -17,6 +17,7 @@ var (
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
+	TxVerifyAddress    = common.BytesToAddress([]byte("txVerifyAddress"))
 )
 
 var RelayerGas = map[string]uint64{
@@ -106,7 +107,7 @@ var (
 	SortedOraclesRegistryId        = makeRegistryId("SortedOracles")
 	StableTokenRegistryId          = makeRegistryId("StableToken")
 	//TransferWhitelistRegistryId    = makeRegistryId("TransferWhitelist")
-	ValidatorsRegistryId           = makeRegistryId("Validators")
+	ValidatorsRegistryId = makeRegistryId("Validators")
 
 	// Function is "getOrComputeTobinTax()"
 	// selector is first 4 bytes of keccak256 of "getOrComputeTobinTax()"

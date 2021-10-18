@@ -140,6 +140,16 @@ func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 	}
 }
 
+func InitTxVerify(state *state.StateDB, blockNumber *big.Int) {
+	if blockNumber.Cmp(big.NewInt(0)) == 0 {
+		key := common.BytesToHash(params2.TxVerifyAddress[:])
+		getState := state.GetPOWState(params2.TxVerifyAddress, key)
+		if len(getState) == 0 {
+			state.SetCode(params2.TxVerifyAddress, params2.TxVerifyAddress[:])
+		}
+	}
+}
+
 // Istanbul is a consensus engine to avoid byzantine failure
 type Istanbul interface {
 	Engine

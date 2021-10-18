@@ -70,12 +70,12 @@ type Ethereum struct {
 	config *ethconfig.Config
 
 	// Handlers
-	txPool             *chain.TxPool
-	blockchain         *chain.BlockChain
-	handler            *ProtocolManager
+	txPool     *chain.TxPool
+	blockchain *chain.BlockChain
+	handler    *ProtocolManager
 	//ethDialCandidates  enode.Iterator
 	//snapDialCandidates enode.Iterator
-	dialCandidates  enode.Iterator
+	dialCandidates enode.Iterator
 
 	// DB interfaces
 	chainDb ethdb.Database // Block chain database
@@ -157,11 +157,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
 		//gasPrice:          config.Miner.GasPrice,
-		etherbase:         config.Miner.Etherbase,
-		txFeeRecipient:    config.TxFeeRecipient,
-		bloomRequests:     make(chan chan *bloombits.Retrieval),
-		bloomIndexer:      indexer.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
-		p2pServer:         stack.Server(),
+		etherbase:      config.Miner.Etherbase,
+		txFeeRecipient: config.TxFeeRecipient,
+		bloomRequests:  make(chan chan *bloombits.Retrieval),
+		bloomIndexer:   indexer.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
+		p2pServer:      stack.Server(),
 	}
 
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
@@ -184,8 +184,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	var (
 		vmConfig = vm.Config{
 			EnablePreimageRecording: config.EnablePreimageRecording,
-			EWASMInterpreter:        config.EWASMInterpreter,
-			EVMInterpreter:          config.EVMInterpreter,
 		}
 		cacheConfig = &chain.CacheConfig{
 			TrieCleanLimit:      config.TrieCleanCache,
@@ -249,7 +247,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			})
 	}
 
-	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock,chainDb)
+	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock, chainDb)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
 	eth.APIBackend = &EthAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, eth, nil}
@@ -551,8 +549,6 @@ func (s *Ethereum) StartMining(threads int) error {
 	return nil
 }
 
-
-
 // StopMining terminates the miner, both at the consensus engine level as well as
 // at the block creation level.
 func (s *Ethereum) StopMining() {
@@ -586,18 +582,18 @@ func (s *Ethereum) stopAnnounce() error {
 func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
 func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
-func (s *Ethereum) AccountManager() *accounts.Manager { return s.accountManager }
-func (s *Ethereum) BlockChain() *chain.BlockChain { return s.blockchain }
-func (s *Ethereum) Config() *ethconfig.Config { return s.config }
-func (s *Ethereum) TxPool() *chain.TxPool     { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux  { return s.eventMux }
-func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
-func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
-func (s *Ethereum) IsListening() bool                  { return true } // Always listening
+func (s *Ethereum) AccountManager() *accounts.Manager   { return s.accountManager }
+func (s *Ethereum) BlockChain() *chain.BlockChain       { return s.blockchain }
+func (s *Ethereum) Config() *ethconfig.Config           { return s.config }
+func (s *Ethereum) TxPool() *chain.TxPool               { return s.txPool }
+func (s *Ethereum) EventMux() *event.TypeMux            { return s.eventMux }
+func (s *Ethereum) Engine() consensus.Engine            { return s.engine }
+func (s *Ethereum) ChainDb() ethdb.Database             { return s.chainDb }
+func (s *Ethereum) IsListening() bool                   { return true } // Always listening
 func (s *Ethereum) EthVersion() int                     { return int(istanbul.ProtocolVersions[0]) }
 func (s *Ethereum) NetVersion() uint64                  { return s.networkID }
-func (s *Ethereum) Downloader() *downloader.Downloader { return s.handler.downloader }
-func (s *Ethereum) Synced() bool                       { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
+func (s *Ethereum) Downloader() *downloader.Downloader  { return s.handler.downloader }
+func (s *Ethereum) Synced() bool                        { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
 func (s *Ethereum) ArchiveMode() bool                   { return s.config.NoPruning }
 func (s *Ethereum) BloomIndexer() *indexer.ChainIndexer { return s.bloomIndexer }
 
@@ -659,8 +655,6 @@ func (s *Ethereum) Stop() error {
 	return nil
 }
 
-
-
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(stack *node.Node, chainConfig *params2.ChainConfig, config *ethconfig.Config, db ethdb.Database) consensus.Engine {
 	if chainConfig.Faker {
@@ -678,4 +672,3 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params2.ChainConfig, c
 	log.Error(fmt.Sprintf("Only Istanbul Consensus is supported: %v", chainConfig))
 	return nil
 }
-

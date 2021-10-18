@@ -25,8 +25,8 @@ func TestSavePackAndUnpack(t *testing.T) {
 	//pack := headerStorePack(Save, "ETH", "MAP", []byte("1234"))
 	//method, _ := abiHeaderStore.Methods[Save]
 
-	pack := headerStorePack(CurrentHeaderNumber, "ETH")
-	method, _ := abiHeaderStore.Methods[CurrentHeaderNumber]
+	pack := headerStorePack(CurNbrAndHash, "ETH")
+	method, _ := abiHeaderStore.Methods[CurNbrAndHash]
 
 	unpack, err := method.Inputs.Unpack(pack[4:])
 	if err != nil {
@@ -56,7 +56,7 @@ func Test_currentHeaderNumber(t *testing.T) {
 			args: args{
 				evm:      &EVM{},
 				contract: &Contract{},
-				input:    headerStorePack(CurrentHeaderNumber, "ETH"),
+				input:    headerStorePack(CurNbrAndHash, "ETH"),
 			},
 			before: func() {
 				chainsdb.NewStoreDb(nil, 10, 2)
@@ -68,7 +68,7 @@ func Test_currentHeaderNumber(t *testing.T) {
 	for _, tt := range tests {
 		tt.before()
 		t.Run(tt.name, func(t *testing.T) {
-			gotRet, err := currentHeaderNumber(tt.args.evm, tt.args.contract, tt.args.input)
+			gotRet, err := currentNumberAndHash(tt.args.evm, tt.args.contract, tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("currentHeaderNumber() error = %v, wantErr %v", err, tt.wantErr)
 				return
