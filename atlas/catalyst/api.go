@@ -42,10 +42,8 @@ import (
 // Register adds catalyst APIs to the node.
 func Register(stack *node.Node, backend *atlas.Ethereum) error {
 	chainconfig := backend.BlockChain().Config()
-	if chainconfig.CatalystBlock == nil {
-		return errors.New("catalystBlock is not set in genesis config")
-	} else if chainconfig.CatalystBlock.Sign() != 0 {
-		return errors.New("catalystBlock of genesis config must be zero")
+	if chainconfig.TerminalTotalDifficulty == nil {
+		return errors.New("catalyst started without valid total difficulty")
 	}
 
 	log.Warn("Catalyst mode enabled")
@@ -131,10 +129,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		time.Sleep(wait)
 	}
 
-	pending, err := pool.Pending(true)
-	if err != nil {
-		return nil, err
-	}
+	pending := pool.Pending(true)
 
 	coinbase, err := api.atlas.Etherbase()
 	if err != nil {

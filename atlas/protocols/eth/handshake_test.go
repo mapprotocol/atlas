@@ -21,13 +21,12 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/forkid"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/core/forkid"
 )
 
 // Tests that handshake failures are detected and reported correctly.
-func TestHandshake65(t *testing.T) { testHandshake(t, ETH65) }
 func TestHandshake66(t *testing.T) { testHandshake(t, ETH66) }
 
 func testHandshake(t *testing.T, protocol uint) {

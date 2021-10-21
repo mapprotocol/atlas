@@ -29,10 +29,12 @@ var (
 	ErrKnownBlock = errors.New("block already known")
 
 	// ErrBannedHash is returned if a block to import is on the banned list.
-	ErrBannedHash = errors.New("blacklisted hash")
+	ErrBannedHash = errors.New("banned hash")
 
 	// ErrNoGenesis is returned when there is no Genesis Block.
 	ErrNoGenesis = errors.New("genesis not found in chain")
+
+	ErrSideChainReceipts = errors.New("side blocks can't be accepted as ancient chain data")
 )
 
 // List of evm-call-message pre-checking errors. All state transition messages will
