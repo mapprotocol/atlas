@@ -20,9 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
-	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sync"
 	"time"
@@ -34,18 +31,21 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/accounts/abi/bind"
 	"github.com/mapprotocol/atlas/atlas/filters"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/bloombits"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // This nil assignment ensures at compile time that SimulatedBackend implements bind.ContractBackend.
@@ -81,7 +81,7 @@ type SimulatedBackend struct {
 func NewSimulatedBackendWithDatabase(database ethdb.Database, alloc chain.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
 	genesis := chain.Genesis{Config: params.AllEthashProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
 	genesis.MustCommit(database)
-	blockchain, _ := chain.NewBlockChain(database, nil, genesis.Config, ethash.NewFaker(), vm.Config{}, nil, nil)
+	blockchain, _ := chain.NewBlockChain(database, nil, genesis.Config, consensustest.NewFaker(), vm.Config{}, nil, nil)
 
 	backend := &SimulatedBackend{
 		database:   database,
@@ -129,7 +129,7 @@ func (b *SimulatedBackend) Rollback() {
 }
 
 func (b *SimulatedBackend) rollback(parent *types.Block) {
-	blocks, _ := chain.GenerateChain(b.config, parent, ethash.NewFaker(), b.database, 1, func(int, *chain.BlockGen) {})
+	blocks, _ := chain.GenerateChain(b.config, parent, consensustest.NewFaker(), b.database, 1, func(int, *chain.BlockGen) {})
 
 	b.pendingBlock = blocks[0]
 	b.pendingState, _ = state.New(b.pendingBlock.Root(), b.blockchain.StateCache(), nil)
@@ -383,7 +383,7 @@ func (b *SimulatedBackend) PendingCodeAt(ctx context.Context, contract common.Ad
 	return b.pendingState.GetCode(contract), nil
 }
 
-func newRevertError(result *processor.ExecutionResult) *revertError {
+func newRevertError(result *chain.ExecutionResult) *revertError {
 	reason, errUnpack := abi.UnpackRevert(result.Revert())
 	err := errors.New("execution reverted")
 	if errUnpack == nil {
@@ -414,7 +414,7 @@ func (e *revertError) ErrorData() interface{} {
 }
 
 // CallContract executes a contract call.
-func (b *SimulatedBackend) CallContract(ctx context.Context, call params2.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (b *SimulatedBackend) CallContract(ctx context.Context, call types.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -437,7 +437,7 @@ func (b *SimulatedBackend) CallContract(ctx context.Context, call params2.CallMs
 }
 
 // PendingCallContract executes a contract call on the pending state.
-func (b *SimulatedBackend) PendingCallContract(ctx context.Context, call params2.CallMsg) ([]byte, error) {
+func (b *SimulatedBackend) PendingCallContract(ctx context.Context, call types.CallMsg) ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	defer b.pendingState.RevertToSnapshot(b.pendingState.Snapshot())
@@ -476,17 +476,17 @@ func (b *SimulatedBackend) SuggestGasTipCap(ctx context.Context) (*big.Int, erro
 
 // EstimateGas executes the requested code against the currently pending block/state and
 // returns the used amount of gas.
-func (b *SimulatedBackend) EstimateGas(ctx context.Context, call params2.CallMsg) (uint64, error) {
+func (b *SimulatedBackend) EstimateGas(ctx context.Context, call types.CallMsg) (uint64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
-		lo  uint64 = params.TxGas - 1
+		lo  uint64 = ethparams.TxGas - 1
 		hi  uint64
 		cap uint64
 	)
-	if call.Gas >= params.TxGas {
+	if call.Gas >= ethparams.TxGas {
 		hi = call.Gas
 	} else {
 		hi = b.pendingBlock.GasLimit()
@@ -526,7 +526,7 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call params2.CallMsg
 	cap = hi
 
 	// Create a helper to check if a gas allowance results in an executable transaction
-	executable := func(gas uint64) (bool, *processor.ExecutionResult, error) {
+	executable := func(gas uint64) (bool, *chain.ExecutionResult, error) {
 		call.Gas = gas
 
 		snapshot := b.pendingState.Snapshot()
@@ -580,7 +580,7 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call params2.CallMsg
 
 // callContract implements common code between normal and pending contract calls.
 // state is modified during execution, make sure to copy it if necessary.
-func (b *SimulatedBackend) callContract(ctx context.Context, call params2.CallMsg, block *types.Block, stateDB *state.StateDB) (*processor.ExecutionResult, error) {
+func (b *SimulatedBackend) callContract(ctx context.Context, call types.CallMsg, block *types.Block, stateDB *state.StateDB) (*chain.ExecutionResult, error) {
 	// Gas prices post 1559 need to be initialized
 	if call.GasPrice != nil && (call.GasFeeCap != nil || call.GasTipCap != nil) {
 		return nil, errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
@@ -625,14 +625,14 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call params2.CallMs
 	// Execute the call.
 	msg := callMsg{call}
 
-	txContext := processor.NewEVMTxContext(msg)
-	evmContext := processor.NewEVMBlockContext(block.Header(), b.blockchain, nil)
+	txContext := chain.NewEVMTxContext(msg)
+	evmContext := chain.NewEVMBlockContext(block.Header(), b.blockchain, nil)
 	// Create a new environment which holds all relevant information
 	// about the transaction and calling mechanisms.
 	vmEnv := vm.NewEVM(evmContext, txContext, stateDB, b.config, vm.Config{NoBaseFee: true})
 	gasPool := new(core.GasPool).AddGas(math.MaxUint64)
 
-	return processor.NewStateTransition(vmEnv, msg, gasPool).TransitionDb()
+	return chain.NewStateTransition(vmEnv, msg, gasPool).TransitionDb()
 }
 
 // SendTransaction updates the pending block to include the given transaction.
@@ -657,7 +657,7 @@ func (b *SimulatedBackend) SendTransaction(ctx context.Context, tx *types.Transa
 		panic(fmt.Errorf("invalid transaction nonce: got %d, want %d", tx.Nonce(), nonce))
 	}
 	// Include tx in chain
-	blocks, _ := chain.GenerateChain(b.config, block, ethash.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
+	blocks, _ := chain.GenerateChain(b.config, block, consensustest.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
 		for _, tx := range b.pendingBlock.Transactions() {
 			block.AddTxWithChain(b.blockchain, tx)
 		}
@@ -775,7 +775,7 @@ func (b *SimulatedBackend) AdjustTime(adjustment time.Duration) error {
 		return errors.New("Could not adjust time on non-empty block")
 	}
 
-	blocks, _ := chain.GenerateChain(b.config, b.blockchain.CurrentBlock(), ethash.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
+	blocks, _ := chain.GenerateChain(b.config, b.blockchain.CurrentBlock(), consensustest.NewFaker(), b.database, 1, func(number int, block *chain.BlockGen) {
 		block.OffsetTime(int64(adjustment.Seconds()))
 	})
 	stateDB, _ := b.blockchain.State()
@@ -794,7 +794,7 @@ func (b *SimulatedBackend) Blockchain() *chain.BlockChain {
 // callMsg implements core.Message to allow passing it as a transaction simulator.
 type callMsg struct {
 	//ethereum.CallMsg
-	params2.CallMsg
+	types.CallMsg
 }
 
 func (m callMsg) From() common.Address         { return m.CallMsg.From }

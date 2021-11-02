@@ -18,14 +18,13 @@
 package catalyst
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-	chainParams "github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 
@@ -34,17 +33,18 @@ import (
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core"
 	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	atlasparams "github.com/mapprotocol/atlas/params"
 )
 
 // Register adds catalyst APIs to the node.
 func Register(stack *node.Node, backend *atlas.Ethereum) error {
-	chainconfig := backend.BlockChain().Config()
-	if chainconfig.TerminalTotalDifficulty == nil {
-		return errors.New("catalyst started without valid total difficulty")
-	}
+	//chainconfig := backend.BlockChain().Config()
+	// todo ibft
+	//if chainconfig.TerminalTotalDifficulty == nil {
+	//	return errors.New("catalyst started without valid total difficulty")
+	//}
 
 	log.Warn("Catalyst mode enabled")
 	stack.RegisterAPIs([]rpc.API{
@@ -82,7 +82,7 @@ type blockExecutionEnv struct {
 func (env *blockExecutionEnv) commitTransaction(tx *types.Transaction, coinbase common.Address) error {
 	vmconfig := *env.chain.GetVMConfig()
 	snap := env.state.Snapshot()
-	receipt, err := processor.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
+	receipt, err := chain2.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		return err
@@ -163,8 +163,8 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		transactions []*types.Transaction
 	)
 	for {
-		if env.gasPool.Gas() < chainParams.TxGas {
-			log.Trace("Not enough gas for further transactions", "have", env.gasPool, "want", chainParams.TxGas)
+		if env.gasPool.Gas() < ethparams.TxGas {
+			log.Trace("Not enough gas for further transactions", "have", env.gasPool, "want", ethparams.TxGas)
 			break
 		}
 		tx := txHeap.Peek()
@@ -209,7 +209,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 	}
 
 	// Create the block.
-	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, nil /* uncles */, env.receipts)
+	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, env.receipts, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func decodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 	return txs, nil
 }
 
-func insertBlockParamsToBlock(config *chainParams.ChainConfig, parent *types.Header, params executableData) (*types.Block, error) {
+func insertBlockParamsToBlock(config *atlasparams.ChainConfig, parent *types.Header, params executableData) (*types.Block, error) {
 	txs, err := decodeTransactions(params.Transactions)
 	if err != nil {
 		return nil, err
@@ -257,23 +257,23 @@ func insertBlockParamsToBlock(config *chainParams.ChainConfig, parent *types.Hea
 	number := big.NewInt(0)
 	number.SetUint64(params.Number)
 	header := &types.Header{
-		ParentHash:  params.ParentHash,
-		UncleHash:   types.EmptyUncleHash,
+		ParentHash: params.ParentHash,
+		//UncleHash:   types.EmptyUncleHash,
 		Coinbase:    params.Miner,
 		Root:        params.StateRoot,
 		TxHash:      types.DeriveSha(types.Transactions(txs), trie.NewStackTrie(nil)),
 		ReceiptHash: params.ReceiptRoot,
 		Bloom:       types.BytesToBloom(params.LogsBloom),
-		Difficulty:  big.NewInt(1),
-		Number:      number,
-		GasLimit:    params.GasLimit,
-		GasUsed:     params.GasUsed,
-		Time:        params.Timestamp,
+		//Difficulty:  big.NewInt(1),
+		Number:   number,
+		GasLimit: params.GasLimit,
+		GasUsed:  params.GasUsed,
+		Time:     params.Timestamp,
 	}
 	if config.IsLondon(number) {
 		header.BaseFee = misc.CalcBaseFee(config, parent)
 	}
-	block := types.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */)
+	block := types.NewBlockWithHeader(header).WithBody(txs, nil, nil)
 	return block, nil
 }
 

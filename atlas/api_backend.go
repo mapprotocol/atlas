@@ -19,6 +19,7 @@ package atlas
 import (
 	"context"
 	"errors"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"time"
 
@@ -26,7 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/mapprotocol/atlas/accounts"
@@ -34,13 +35,12 @@ import (
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/bloombits"
-	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/miner"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // EthAPIBackend implements ethapi.Backend for full nodes
@@ -204,13 +204,13 @@ func (b *EthAPIBackend) GetTd(ctx context.Context, hash common.Hash) *big.Int {
 	return nil
 }
 
-func (b *EthAPIBackend) GetEVM(ctx context.Context, msg processor.Message, state *state.StateDB, header *types.Header, vmConfig *vm.Config) (*vm.EVM, func() error, error) {
+func (b *EthAPIBackend) GetEVM(ctx context.Context, msg chain.Message, state *state.StateDB, header *types.Header, vmConfig *vm.Config) (*vm.EVM, func() error, error) {
 	vmError := func() error { return nil }
 	if vmConfig == nil {
 		vmConfig = b.eth.blockchain.GetVMConfig()
 	}
-	txContext := processor.NewEVMTxContext(msg)
-	context := processor.NewEVMBlockContext(header, b.eth.BlockChain(), nil)
+	txContext := chain.NewEVMTxContext(msg)
+	context := chain.NewEVMBlockContext(header, b.eth.BlockChain(), nil)
 	return vm.NewEVM(context, txContext, state, b.eth.blockchain.Config(), *vmConfig), vmError, nil
 }
 
@@ -276,7 +276,7 @@ func (b *EthAPIBackend) TxPoolContentFrom(addr common.Address) (types.Transactio
 	return b.eth.TxPool().ContentFrom(addr)
 }
 
-func (b *EthAPIBackend) TxPool() *txsdetails.TxPool {
+func (b *EthAPIBackend) TxPool() *chain.TxPool {
 	return b.eth.TxPool()
 }
 
@@ -330,7 +330,7 @@ func (b *EthAPIBackend) RPCTxFeeCap() float64 {
 
 func (b *EthAPIBackend) BloomStatus() (uint64, uint64) {
 	sections, _, _ := b.eth.bloomIndexer.Sections()
-	return params.BloomBitsBlocks, sections
+	return ethparams.BloomBitsBlocks, sections
 }
 
 func (b *EthAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
@@ -359,6 +359,6 @@ func (b *EthAPIBackend) StateAtBlock(ctx context.Context, block *types.Block, re
 	return b.eth.stateAtBlock(block, reexec, base, checkLive)
 }
 
-func (b *EthAPIBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (processor.Message, vm.BlockContext, *state.StateDB, error) {
+func (b *EthAPIBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (chain.Message, vm.BlockContext, *state.StateDB, error) {
 	return b.eth.stateAtTransaction(block, txIndex, reexec)
 }

@@ -23,10 +23,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // ReadTxLookupEntry retrieves the positional metadata associated with a transaction

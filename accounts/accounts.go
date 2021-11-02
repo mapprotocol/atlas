@@ -18,14 +18,17 @@
 package accounts
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 // Account represents an Ethereum account located at a specific location defined
@@ -135,6 +138,22 @@ type Wallet interface {
 
 	// SignTextWithPassphrase is identical to Signtext, but also takes a password
 	SignTextWithPassphrase(account Account, passphrase string, hash []byte) ([]byte, error)
+
+	// SignHash is like SignData but doesn't hash the given data
+	//
+	// NOTE: DEPRACATED, use SignData for future releases.
+	// This is needed for backwards compatibility on a network where validators
+	// started on celo-blockchain 1.8. 1.9 removed the SignHash function,
+	// replacing it with SignData, which always hashes the input before signing.
+	SignHash(account Account, hash []byte) ([]byte, error)
+
+	// SignBLS generates a BLS signature over the provided data with a direct or composite hasher
+	SignBLS(account Account, msg []byte, extraData []byte, useComposite, cip22 bool) (bls.SerializedSignature, error)
+
+	GetPublicKey(account Account) (*ecdsa.PublicKey, error)
+
+	// Decrypt decrypts an ECIES ciphertext.
+	Decrypt(account Account, c, s1, s2 []byte) ([]byte, error)
 
 	// SignTx requests the wallet to sign the given transaction.
 	//

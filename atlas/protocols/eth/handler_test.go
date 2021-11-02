@@ -18,7 +18,6 @@ package eth
 
 import (
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"math"
 	"math/big"
 	"math/rand"
@@ -52,7 +51,7 @@ var (
 type testBackend struct {
 	db     ethdb.Database
 	chain  *chain.BlockChain
-	txpool *txsdetails.TxPool
+	txpool *chain.TxPool
 }
 
 // newTestBackend creates an empty chain and wraps it into a mock backend.
@@ -76,13 +75,13 @@ func newTestBackendWithGenerator(blocks int, generator func(int, *chain.BlockGen
 	if _, err := block_chain.InsertChain(bs); err != nil {
 		panic(err)
 	}
-	txconfig := txsdetails.DefaultTxPoolConfig
+	txconfig := chain.DefaultTxPoolConfig
 	txconfig.Journal = "" // Don't litter the disk with test journals
 
 	return &testBackend{
 		db:     db,
 		chain:  block_chain,
-		txpool: txsdetails.NewTxPool(txconfig, params.TestChainConfig, block_chain),
+		txpool: chain.NewTxPool(txconfig, params.TestChainConfig, block_chain),
 	}
 }
 

@@ -3,6 +3,7 @@
 package ethconfig
 
 import (
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"math/big"
 	"time"
 
@@ -11,9 +12,8 @@ import (
 
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/gasprice"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	//"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"github.com/mapprotocol/atlas/miner"
 )
 
@@ -51,9 +51,9 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapshotCache           int
 		Preimages               bool
 		Miner                   miner.Config
-		Ethash                  ethash.Config
-		TxPool                  txsdetails.TxPoolConfig
-		GPO                     gasprice.Config
+		//Ethash                  ethash.Config
+		TxPool chain.TxPoolConfig
+		GPO    gasprice.Config
 		EnablePreimageRecording bool
 		DocRoot                 string `toml:"-"`
 		RPCGasCap               uint64
@@ -78,8 +78,8 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.LightEgress = c.LightEgress
 	enc.LightPeers = c.LightPeers
 	enc.LightNoPrune = c.LightNoPrune
-	enc.LightNoSyncServe = c.LightNoSyncServe
-	enc.SyncFromCheckpoint = c.SyncFromCheckpoint
+	//enc.LightNoSyncServe = c.LightNoSyncServe
+	//enc.SyncFromCheckpoint = c.SyncFromCheckpoint
 	enc.UltraLightServers = c.UltraLightServers
 	enc.UltraLightFraction = c.UltraLightFraction
 	enc.UltraLightOnlyAnnounce = c.UltraLightOnlyAnnounce
@@ -95,7 +95,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.SnapshotCache = c.SnapshotCache
 	enc.Preimages = c.Preimages
 	enc.Miner = c.Miner
-	enc.Ethash = c.Ethash
+	//enc.Ethash = c.Ethash
 	enc.TxPool = c.TxPool
 	enc.GPO = c.GPO
 	enc.EnablePreimageRecording = c.EnablePreimageRecording
@@ -144,7 +144,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		Preimages               *bool
 		Miner                   *miner.Config
 		Ethash                  *ethash.Config
-		TxPool                  *txsdetails.TxPoolConfig
+		TxPool                  *chain.TxPoolConfig
 		GPO                     *gasprice.Config
 		EnablePreimageRecording *bool
 		DocRoot                 *string `toml:"-"`
@@ -201,12 +201,12 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.LightNoPrune != nil {
 		c.LightNoPrune = *dec.LightNoPrune
 	}
-	if dec.LightNoSyncServe != nil {
-		c.LightNoSyncServe = *dec.LightNoSyncServe
-	}
-	if dec.SyncFromCheckpoint != nil {
-		c.SyncFromCheckpoint = *dec.SyncFromCheckpoint
-	}
+	//if dec.LightNoSyncServe != nil {
+	//	c.LightNoSyncServe = *dec.LightNoSyncServe
+	//}
+	//if dec.SyncFromCheckpoint != nil {
+	//	c.SyncFromCheckpoint = *dec.SyncFromCheckpoint
+	//}
 	if dec.UltraLightServers != nil {
 		c.UltraLightServers = dec.UltraLightServers
 	}
@@ -252,9 +252,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.Miner != nil {
 		c.Miner = *dec.Miner
 	}
-	if dec.Ethash != nil {
-		c.Ethash = *dec.Ethash
-	}
+	//if dec.Ethash != nil {
+	//	c.Ethash = *dec.Ethash
+	//}
 	if dec.TxPool != nil {
 		c.TxPool = *dec.TxPool
 	}

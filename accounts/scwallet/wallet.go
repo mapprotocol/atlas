@@ -19,6 +19,7 @@ package scwallet
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -34,13 +35,15 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	pcsc "github.com/gballet/go-libpcsclite"
 	"github.com/status-im/keycard-go/derivationpath"
+
+	"github.com/mapprotocol/atlas/accounts"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 // ErrPairingPasswordNeeded is returned if opening the smart card requires pairing with a pairing
@@ -124,6 +127,23 @@ type Wallet struct {
 	deriveChain     ethereum.ChainStateReader // Blockchain state reader to discover used account with
 	deriveReq       chan chan struct{}        // Channel to request a self-derivation on
 	deriveQuit      chan chan error           // Channel to terminate the self-deriver with
+}
+
+// SignHash implements accounts.Wallet, which allows signing arbitrary data.
+func (w *Wallet) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
+	return w.signHash(account, hash)
+}
+
+func (w *Wallet) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
+	return bls.SerializedSignature{}, accounts.ErrNotSupported
+}
+
+func (w *Wallet) GetPublicKey(account accounts.Account) (*ecdsa.PublicKey, error) {
+	return nil, accounts.ErrNotSupported
+}
+
+func (w *Wallet) Decrypt(a accounts.Account, c, s1, s2 []byte) ([]byte, error) {
+	return nil, accounts.ErrNotSupported
 }
 
 // NewWallet constructs and returns a new Wallet instance.

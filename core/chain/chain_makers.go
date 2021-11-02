@@ -18,18 +18,19 @@ package chain
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/processor"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // BlockGen creates blocks for testing.
@@ -76,9 +77,9 @@ func (b *BlockGen) SetNonce(nonce types.BlockNonce) {
 // SetDifficulty sets the difficulty field of the generated block. This method is
 // useful for Clique tests where the difficulty does not depend on time. For the
 // ethash tests, please use OffsetTime, which implicitly recalculates the diff.
-func (b *BlockGen) SetDifficulty(diff *big.Int) {
-	b.header.Difficulty = diff
-}
+//func (b *BlockGen) SetDifficulty(diff *big.Int) {
+//	b.header.Difficulty = diff
+//}
 
 // AddTx adds a transaction to the generated block. If no coinbase has
 // been set, the block's coinbase is set to the zero address.
@@ -105,7 +106,7 @@ func (b *BlockGen) AddTxWithChain(bc *BlockChain, tx *types.Transaction) {
 		b.SetCoinbase(common.Address{})
 	}
 	b.statedb.Prepare(tx.Hash(), len(b.txs))
-	receipt, err := processor.ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vm.Config{})
+	receipt, err := ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -173,16 +174,18 @@ func (b *BlockGen) PrevBlock(index int) *types.Block {
 	return b.chain[index]
 }
 
-// OffsetTime modifies the time instance of a block, implicitly changing its
-// associated difficulty. It's useful to test scenarios where forking is not
-// tied to chain length directly.
+// OffsetTime modifies the time instance of a block. It's useful to test
+// scenarios where forking is not tied to chain length directly.
+// NOTE: `gen.OffsetTime(int)` is used throughout the code in this test file to adjust the total difficulty.
+// This made sense with Ethhash, but is no longer relevant to Istanbul consensus because difficulty is constant.
+// These calls can likely be removed, but have not been as a matter of simplicity.
 func (b *BlockGen) OffsetTime(seconds int64) {
 	b.header.Time += uint64(seconds)
 	if b.header.Time <= b.parent.Header().Time {
 		panic("block time out of range")
 	}
-	chainreader := &FakeChainReader{config: b.config}
-	b.header.Difficulty = b.engine.CalcDifficulty(chainreader, b.header.Time, b.parent.Header())
+	//chainreader := &FakeChainReader{config: b.config}
+	//b.header.Difficulty = b.engine.CalcDifficulty(chainreader, b.header.Time, b.parent.Header())
 }
 
 // GenerateChain creates a chain of n blocks. The first block's
@@ -209,10 +212,10 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		// Mutate the state and block according to any hard-fork specs
 		if daoBlock := config.DAOForkBlock; daoBlock != nil {
-			limit := new(big.Int).Add(daoBlock, params.DAOForkExtraRange)
+			limit := new(big.Int).Add(daoBlock, ethparams.DAOForkExtraRange)
 			if b.header.Number.Cmp(daoBlock) >= 0 && b.header.Number.Cmp(limit) < 0 {
 				if config.DAOForkSupport {
-					b.header.Extra = common.CopyBytes(params.DAOForkBlockExtra)
+					b.header.Extra = common.CopyBytes(ethparams.DAOForkBlockExtra)
 				}
 			}
 		}
@@ -225,7 +228,8 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 		}
 		if b.engine != nil {
 			// Finalize and seal the block
-			block, _ := b.engine.FinalizeAndAssemble(chainreader, b.header, statedb, b.txs, b.uncles, b.receipts)
+			block, _ := b.engine.FinalizeAndAssemble(chainreader, b.header, statedb, b.txs, b.receipts, nil)
+			//block, _ := b.engine.FinalizeAndAssemble(chainreader, b.header, statedb, b.txs, b.uncles, b.receipts)
 
 			// Write state changes to db
 			root, err := statedb.Commit(config.IsEIP158(b.header.Number))
@@ -263,12 +267,6 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 		Root:       state.IntermediateRoot(chain.Config().IsEIP158(parent.Number())),
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
-		Difficulty: engine.CalcDifficulty(chain, time, &types.Header{
-			Number:     parent.Number(),
-			Time:       time - 10,
-			Difficulty: parent.Difficulty(),
-			UncleHash:  parent.UncleHash(),
-		}),
 		GasLimit: parent.GasLimit(),
 		Number:   new(big.Int).Add(parent.Number(), common.Big1),
 		Time:     time,
@@ -276,7 +274,7 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 	if chain.Config().IsLondon(header.Number) {
 		header.BaseFee = misc.CalcBaseFee(chain.Config(), parent.Header())
 		if !chain.Config().IsLondon(parent.Number()) {
-			parentGasLimit := parent.GasLimit() * params.ElasticityMultiplier
+			parentGasLimit := parent.GasLimit() * ethparams.ElasticityMultiplier
 			header.GasLimit = CalcGasLimit(parentGasLimit, parentGasLimit)
 		}
 	}

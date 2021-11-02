@@ -3,6 +3,9 @@ package params
 import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"math/big"
 )
@@ -85,208 +88,54 @@ const (
 	TypeBack   = 0xa3
 )
 
-const RelayerABIJSON = `[
-  {
-    "name": "Register",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Withdraw",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Unregister",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Append",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "register",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "append",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getRelayerBalance",
-    "outputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "registered"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "unregistering"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "unregistered"
-      }
-    ],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "owner"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "withdraw",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "unregister",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getPeriodHeight",
-    "outputs": [
-      {
-        "type": "uint256",
-        "name": "start"
-      },
-      {
-        "type": "uint256",
-        "name": "end"
-      },
-      {
-        "type": "bool",
-        "name": "relayer"
-      }
-    ],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "owner"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getRelayer",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "owner"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "bool",
-        "name": "register"
-      },
-      {
-        "type": "bool",
-        "name": "relayer"
-      },
-      {
-        "type": "uint256",
-        "name": "epoch"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  }
-]`
+var (
+	ZeroAddress                  = BytesToAddress([]byte{})
+	RegistrySmartContractAddress = common.HexToAddress("0x000000000000000000000000000000000000ce10")
+
+	//AttestationsRegistryId         = makeRegistryId("Attestations")
+	BlockchainParametersRegistryId = makeRegistryId("BlockchainParameters")
+	ElectionRegistryId             = makeRegistryId("Election")
+	EpochRewardsRegistryId         = makeRegistryId("EpochRewards")
+	FeeCurrencyWhitelistRegistryId = makeRegistryId("FeeCurrencyWhitelist")
+	FreezerRegistryId              = makeRegistryId("Freezer")
+	GasPriceMinimumRegistryId      = makeRegistryId("GasPriceMinimum")
+	GoldTokenRegistryId            = makeRegistryId("GoldToken")
+	GovernanceRegistryId           = makeRegistryId("Governance")
+	LockedGoldRegistryId           = makeRegistryId("LockedGold")
+	RandomRegistryId               = makeRegistryId("Random")
+	ReserveRegistryId              = makeRegistryId("Reserve")
+	SortedOraclesRegistryId        = makeRegistryId("SortedOracles")
+	StableTokenRegistryId          = makeRegistryId("StableToken")
+	//TransferWhitelistRegistryId    = makeRegistryId("TransferWhitelist")
+	ValidatorsRegistryId           = makeRegistryId("Validators")
+
+	// Function is "getOrComputeTobinTax()"
+	// selector is first 4 bytes of keccak256 of "getOrComputeTobinTax()"
+	// Source:
+	// pip3 install pyethereum
+	// python3 -c 'from ethereum.utils import sha3; print(sha3("getOrComputeTobinTax()")[0:4].hex())'
+	TobinTaxFunctionSelector = hexutil.MustDecode("0x17f9a6f7")
+
+	// Scale factor for the solidity fixidity library
+	Fixidity1 = math.BigPow(10, 24)
+)
+
+const (
+	MaximumExtraDataSize uint64 = 32 // Maximum size extra data may be after Genesis.
+)
+
+func makeRegistryId(contractName string) [32]byte {
+	hash := crypto.Keccak256([]byte(contractName))
+	var id [32]byte
+	copy(id[:], hash)
+
+	return id
+}
+
+// BytesToAddress returns Address with value b.
+// If b is larger than len(h), b will be cropped from the left.
+func BytesToAddress(b []byte) common.Address {
+	var a common.Address
+	a.SetBytes(b)
+	return a
+}

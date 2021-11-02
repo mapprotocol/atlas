@@ -17,15 +17,14 @@ package cmd
 
 import (
 	"fmt"
-	params2 "github.com/mapprotocol/atlas/params"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 
-	"github.com/mapprotocol/atlas/cmd/utils"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"gopkg.in/urfave/cli.v1"
+
+	"github.com/mapprotocol/atlas/cmd/utils"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var (
@@ -75,38 +74,40 @@ The output of this command is supposed to be machine-readable.
 )
 
 // makecache generates an ethash verification cache into the provided folder.
+// todo ibft del makecache
 func makecache(ctx *cli.Context) error {
 	args := ctx.Args()
 	if len(args) != 2 {
 		utils.Fatalf(`Usage: atlas makecache <block number> <outputdir>`)
 	}
-	block, err := strconv.ParseUint(args[0], 0, 64)
-	if err != nil {
-		utils.Fatalf("Invalid block number: %v", err)
-	}
-	ethash.MakeCache(block, args[1])
+	//block, err := strconv.ParseUint(args[0], 0, 64)
+	//if err != nil {
+	//	utils.Fatalf("Invalid block number: %v", err)
+	//}
+	//ethash.MakeCache(block, args[1])
 
 	return nil
 }
 
 // makedag generates an ethash mining DAG into the provided folder.
+// todo ibft del makedag
 func makedag(ctx *cli.Context) error {
 	args := ctx.Args()
 	if len(args) != 2 {
 		utils.Fatalf(`Usage: atlas makedag <block number> <outputdir>`)
 	}
-	block, err := strconv.ParseUint(args[0], 0, 64)
-	if err != nil {
-		utils.Fatalf("Invalid block number: %v", err)
-	}
-	ethash.MakeDataset(block, args[1])
+	//block, err := strconv.ParseUint(args[0], 0, 64)
+	//if err != nil {
+	//	utils.Fatalf("Invalid block number: %v", err)
+	//}
+	//ethash.MakeDataset(block, args[1])
 
 	return nil
 }
 
 func version(ctx *cli.Context) error {
 	fmt.Println(strings.Title(clientIdentifier))
-	fmt.Println("Version:", params2.VersionWithMeta)
+	fmt.Println("Version:", params.VersionWithMeta)
 	if gitCommit != "" {
 		fmt.Println("Git Commit:", gitCommit)
 	}

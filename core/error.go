@@ -35,6 +35,10 @@ var (
 	ErrNoGenesis = errors.New("genesis not found in chain")
 
 	ErrSideChainReceipts = errors.New("side blocks can't be accepted as ancient chain data")
+
+	// ErrNotHeadBlock is returned when block to insert is not the next head
+	// of the canonical chain
+	ErrNotHeadBlock = errors.New("block is not next head block")
 )
 
 // List of evm-call-message pre-checking errors. All state transition messages will
@@ -64,6 +68,8 @@ var (
 	// ErrInsufficientFunds is returned if the total cost of executing a transaction
 	// is higher than the balance of the user's account.
 	ErrInsufficientFunds = errors.New("insufficient funds for gas * price + value")
+
+	ErrGasPriceDoesNotExceedMinimum = errors.New("gasprice is less than gas price minimum")
 
 	// ErrGasUintOverflow is returned when calculating gas usage.
 	ErrGasUintOverflow = errors.New("gas uint64 overflow")

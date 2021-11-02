@@ -31,7 +31,6 @@ import (
 
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/core/types"
-	params2 "github.com/mapprotocol/atlas/params"
 )
 
 // SignerFn is a signer function callback when a contract requires a method to
@@ -162,7 +161,7 @@ func (c *BoundContract) Call(opts *CallOpts, results *[]interface{}, method stri
 		return err
 	}
 	var (
-		msg    = params2.CallMsg{From: opts.From, To: &c.address, Data: input}
+		msg    = types.CallMsg{From: opts.From, To: &c.address, Data: input}
 		ctx    = ensureContext(opts.Context)
 		code   []byte
 		output []byte
@@ -337,7 +336,7 @@ func (c *BoundContract) estimateGasLimit(opts *TransactOpts, contract *common.Ad
 			return 0, ErrNoCode
 		}
 	}
-	msg := params2.CallMsg{
+	msg := types.CallMsg{
 		From:      opts.From,
 		To:        contract,
 		GasPrice:  gasPrice,

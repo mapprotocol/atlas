@@ -17,6 +17,7 @@
 package external
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"sync"
@@ -31,6 +32,7 @@ import (
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 type ExternalBackend struct {
@@ -271,4 +273,23 @@ func (api *ExternalSigner) pingVersion() (string, error) {
 		return "", err
 	}
 	return v, nil
+}
+
+func (api *ExternalSigner) Decrypt(account accounts.Account, c, s1, s2 []byte) ([]byte, error) {
+	return nil, accounts.ErrNotSupported
+}
+
+func (api *ExternalSigner) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
+	return bls.SerializedSignature{}, accounts.ErrNotSupported
+}
+
+// SignHash is not implemented for the external signer
+//
+// DEPRECATED, use SignData in future releases.
+func (api *ExternalSigner) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
+	panic("SignHash not implemented for the external signer")
+}
+
+func (api *ExternalSigner) GetPublicKey(account accounts.Account) (*ecdsa.PublicKey, error) {
+	return nil, accounts.ErrNotSupported
 }

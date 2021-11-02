@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
 	"math/big"
 	"reflect"
 	"sort"
@@ -33,6 +32,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core"
@@ -40,11 +43,6 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 var (
@@ -148,7 +146,7 @@ func (b *testBackend) StateAtBlock(ctx context.Context, block *types.Block, reex
 	return statedb, nil
 }
 
-func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (processor.Message, vm.BlockContext, *state.StateDB, error) {
+func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (chain.Message, vm.BlockContext, *state.StateDB, error) {
 	parent := b.chain.GetBlock(block.ParentHash(), block.NumberU64()-1)
 	if parent == nil {
 		return nil, vm.BlockContext{}, nil, errBlockNotFound
@@ -164,13 +162,13 @@ func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block
 	signer := types.MakeSigner(b.chainConfig, block.Number())
 	for idx, tx := range block.Transactions() {
 		msg, _ := tx.AsMessage(signer)
-		txContext := processor.NewEVMTxContext(msg)
-		context := processor.NewEVMBlockContext(block.Header(), b.chain, nil)
+		txContext := chain.NewEVMTxContext(msg)
+		context := chain.NewEVMBlockContext(block.Header(), b.chain, nil)
 		if idx == txIndex {
 			return msg, context, statedb, nil
 		}
 		vmenv := vm.NewEVM(context, txContext, statedb, b.chainConfig, vm.Config{})
-		if _, err := processor.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
+		if _, err := chain.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
 			return nil, vm.BlockContext{}, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
 		}
 		statedb.Finalise(vmenv.ChainConfig().IsEIP158(block.Number()))

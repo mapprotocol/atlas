@@ -25,19 +25,20 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block
 
 var (
-	DefaultMaxPrice    = big.NewInt(500 * params.GWei)
-	DefaultIgnorePrice = big.NewInt(2 * params.Wei)
+	DefaultMaxPrice    = big.NewInt(500 * ethparams.GWei)
+	DefaultIgnorePrice = big.NewInt(2 * ethparams.Wei)
 )
 
 type Config struct {

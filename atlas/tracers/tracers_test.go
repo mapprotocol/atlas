@@ -21,7 +21,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
@@ -150,8 +149,8 @@ func TestPrestateTracerCreate2(t *testing.T) {
 		GasPrice: big.NewInt(1),
 	}
 	context := vm.BlockContext{
-		CanTransfer: processor.CanTransfer,
-		Transfer:    processor.Transfer,
+		CanTransfer: chain.CanTransfer,
+		Transfer:    chain.Transfer,
 		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(8000000),
 		Time:        new(big.Int).SetUint64(5),
@@ -185,7 +184,7 @@ func TestPrestateTracerCreate2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
-	st := processor.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
+	st := chain.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
 	if _, err = st.TransitionDb(); err != nil {
 		t.Fatalf("failed to execute transaction: %v", err)
 	}
@@ -243,8 +242,8 @@ func testCallTracer(tracer string, dirPath string, t *testing.T) {
 				GasPrice: tx.GasPrice(),
 			}
 			context := vm.BlockContext{
-				CanTransfer: processor.CanTransfer,
-				Transfer:    processor.Transfer,
+				CanTransfer: chain.CanTransfer,
+				Transfer:    chain.Transfer,
 				Coinbase:    test.Context.Miner,
 				BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 				Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
@@ -264,7 +263,7 @@ func testCallTracer(tracer string, dirPath string, t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to prepare transaction for tracing: %v", err)
 			}
-			st := processor.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
+			st := chain.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
 			if _, err = st.TransitionDb(); err != nil {
 				t.Fatalf("failed to execute transaction: %v", err)
 			}

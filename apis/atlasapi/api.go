@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"strings"
 	"time"
@@ -28,10 +29,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/tyler-smith/go-bip39"
@@ -41,16 +42,14 @@ import (
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/accounts/scwallet"
 	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
-	"github.com/mapprotocol/atlas/consensus/clique"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	params2 "github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/p2p"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // PublicEthereumAPI provides an API to access Ethereum related information.
@@ -761,56 +760,6 @@ func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Ha
 	return nil, err
 }
 
-// GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index. When fullTx is true
-// all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.BlockByNumber(ctx, blockNr)
-	if block != nil {
-		uncles := block.Uncles()
-		if index >= hexutil.Uint(len(uncles)) {
-			log.Debug("Requested uncle not found", "number", blockNr, "hash", block.Hash(), "index", index)
-			return nil, nil
-		}
-		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcMarshalBlock(ctx, block, false, false)
-	}
-	return nil, err
-}
-
-// GetUncleByBlockHashAndIndex returns the uncle block for the given block hash and index. When fullTx is true
-// all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) (map[string]interface{}, error) {
-	block, err := s.b.BlockByHash(ctx, blockHash)
-	if block != nil {
-		uncles := block.Uncles()
-		if index >= hexutil.Uint(len(uncles)) {
-			log.Debug("Requested uncle not found", "number", block.Number(), "hash", blockHash, "index", index)
-			return nil, nil
-		}
-		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcMarshalBlock(ctx, block, false, false)
-	}
-	return nil, err
-}
-
-// GetUncleCountByBlockNumber returns number of uncles in the block for the given block number
-func (s *PublicBlockChainAPI) GetUncleCountByBlockNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
-	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
-		n := hexutil.Uint(len(block.Uncles()))
-		return &n
-	}
-	return nil
-}
-
-// GetUncleCountByBlockHash returns number of uncles in the block for the given block hash
-func (s *PublicBlockChainAPI) GetUncleCountByBlockHash(ctx context.Context, blockHash common.Hash) *hexutil.Uint {
-	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
-		n := hexutil.Uint(len(block.Uncles()))
-		return &n
-	}
-	return nil
-}
-
 // GetCode returns the code stored at the given address in the state for the given block number.
 func (s *PublicBlockChainAPI) GetCode(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -885,7 +834,7 @@ func (diff *StateOverride) Apply(state *state.StateDB) error {
 	return nil
 }
 
-func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, timeout time.Duration, globalGasCap uint64) (*processor.ExecutionResult, error) {
+func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, timeout time.Duration, globalGasCap uint64) (*chain.ExecutionResult, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -925,7 +874,7 @@ func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash 
 
 	// Execute the message.
 	gp := new(core.GasPool).AddGas(math.MaxUint64)
-	result, err := processor.ApplyMessage(evm, msg, gp)
+	result, err := chain.ApplyMessage(evm, msg, gp)
 	if err := vmError(); err != nil {
 		return nil, err
 	}
@@ -940,7 +889,7 @@ func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash 
 	return result, nil
 }
 
-func newRevertError(result *processor.ExecutionResult) *revertError {
+func newRevertError(result *chain.ExecutionResult) *revertError {
 	reason, errUnpack := abi.UnpackRevert(result.Revert())
 	err := errors.New("execution reverted")
 	if errUnpack == nil {
@@ -991,7 +940,7 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args TransactionArgs, bl
 func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, gasCap uint64) (hexutil.Uint64, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
-		lo  uint64 = params.TxGas - 1
+		lo  uint64 = ethparams.TxGas - 1
 		hi  uint64
 		cap uint64
 	)
@@ -1000,7 +949,7 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 		args.From = new(common.Address)
 	}
 	// Determine the highest gas limit can be used during the estimation.
-	if args.Gas != nil && uint64(*args.Gas) >= params.TxGas {
+	if args.Gas != nil && uint64(*args.Gas) >= ethparams.TxGas {
 		hi = uint64(*args.Gas)
 	} else {
 		// Retrieve the block to act as the gas ceiling
@@ -1059,7 +1008,7 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 	cap = hi
 
 	// Create a helper to check if a gas allowance results in an executable transaction
-	executable := func(gas uint64) (bool, *processor.ExecutionResult, error) {
+	executable := func(gas uint64) (bool, *chain.ExecutionResult, error) {
 		args.Gas = (*hexutil.Uint64)(&gas)
 
 		result, err := DoCall(ctx, b, args, blockNrOrHash, nil, 0, gasCap)
@@ -1182,16 +1131,16 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // RPCMarshalHeader converts the given header to the RPC output .
 func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 	result := map[string]interface{}{
-		"number":           (*hexutil.Big)(head.Number),
-		"hash":             head.Hash(),
-		"parentHash":       head.ParentHash,
-		"nonce":            head.Nonce,
-		"mixHash":          head.MixDigest,
-		"sha3Uncles":       head.UncleHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.Root,
-		"miner":            head.Coinbase,
-		"difficulty":       (*hexutil.Big)(head.Difficulty),
+		"number":     (*hexutil.Big)(head.Number),
+		"hash":       head.Hash(),
+		"parentHash": head.ParentHash,
+		"nonce":      head.Nonce,
+		"mixHash":    head.MixDigest,
+		//"sha3Uncles":       head.UncleHash,
+		"logsBloom": head.Bloom,
+		"stateRoot": head.Root,
+		"miner":     head.Coinbase,
+		//"difficulty":       (*hexutil.Big)(head.Difficulty),
 		"extraData":        hexutil.Bytes(head.Extra),
 		"size":             hexutil.Uint64(head.Size()),
 		"gasLimit":         hexutil.Uint64(head.GasLimit),
@@ -1234,12 +1183,12 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool, config *param
 		}
 		fields["transactions"] = transactions
 	}
-	uncles := block.Uncles()
-	uncleHashes := make([]common.Hash, len(uncles))
-	for i, uncle := range uncles {
-		uncleHashes[i] = uncle.Hash()
-	}
-	fields["uncles"] = uncleHashes
+	//uncles := block.Uncles()
+	//uncleHashes := make([]common.Hash, len(uncles))
+	//for i, uncle := range uncles {
+	//	uncleHashes[i] = uncle.Hash()
+	//}
+	//fields["uncles"] = uncleHashes
 
 	return fields, nil
 }
@@ -1461,7 +1410,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		if err != nil {
 			return nil, 0, nil, err
 		}
-		res, err := processor.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(msg.Gas()))
+		res, err := chain.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(msg.Gas()))
 		if err != nil {
 			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
 		}
@@ -1938,39 +1887,39 @@ func (api *PublicDebugAPI) GetBlockRlp(ctx context.Context, number uint64) (hexu
 //
 // This is a temporary method to debug the externalsigner integration,
 // TODO: Remove this method when the integration is mature
-func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address common.Address, number uint64) (common.Address, error) {
-	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
-	if block == nil {
-		return common.Address{}, fmt.Errorf("block #%d not found", number)
-	}
-	header := block.Header()
-	header.Extra = make([]byte, 32+65)
-	encoded := clique.CliqueRLP(header)
-
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: address}
-	wallet, err := api.b.AccountManager().Find(account)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	signature, err := wallet.SignData(account, accounts.MimetypeClique, encoded)
-	if err != nil {
-		return common.Address{}, err
-	}
-	sealHash := clique.SealHash(header).Bytes()
-	log.Info("test signing of clique block",
-		"Sealhash", fmt.Sprintf("%x", sealHash),
-		"signature", fmt.Sprintf("%x", signature))
-	pubkey, err := crypto.Ecrecover(sealHash, signature)
-	if err != nil {
-		return common.Address{}, err
-	}
-	var signer common.Address
-	copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
-
-	return signer, nil
-}
+//func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address common.Address, number uint64) (common.Address, error) {
+//	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
+//	if block == nil {
+//		return common.Address{}, fmt.Errorf("block #%d not found", number)
+//	}
+//	header := block.Header()
+//	header.Extra = make([]byte, 32+65)
+//	encoded := clique.CliqueRLP(header)
+//
+//	// Look up the wallet containing the requested signer
+//	account := accounts.Account{Address: address}
+//	wallet, err := api.b.AccountManager().Find(account)
+//	if err != nil {
+//		return common.Address{}, err
+//	}
+//
+//	signature, err := wallet.SignData(account, accounts.MimetypeClique, encoded)
+//	if err != nil {
+//		return common.Address{}, err
+//	}
+//	sealHash := clique.SealHash(header).Bytes()
+//	log.Info("test signing of clique block",
+//		"Sealhash", fmt.Sprintf("%x", sealHash),
+//		"signature", fmt.Sprintf("%x", signature))
+//	pubkey, err := crypto.Ecrecover(sealHash, signature)
+//	if err != nil {
+//		return common.Address{}, err
+//	}
+//	var signer common.Address
+//	copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
+//
+//	return signer, nil
+//}
 
 // PrintBlock retrieves a block and returns its pretty printed form.
 func (api *PublicDebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {
@@ -2063,7 +2012,7 @@ func checkTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 	if cap == 0 {
 		return nil
 	}
-	feeEth := new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gas))), new(big.Float).SetInt(big.NewInt(params.Ether)))
+	feeEth := new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gas))), new(big.Float).SetInt(big.NewInt(ethparams.Ether)))
 	feeFloat, _ := feeEth.Float64()
 	if feeFloat > cap {
 		return fmt.Errorf("tx fee (%.2f ether) exceeds the configured cap (%.2f ether)", feeFloat, cap)
@@ -2112,7 +2061,7 @@ func (s *PublicRelayerAPI) GetRelayerBalance(ctx context.Context, address common
 
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
-	err = register.Load(state, params2.RelayerAddress)
+	err = register.Load(state, params.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
 		return fields, err
@@ -2146,7 +2095,7 @@ func (s *PublicRelayerAPI) GetAccountInfo(ctx context.Context, address common.Ad
 
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
-	err = register.Load(state, params2.RelayerAddress)
+	err = register.Load(state, params.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
 		return fields, err //0,false,false, err
@@ -2185,7 +2134,7 @@ func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHas
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
-	err = register.Load(state, params2.RelayerAddress)
+	err = register.Load(state, params.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
 		return fields, err
@@ -2208,7 +2157,7 @@ func (s *PublicRelayerAPI) GetCurrentEpochInfo(ctx context.Context, blockNrOrHas
 func (s *PublicRelayerAPI) GetSyncNumber(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (uint64, error) {
 	register := vm.NewRegisterImpl()
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
-	err = register.Load(state, params2.RelayerAddress)
+	err = register.Load(state, params.RelayerAddress)
 	if err != nil {
 		log.Error("contract load error", "error", err)
 		return 0, err
@@ -2230,14 +2179,14 @@ func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.
 
 	if epochID == 0 {
 		register := vm.NewRegisterImpl()
-		if err := register.Load(statedb, params2.RelayerAddress); err != nil {
+		if err := register.Load(statedb, params.RelayerAddress); err != nil {
 			return nil, err
 		}
 		epochID = register.GetCurrentEpochID()
 	}
 
 	hs := new(vm.HeaderStore)
-	if err := hs.Load(statedb, params2.HeaderStoreAddress); err != nil {
+	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return nil, err
 	}
 	return hs.LoadReward(epochID, relayer), nil
@@ -2255,14 +2204,14 @@ func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (ui
 
 	if epochID == 0 {
 		register := vm.NewRegisterImpl()
-		if err := register.Load(statedb, params2.RelayerAddress); err != nil {
+		if err := register.Load(statedb, params.RelayerAddress); err != nil {
 			return 0, err
 		}
 		epochID = register.GetCurrentEpochID()
 	}
 
 	hs := new(vm.HeaderStore)
-	if err := hs.Load(statedb, params2.HeaderStoreAddress); err != nil {
+	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return 0, err
 	}
 	return hs.LoadSyncTimes(epochID, relayer), nil
@@ -2314,7 +2263,7 @@ func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) 
 	}
 
 	hs := new(vm.HeaderStore)
-	if err := hs.Load(statedb, params2.HeaderStoreAddress); err != nil {
+	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return nil, err
 	}
 	return hs.LoadReward(epochID, common.HexToAddress(relayer)), nil

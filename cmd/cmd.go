@@ -30,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"gopkg.in/urfave/cli.v1"
+
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
@@ -39,7 +41,6 @@ import (
 	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/mapprotocol/atlas/helper/debug"
 	"github.com/mapprotocol/atlas/helper/flags"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -66,14 +67,14 @@ var (
 		utils.NoUSBFlag,
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
-		utils.OverrideLondonFlag,
+		//utils.OverrideLondonFlag,
 		utils.EthashCacheDirFlag,
-		utils.EthashCachesInMemoryFlag,
-		utils.EthashCachesOnDiskFlag,
+		//utils.EthashCachesInMemoryFlag,
+		//utils.EthashCachesOnDiskFlag,
 		utils.EthashCachesLockMmapFlag,
-		utils.EthashDatasetDirFlag,
-		utils.EthashDatasetsInMemoryFlag,
-		utils.EthashDatasetsOnDiskFlag,
+		//utils.EthashDatasetDirFlag,
+		//utils.EthashDatasetsInMemoryFlag,
+		//utils.EthashDatasetsOnDiskFlag,
 		utils.EthashDatasetsLockMmapFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
@@ -115,15 +116,15 @@ var (
 		utils.ListenPortFlag,
 		utils.MaxPeersFlag,
 		utils.MaxPendingPeersFlag,
-		utils.MiningEnabledFlag,
-		utils.MinerThreadsFlag,
-		utils.MinerNotifyFlag,
-		utils.MinerGasLimitFlag,
-		utils.MinerGasPriceFlag,
-		utils.MinerEtherbaseFlag,
-		utils.MinerExtraDataFlag,
-		utils.MinerRecommitIntervalFlag,
-		utils.MinerNoVerifyFlag,
+		//utils.MiningEnabledFlag,
+		//utils.MinerThreadsFlag,
+		//utils.MinerNotifyFlag,
+		//utils.MinerGasLimitFlag,
+		//utils.MinerGasPriceFlag,
+		//utils.MinerEtherbaseFlag,
+		//utils.MinerExtraDataFlag,
+		//utils.MinerRecommitIntervalFlag,
+		//utils.MinerNoVerifyFlag,
 		utils.NATFlag,
 		utils.NoDiscoverFlag,
 		utils.DiscoveryV5Flag,
@@ -143,9 +144,15 @@ var (
 		utils.GpoBlocksFlag,
 		utils.GpoPercentileFlag,
 		utils.GpoMaxGasPriceFlag,
-		utils.MinerNotifyFullFlag,
+		//utils.MinerNotifyFullFlag,
 		configFileFlag,
 		utils.CatalystFlag,
+		utils.MiningEnabledFlag,
+		utils.MinerEtherbaseFlag,
+		utils.MinerExtraDataFlag,
+		utils.MinerThreadsFlag,
+		utils.MinerGasPriceFlag,
+		utils.TxFeeRecipientFlag,
 	}
 
 	rpcFlags = []cli.Flag{

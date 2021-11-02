@@ -64,9 +64,9 @@ func (api *PublicEthereumAPI) Coinbase() (common.Address, error) {
 }
 
 // Hashrate returns the POW hashrate
-func (api *PublicEthereumAPI) Hashrate() hexutil.Uint64 {
-	return hexutil.Uint64(api.e.Miner().Hashrate())
-}
+//func (api *PublicEthereumAPI) Hashrate() hexutil.Uint64 {
+//	return hexutil.Uint64(api.e.Miner().Hashrate())
+//}
 
 // PublicMinerAPI provides an API to control the miner.
 // It offers only methods that operate on data that pose no security risk when it is publicly accessible.
@@ -132,21 +132,23 @@ func (api *PrivateMinerAPI) SetGasPrice(gasPrice hexutil.Big) bool {
 }
 
 // SetGasLimit sets the gaslimit to target towards during mining.
-func (api *PrivateMinerAPI) SetGasLimit(gasLimit hexutil.Uint64) bool {
-	api.e.Miner().SetGasCeil(uint64(gasLimit))
-	return true
-}
+//func (api *PrivateMinerAPI) SetGasLimit(gasLimit hexutil.Uint64) bool {
+//	api.e.Miner().SetGasCeil(uint64(gasLimit))
+//	return true
+//}
 
 // SetEtherbase sets the etherbase of the miner
+// todo ibft
 func (api *PrivateMinerAPI) SetEtherbase(etherbase common.Address) bool {
 	api.e.SetEtherbase(etherbase)
+	api.e.SetTxFeeRecipient(etherbase)
 	return true
 }
 
 // SetRecommitInterval updates the interval for miner sealing work recommitting.
-func (api *PrivateMinerAPI) SetRecommitInterval(interval int) {
-	api.e.Miner().SetRecommitInterval(time.Duration(interval) * time.Millisecond)
-}
+//func (api *PrivateMinerAPI) SetRecommitInterval(interval int) {
+//	api.e.Miner().SetRecommitInterval(time.Duration(interval) * time.Millisecond)
+//}
 
 // PrivateAdminAPI is the collection of Ethereum full node-related APIs
 // exposed over the private admin endpoint.

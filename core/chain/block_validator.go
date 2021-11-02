@@ -18,13 +18,15 @@ package chain
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core"
 
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and
@@ -57,12 +59,12 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 	}
 	// Header validity is known at this point, check the uncles and transactions
 	header := block.Header()
-	if err := v.engine.VerifyUncles(v.bc, block); err != nil {
-		return err
-	}
-	if hash := types.CalcUncleHash(block.Uncles()); hash != header.UncleHash {
-		return fmt.Errorf("uncle root hash mismatch: have %x, want %x", hash, header.UncleHash)
-	}
+	//if err := v.engine.VerifyUncles(v.bc, block); err != nil {
+	//	return err
+	//}
+	//if hash := types.CalcUncleHash(block.Uncles()); hash != header.UncleHash {
+	//	return fmt.Errorf("uncle root hash mismatch: have %x, want %x", hash, header.UncleHash)
+	//}
 	if hash := types.DeriveSha(block.Transactions(), trie.NewStackTrie(nil)); hash != header.TxHash {
 		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, header.TxHash)
 	}
@@ -107,10 +109,10 @@ func (v *BlockValidator) ValidateState(block *types.Block, statedb *state.StateD
 // to keep the baseline gas close to the provided target, and increase it towards
 // the target if the baseline gas is lower.
 func CalcGasLimit(parentGasLimit, desiredLimit uint64) uint64 {
-	delta := parentGasLimit/params.GasLimitBoundDivisor - 1
+	delta := parentGasLimit/ethparams.GasLimitBoundDivisor - 1
 	limit := parentGasLimit
-	if desiredLimit < params.MinGasLimit {
-		desiredLimit = params.MinGasLimit
+	if desiredLimit < ethparams.MinGasLimit {
+		desiredLimit = ethparams.MinGasLimit
 	}
 	// If we're outside our allowed gas range, we try to hone towards them
 	if limit < desiredLimit {

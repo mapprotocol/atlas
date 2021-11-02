@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/mapprotocol/atlas/core/forkid"
 	"github.com/mapprotocol/atlas/core/types"
 )
@@ -225,21 +226,30 @@ type BlockBodiesRLPPacket66 struct {
 
 // BlockBody represents the data content of a single block.
 type BlockBody struct {
-	Transactions []*types.Transaction // Transactions contained within a block
-	Uncles       []*types.Header      // Uncles contained within a block
+	BlockHash common.Hash
+	Body      *types.Body
+
+	//Transactions []*types.Transaction // Transactions contained within a block
+	//Uncles       []*types.Header      // Uncles contained within a block
 }
 
 // Unpack retrieves the transactions and uncles from the range packet and returns
 // them in a split flat format that's more consistent with the internal data structures.
-func (p *BlockBodiesPacket) Unpack() ([][]*types.Transaction, [][]*types.Header) {
+func (p *BlockBodiesPacket) Unpack() ([]common.Hash, [][]*types.Transaction, []*types.Randomness, []*types.EpochSnarkData) {
 	var (
-		txset    = make([][]*types.Transaction, len(*p))
-		uncleset = make([][]*types.Header, len(*p))
+		length         = len(*p)
+		blockHashes    = make([]common.Hash, length)
+		transactions   = make([][]*types.Transaction, length)
+		randomness     = make([]*types.Randomness, length)
+		epochSnarkData = make([]*types.EpochSnarkData, length)
 	)
 	for i, body := range *p {
-		txset[i], uncleset[i] = body.Transactions, body.Uncles
+		blockHashes[i] = body.BlockHash
+		transactions[i] = body.Body.Transactions
+		randomness[i] = body.Body.Randomness
+		epochSnarkData[i] = body.Body.EpochSnarkData
 	}
-	return txset, uncleset
+	return blockHashes, transactions, randomness, epochSnarkData
 }
 
 // GetNodeDataPacket represents a trie node data query.

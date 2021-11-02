@@ -20,7 +20,6 @@ import (
 	crand "crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core"
 	"math"
 	"math/big"
 	mrand "math/rand"
@@ -30,11 +29,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -178,7 +179,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 			hash = header.Hash()
 		}
 		number := header.Number.Uint64()
-		newTD.Add(newTD, header.Difficulty)
+		newTD.Add(newTD, big.NewInt(1))
 
 		// If the parent was not present, store it
 		// If the header is already known, skip it, otherwise store

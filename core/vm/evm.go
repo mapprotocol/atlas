@@ -23,8 +23,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+
+	"github.com/mapprotocol/atlas/params"
 )
 
 // emptyCodeHash is used by create to ensure deployment is disallowed to already
@@ -120,18 +122,21 @@ type EVM struct {
 	// available gas is calculated in gasCall* according to the 63/64 rule and later
 	// applied in opCall*.
 	callGasTemp uint64
+
+	dontMeterGas bool
 }
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
 func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config) *EVM {
 	evm := &EVM{
-		Context:     blockCtx,
-		TxContext:   txCtx,
-		StateDB:     statedb,
-		Config:      config,
-		chainConfig: chainConfig,
-		chainRules:  chainConfig.Rules(blockCtx.BlockNumber),
+		Context:      blockCtx,
+		TxContext:    txCtx,
+		StateDB:      statedb,
+		Config:       config,
+		chainConfig:  chainConfig,
+		chainRules:   chainConfig.Rules(blockCtx.BlockNumber),
+		dontMeterGas: false,
 	}
 	evm.interpreter = NewEVMInterpreter(evm, config)
 	return evm
@@ -169,7 +174,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		return nil, gas, nil
 	}
 	// Fail if we're trying to execute above the call depth limit
-	if evm.depth > int(params.CallCreateDepth) {
+	if evm.depth > int(ethparams.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
@@ -254,7 +259,7 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 		return nil, gas, nil
 	}
 	// Fail if we're trying to execute above the call depth limit
-	if evm.depth > int(params.CallCreateDepth) {
+	if evm.depth > int(ethparams.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
@@ -306,7 +311,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 		return nil, gas, nil
 	}
 	// Fail if we're trying to execute above the call depth limit
-	if evm.depth > int(params.CallCreateDepth) {
+	if evm.depth > int(ethparams.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
 	var snapshot = evm.StateDB.Snapshot()
@@ -349,7 +354,7 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 		return nil, gas, nil
 	}
 	// Fail if we're trying to execute above the call depth limit
-	if evm.depth > int(params.CallCreateDepth) {
+	if evm.depth > int(ethparams.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
 	// We take a snapshot here. This is a bit counter-intuitive, and could probably be skipped.
@@ -416,7 +421,7 @@ func (c *codeAndHash) Hash() common.Hash {
 func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64, value *big.Int, address common.Address, typ OpCode) ([]byte, common.Address, uint64, error) {
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
-	if evm.depth > int(params.CallCreateDepth) {
+	if evm.depth > int(ethparams.CallCreateDepth) {
 		return nil, common.Address{}, gas, ErrDepth
 	}
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
@@ -464,7 +469,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	ret, err := evm.interpreter.Run(contract, nil, false)
 
 	// Check whether the max code size has been exceeded, assign err if the case.
-	if err == nil && evm.chainRules.IsEIP158 && len(ret) > params.MaxCodeSize {
+	if err == nil && evm.chainRules.IsEIP158 && len(ret) > ethparams.MaxCodeSize {
 		err = ErrMaxCodeSizeExceeded
 	}
 
@@ -478,7 +483,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	// be stored due to not enough gas set an error and let it be handled
 	// by the error checking condition below.
 	if err == nil {
-		createDataGas := uint64(len(ret)) * params.CreateDataGas
+		createDataGas := uint64(len(ret)) * ethparams.CreateDataGas
 		if contract.UseGas(createDataGas) {
 			evm.StateDB.SetCode(address, ret)
 		} else {
@@ -524,3 +529,11 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 
 // ChainConfig returns the environment's chain configuration
 func (evm *EVM) ChainConfig() *params.ChainConfig { return evm.chainConfig }
+
+func (evm *EVM) StopGasMetering() {
+	evm.dontMeterGas = true
+}
+
+func (evm *EVM) StartGasMetering() {
+	evm.dontMeterGas = false
+}

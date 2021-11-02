@@ -17,15 +17,17 @@
 package eth
 
 import (
+	"fmt"
 	"math/big"
 	"math/rand"
 	"sync"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rlp"
+	
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 const (
@@ -170,6 +172,12 @@ func (p *Peer) markBlock(hash common.Hash) {
 func (p *Peer) markTransaction(hash common.Hash) {
 	// If we reached the memory allowance, drop a previously known transaction hash
 	p.knownTxs.Add(hash)
+}
+
+// Send writes an RLP-encoded message with the given code.
+// data should encode as an RLP list.
+func (p *Peer) Send(msgcode uint64, data interface{}) error {
+	return p2p.Send(p.rw, msgcode, data)
 }
 
 // SendTransactions sends transactions to the peer and includes the hashes
@@ -423,6 +431,29 @@ func (p *Peer) RequestTxs(hashes []common.Hash) error {
 		RequestId:                   id,
 		GetPooledTransactionsPacket: hashes,
 	})
+}
+
+const protocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
+
+func (p *Peer) ReadMsg() (p2p.Msg, error) {
+	msg, err := p.rw.ReadMsg()
+	if err != nil {
+		return msg, err
+	}
+	if msg.Size > protocolMaxMsgSize {
+		return msg, errResp(0, "%v > %v", msg.Size, protocolMaxMsgSize)
+	}
+	return msg, nil
+}
+
+func (p *Peer) PurposeIsSet(purpose p2p.PurposeFlag) bool {
+	return purpose == p2p.AnyPurpose || p.HasPurpose(purpose)
+}
+
+type errCode int
+
+func errResp(code errCode, format string, v ...interface{}) error {
+	return fmt.Errorf("%v - %v", code, fmt.Sprintf(format, v...))
 }
 
 // knownCache is a cache for known hashes.

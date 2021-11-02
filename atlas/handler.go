@@ -18,7 +18,8 @@ package atlas
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/consensus"
 	"math"
 	"math/big"
 	"sync"
@@ -29,19 +30,24 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/fetcher"
 	"github.com/mapprotocol/atlas/atlas/protocols/eth"
 	"github.com/mapprotocol/atlas/atlas/protocols/snap"
 	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/forkid"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 const (
+	softResponseLimit = 2 * 1024 * 1024 // Target maximum size of returned blocks, headers or node data.
+	estHeaderRlpSize  = 500             // Approximate size of an RLP encoded block header
+
 	// txChanSize is the size of channel listening to NewTxsEvent.
 	// The number is referenced from the size of tx pool.
 	txChanSize = 4096
@@ -86,21 +92,29 @@ type handlerConfig struct {
 	EventMux   *event.TypeMux            // Legacy event mux, deprecate for `feed`
 	Checkpoint *params.TrustedCheckpoint // Hard coded checkpoint for sync challenges
 	Whitelist  map[uint64]common.Hash    // Hard coded whitelist for sync challenged
+	// todo ibft
+	server      *p2p.Server
+	proxyServer *p2p.Server
 }
 
 type handler struct {
 	networkID  uint64
 	forkFilter forkid.Filter // Fork ID filter, constant across the lifetime of the node
 
-	fastSync  uint32 // Flag whether fast sync is enabled (gets disabled if we already have blocks)
+	fastSync uint32 // Flag whether fast sync is enabled (gets disabled if we already have blocks)
+	// todo ibft
 	snapSync  uint32 // Flag whether fast sync should operate on top of the snap protocol
 	acceptTxs uint32 // Flag whether we're considered synchronised (enables transaction processing)
 
 	checkpointNumber uint64      // Block number for the sync progress validator to cross reference
 	checkpointHash   common.Hash // Block hash for the sync progress validator to cross reference
 
+	// todo replace
+	// chaindb    ethdb.Database
 	database ethdb.Database
 	txpool   txPool
+	// todo replace
+	// blockchain *chain.BlockChain
 	chain    *chain.BlockChain
 	maxPeers int
 
@@ -123,6 +137,12 @@ type handler struct {
 	chainSync *chainSyncer
 	wg        sync.WaitGroup
 	peerWG    sync.WaitGroup
+
+	//engine consensus.Engine
+
+	// todo ibft
+	server      *p2p.Server
+	proxyServer *p2p.Server
 }
 
 // newHandler returns a handler for all Ethereum chain management protocol.
@@ -132,16 +152,25 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		config.EventMux = new(event.TypeMux) // Nicety initialization for tests
 	}
 	h := &handler{
-		networkID:  config.Network,
-		forkFilter: forkid.NewFilter(config.Chain),
-		eventMux:   config.EventMux,
-		database:   config.Database,
-		txpool:     config.TxPool,
-		chain:      config.Chain,
-		peers:      newPeerSet(),
-		whitelist:  config.Whitelist,
-		quitSync:   make(chan struct{}),
+		networkID:   config.Network,
+		forkFilter:  forkid.NewFilter(config.Chain),
+		eventMux:    config.EventMux,
+		database:    config.Database,
+		txpool:      config.TxPool,
+		chain:       config.Chain,
+		peers:       newPeerSet(),
+		whitelist:   config.Whitelist,
+		quitSync:    make(chan struct{}),
+		server:      config.server,
+		proxyServer: config.proxyServer,
 	}
+
+	// todo ibft
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		handler.SetBroadcaster(h)
+		handler.SetP2PServer(h.server)
+	}
+
 	if config.Sync == downloader.FullSync {
 		// The database seems empty as the current block is the genesis. Yet the fast
 		// block is ahead, so fast sync was enabled for this node at a certain point.
@@ -230,6 +259,19 @@ func newHandler(config *handlerConfig) (*handler, error) {
 	h.txFetcher = fetcher.NewTxFetcher(h.txpool.Has, h.txpool.AddRemotes, fetchTx)
 	h.chainSync = newChainSyncer(h)
 	return h, nil
+}
+
+func (h *handler) FindPeers(targets map[enode.ID]bool, purpose p2p.PurposeFlag) map[enode.ID]consensus.Peer {
+	m := make(map[enode.ID]consensus.Peer)
+	for _, p := range h.peers.Peers() {
+		id := p.Node().ID()
+		if targets[id] || (targets == nil) {
+			if p.PurposeIsSet(purpose) {
+				m[id] = p
+			}
+		}
+	}
+	return m
 }
 
 // runEthPeer registers an eth peer into the joint eth/snap peerset, adds it to
@@ -441,7 +483,9 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 		// Calculate the TD of the block (it's not imported yet, so block.Td is not valid)
 		var td *big.Int
 		if parent := h.chain.GetBlock(block.ParentHash(), block.NumberU64()-1); parent != nil {
-			td = new(big.Int).Add(block.Difficulty(), h.chain.GetTd(block.ParentHash(), block.NumberU64()-1))
+			// todo ibft
+			//td = new(big.Int).Add(block.TotalDifficulty(), h.chain.GetTd(block.ParentHash(), block.NumberU64()-1))
+			td = block.TotalDifficulty()
 		} else {
 			log.Error("Propagating dangling block", "number", block.Number(), "hash", hash)
 			return

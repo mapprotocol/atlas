@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -31,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"gopkg.in/olebedev/go-duktape.v3"
 
-	"github.com/mapprotocol/atlas/core/processor"
 	"github.com/mapprotocol/atlas/core/vm"
 )
 
@@ -694,7 +694,7 @@ func (jst *Tracer) CaptureStart(env *vm.EVM, from common.Address, to common.Addr
 	// Compute intrinsic gas
 	isHomestead := env.ChainConfig().IsHomestead(env.Context.BlockNumber)
 	isIstanbul := env.ChainConfig().IsIstanbul(env.Context.BlockNumber)
-	intrinsicGas, err := processor.IntrinsicGas(input, nil, jst.ctx["type"] == "CREATE", isHomestead, isIstanbul)
+	intrinsicGas, err := chain.IntrinsicGas(input, nil, jst.ctx["type"] == "CREATE", isHomestead, isIstanbul)
 	if err != nil {
 		return
 	}

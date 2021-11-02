@@ -36,13 +36,13 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	}
 	var enc Header
 	enc.ParentHash = h.ParentHash
-	enc.UncleHash = h.UncleHash
+	//enc.UncleHash = h.UncleHash
 	enc.Coinbase = h.Coinbase
 	enc.Root = h.Root
 	enc.TxHash = h.TxHash
 	enc.ReceiptHash = h.ReceiptHash
 	enc.Bloom = h.Bloom
-	enc.Difficulty = (*hexutil.Big)(h.Difficulty)
+	//enc.Difficulty = (*hexutil.Big)(h.Difficulty)
 	enc.Number = (*hexutil.Big)(h.Number)
 	enc.GasLimit = hexutil.Uint64(h.GasLimit)
 	enc.GasUsed = hexutil.Uint64(h.GasUsed)
@@ -86,7 +86,7 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	if dec.UncleHash == nil {
 		return errors.New("missing required field 'sha3Uncles' for Header")
 	}
-	h.UncleHash = *dec.UncleHash
+	//h.UncleHash = *dec.UncleHash
 	if dec.Coinbase == nil {
 		return errors.New("missing required field 'miner' for Header")
 	}
@@ -110,7 +110,7 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	if dec.Difficulty == nil {
 		return errors.New("missing required field 'difficulty' for Header")
 	}
-	h.Difficulty = (*big.Int)(dec.Difficulty)
+	//h.Difficulty = (*big.Int)(dec.Difficulty)
 	if dec.Number == nil {
 		return errors.New("missing required field 'number' for Header")
 	}

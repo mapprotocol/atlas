@@ -60,6 +60,9 @@ func (h *handler) syncTransactions(p *eth.Peer) {
 	p.AsyncSendPooledTransactionHashes(hashes)
 }
 
+// todo ibft
+//func (h *handler) txsyncLoop64() {}
+
 // chainSyncer coordinates blockchain sync components.
 type chainSyncer struct {
 	handler     *handler

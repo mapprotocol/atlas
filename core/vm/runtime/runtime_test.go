@@ -18,7 +18,7 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"os"
 	"strings"
@@ -294,7 +294,7 @@ func TestBlockhash(t *testing.T) {
 	input := common.Hex2Bytes("f8a8fd6d")
 	chain := &dummyChain{}
 	ret, _, err := Execute(data, input, &Config{
-		GetHashFn:   processor.GetHashFn(header, chain),
+		GetHashFn:   chain.GetHashFn(header, chain),
 		BlockNumber: new(big.Int).Set(header.Number),
 	})
 	if err != nil {
