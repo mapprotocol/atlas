@@ -55,15 +55,6 @@ var LightClientGPO = gasprice.Config{
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
 	SyncMode: downloader.SnapSync,
-	//Ethash: ethash.Config{
-	//	CacheDir:         "ethash",
-	//	CachesInMem:      2,
-	//	CachesOnDisk:     3,
-	//	CachesLockMmap:   false,
-	//	DatasetsInMem:    1,
-	//	DatasetsOnDisk:   2,
-	//	DatasetsLockMmap: false,
-	//},
 	NetworkId:               params.MainnetNetWorkID,
 	TxLookupLimit:           2350000,
 	LightPeers:              100,
@@ -89,27 +80,6 @@ var Defaults = Config{
 	RPCTxFeeCap:   1, // 1 ether
 	Istanbul:      *istanbul.DefaultConfig,
 }
-
-//func init() {
-//	home := os.Getenv("HOME")
-//	if home == "" {
-//		if user, err := user.Current(); err == nil {
-//			home = user.HomeDir
-//		}
-//	}
-//	if runtime.GOOS == "darwin" {
-//		Defaults.Ethash.DatasetDir = filepath.Join(home, "Library", "Ethash")
-//	} else if runtime.GOOS == "windows" {
-//		localappdata := os.Getenv("LOCALAPPDATA")
-//		if localappdata != "" {
-//			Defaults.Ethash.DatasetDir = filepath.Join(localappdata, "Ethash")
-//		} else {
-//			Defaults.Ethash.DatasetDir = filepath.Join(home, "AppData", "Local", "Ethash")
-//		}
-//	} else {
-//		Defaults.Ethash.DatasetDir = filepath.Join(home, ".ethash")
-//	}
-//}
 
 //go:generate gencodec -type Config -formats toml -out gen_config.go
 
@@ -176,9 +146,6 @@ type Config struct {
 
 	// Mining options
 	Miner miner.Config
-
-	// Ethash options
-	//Ethash ethash.Config
 
 	// Transaction pool options
 	TxPool chain.TxPoolConfig
