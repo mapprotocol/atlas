@@ -96,7 +96,6 @@ type ChainConfig struct {
 	//TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`
 
 	// Various consensus engines
-	Clique *CliqueConfig `json:"clique,omitempty"`
 	Istanbul *IstanbulConfig `json:"istanbul,omitempty"`
 
 	// This does not belong here but passing it to every function is not possible since that breaks
