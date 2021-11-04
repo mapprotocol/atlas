@@ -158,7 +158,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		chainDb:        chainDb,
 		eventMux:       stack.EventMux(),
 		accountManager: stack.AccountManager(),
-		//engine:            ethconfig.CreateConsensusEngine(stack, chainConfig, &ethashConfig, config.Miner.Notify, config.Miner.Noverify, chainDb),
 		engine:            CreateConsensusEngine(stack, chainConfig, config, chainDb),
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
@@ -237,8 +236,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		EventMux:    eth.eventMux,
 		Checkpoint:  checkpoint,
 		Whitelist:   config.Whitelist,
-		server:      stack.Server(),
-		proxyServer: nil,
+		//Engine:      eth.engine,
+		Server:      stack.Server(),
+		ProxyServer: nil,
 	}); err != nil {
 		return nil, err
 	}
@@ -607,9 +607,9 @@ func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
 func (s *Ethereum) AccountManager() *accounts.Manager   { return s.accountManager }
 func (s *Ethereum) BlockChain() *chain.BlockChain       { return s.blockchain }
-func (s *Ethereum) Config() *ethconfig.Config { return s.config }
-func (s *Ethereum) TxPool() *chain.TxPool     { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux  { return s.eventMux }
+func (s *Ethereum) Config() *ethconfig.Config           { return s.config }
+func (s *Ethereum) TxPool() *chain.TxPool               { return s.txPool }
+func (s *Ethereum) EventMux() *event.TypeMux            { return s.eventMux }
 func (s *Ethereum) Engine() consensus.Engine            { return s.engine }
 func (s *Ethereum) ChainDb() ethdb.Database             { return s.chainDb }
 func (s *Ethereum) IsListening() bool                   { return true } // Always listening
@@ -659,8 +659,8 @@ func (s *Ethereum) Start() error {
 // Ethereum protocol.
 func (s *Ethereum) Stop() error {
 	// Stop all the peer-related stuff first.
-	//s.ethDialCandidates.Close()
-	//s.snapDialCandidates.Close()
+	s.ethDialCandidates.Close()
+	s.snapDialCandidates.Close()
 	s.stopAnnounce()
 	s.handler.Stop()
 
@@ -680,7 +680,9 @@ func (s *Ethereum) Stop() error {
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *ethconfig.Config, db ethdb.Database) consensus.Engine {
+	fmt.Println("============================== into CreateConsensusEngine")
 	if chainConfig.Faker {
+		fmt.Println("============================== Faker CreateConsensusEngine")
 		return consensustest.NewFaker()
 	}
 	// If Istanbul is requested, set it up

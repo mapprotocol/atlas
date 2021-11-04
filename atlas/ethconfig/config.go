@@ -54,16 +54,7 @@ var LightClientGPO = gasprice.Config{
 
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
-	SyncMode: downloader.SnapSync,
-	//Ethash: ethash.Config{
-	//	CacheDir:         "ethash",
-	//	CachesInMem:      2,
-	//	CachesOnDisk:     3,
-	//	CachesLockMmap:   false,
-	//	DatasetsInMem:    1,
-	//	DatasetsOnDisk:   2,
-	//	DatasetsLockMmap: false,
-	//},
+	SyncMode:                downloader.SnapSync,
 	NetworkId:               params.MainnetNetWorkID,
 	TxLookupLimit:           2350000,
 	LightPeers:              100,
@@ -78,6 +69,7 @@ var Defaults = Config{
 	SnapshotCache:           102,
 	GatewayFee:              big.NewInt(0),
 	Miner: miner.Config{
+		GasFloor: 8000000,
 		GasCeil:  8000000,
 		GasPrice: big.NewInt(ethparams.GWei),
 		Recommit: 3 * time.Second,
@@ -128,7 +120,7 @@ type Config struct {
 	// todo ibft
 	EthDiscoveryURLs  []string
 	SnapDiscoveryURLs []string
-	DiscoveryURLs     []string
+	//DiscoveryURLs     []string
 
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand
@@ -172,7 +164,7 @@ type Config struct {
 	TrieDirtyCache          int
 	TrieTimeout             time.Duration
 	SnapshotCache           int
-	Preimages               bool
+	//Preimages               bool
 
 	// Mining options
 	Miner miner.Config

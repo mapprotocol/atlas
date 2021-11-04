@@ -304,8 +304,7 @@ func (f *BlockFetcher) FilterHeaders(peer string, headers []*types.Header, time 
 
 // FilterBodies extracts all the block bodies that were explicitly requested by
 // the fetcher, returning those that should be handled differently.
-//func (f *BlockFetcher) FilterBodies(peer string, transactions [][]*types.Transaction, uncles [][]*types.Header, time time.Time) ([][]*types.Transaction, [][]*types.Header) {
-  func (f *BlockFetcher) FilterBodies(peer string, blockHashes []common.Hash, transactions [][]*types.Transaction, randomness []*types.Randomness, epochSnarkData []*types.EpochSnarkData, time time.Time) ([]common.Hash, [][]*types.Transaction, []*types.Randomness, []*types.EpochSnarkData) {
+func (f *BlockFetcher) FilterBodies(peer string, blockHashes []common.Hash, transactions [][]*types.Transaction, randomness []*types.Randomness, epochSnarkData []*types.EpochSnarkData, time time.Time) ([]common.Hash, [][]*types.Transaction, []*types.Randomness, []*types.EpochSnarkData) {
 	log.Trace("Filtering bodies", "peer", peer, "txs", len(transactions))
 
 	// Send the filter channel to the fetcher
@@ -613,9 +612,9 @@ func (f *BlockFetcher) loop() {
 				for i := 0; i < len(task.transactions); i++ {
 					// Match up a body to any possible completion request
 					var (
-						matched   = false
+						matched = false
 						//uncleHash common.Hash // calculated lazily and reused
-						txnHash   common.Hash // calculated lazily and reused
+						txnHash common.Hash // calculated lazily and reused
 					)
 					for hash, announce := range f.completing {
 						if f.queued[hash] != nil || announce.origin != task.peer {

@@ -18,6 +18,7 @@ package backend
 
 import (
 	"errors"
+	"fmt"
 	"github.com/mapprotocol/atlas/params"
 	"time"
 
@@ -44,6 +45,7 @@ const (
 
 // HandleMsg implements consensus.Handler.HandleMsg
 func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Peer) (bool, error) {
+	fmt.Println("============================== into HandleMsg")
 	logger := sb.logger.New("func", "HandleMsg", "msgCode", msg.Code)
 
 	if !istanbul.IsIstanbulMsg(msg) {
@@ -57,6 +59,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 	}
 
 	if sb.IsProxy() {
+		fmt.Printf("============================== HandleMsg case 1, code: %v\n", msg.Code)
 		switch msg.Code {
 		// TODO(Joshua): Decide to pull out specific proxy handlers
 		case istanbul.ValEnodesShareMsg:
@@ -93,6 +96,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 			return false, nil
 		}
 	} else if sb.IsValidating() {
+		fmt.Printf("============================== HandleMsg case 2, code: %v\n", msg.Code)
 		// Handle messages as primary validator
 		switch msg.Code {
 		case istanbul.ConsensusMsg:
@@ -128,6 +132,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 			return false, nil
 		}
 	} else if !sb.IsValidating() {
+		fmt.Printf("============================== HandleMsg case 3, code: %v\n", msg.Code)
 		// Handle messages as replica validator
 		switch msg.Code {
 		case istanbul.ConsensusMsg:

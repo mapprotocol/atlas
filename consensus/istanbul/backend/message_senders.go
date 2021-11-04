@@ -17,6 +17,7 @@
 package backend
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -58,6 +59,7 @@ func (sb *Backend) Multicast(destAddresses []common.Address, payload []byte, eth
 	} else {
 		destPeers := sb.getPeersFromDestAddresses(destAddresses)
 		if len(destPeers) > 0 {
+			fmt.Println("============================== asyncMulticast 1")
 			sb.asyncMulticast(destPeers, payload, ethMsgCode)
 		}
 	}
@@ -102,7 +104,7 @@ func (sb *Backend) Gossip(payload []byte, ethMsgCode uint64) error {
 			sb.gossipCache.MarkMessageProcessedByPeer(nodeAddr, payload)
 		}
 	}
-
+	fmt.Println("============================== asyncMulticast 2")
 	sb.asyncMulticast(peersToSendMsg, payload, ethMsgCode)
 
 	return nil
@@ -126,5 +128,6 @@ func (sb *Backend) asyncMulticast(destPeers map[enode.ID]consensus.Peer, payload
 // Unicast asynchronously sends a message to a single peer.
 func (sb *Backend) Unicast(peer consensus.Peer, payload []byte, ethMsgCode uint64) {
 	peerMap := map[enode.ID]consensus.Peer{peer.Node().ID(): peer}
+	fmt.Println("============================== asyncMulticast 3")
 	sb.asyncMulticast(peerMap, payload, ethMsgCode)
 }

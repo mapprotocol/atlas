@@ -18,6 +18,7 @@ package atlas
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/mapprotocol/atlas/consensus"
 	"math"
@@ -93,8 +94,9 @@ type handlerConfig struct {
 	Checkpoint *params.TrustedCheckpoint // Hard coded checkpoint for sync challenges
 	Whitelist  map[uint64]common.Hash    // Hard coded whitelist for sync challenged
 	// todo ibft
-	server      *p2p.Server
-	proxyServer *p2p.Server
+	//Engine      consensus.Engine
+	Server      *p2p.Server
+	ProxyServer *p2p.Server
 }
 
 type handler struct {
@@ -161,8 +163,9 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		peers:       newPeerSet(),
 		whitelist:   config.Whitelist,
 		quitSync:    make(chan struct{}),
-		server:      config.server,
-		proxyServer: config.proxyServer,
+		//engine:      config.Engine,
+		server:      config.Server,
+		proxyServer: config.ProxyServer,
 	}
 
 	// todo ibft
@@ -311,13 +314,28 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 			// slots for peers supporting the snap protocol.
 			// The logic here is; we only allow up to 5 more non-snap peers than snap-peers.
 			if all, snp := h.peers.len(), h.peers.snapLen(); all-snp > snp+5 {
+				fmt.Printf("============================== reject 1: %v\n", reject)
 				reject = true
 			}
 		}
 	}
+
+	// todo ibft check peer
+	//if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+	//	isValidator, err := handler.Handshake(peer)
+	//	if err != nil {
+	//		peer.Log().Warn("Istanbul handshake failed", "err", err)
+	//		return err
+	//	}
+	//	reject = !isValidator
+	//	fmt.Printf("============================== reject 2: %v\n", reject)
+	//	peer.Log().Debug("Peer completed Istanbul handshake", "reject", reject)
+	//}
+
 	// Ignore maxPeers if this is a trusted peer
 	if !peer.Peer.Info().Network.Trusted {
 		if reject || h.peers.len() >= h.maxPeers {
+			fmt.Println("============================== too many peers")
 			return p2p.DiscTooManyPeers
 		}
 	}
@@ -345,6 +363,14 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 			return err
 		}
 	}
+
+	// Register the peer with the consensus engine.
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		if err := handler.RegisterPeer(p, p.Peer.Server == h.proxyServer); err != nil {
+			return err
+		}
+	}
+
 	h.chainSync.handlePeerEvent(peer)
 
 	// Propagate existing transactions. new transactions appearing
@@ -377,7 +403,7 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 		}
 	}
 	// Handle incoming messages until the connection is torn down
-	return handler(peer)
+	return handler(peer, h.chain.Engine())
 }
 
 // runSnapExtension registers a `snap` peer into the joint eth/snap peerset and
@@ -428,6 +454,10 @@ func (h *handler) unregisterPeer(id string) {
 	}
 	h.downloader.UnregisterPeer(id)
 	h.txFetcher.Drop(id)
+
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		handler.UnregisterPeer(peer, peer.Peer.Server == h.proxyServer)
+	}
 
 	if err := h.peers.unregisterPeer(id); err != nil {
 		logger.Error("Ethereum peer removal failed", "err", err)
