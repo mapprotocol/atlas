@@ -37,7 +37,6 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		Ethash:              new(EthashConfig),
 		Istanbul: &IstanbulConfig{
 			Epoch:          17280,
 			ProposerPolicy: 2,
@@ -63,7 +62,6 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		Ethash:              new(EthashConfig),
 		Istanbul: &IstanbulConfig{
 			Epoch:          17280,
 			ProposerPolicy: 2,
@@ -89,7 +87,6 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		Ethash:              new(EthashConfig),
 		Istanbul: &IstanbulConfig{
 			Epoch:          17280,
 			ProposerPolicy: 2,
@@ -123,8 +120,6 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		Ethash:              new(EthashConfig),
-		Clique:              nil,
 		Istanbul: &IstanbulConfig{
 			Epoch:          17280,
 			ProposerPolicy: 2,
@@ -153,8 +148,6 @@ var (
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
-		Ethash:              new(EthashConfig),
-		Clique:              nil,
 		Istanbul: &IstanbulConfig{
 			Epoch:          17280,
 			ProposerPolicy: 2,
@@ -185,8 +178,6 @@ var (
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
-		Ethash:              new(EthashConfig),
-		Clique:              nil,
 		Istanbul: &IstanbulConfig{
 			Epoch:          17280,
 			ProposerPolicy: 2,
@@ -217,8 +208,6 @@ var (
 		DonutBlock:          nil,
 		EWASMBlock:          big.NewInt(0),
 		CatalystBlock:       nil,
-		Ethash:              nil,
-		Clique:              nil,
 		Istanbul: &IstanbulConfig{
 			Epoch:          300,
 			ProposerPolicy: 0,

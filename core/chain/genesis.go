@@ -355,9 +355,7 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 	if err := config.CheckConfigForkOrder(); err != nil {
 		return nil, err
 	}
-	if config.Clique != nil && len(block.Extra()) == 0 {
-		return nil, errors.New("can't start clique chain without signers")
-	}
+
 	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), block.TotalDifficulty())
 	rawdb.WriteBlock(db, block)
 	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
@@ -442,7 +440,6 @@ func DevnetGenesisBlock(faucet common.Address) *Genesis {
 func SingleGenesisBlock(faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
 	config := *params.SingleNetConfig
-	//config.Ethash.Period = period
 	dc := defaultRelayer()
 	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	// Assemble and return the genesis with the precompiles and faucet pre-funded

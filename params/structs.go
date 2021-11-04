@@ -96,8 +96,6 @@ type ChainConfig struct {
 	//TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`
 
 	// Various consensus engines
-	Ethash *EthashConfig `json:"ethash,omitempty"`
-	Clique *CliqueConfig `json:"clique,omitempty"`
 	Istanbul *IstanbulConfig `json:"istanbul,omitempty"`
 
 	// This does not belong here but passing it to every function is not possible since that breaks
@@ -150,10 +148,8 @@ func (c *IstanbulConfig) String() string {
 func (c *ChainConfig) String() string {
 	var engine interface{}
 	switch {
-	case c.Ethash != nil:
-		engine = c.Ethash
-	case c.Clique != nil:
-		engine = c.Clique
+	case c.Istanbul != nil:
+		engine = c.Istanbul
 	default:
 		engine = "unknown"
 	}
