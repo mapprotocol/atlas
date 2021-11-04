@@ -374,9 +374,11 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	dr := defaultRelayer()
-	for addr, allc := range genesisRegisterProxyContract() {
-		// add genesis contract to allc
-		dr[addr] = allc
+	// add genesis contract to allc
+	DefaultAlloc := &GenesisAlloc{}
+	DefaultAlloc.UnmarshalJSON([]byte(mainnetAllocJSON1))
+	for k, v := range *DefaultAlloc {
+		dr[k] = v
 	}
 
 	return &Genesis{
