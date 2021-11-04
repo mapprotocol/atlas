@@ -174,4 +174,6 @@ type Config struct {
 
 	// Gas Price Oracle options
 	GPO gasprice.Config
+
+	Preimages bool
 }

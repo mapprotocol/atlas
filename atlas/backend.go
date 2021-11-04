@@ -196,9 +196,10 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			TrieDirtyDisabled:   config.NoPruning,
 			TrieTimeLimit:       config.TrieTimeout,
 			SnapshotLimit:       config.SnapshotCache,
-			//Preimages:           config.Preimages,
+			Preimages:           config.Preimages,
 		}
 	)
+
 	eth.blockchain, err = chain.NewBlockChain(chainDb, cacheConfig, chainConfig, eth.engine, vmConfig, eth.shouldPreserve, &config.TxLookupLimit)
 	if err != nil {
 		return nil, err
@@ -245,9 +246,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			eth.blockchain, eth.blockchain.CurrentBlock,
 			func(hash common.Hash) (*state.StateDB, error) {
 				stateRoot := eth.blockchain.GetHeaderByHash(hash).Root
-				return eth.blockchain.StateAt(stateRoot)
+				// return eth.blockchain.StateAt(stateRoot)
+				return state.New(stateRoot, state.NewDatabase(chainDb), nil)
 			})
 	}
+
 
 	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock,chainDb)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
