@@ -19,12 +19,18 @@ package miner
 
 import (
 	"fmt"
+
+	"math/big"
+	"sync/atomic"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/contracts/random"
@@ -32,95 +38,57 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	params2 "github.com/mapprotocol/atlas/params"
-	"math/big"
-	"time"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // Backend wraps all methods required for mining.
 type Backend interface {
+	AccountManager() *accounts.Manager
 	BlockChain() *chain.BlockChain
 	TxPool() *chain.TxPool
 }
 
 // Config is the configuration parameters of mining.
 type Config struct {
-	Etherbase common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
-	//Notify     []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in ethash).
-	//NotifyFull bool           `toml:",omitempty"` // Notify with pending block headers instead of work packages
-	ExtraData hexutil.Bytes `toml:",omitempty"` // Block extra data set by the miner
-	GasFloor  uint64        // Target gas floor for mined blocks.
-	GasCeil   uint64        // Target gas ceiling for mined blocks.
-	GasPrice  *big.Int      // Minimum gas price for mining a transaction
-	Recommit  time.Duration // The time interval for miner to re-create mining work.
-	//Noverify   bool           // Disable remote mining solution verification(only useful in ethash).
+	Etherbase           common.Address `toml:",omitempty"` // Public address for block signing and randomness (default = first account)
+	Notify              []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages(only useful in ethash).
+	ExtraData           hexutil.Bytes  `toml:",omitempty"` // Block extra data set by the miner
+	GasFloor            uint64         // Target gas floor for mined blocks.
+	GasCeil             uint64         // Target gas ceiling for mined blocks.
+	GasPrice            *big.Int       // Minimum gas price for mining a transaction
+	Recommit            time.Duration  // The time interval for miner to re-create mining work.
+	Noverify            bool           // Disable remote mining solution verification(only useful in ethash).
+	VerificationService string         // Celo verification service URL
 }
 
 // Miner creates blocks and searches for proof-of-work values.
 type Miner struct {
-	mux      *event.TypeMux
-	worker   *worker
-	coinbase common.Address
-	eth      Backend
-	engine   consensus.Engine
-	db       ethdb.Database // Needed for randomness
+	mux            *event.TypeMux
+	worker         *worker
+	validator      common.Address
+	txFeeRecipient common.Address
+	eth            Backend
+	engine         consensus.Engine
+	exitCh         chan struct{}
+	db             ethdb.Database // Needed for randomness
 
-	exitCh  chan struct{}
-	startCh chan common.Address
-	stopCh  chan struct{}
+	canStart    int32 // can start indicates whether we can start the mining operation
+	shouldStart int32 // should start indicates whether we should start after sync
 }
 
-func New(eth Backend, config *Config, chainConfig *params2.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool, db ethdb.Database) *Miner {
+func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool, db ethdb.Database) *Miner {
 	miner := &Miner{
-		eth:     eth,
-		mux:     mux,
-		engine:  engine,
-		exitCh:  make(chan struct{}),
-		startCh: make(chan common.Address),
-		stopCh:  make(chan struct{}),
-		worker:  newWorker(config, chainConfig, engine, eth, mux, isLocalBlock, true, db),
-		db:      db,
+		eth:      eth,
+		mux:      mux,
+		engine:   engine,
+		exitCh:   make(chan struct{}),
+		worker:   newWorker(config, chainConfig, engine, eth, mux, isLocalBlock, db, true),
+		db:       db,
+		canStart: 1,
 	}
 	go miner.update()
 
 	return miner
-}
-
-func (miner *Miner) recoverRandomness() {
-	// If this is using the istanbul consensus engine, then we need to check
-	// for the randomness cache for the randomness beacon protocol
-	_, isIstanbul := miner.engine.(consensus.Istanbul)
-	if isIstanbul {
-		// getCurrentBlockAndState
-		currentBlock := miner.eth.BlockChain().CurrentBlock()
-		currentHeader := currentBlock.Header()
-		currentState, err := miner.eth.BlockChain().StateAt(currentBlock.Root())
-		if err != nil {
-			log.Error("Error in retrieving state", "block hash", currentHeader.Hash(), "error", err)
-			return
-		}
-
-		if currentHeader.Number.Uint64() > 0 {
-			vmRunner := miner.eth.BlockChain().NewEVMRunner(currentHeader, currentState)
-			// Check to see if we already have the commitment cache
-			lastCommitment, err := random.GetLastCommitment(vmRunner, miner.coinbase)
-			if err != nil {
-				log.Error("Error in retrieving last commitment", "error", err)
-				return
-			}
-
-			// If there is a non empty last commitment and if we don't have that commitment's
-			// cache entry, then we need to recover it.
-			if (lastCommitment != common.Hash{}) && (rawdb.ReadRandomCommitmentCache(miner.db, lastCommitment) == common.Hash{}) {
-				err := miner.eth.BlockChain().RecoverRandomnessCache(lastCommitment, currentBlock.Hash())
-				if err != nil {
-					log.Error("Error in recovering randomness cache", "error", err)
-					return
-				}
-			}
-		}
-	}
-
 }
 
 // update keeps track of the downloader events. Please be aware that this is a one shot type of update loop.
@@ -129,76 +97,93 @@ func (miner *Miner) recoverRandomness() {
 // and halt your mining operation for as long as the DOS continues.
 func (miner *Miner) update() {
 	events := miner.mux.Subscribe(downloader.StartEvent{}, downloader.DoneEvent{}, downloader.FailedEvent{})
-	defer func() {
-		if !events.Closed() {
-			events.Unsubscribe()
-		}
-	}()
+	defer events.Unsubscribe()
 
-	shouldStart := false
-	canStart := true
-	dlEventCh := events.Chan()
 	for {
 		select {
-		case ev := <-dlEventCh:
+		case ev := <-events.Chan():
 			if ev == nil {
-				// Unsubscription done, stop listening
-				dlEventCh = nil
-				continue
+				return
 			}
 			switch ev.Data.(type) {
 			case downloader.StartEvent:
-				wasMining := miner.Mining()
-				miner.worker.stop()
-				canStart = false
-				if wasMining {
-					// Resume mining after sync was finished
-					shouldStart = true
+				atomic.StoreInt32(&miner.canStart, 0)
+				if miner.Mining() {
+					miner.Stop()
+					atomic.StoreInt32(&miner.shouldStart, 1)
 					log.Info("Mining aborted due to sync")
 				}
-			case downloader.FailedEvent:
-				canStart = true
-				if shouldStart {
-					miner.SetEtherbase(miner.coinbase)
-					miner.worker.start()
+			case downloader.DoneEvent, downloader.FailedEvent:
+				// If this is using the istanbul consensus engine, then we need to check
+				// for the randomness cache for the randomness beacon protocol
+				_, isIstanbul := miner.engine.(consensus.Istanbul)
+				if isIstanbul {
+					// getCurrentBlockAndState
+					currentBlock := miner.eth.BlockChain().CurrentBlock()
+					currentHeader := currentBlock.Header()
+					currentState, err := miner.eth.BlockChain().StateAt(currentBlock.Root())
+					if err != nil {
+						log.Error("Error in retrieving state", "block hash", currentHeader.Hash(), "error", err)
+						return
+					}
+
+					if currentHeader.Number.Uint64() > 0 {
+						// Check to see if we already have the commitment cache
+						// todo celo
+						//lastCommitment, err := random.GetLastCommitment(miner.validator, currentHeader, currentState)
+						vmRunner := miner.eth.BlockChain().NewEVMRunner(currentHeader, currentState)
+						lastCommitment, err := random.GetLastCommitment(vmRunner, miner.validator)
+						if err != nil {
+							log.Error("Error in retrieving last commitment", "error", err)
+							return
+						}
+
+						// If there is a non empty last commitment and if we don't have that commitment's
+						// cache entry, then we need to recover it.
+						if (lastCommitment != common.Hash{}) && (rawdb.ReadRandomCommitmentCache(miner.db, lastCommitment) == common.Hash{}) {
+							err := miner.eth.BlockChain().RecoverRandomnessCache(lastCommitment, currentBlock.Hash())
+							if err != nil {
+								log.Error("Error in recovering randomness cache", "error", err)
+								return
+							}
+						}
+					}
 				}
-			case downloader.DoneEvent:
-				miner.recoverRandomness()
-				canStart = true
+
+				shouldStart := atomic.LoadInt32(&miner.shouldStart) == 1
+				atomic.StoreInt32(&miner.canStart, 1)
+				atomic.StoreInt32(&miner.shouldStart, 0)
 				if shouldStart {
-					miner.SetEtherbase(miner.coinbase)
-					miner.worker.start()
+					miner.Start(miner.validator, miner.txFeeRecipient)
 				}
-				// Stop reacting to downloader events
-				events.Unsubscribe()
+				// stop immediately and ignore all further pending events
+				return
 			}
-		case addr := <-miner.startCh:
-			miner.SetEtherbase(addr)
-			if canStart {
-				miner.worker.start()
-			}
-			shouldStart = true
-		case <-miner.stopCh:
-			shouldStart = false
-			miner.worker.stop()
 		case <-miner.exitCh:
-			miner.worker.close()
 			return
 		}
 	}
 }
 
 func (miner *Miner) Start(validator common.Address, txFeeRecipient common.Address) {
-	miner.SetEtherbase(validator)
+	atomic.StoreInt32(&miner.shouldStart, 1)
+	miner.SetValidator(validator)
 	miner.SetTxFeeRecipient(txFeeRecipient)
-	miner.startCh <- validator
+
+	if atomic.LoadInt32(&miner.canStart) == 0 {
+		log.Info("Network syncing, will start miner afterwards")
+		return
+	}
+	miner.worker.start()
 }
 
 func (miner *Miner) Stop() {
-	miner.stopCh <- struct{}{}
+	miner.worker.stop()
+	atomic.StoreInt32(&miner.shouldStart, 0)
 }
 
 func (miner *Miner) Close() {
+	miner.worker.close()
 	close(miner.exitCh)
 }
 
@@ -206,12 +191,12 @@ func (miner *Miner) Mining() bool {
 	return miner.worker.isRunning()
 }
 
-//func (miner *Miner) Hashrate() uint64 {
-//	if pow, ok := miner.engine.(consensus.PoW); ok {
-//		return uint64(pow.Hashrate())
-//	}
-//	return 0
-//}
+func (miner *Miner) HashRate() uint64 {
+	if pow, ok := miner.engine.(consensus.PoW); ok {
+		return uint64(pow.Hashrate())
+	}
+	return 0
+}
 
 func (miner *Miner) SetExtra(extra []byte) error {
 	if uint64(len(extra)) > params.MaximumExtraDataSize {
@@ -222,9 +207,9 @@ func (miner *Miner) SetExtra(extra []byte) error {
 }
 
 // SetRecommitInterval sets the interval for sealing work resubmitting.
-//func (miner *Miner) SetRecommitInterval(interval time.Duration) {
-//	miner.worker.setRecommitInterval(interval)
-//}
+func (miner *Miner) SetRecommitInterval(interval time.Duration) {
+	miner.worker.setRecommitInterval(interval)
+}
 
 // Pending returns the currently pending block and associated state.
 func (miner *Miner) Pending() (*types.Block, *state.StateDB) {
@@ -240,30 +225,20 @@ func (miner *Miner) PendingBlock() *types.Block {
 	return miner.worker.pendingBlock()
 }
 
-func (miner *Miner) SetEtherbase(addr common.Address) {
-	miner.coinbase = addr
-	miner.worker.setEtherbase(addr)
+// PendingBlockAndReceipts returns the currently pending block and corresponding receipts.
+func (miner *Miner) PendingBlockAndReceipts() (*types.Block, types.Receipts) {
+	return miner.worker.pendingBlockAndReceipts()
 }
 
-// EnablePreseal turns on the preseal mining feature. It's enabled by default.
-// Note this function shouldn't be exposed to API, it's unnecessary for users
-// (miners) to actually know the underlying detail. It's only for outside project
-// which uses this library.
-//func (miner *Miner) EnablePreseal() {
-//	miner.worker.enablePreseal()
-//}
-
-// DisablePreseal turns off the preseal mining feature. It's necessary for some
-// fake consensus engine which can seal blocks instantaneously.
-// Note this function shouldn't be exposed to API, it's unnecessary for users
-// (miners) to actually know the underlying detail. It's only for outside project
-// which uses this library.
-//func (miner *Miner) DisablePreseal() {
-//	miner.worker.disablePreseal()
-//}
+// SetValidator sets the miner and worker's address for message and block signing
+func (miner *Miner) SetValidator(addr common.Address) {
+	miner.validator = addr
+	miner.worker.setValidator(addr)
+}
 
 // SetTxFeeRecipient sets the address where the miner and worker will receive fees
 func (miner *Miner) SetTxFeeRecipient(addr common.Address) {
+	miner.txFeeRecipient = addr
 	miner.worker.setTxFeeRecipient(addr)
 }
 
