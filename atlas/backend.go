@@ -246,8 +246,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			eth.blockchain, eth.blockchain.CurrentBlock,
 			func(hash common.Hash) (*state.StateDB, error) {
 				stateRoot := eth.blockchain.GetHeaderByHash(hash).Root
-				// return eth.blockchain.StateAt(stateRoot)
-				return state.New(stateRoot, state.NewDatabase(chainDb), nil)
+				return eth.blockchain.StateAt(stateRoot)
 			})
 	}
 
