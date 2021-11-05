@@ -481,7 +481,7 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.etherbase = etherbase
 	s.lock.Unlock()
 
-	s.miner.SetValidator(etherbase)
+	s.miner.SetEtherbase(etherbase)
 }
 
 // SetTxFeeRecipient sets the mining reward address.
