@@ -17,7 +17,6 @@
 package miner
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
 	"sync"
@@ -170,8 +169,8 @@ type worker struct {
 	pendingMu    sync.RWMutex
 	pendingTasks map[common.Hash]*task
 
-	snapshotMu       sync.RWMutex // The lock used to protect the block snapshot and state snapshot
-	snapshotBlock    *types.Block
+	snapshotMu    sync.RWMutex // The lock used to protect the block snapshot and state snapshot
+	snapshotBlock *types.Block
 	// todo eth
 	snapshotReceipts types.Receipts
 	snapshotState    *state.StateDB
@@ -294,24 +293,48 @@ func (w *worker) pendingBlockAndReceipts() (*types.Block, types.Receipts) {
 	return w.snapshotBlock, w.snapshotReceipts
 }
 
+type callBackEngine interface {
+	// SetCallBacks sets call back functions
+	SetCallBacks(hasBadBlock func(common.Hash) bool,
+		processBlock func(*types.Block, *state.StateDB) (types.Receipts, []*types.Log, uint64, error),
+		validateState func(*types.Block, *state.StateDB, types.Receipts, uint64) error,
+		onNewConsensusBlock func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB)) error
+}
+
 // start sets the running status as 1 and triggers new work submitting.
 func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
 	w.startCh <- struct{}{}
 
-	// todo celo
-	//if istanbul, ok := w.engine.(consensus.Istanbul); ok {
-	//	istanbul.SetBlockProcessors(w.chain.HasBadBlock,
-	//		func(block *types.Block, state *state.StateDB) (types.Receipts, []*types.Log, uint64, error) {
-	//			return w.chain.Processor().Process(block, state, *w.chain.GetVMConfig())
-	//		},
-	//		func(block *types.Block, state *state.StateDB, receipts types.Receipts, usedGas uint64) error {
-	//			return w.chain.Validator().ValidateState(block, state, receipts, usedGas)
-	//		})
-	//	if istanbul.IsPrimary() {
-	//		istanbul.StartValidating()
-	//	}
-	//}
+	if cbEngine, ok := w.engine.(callBackEngine); ok {
+		cbEngine.SetCallBacks(w.chain.HasBadBlock,
+			func(block *types.Block, state *state.StateDB) (types.Receipts, []*types.Log, uint64, error) {
+				return w.chain.Processor().Process(block, state, *w.chain.GetVMConfig())
+			},
+			w.chain.Validator().ValidateState,
+			func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB) {
+				if err := w.chain.WriteBlockWithState(block, receipts, logs, state, true); err != nil {
+					if err == core.ErrNotHeadBlock {
+						log.Warn("Tried to insert duplicated produced block", "blockNumber", block.Number(), "hash", block.Hash(), "err", err)
+					} else {
+						log.Error("Failed to insert produced block", "blockNumber", block.Number(), "hash", block.Hash(), "err", err)
+					}
+					return
+				}
+				log.Info("Successfully produced new block", "number", block.Number(), "hash", block.Hash())
+
+				if err := w.mux.Post(core.NewMinedBlockEvent{Block: block}); err != nil {
+					log.Error("Error when posting NewMinedBlockEvent", "err", err)
+				}
+			})
+	}
+
+	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
+		if istanbul.IsPrimary() {
+			istanbul.StartValidating()
+		}
+	}
+
 }
 
 // stop sets the running status as 0.
@@ -531,7 +554,7 @@ func (w *worker) mainLoop() {
 func (w *worker) taskLoop() {
 	var (
 		stopCh chan struct{}
-		prev   common.Hash
+		//prev   common.Hash
 	)
 
 	// interrupt aborts the in-flight sealing task.
@@ -548,13 +571,13 @@ func (w *worker) taskLoop() {
 				w.newTaskHook(task)
 			}
 			// Reject duplicate sealing work due to resubmitting.
-			sealHash := w.engine.SealHash(task.block.Header())
-			if sealHash == prev {
-				continue
-			}
+			//sealHash := w.engine.SealHash(task.block.Header())
+			//if sealHash == prev {
+			//	continue
+			//}
 			// Interrupt previous sealing operation
 			interrupt()
-			stopCh, prev = make(chan struct{}), sealHash
+			stopCh = make(chan struct{})
 
 			if w.skipSealHook != nil && w.skipSealHook(task) {
 				continue
@@ -884,18 +907,18 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		return
 	}
 	// If we are care about TheDAO hard-fork check whether to override the extra-data or not
-	if daoBlock := w.chainConfig.DAOForkBlock; daoBlock != nil {
-		// Check whether the block is among the fork extra-override range
-		limit := new(big.Int).Add(daoBlock, ethparams.DAOForkExtraRange)
-		if header.Number.Cmp(daoBlock) >= 0 && header.Number.Cmp(limit) < 0 {
-			// Depending whether we support or oppose the fork, override differently
-			if w.chainConfig.DAOForkSupport {
-				header.Extra = common.CopyBytes(ethparams.DAOForkBlockExtra)
-			} else if bytes.Equal(header.Extra, ethparams.DAOForkBlockExtra) {
-				header.Extra = []byte{} // If miner opposes, don't let it use the reserved extra-data
-			}
-		}
-	}
+	//if daoBlock := w.chainConfig.DAOForkBlock; daoBlock != nil {
+	//	// Check whether the block is among the fork extra-override range
+	//	limit := new(big.Int).Add(daoBlock, ethparams.DAOForkExtraRange)
+	//	if header.Number.Cmp(daoBlock) >= 0 && header.Number.Cmp(limit) < 0 {
+	//		// Depending whether we support or oppose the fork, override differently
+	//		if w.chainConfig.DAOForkSupport {
+	//			header.Extra = common.CopyBytes(ethparams.DAOForkBlockExtra)
+	//		} else if bytes.Equal(header.Extra, ethparams.DAOForkBlockExtra) {
+	//			header.Extra = []byte{} // If miner opposes, don't let it use the reserved extra-data
+	//		}
+	//	}
+	//}
 	// Could potentially happen if starting to mine in an odd state.
 	err := w.makeCurrent(parent, header)
 	if err != nil {
