@@ -9,7 +9,7 @@ require (
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/buraksezer/consistent v0.9.0
-	github.com/celo-org/celo-bls-go v0.3.0
+	github.com/celo-org/celo-bls-go v0.2.4
 	github.com/cespare/cp v1.1.1
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/davecgh/go-spew v1.1.1

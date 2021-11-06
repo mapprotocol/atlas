@@ -117,7 +117,6 @@ type Config struct {
 
 	// This can be set to list of enrtree:// URLs which will be queried for
 	// for nodes to connect to.
-	// todo ibft
 	EthDiscoveryURLs  []string
 	SnapDiscoveryURLs []string
 	//DiscoveryURLs     []string
@@ -136,7 +135,7 @@ type Config struct {
 	LightEgress  int  `toml:",omitempty"` // Outgoing bandwidth limit for light servers
 	LightPeers   int  `toml:",omitempty"` // Maximum number of LES client peers
 	LightNoPrune bool `toml:",omitempty"` // Whether to disable light chain pruning
-	// todo ibft
+
 	//LightNoSyncServe   bool `toml:",omitempty"` // Whether to serve light clients before syncing
 	//SyncFromCheckpoint bool `toml:",omitempty"` // Whether to sync the header chain from the configured checkpoint
 	// Minimum gateway fee value to serve a transaction from a light client
@@ -203,7 +202,6 @@ type Config struct {
 	// CheckpointOracle is the configuration for checkpoint oracle.
 	CheckpointOracle *ethparams.CheckpointOracleConfig `toml:",omitempty"`
 
-	// todo ibft
 	// Berlin block override (TODO: remove after the fork)
 	OverrideLondon *big.Int `toml:",omitempty"`
 	// Churrito block override (TODO: remove after the fork)

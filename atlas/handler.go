@@ -18,7 +18,6 @@ package atlas
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/mapprotocol/atlas/consensus"
 	"math"
@@ -84,17 +83,15 @@ type txPool interface {
 // handlerConfig is the collection of initialization parameters to create a full
 // node network handler.
 type handlerConfig struct {
-	Database   ethdb.Database            // Database for direct sync insertions
-	Chain      *chain.BlockChain         // Blockchain to serve data from
-	TxPool     txPool                    // Transaction pool to propagate from
-	Network    uint64                    // Network identifier to adfvertise
-	Sync       downloader.SyncMode       // Whether to fast or full sync
-	BloomCache uint64                    // Megabytes to alloc for fast sync bloom
-	EventMux   *event.TypeMux            // Legacy event mux, deprecate for `feed`
-	Checkpoint *params.TrustedCheckpoint // Hard coded checkpoint for sync challenges
-	Whitelist  map[uint64]common.Hash    // Hard coded whitelist for sync challenged
-	// todo ibft
-	//Engine      consensus.Engine
+	Database    ethdb.Database            // Database for direct sync insertions
+	Chain       *chain.BlockChain         // Blockchain to serve data from
+	TxPool      txPool                    // Transaction pool to propagate from
+	Network     uint64                    // Network identifier to adfvertise
+	Sync        downloader.SyncMode       // Whether to fast or full sync
+	BloomCache  uint64                    // Megabytes to alloc for fast sync bloom
+	EventMux    *event.TypeMux            // Legacy event mux, deprecate for `feed`
+	Checkpoint  *params.TrustedCheckpoint // Hard coded checkpoint for sync challenges
+	Whitelist   map[uint64]common.Hash    // Hard coded whitelist for sync challenged
 	Server      *p2p.Server
 	ProxyServer *p2p.Server
 }
@@ -103,20 +100,15 @@ type handler struct {
 	networkID  uint64
 	forkFilter forkid.Filter // Fork ID filter, constant across the lifetime of the node
 
-	fastSync uint32 // Flag whether fast sync is enabled (gets disabled if we already have blocks)
-	// todo ibft
+	fastSync  uint32 // Flag whether fast sync is enabled (gets disabled if we already have blocks)
 	snapSync  uint32 // Flag whether fast sync should operate on top of the snap protocol
 	acceptTxs uint32 // Flag whether we're considered synchronised (enables transaction processing)
 
 	checkpointNumber uint64      // Block number for the sync progress validator to cross reference
 	checkpointHash   common.Hash // Block hash for the sync progress validator to cross reference
 
-	// todo replace
-	// chaindb    ethdb.Database
 	database ethdb.Database
 	txpool   txPool
-	// todo replace
-	// blockchain *chain.BlockChain
 	chain    *chain.BlockChain
 	maxPeers int
 
@@ -142,7 +134,6 @@ type handler struct {
 
 	//engine consensus.Engine
 
-	// todo ibft
 	server      *p2p.Server
 	proxyServer *p2p.Server
 }
@@ -163,12 +154,10 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		peers:       newPeerSet(),
 		whitelist:   config.Whitelist,
 		quitSync:    make(chan struct{}),
-		//engine:      config.Engine,
 		server:      config.Server,
 		proxyServer: config.ProxyServer,
 	}
 
-	// todo ibft
 	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
 		handler.SetBroadcaster(h)
 		handler.SetP2PServer(h.server)
@@ -314,28 +303,14 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 			// slots for peers supporting the snap protocol.
 			// The logic here is; we only allow up to 5 more non-snap peers than snap-peers.
 			if all, snp := h.peers.len(), h.peers.snapLen(); all-snp > snp+5 {
-				fmt.Printf("============================== reject 1: %v\n", reject)
 				reject = true
 			}
 		}
 	}
 
-	// todo ibft check peer
-	//if handler, ok := h.chain.Engine().(consensus.Handler); ok {
-	//	isValidator, err := handler.Handshake(peer)
-	//	if err != nil {
-	//		peer.Log().Warn("Istanbul handshake failed", "err", err)
-	//		return err
-	//	}
-	//	reject = !isValidator
-	//	fmt.Printf("============================== reject 2: %v\n", reject)
-	//	peer.Log().Debug("Peer completed Istanbul handshake", "reject", reject)
-	//}
-
 	// Ignore maxPeers if this is a trusted peer
 	if !peer.Peer.Info().Network.Trusted {
 		if reject || h.peers.len() >= h.maxPeers {
-			fmt.Println("============================== too many peers")
 			return p2p.DiscTooManyPeers
 		}
 	}
@@ -513,7 +488,6 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 		// Calculate the TD of the block (it's not imported yet, so block.Td is not valid)
 		var td *big.Int
 		if parent := h.chain.GetBlock(block.ParentHash(), block.NumberU64()-1); parent != nil {
-			// todo ibft
 			//td = new(big.Int).Add(block.TotalDifficulty(), h.chain.GetTd(block.ParentHash(), block.NumberU64()-1))
 			td = block.TotalDifficulty()
 		} else {

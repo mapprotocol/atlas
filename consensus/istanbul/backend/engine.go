@@ -629,7 +629,7 @@ func (sb *Backend) updateReplicaStateLoop(bc *ethChain.BlockChain) {
 		select {
 		case chainEvent := <-chainEventCh:
 			sb.coreMu.RLock()
-			if !sb.coreStarted && sb.replicaState != nil {
+			if !sb.isCoreStarted() && sb.replicaState != nil {
 				consensusBlock := new(big.Int).Add(chainEvent.Block.Number(), common.Big1)
 				sb.replicaState.NewChainHead(consensusBlock)
 			}
@@ -648,7 +648,7 @@ func (sb *Backend) SetCallBacks(hasBadBlock func(common.Hash) bool,
 	onNewConsensusBlock func(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB)) error {
 	sb.coreMu.RLock()
 	defer sb.coreMu.RUnlock()
-	if sb.coreStarted {
+	if sb.isCoreStarted() {
 		return istanbul.ErrStartedEngine
 	}
 
@@ -663,7 +663,7 @@ func (sb *Backend) SetCallBacks(hasBadBlock func(common.Hash) bool,
 func (sb *Backend) StartValidating() error {
 	sb.coreMu.Lock()
 	defer sb.coreMu.Unlock()
-	if sb.coreStarted {
+	if sb.isCoreStarted() {
 		return istanbul.ErrStartedEngine
 	}
 
@@ -688,7 +688,7 @@ func (sb *Backend) StartValidating() error {
 		sb.UpdateAnnounceVersion()
 	}
 
-	sb.coreStarted = true
+	sb.coreStarted.Store(true)
 
 	// coreStarted must be true by this point for validator peers to be successfully added
 	if !sb.config.Proxied {
@@ -704,14 +704,14 @@ func (sb *Backend) StartValidating() error {
 func (sb *Backend) StopValidating() error {
 	sb.coreMu.Lock()
 	defer sb.coreMu.Unlock()
-	if !sb.coreStarted {
+	if !sb.isCoreStarted() {
 		return istanbul.ErrStoppedEngine
 	}
 	sb.logger.Info("Stopping istanbul.Engine validating")
 	if err := sb.core.Stop(); err != nil {
 		return err
 	}
-	sb.coreStarted = false
+	sb.coreStarted.Store(false)
 
 	return nil
 }
@@ -724,10 +724,13 @@ func (sb *Backend) StartAnnouncing() error {
 		return istanbul.ErrStartedAnnounce
 	}
 
-	go sb.announceThread()
+	//go sb.announceThread()
 
 	sb.announceThreadQuit = make(chan struct{})
 	sb.announceRunning = true
+
+	sb.announceThreadWg.Add(1)
+	go sb.announceThread()
 
 	if err := sb.vph.startThread(); err != nil {
 		sb.StopAnnouncing()

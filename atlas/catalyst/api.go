@@ -41,7 +41,6 @@ import (
 // Register adds catalyst APIs to the node.
 func Register(stack *node.Node, backend *atlas.Ethereum) error {
 	//chainconfig := backend.BlockChain().Config()
-	// todo ibft
 	//if chainconfig.TerminalTotalDifficulty == nil {
 	//	return errors.New("catalyst started without valid total difficulty")
 	//}

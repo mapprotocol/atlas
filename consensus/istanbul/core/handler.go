@@ -95,9 +95,7 @@ func (c *core) unsubscribeEvents() {
 func (c *core) handleEvents() {
 	fmt.Println("============================== core handleEvents")
 	// Clear state
-	defer func() {
-		c.handlerWg.Done()
-	}()
+	defer c.handlerWg.Done()
 
 	c.handlerWg.Add(1)
 

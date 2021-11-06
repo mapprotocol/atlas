@@ -91,7 +91,6 @@ type Ethereum struct {
 
 	APIBackend *EthAPIBackend
 
-	// todo ibft compare celo
 	miner     *miner.Miner
 	gasPrice  *big.Int
 	etherbase common.Address
@@ -138,8 +137,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 
-	// todo ibft
-	//chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideLondon)
 	chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideChurrito)
 	if _, ok := genesisErr.(*ethparams.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
@@ -481,7 +478,7 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.etherbase = etherbase
 	s.lock.Unlock()
 
-	s.miner.SetValidator(etherbase)
+	s.miner.SetEtherbase(etherbase)
 }
 
 // SetTxFeeRecipient sets the mining reward address.
