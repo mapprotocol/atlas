@@ -80,6 +80,8 @@ const (
 
 	// staleThreshold is the maximum depth of the acceptable stale block.
 	staleThreshold = 7
+
+	TxGas uint64 = 1000
 )
 
 // Gauge used to measure block finalization time from created to after written to chain.
@@ -533,6 +535,11 @@ func (w *worker) mainLoop() {
 				if tcount != w.current.tcount {
 					w.updateSnapshot()
 				}
+			} else {
+				// Special case, if the consensus engine is 0 period clique(dev mode),
+				// submit mining work here since all empty submission will be rejected
+				// by clique. Of course the advance sealing(empty submission) is disabled.
+				w.commitNewWork(nil, true, time.Now().Unix())
 			}
 			atomic.AddInt32(&w.newTxs, int32(len(ev.Txs)))
 
@@ -680,7 +687,7 @@ func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 
 	parentGasLimit := parent.GasLimit() * ethparams.ElasticityMultiplier
 	env := &environment{
-		signer:    types.NewEIP155Signer(w.chainConfig.ChainID),
+		signer:    types.MakeSigner(w.chainConfig, header.Number),
 		state:     state,
 		ancestors: mapset.NewSet(),
 		header:    header,
@@ -738,7 +745,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, txFe
 	}
 
 	if w.current.gasPool == nil {
-		w.current.gasPool = new(core.GasPool).AddGas(w.current.gasLimit)
+		w.current.gasPool = new(core.GasPool).AddGas(w.current.header.GasLimit)
 	}
 
 	var coalescedLogs []*types.Log
@@ -766,7 +773,7 @@ loop:
 			return atomic.LoadInt32(interrupt) == commitInterruptNewHead
 		}
 		// If we don't have enough gas for any further transactions then we're done
-		if w.current.gasPool.Gas() < ethparams.TxGas {
+		if w.current.gasPool.Gas() < TxGas {
 			log.Trace("Not enough gas for further transactions", "have", w.current.gasPool, "want", ethparams.TxGas)
 			break
 		}
@@ -884,6 +891,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Number:     num.Add(num, common.Big1),
+		GasLimit:   chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
 	}
@@ -1034,14 +1042,14 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	//txComparator := w.createTxCmp()
 	if len(localTxs) > 0 {
 		//txs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs, txComparator)
-		txs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs, nil)
+		txs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs, header.BaseFee)
 		if w.commitTransactions(txs, txFeeRecipient, interrupt) {
 			return
 		}
 	}
 	if len(remoteTxs) > 0 {
 		//txs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs, txComparator)
-		txs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs, nil)
+		txs := types.NewTransactionsByPriceAndNonce(w.current.signer, remoteTxs, header.BaseFee)
 		if w.commitTransactions(txs, txFeeRecipient, interrupt) {
 			return
 		}
