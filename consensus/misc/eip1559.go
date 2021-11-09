@@ -60,6 +60,7 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		return new(big.Int).SetUint64(ethparams.InitialBaseFee)
 	}
 	if parent.BaseFee == nil {
+		//fmt.Println("bug1: parent.BaseFee",parent.BaseFee)
 		parent.BaseFee = big.NewInt(ethparams.InitialBaseFee)
 	}
 	var (
@@ -69,9 +70,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	)
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {
-		if parent.BaseFee == nil {
-			parent.BaseFee = big.NewInt(ethparams.InitialBaseFee)
-		}
 		return new(big.Int).Set(parent.BaseFee)
 	}
 	if parent.GasUsed > parentGasTarget {

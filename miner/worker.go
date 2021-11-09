@@ -420,7 +420,7 @@ func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core
 					txs[acc] = append(txs[acc], tx)
 				}
 
-				txset := types.NewTransactionsByPriceAndNonce(b.signer, txs, nil)
+				txset := types.NewTransactionsByPriceAndNonce(b.signer, txs, b.header.BaseFee)
 				tcount := b.tcount
 				b.commitTransactions(ctx, w, txset, txFeeRecipient)
 				// Only update the snapshot if any new transactons were added

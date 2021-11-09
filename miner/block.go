@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
-
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	"github.com/mapprotocol/atlas/contracts/random"
@@ -55,6 +54,7 @@ func prepareBlock(w *worker) (*blockState, error) {
 		Number:     num.Add(num, common.Big1),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
+		GasLimit:   chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil),
 	}
 
 	txFeeRecipient := w.txFeeRecipient
