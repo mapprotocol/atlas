@@ -356,7 +356,6 @@ func (sb *Backend) VerifyUncles(chain consensus.ChainReader, block *types.Block)
 
 func (sb *Backend) SealHash(header *types.Header) common.Hash {
 	return common.Hash{}
-	//panic("implement me")
 }
 
 func (sb *Backend) CalcDifficulty(chain consensus.ChainHeaderReader, time uint64, parent *types.Header) *big.Int {

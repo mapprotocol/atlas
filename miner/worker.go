@@ -57,6 +57,11 @@ const (
 	// intervalAdjustBias is applied during the new resubmit interval calculation in favor of
 	// increasing upper limit or decreasing lower limit so that the limit can be reachable.
 	intervalAdjustBias = 200 * 1000.0 * 1000.0
+
+	// staleThreshold is the maximum depth of the acceptable stale block.
+	staleThreshold = 7
+
+	TxGas uint64 = 1000
 )
 
 // callBackEngine is a subset of the consensus.Istanbul interface. It is used over consensus.Istanbul to enable sealing

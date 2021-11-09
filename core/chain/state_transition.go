@@ -51,9 +51,9 @@ The state transitioning model does all the necessary work to work out a valid ne
 6) Derive new state root
 */
 type StateTransition struct {
-	gp  *core.GasPool
-	msg Message
-	gas uint64
+	gp         *core.GasPool
+	msg        Message
+	gas        uint64
 	gasPrice   *big.Int
 	gasFeeCap  *big.Int
 	gasTipCap  *big.Int
@@ -249,6 +249,11 @@ func (st *StateTransition) preCheck() error {
 			}
 			// This will panic if baseFee is nil, but basefee presence is verified
 			// as part of header validation.
+			if st.evm.Context.BaseFee == nil {
+				st.evm.Context.BaseFee = big.NewInt(1000000000)
+			} else {
+				fmt.Println("st.evm.Context.BaseFee", st.evm.Context.BaseFee)
+			}
 			if st.gasFeeCap.Cmp(st.evm.Context.BaseFee) < 0 {
 				return fmt.Errorf("%w: address %v, maxFeePerGas: %s baseFee: %s", core.ErrFeeCapTooLow,
 					st.msg.From().Hex(), st.gasFeeCap, st.evm.Context.BaseFee)
