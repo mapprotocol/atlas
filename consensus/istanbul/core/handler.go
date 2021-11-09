@@ -17,7 +17,6 @@
 package core
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,7 +26,6 @@ import (
 
 // Start implements core.Engine.Start
 func (c *core) Start() error {
-	fmt.Println("============================== core Start")
 	roundState, err := c.createRoundState()
 	if err != nil {
 		return err
@@ -93,7 +91,6 @@ func (c *core) unsubscribeEvents() {
 }
 
 func (c *core) handleEvents() {
-	fmt.Println("============================== core handleEvents")
 	// Clear state
 	defer c.handlerWg.Done()
 
@@ -117,7 +114,6 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				fmt.Println("============================== MessageEvent")
 				if err := c.handleMsg(ev.Payload); err != nil && err != errFutureMessage && err != errOldMessage {
 					logger.Warn("Error in handling istanbul message", "err", err)
 				}
@@ -125,7 +121,6 @@ func (c *core) handleEvents() {
 				if payload, err := ev.msg.Payload(); err != nil {
 					logger.Error("Error in retrieving payload from istanbul message that was sent from a backlog event", "err", err)
 				} else {
-					fmt.Println("============================== backlogEvent")
 					if err := c.handleMsg(payload); err != nil && err != errFutureMessage && err != errOldMessage {
 						logger.Warn("Error in handling istanbul message that was sent from a backlog event", "err", err)
 					}
@@ -201,16 +196,12 @@ func (c *core) handleCheckedMsg(msg *istanbul.Message, src istanbul.Validator) e
 
 	switch msg.Code {
 	case istanbul.MsgPreprepare:
-		fmt.Println("============================== MsgPreprepare")
 		return catchFutureMessages(c.handlePreprepare(msg))
 	case istanbul.MsgPrepare:
-		fmt.Println("============================== MsgPrepare")
 		return catchFutureMessages(c.handlePrepare(msg))
 	case istanbul.MsgCommit:
-		fmt.Println("============================== MsgCommit")
 		return catchFutureMessages(c.handleCommit(msg))
 	case istanbul.MsgRoundChange:
-		fmt.Println("============================== MsgRoundChange")
 		return catchFutureMessages(c.handleRoundChange(msg))
 	default:
 		logger.Error("Invalid message", "m", msg)

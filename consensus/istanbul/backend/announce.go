@@ -21,7 +21,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/mapprotocol/atlas/p2p"
 	"math"
 	"sync"
@@ -874,7 +873,6 @@ func (m *AnnounceManager) SendVersionCertificateTable(peer consensus.Peer) error
 		logger.Warn("Error encoding version certificate msg", "err", err)
 		return err
 	}
-	fmt.Println("============================== VersionCertificatesMsg 1")
 	return peer.Send(istanbul.VersionCertificatesMsg, payload)
 }
 

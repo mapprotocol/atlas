@@ -204,12 +204,9 @@ func handleMessage(backend Backend, peer *Peer, engine consensus.Engine) error {
 	}
 	defer msg.Discard()
 
-	fmt.Printf("============================== handleMessage, read code: %v\n",  msg.Code)
-
 	// Send messages to the consensus engine first. If they are consensus related,
 	// e.g. for IBFT, let the consensus handler handle the message.
 	if handler, ok := engine.(consensus.Handler); ok {
-		fmt.Println("============================== engine")
 		pubKey := peer.Node().Pubkey()
 		addr := crypto.PubkeyToAddress(*pubKey)
 		handled, err := handler.HandleMsg(addr, msg, peer)
@@ -238,6 +235,5 @@ func handleMessage(backend Backend, peer *Peer, engine consensus.Engine) error {
 	if handler := handlers[msg.Code]; handler != nil {
 		return handler(backend, msg, peer)
 	}
-	fmt.Printf("============================== handleMessage, error: %v\n", fmt.Errorf("%w: %v", errInvalidMsgCode, msg.Code))
 	return fmt.Errorf("%w: %v", errInvalidMsgCode, msg.Code)
 }

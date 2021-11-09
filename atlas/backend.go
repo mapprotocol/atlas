@@ -673,9 +673,7 @@ func (s *Ethereum) Stop() error {
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *ethconfig.Config, db ethdb.Database) consensus.Engine {
-	fmt.Println("============================== into CreateConsensusEngine")
 	if chainConfig.Faker {
-		fmt.Println("============================== Faker CreateConsensusEngine")
 		return consensustest.NewFaker()
 	}
 	// If Istanbul is requested, set it up
