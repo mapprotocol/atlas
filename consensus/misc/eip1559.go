@@ -59,10 +59,6 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 	if !config.IsLondon(parent.Number) {
 		return new(big.Int).SetUint64(ethparams.InitialBaseFee)
 	}
-	if parent.BaseFee == nil {
-		//fmt.Println("bug1: parent.BaseFee",parent.BaseFee)
-		parent.BaseFee = big.NewInt(ethparams.InitialBaseFee)
-	}
 	var (
 		parentGasTarget          = parent.GasLimit / ethparams.ElasticityMultiplier
 		parentGasTargetBig       = new(big.Int).SetUint64(parentGasTarget)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/consensus/misc"
 	"math/big"
 	"time"
 
@@ -55,6 +56,14 @@ func prepareBlock(w *worker) (*blockState, error) {
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
 		GasLimit:   chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil),
+	}
+
+	if w.chainConfig.IsLondon(header.Number) {
+		header.BaseFee = misc.CalcBaseFee(w.chainConfig, parent.Header())
+		if !w.chainConfig.IsLondon(parent.Number()) {
+			parentGasLimit := parent.GasLimit() * params.ElasticityMultiplier
+			header.GasLimit = chain.CalcGasLimit(parentGasLimit, w.config.GasCeil)
+		}
 	}
 
 	txFeeRecipient := w.txFeeRecipient
