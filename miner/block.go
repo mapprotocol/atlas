@@ -55,8 +55,8 @@ func prepareBlock(w *worker) (*blockState, error) {
 		Number:     num.Add(num, common.Big1),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
+		GasLimit:   chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil),
 	}
-
 	if w.chainConfig.IsLondon(header.Number) {
 		header.BaseFee = misc.CalcBaseFee(w.chainConfig, parent.Header())
 		if !w.chainConfig.IsLondon(parent.Number()) {
@@ -92,7 +92,7 @@ func prepareBlock(w *worker) (*blockState, error) {
 
 	vmRunner := w.chain.NewEVMRunner(header, state)
 	b := &blockState{
-		signer:         types.NewEIP155Signer(w.chainConfig.ChainID),
+		signer:         types.NewLondonSigner(w.chainConfig.ChainID),
 		state:          state,
 		tcount:         0,
 		gasLimit:       blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner),
@@ -173,13 +173,13 @@ func (b *blockState) selectAndApplyTransactions(ctx context.Context, w *worker) 
 
 	//txComparator := createTxCmp(w.chain, b.header, b.state)
 	if len(localTxs) > 0 {
-		txs := types.NewTransactionsByPriceAndNonce(b.signer, localTxs, nil)
+		txs := types.NewTransactionsByPriceAndNonce(b.signer, localTxs, b.header.BaseFee)
 		if err := b.commitTransactions(ctx, w, txs, b.txFeeRecipient); err != nil {
 			return fmt.Errorf("failed to commit local transactions: %w", err)
 		}
 	}
 	if len(remoteTxs) > 0 {
-		txs := types.NewTransactionsByPriceAndNonce(b.signer, remoteTxs, nil)
+		txs := types.NewTransactionsByPriceAndNonce(b.signer, remoteTxs, b.header.BaseFee)
 		if err := b.commitTransactions(ctx, w, txs, b.txFeeRecipient); err != nil {
 			return fmt.Errorf("failed to commit remote transactions: %w", err)
 		}

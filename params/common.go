@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
+	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"math/big"
 )
@@ -13,7 +14,7 @@ import (
 var (
 	baseUnit           = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	FbaseUnit          = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	Base               = new(big.Int).SetUint64(10000)
+	Base               = new(big.Int).SetUint64(ethparams.InitialBaseFee)
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
@@ -107,7 +108,7 @@ var (
 	SortedOraclesRegistryId        = makeRegistryId("SortedOracles")
 	StableTokenRegistryId          = makeRegistryId("StableToken")
 	//TransferWhitelistRegistryId    = makeRegistryId("TransferWhitelist")
-	ValidatorsRegistryId           = makeRegistryId("Validators")
+	ValidatorsRegistryId = makeRegistryId("Validators")
 
 	// Function is "getOrComputeTobinTax()"
 	// selector is first 4 bytes of keccak256 of "getOrComputeTobinTax()"

@@ -700,7 +700,7 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 	// Initialize a price and received time based heap with the head transactions
 	heads := make(TxByPriceAndTime, 0, len(txs))
 	for from, accTxs := range txs {
-		acc, _ := Sender(signer, accTxs[0])
+		acc, err := Sender(signer, accTxs[0])
 		wrapped, err := NewTxWithMinerFee(accTxs[0], baseFee)
 		// Remove transaction if sender doesn't match from, or if wrapping fails.
 		if acc != from || err != nil {
@@ -711,7 +711,6 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 		txs[from] = accTxs[1:]
 	}
 	heap.Init(&heads)
-
 	// Assemble and return the transaction set
 	return &TransactionsByPriceAndNonce{
 		txs:     txs,
@@ -805,17 +804,17 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 	return msg, err
 }
 
-func (m Message) From() common.Address   { return m.from }
-func (m Message) To() *common.Address    { return m.to }
-func (m Message) GasPrice() *big.Int     { return m.gasPrice }
-func (m Message) GasFeeCap() *big.Int    { return m.gasFeeCap }
-func (m Message) GasTipCap() *big.Int    { return m.gasTipCap }
-func (m Message) Value() *big.Int        { return m.amount }
-func (m Message) Gas() uint64            { return m.gasLimit }
-func (m Message) Nonce() uint64          { return m.nonce }
-func (m Message) Data() []byte           { return m.data }
-func (m Message) AccessList() AccessList { return m.accessList }
-func (m Message) IsFake() bool           { return m.isFake }
+func (m Message) From() common.Address               { return m.from }
+func (m Message) To() *common.Address                { return m.to }
+func (m Message) GasPrice() *big.Int                 { return m.gasPrice }
+func (m Message) GasFeeCap() *big.Int                { return m.gasFeeCap }
+func (m Message) GasTipCap() *big.Int                { return m.gasTipCap }
+func (m Message) Value() *big.Int                    { return m.amount }
+func (m Message) Gas() uint64                        { return m.gasLimit }
+func (m Message) Nonce() uint64                      { return m.nonce }
+func (m Message) Data() []byte                       { return m.data }
+func (m Message) AccessList() AccessList             { return m.accessList }
+func (m Message) IsFake() bool                       { return m.isFake }
 func (tx *Transaction) FeeCurrency() *common.Address { return nil }
 func (tx *Transaction) Fee() *big.Int {
 	return Fee(tx.GasPrice(), tx.Gas(), nil)

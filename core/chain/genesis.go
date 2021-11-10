@@ -325,7 +325,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		Coinbase:   g.Coinbase,
 		Root:       root,
 	}
-	if g.GasLimit == 0 {
+	if head.GasLimit == 0 {
 		head.GasLimit = ethparams.GenesisGasLimit
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
