@@ -55,7 +55,6 @@ func prepareBlock(w *worker) (*blockState, error) {
 		Number:     num.Add(num, common.Big1),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
-		GasLimit:   chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil),
 	}
 
 	if w.chainConfig.IsLondon(header.Number) {
