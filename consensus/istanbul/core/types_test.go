@@ -21,10 +21,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/crypto"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 func testPreprepare(t *testing.T) {

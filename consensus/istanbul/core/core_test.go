@@ -23,13 +23,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/core/types"
 	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	elog "github.com/celo-org/celo-blockchain/log"
 	"github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/common"
+	elog "github.com/ethereum/go-ethereum/log"
+
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 func makeBlock(number int64) *types.Block {

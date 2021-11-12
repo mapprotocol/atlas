@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul/validator"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 )
 
 func TestRoundStateRLPEncoding(t *testing.T) {

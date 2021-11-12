@@ -20,9 +20,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/celo-org/celo-blockchain/common"
-	"github.com/celo-org/celo-blockchain/consensus/istanbul"
-	"github.com/celo-org/celo-blockchain/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
+
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
 func TestMessageSetWithSubject(t *testing.T) {
