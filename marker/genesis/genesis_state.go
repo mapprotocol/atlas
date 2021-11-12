@@ -2,6 +2,7 @@ package genesis
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/helper/decimal/token"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -13,7 +14,6 @@ import (
 	"github.com/mapprotocol/atlas/core/vm/runtime"
 	"github.com/mapprotocol/atlas/marker/contract"
 	"github.com/mapprotocol/atlas/marker/env"
-	"github.com/mapprotocol/atlas/marker/utils/decimal/token"
 	"github.com/mapprotocol/atlas/params"
 	"github.com/shopspring/decimal"
 )

@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/helper/fileutils"
 	"os"
 	"path"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/marker/genesis"
-	"github.com/mapprotocol/atlas/marker/utils"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -83,7 +83,7 @@ func readBuildPath(ctx *cli.Context) (string, error) {
 	buildpath := ctx.String(buildpathFlag.Name)
 	if buildpath == "" {
 		buildpath = path.Join(os.Getenv("CELO_MONOREPO"), "packages/protocol/build/contracts")
-		if utils.FileExists(buildpath) {
+		if fileutils.FileExists(buildpath) {
 			log.Info("Missing --buildpath flag, using CELO_MONOREPO derived path", "buildpath", buildpath)
 		} else {
 			return "", fmt.Errorf("Missing --buildpath flag")
@@ -135,7 +135,7 @@ func createGenesis(ctx *cli.Context) error {
 	var err error
 	if ctx.IsSet(newEnvFlag.Name) {
 		workdir = ctx.String(newEnvFlag.Name)
-		if !utils.FileExists(workdir) {
+		if !fileutils.FileExists(workdir) {
 			os.MkdirAll(workdir, os.ModePerm)
 		}
 	} else {

@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/mapprotocol/atlas/helper/fileutils"
 	"github.com/mapprotocol/atlas/helper/flags"
-	"github.com/mapprotocol/atlas/marker/utils"
 	"os"
 	"path"
 	"path/filepath"
@@ -162,7 +162,7 @@ func readGethPath(ctx *cli.Context) (string, error) {
 	gethPath := ctx.String(gethPathFlag.Name)
 	if gethPath == "" {
 		gethPath = path.Join(os.Getenv("CELO_BLOCKCHAIN"), "build/bin/geth")
-		if utils.FileExists(gethPath) {
+		if fileutils.FileExists(gethPath) {
 			log.Info("Missing --geth flag, using CELO_BLOCKCHAIN derived path", "geth", gethPath)
 		} else {
 			return "", fmt.Errorf("Missing --geth flag")

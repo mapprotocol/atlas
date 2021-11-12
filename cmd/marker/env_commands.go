@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/mapprotocol/atlas/marker/env"
-	"github.com/mapprotocol/atlas/marker/utils"
 	"gopkg.in/urfave/cli.v1"
 )
 

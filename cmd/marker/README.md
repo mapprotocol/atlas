@@ -1,13 +1,19 @@
 
-# myatlas
+# Marker
 
-`myatlas` is a developer utility to easy running atlas blockchain testnets and related jobs around testnets.
+`marker` is a developer utility to easy running atlas blockchain testnets and related jobs around testnets.
 
 Its main advantage over previous solutions is that it's able to create a `genesis.json` where all core conctracts are already deployed in it. Eventually it can be extended to support other cases, like e2e tests, load tests, and other operations.
 
-## Using myatlas
+### Building marker
 
-There are 2 main use cases for myatlas:
+```bash
+go build -o marker *.go
+```
+
+## Using marker
+
+There are 2 main use cases for marker:
 
  1. Run a local tesnet
  2. Create a genesis.json to be used in another testnet that will be run on a CloudProvider/Kubernetes
@@ -20,7 +26,7 @@ Both cases share the need to create the `genesis.json`; to do so run:
 marker genesis --buildpath path/to/protocol/build
 ```
 
-Where `buildpath` is the path to truffle compile output folder. By default it will use `CELO_MONOREPO` environment variable as `$CELO_MONOREPO/packages/protocol/build/contracts`.
+Where `buildpath` is the path to truffle compile output folder. By default it will use `MAP_CONTRACTS` environment variable as `$MAP_CONTRACTS/build/contracts`.
 
 This will create a `genesis.json`.
 
@@ -34,13 +40,13 @@ This command will create folder `path/to/envfolder` and write there `genesis.jso
 
 ### Configuring Genesis
 
-Genesis creation has many configuration options, for that `myatlas` use the concept of templates.
+Genesis creation has many configuration options, for that `marker` use the concept of templates.
 
 ```bash
 marker genesis --template=[local|loadtest|monorepo]
 ```
 
-Additionally, you can override template options via command line, chedk `myatlas genesis --help` for options:
+Additionally, you can override template options via command line, chedk `marker genesis --help` for options:
 
 ```bash
    --validators value    Number of Validators (default: 0)
@@ -52,7 +58,7 @@ Additionally, you can override template options via command line, chedk `myatlas
 
 ### Configuring Genesis (Advanced)
 
-If that's not enough, you can ask myatlas to generate a genesis-config file that you can then customize and use to generate genesis
+If that's not enough, you can ask marker to generate a genesis-config file that you can then customize and use to generate genesis
 
 ```bash
 marker genesis-config path/to/env

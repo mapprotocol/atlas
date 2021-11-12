@@ -4,10 +4,10 @@ package genesis
 
 import (
 	"encoding/json"
+	"github.com/mapprotocol/atlas/helper/decimal/bigintstr"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/marker/utils/decimal/bigintstr"
 )
 
 var _ = (*BalanceMarshaling)(nil)

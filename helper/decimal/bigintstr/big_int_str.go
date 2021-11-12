@@ -1,9 +1,8 @@
 package bigintstr
 
 import (
+	"github.com/mapprotocol/atlas/helper/decimal"
 	"math/big"
-
-	"github.com/mapprotocol/atlas/marker/utils/decimal"
 )
 
 // Since this is just a wrapper for big.Int, it's precision is 1 (10^0)

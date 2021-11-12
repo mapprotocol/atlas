@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"math/big"
 	"math/rand"
 
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/marker/genesis"
-	"github.com/mapprotocol/atlas/marker/utils/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 )
 

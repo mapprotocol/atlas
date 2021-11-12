@@ -1,7 +1,7 @@
 package env
 
 import (
-	markerutils "github.com/mapprotocol/atlas/marker/utils"
+	markerutils "github.com/mapprotocol/atlas/helper/fileutils"
 	"os"
 
 	"github.com/mapprotocol/atlas/core/chain"

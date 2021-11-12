@@ -4,10 +4,9 @@ package genesis
 
 import (
 	"encoding/json"
+	"github.com/mapprotocol/atlas/helper/decimal/bigintstr"
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"math/big"
-
-	"github.com/mapprotocol/atlas/marker/utils/decimal/bigintstr"
-	"github.com/mapprotocol/atlas/marker/utils/decimal/fixed"
 )
 
 var _ = (*GasPriceMinimumParametersMarshaling)(nil)

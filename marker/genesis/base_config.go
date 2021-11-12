@@ -1,11 +1,11 @@
 package genesis
 
 import (
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/marker/utils/decimal/fixed"
 	"github.com/shopspring/decimal"
 )
 

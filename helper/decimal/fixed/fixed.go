@@ -1,9 +1,8 @@
 package fixed
 
 import (
+	"github.com/mapprotocol/atlas/helper/decimal"
 	"math/big"
-
-	"github.com/mapprotocol/atlas/marker/utils/decimal"
 )
 
 var precision = decimal.Precision(24)

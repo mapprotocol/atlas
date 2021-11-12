@@ -1,13 +1,13 @@
 package genesis
 
 import (
+	"github.com/mapprotocol/atlas/helper/decimal/token"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/marker/utils/decimal/token"
 	"github.com/mapprotocol/atlas/params"
 	blscrypto "github.com/mapprotocol/atlas/params/bls"
 

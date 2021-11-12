@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/mapprotocol/atlas/helper/fileutils"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -15,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/mapprotocol/atlas/marker/env"
-	"github.com/mapprotocol/atlas/marker/utils"
 	"strconv"
 	"strings"
 
@@ -97,7 +97,7 @@ func (n *Node) AccountAddresses() []common.Address {
 // Init will run `geth init` on the node along other initialization procedures
 // that need to happen before we run the node
 func (n *Node) Init(GenesisJSON string) error {
-	if utils.FileExists(n.Datadir) {
+	if fileutils.FileExists(n.Datadir) {
 		os.RemoveAll(n.Datadir)
 	}
 	os.MkdirAll(n.Datadir, os.ModePerm)
