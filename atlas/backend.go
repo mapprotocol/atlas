@@ -192,7 +192,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			TrieDirtyDisabled:   config.NoPruning,
 			TrieTimeLimit:       config.TrieTimeout,
 			SnapshotLimit:       config.SnapshotCache,
-			//Preimages:           config.Preimages,
+			Preimages:           config.Preimages,
 		}
 	)
 	eth.blockchain, err = chain.NewBlockChain(chainDb, cacheConfig, chainConfig, eth.engine, vmConfig, eth.shouldPreserve, &config.TxLookupLimit)
