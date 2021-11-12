@@ -206,4 +206,5 @@ type Config struct {
 	OverrideLondon *big.Int `toml:",omitempty"`
 	// Churrito block override (TODO: remove after the fork)
 	OverrideChurrito *big.Int `toml:",omitempty"`
+	Preimages bool
 }

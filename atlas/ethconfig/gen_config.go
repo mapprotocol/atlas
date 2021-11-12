@@ -62,6 +62,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		CheckpointOracle        *params.CheckpointOracleConfig `toml:",omitempty"`
 		OverrideLondon          *big.Int                       `toml:",omitempty"`
 		OverrideChurrito        *big.Int                       `toml:",omitempty"`
+		Preimages bool
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -95,6 +96,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.TrieDirtyCache = c.TrieDirtyCache
 	enc.TrieTimeout = c.TrieTimeout
 	enc.SnapshotCache = c.SnapshotCache
+	enc.Preimages = c.Preimages
 	enc.Miner = c.Miner
 	enc.TxPool = c.TxPool
 	enc.GPO = c.GPO
@@ -158,6 +160,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		CheckpointOracle        *params.CheckpointOracleConfig `toml:",omitempty"`
 		OverrideLondon          *big.Int                       `toml:",omitempty"`
 		OverrideChurrito        *big.Int                       `toml:",omitempty"`
+		Preimages               *bool
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -255,6 +258,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.SnapshotCache != nil {
 		c.SnapshotCache = *dec.SnapshotCache
+	}
+	if dec.Preimages != nil {
+		c.Preimages = *dec.Preimages
 	}
 	if dec.Miner != nil {
 		c.Miner = *dec.Miner
