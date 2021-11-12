@@ -119,7 +119,7 @@ type headerFilterTask struct {
 	time    time.Time       // Arrival time of the headers
 }
 
-// bodyFilterTask represents a batch of block bodies (transactions and uncles)
+// bodyFilterTask represents a batch of block bodies
 // needing fetcher filtering.
 type bodyFilterTask struct {
 	peer           string // The source peer of block bodies
@@ -547,17 +547,6 @@ func (f *BlockFetcher) loop() {
 						announce.header = header
 						announce.time = task.time
 
-						// If the block is empty (header only), short circuit into the final import queue
-						if header.TxHash == types.EmptyRootHash {
-							log.Trace("Block empty, skipping body retrieval", "peer", announce.origin, "number", header.Number, "hash", header.Hash())
-
-							block := types.NewBlockWithHeader(header)
-							block.ReceivedAt = task.time
-
-							complete = append(complete, block)
-							f.completing[hash] = announce
-							continue
-						}
 						// Otherwise add to the list of blocks needing completion
 						incomplete = append(incomplete, announce)
 					} else {
@@ -609,23 +598,19 @@ func (f *BlockFetcher) loop() {
 			blocks := []*types.Block{}
 			// abort early if there's nothing explicitly requested
 			if len(f.completing) > 0 {
-				for i := 0; i < len(task.transactions); i++ {
+				for i := 0; i < len(task.blockHashes) && i < len(task.transactions) && i < len(task.randomness) && i < len(task.epochSnarkData); i++ {
 					// Match up a body to any possible completion request
 					var (
 						matched = false
-						//uncleHash common.Hash // calculated lazily and reused
 						txnHash common.Hash // calculated lazily and reused
 					)
 					for hash, announce := range f.completing {
 						if f.queued[hash] != nil || announce.origin != task.peer {
 							continue
 						}
-						//if uncleHash == (common.Hash{}) {
-						//	uncleHash = types.CalcUncleHash(task.uncles[i])
-						//}
-						//if uncleHash != announce.header.UncleHash {
-						//	continue
-						//}
+						if task.blockHashes[i] != announce.header.Hash() {
+							continue
+						}
 						if txnHash == (common.Hash{}) {
 							txnHash = types.DeriveSha(types.Transactions(task.transactions[i]), trie.NewStackTrie(nil))
 						}
@@ -644,7 +629,10 @@ func (f *BlockFetcher) loop() {
 
 					}
 					if matched {
+						task.blockHashes = append(task.blockHashes[:i], task.blockHashes[i+1:]...)
 						task.transactions = append(task.transactions[:i], task.transactions[i+1:]...)
+						task.randomness = append(task.randomness[:i], task.randomness[i+1:]...)
+						task.epochSnarkData = append(task.epochSnarkData[:i], task.epochSnarkData[i+1:]...)
 						i--
 						continue
 					}
