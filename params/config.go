@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MainNetChainID    uint64 = 177
+	MainNetChainID    uint64 = 83267
 	TestNetChainID    uint64 = 212
 	DevNetChainID     uint64 = 213
 	SingleNodeChainID uint64 = 214
@@ -95,7 +95,7 @@ var (
 			LookbackWindow: 12,
 		},
 	}
-	MainnetNetWorkID uint64 = 177
+	MainnetNetWorkID uint64 = 83267
 	TestnetWorkID    uint64 = 212
 	DevnetWorkID     uint64 = 213
 	SingleWorkID     uint64 = 214
