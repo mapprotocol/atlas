@@ -81,7 +81,7 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 	ctx.fundAdminAccount()
 
 	deploySteps := [](func() error){
-		//ctx.deployLibraries,
+		ctx.deployLibraries,
 		// 01 Registry
 		ctx.deployRegistry,
 		//// 02 Freezer
@@ -829,6 +829,7 @@ func (ctx *deployContext) registerValidators() error {
 
 		// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
 		pubKey := validator.PublicKey()[1:]
+		fmt.Println("blsPub[:]------>", len(validator.MustBLSProofOfPossession()))
 		err = validators.SimpleCallFrom(address, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
 		if err != nil {
 			return err
