@@ -1029,12 +1029,11 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Printf("Checking gas price minimum. cusdValue = %s\n", gasPrice.String())
 
-	// todo zhangwei
-	out := new([]common.Address)
-	if _, err := ctx.contract("Validators").Query(out, "getRegisteredValidators"); err != nil {
-		return err
-	}
-	fmt.Println(out)
+	//out := new([]common.Address)
+	//if _, err := ctx.contract("Validators").Query(out, "getRegisteredValidators"); err != nil {
+	//	return err
+	//}
+	//fmt.Println(out)
 
 	return nil
 }

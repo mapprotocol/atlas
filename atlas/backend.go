@@ -147,10 +147,10 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		log.Error("Failed to recover state", "error", err)
 	}
 	eth := &Ethereum{
-		config:         config,
-		chainDb:        chainDb,
-		eventMux:       stack.EventMux(),
-		accountManager: stack.AccountManager(),
+		config:            config,
+		chainDb:           chainDb,
+		eventMux:          stack.EventMux(),
+		accountManager:    stack.AccountManager(),
 		engine:            CreateConsensusEngine(stack, chainConfig, config, chainDb),
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
@@ -220,15 +220,15 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 
 	if eth.handler, err = newHandler(&handlerConfig{
-		Database:    chainDb,
-		Chain:       eth.blockchain,
-		TxPool:      eth.txPool,
-		Network:     config.NetworkId,
-		Sync:        config.SyncMode,
-		BloomCache:  uint64(cacheLimit),
-		EventMux:    eth.eventMux,
-		Checkpoint:  checkpoint,
-		Whitelist:   config.Whitelist,
+		Database:   chainDb,
+		Chain:      eth.blockchain,
+		TxPool:     eth.txPool,
+		Network:    config.NetworkId,
+		Sync:       config.SyncMode,
+		BloomCache: uint64(cacheLimit),
+		EventMux:   eth.eventMux,
+		Checkpoint: checkpoint,
+		Whitelist:  config.Whitelist,
 		//Engine:      eth.engine,
 		Server:      stack.Server(),
 		ProxyServer: nil,

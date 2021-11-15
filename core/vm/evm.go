@@ -17,6 +17,8 @@
 package vm
 
 import (
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/types"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -37,10 +39,23 @@ type (
 	// CanTransferFunc is the signature of a transfer guard function
 	CanTransferFunc func(StateDB, common.Address, *big.Int) bool
 	// TransferFunc is the signature of a transfer function
-	TransferFunc func(StateDB, common.Address, common.Address, *big.Int)
+	TransferFunc func(*EVM, common.Address, common.Address, *big.Int)
 	// GetHashFunc returns the n'th block hash in the blockchain
 	// and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
+
+	////////////////////////////////////////////////////////////////////////////////
+	// GetHeaderByNumberFunc returns the header of the nth block in the chain.
+	GetHeaderByNumberFunc func(uint64) *types.Header
+	// VerifySealFunc returns true if the given header contains a valid seal
+	// according to the engine's consensus rules.
+	VerifySealFunc func(*types.Header) bool
+
+	// GetValidatorsFunc is the signature for the GetValidators function
+	GetValidatorsFunc func(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator
+
+	// GetRegisteredAddressFunc returns the address for a registered contract
+	GetRegisteredAddressFunc func(evm *EVM, registryId common.Hash) (common.Address, error)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -77,6 +92,20 @@ type BlockContext struct {
 	Time        *big.Int       // Provides information for TIME
 	Difficulty  *big.Int       // Provides information for DIFFICULTY
 	BaseFee     *big.Int       // Provides information for BASEFEE
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// GetParentSealBitmap returns the parent seal bitmap corresponding to n
+	GetHeaderByNumber GetHeaderByNumberFunc
+	// VerifySeal verifies or returns an error for the given header
+	VerifySeal VerifySealFunc
+
+	// Message information
+	Origin   common.Address // Provides information for ORIGIN
+	GasPrice *big.Int       // Provides information for GASPRICE
+
+	EpochSize            uint64
+	GetValidators        GetValidatorsFunc
+	GetRegisteredAddress GetRegisteredAddressFunc
 }
 
 // TxContext provides the EVM with information about a transaction.
@@ -195,7 +224,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		}
 		evm.StateDB.CreateAccount(addr)
 	}
-	evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+	evm.Context.Transfer(evm, caller.Address(), addr, value)
 
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug {
@@ -405,6 +434,18 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	return ret, gas, err
 }
 
+func (evm *EVM) GetStateDB() StateDB {
+	return evm.StateDB
+}
+
+func (evm *EVM) GetDebug() bool {
+	return evm.Config.Debug
+}
+
+func (evm *EVM) SetDebug(value bool) {
+	evm.Config.Debug = value
+}
+
 type codeAndHash struct {
 	code []byte
 	hash common.Hash
@@ -445,7 +486,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.chainRules.IsEIP158 {
 		evm.StateDB.SetNonce(address, 1)
 	}
-	evm.Context.Transfer(evm.StateDB, caller.Address(), address, value)
+	evm.Context.Transfer(evm, caller.Address(), address, value)
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.

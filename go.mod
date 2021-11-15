@@ -10,6 +10,7 @@ require (
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/buraksezer/consistent v0.9.0
+	github.com/celo-org/celo-blockchain v1.4.1
 	github.com/celo-org/celo-bls-go v0.2.4
 	github.com/cespare/cp v1.1.1
 	github.com/cespare/xxhash/v2 v2.1.1
@@ -17,7 +18,6 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v20.10.6+incompatible // indirect
 	github.com/dop251/goja v0.0.0-20211011172007-d99e4b8cbf48
-	github.com/edsrzf/mmap-go v1.0.0
 	github.com/ethereum/go-ethereum v1.10.10
 	github.com/fatih/color v1.10.0
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
@@ -28,6 +28,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.1.5
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+	github.com/hdevalence/ed25519consensus v0.0.0-20210430192048-0962ce16b305
 	github.com/holiman/bloomfilter/v2 v2.0.3
 	github.com/holiman/uint256 v1.2.0
 	github.com/influxdata/influxdb v1.8.5 // indirect
@@ -40,6 +41,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/onsi/gomega v1.10.1
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/peterh/liner v1.2.1
 	github.com/prometheus/tsdb v0.10.0

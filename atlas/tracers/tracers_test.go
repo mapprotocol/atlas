@@ -39,6 +39,7 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 )
 
 // To generate a new callTracer test, copy paste the makeTest method below into
@@ -150,7 +151,7 @@ func TestPrestateTracerCreate2(t *testing.T) {
 	}
 	context := vm.BlockContext{
 		CanTransfer: chain.CanTransfer,
-		Transfer:    chain.Transfer,
+		Transfer:    vmcontext.TobinTransfer,
 		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(8000000),
 		Time:        new(big.Int).SetUint64(5),
@@ -243,7 +244,7 @@ func testCallTracer(tracer string, dirPath string, t *testing.T) {
 			}
 			context := vm.BlockContext{
 				CanTransfer: chain.CanTransfer,
-				Transfer:    chain.Transfer,
+				Transfer:    vmcontext.TobinTransfer,
 				Coinbase:    test.Context.Miner,
 				BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 				Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
@@ -332,7 +333,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	}
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
+		Transfer:    vmcontext.TobinTransfer,
 		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(uint64(5)),
 		Time:        new(big.Int).SetUint64(uint64(5)),
@@ -430,7 +431,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	}
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
+		Transfer:    vmcontext.TobinTransfer,
 		Coinbase:    test.Context.Miner,
 		BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 		Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
