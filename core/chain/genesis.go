@@ -417,7 +417,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:    params.TestnetConfig,
 		Nonce:     66,
-		ExtraData: hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
+		ExtraData: hexutil.MustDecode(testnetExtraData),
 		GasLimit:  16777216,
 		Alloc:     dr,
 	}
