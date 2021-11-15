@@ -48,6 +48,11 @@ const mainnetAllocJSON = "{\"0x11901cf7eEae1E2644995FB2E47Ce46bC7F33246\":{\"bal
 var DBGenesisSupplyKey = []byte("genesis-supply-genesis")
 var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
+var (
+	faucetAddr    = common.HexToAddress("0xf675187ff5b76d2430b353f6736aa051253118ee")
+	faucetBalance = balance
+)
+
 // Genesis specifies the header fields, state of a genesis block. It also defines hard
 // fork switch-over blocks through the chain configuration.
 type Genesis struct {
@@ -414,6 +419,9 @@ func DefaultTestnetGenesisBlock() *Genesis {
 		// add genesis contract to allc
 		dr[addr] = allc
 	}
+	// faucet
+	dr[faucetAddr] = GenesisAccount{Balance: faucetBalance}
+
 	return &Genesis{
 		Config:    params.TestnetConfig,
 		Nonce:     66,
