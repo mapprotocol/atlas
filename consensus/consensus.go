@@ -18,16 +18,16 @@
 package consensus
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/p2p"
 	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
 )
 
 // ChainHeaderReader defines a small collection of methods needed to access the local
@@ -107,10 +107,18 @@ type Engine interface {
 
 	// SealHash returns the hash of a block prior to it being sealed.
 	SealHash(header *types.Header) common.Hash
+	// VerifySeal checks whether the crypto seal on a header is valid according to
+	// the consensus rules of the given engine.
+	VerifySeal(header *types.Header) error
 
 	// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
 	// that a new block should have.
 	CalcDifficulty(chain ChainHeaderReader, time uint64, parent *types.Header) *big.Int
+
+	// GetValidators returns the list of current validators.
+	GetValidators(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator
+
+	EpochSize() uint64
 
 	// APIs returns the RPC APIs this consensus engine provides.
 	APIs(chain ChainHeaderReader) []rpc.API

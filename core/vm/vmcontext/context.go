@@ -2,7 +2,11 @@ package vmcontext
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/contracts"
+	"github.com/mapprotocol/atlas/contracts/reserve"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	params2 "github.com/mapprotocol/atlas/params"
@@ -40,26 +44,26 @@ func New(from common.Address, gasPrice *big.Int, header *types.Header, chain cha
 
 	ctx := vm.BlockContext{
 		CanTransfer: CanTransfer,
-		//Transfer:    TobinTransfer,
-		GetHash: GetHashFn(header, chain),
-		//VerifySeal:  VerifySealFn(header, chain),
-		//Origin:      from,
+		Transfer:    Transfer,
+		GetHash:     GetHashFn(header, chain),
+		VerifySeal:  VerifySealFn(header, chain),
+		Origin:      from,
 		Coinbase:    beneficiary,
 		BlockNumber: new(big.Int).Set(header.Number),
 		Time:        new(big.Int).SetUint64(header.Time),
-		//GasPrice:    new(big.Int).Set(gasPrice),
+		GasPrice:    new(big.Int).Set(gasPrice),
 
-		//GetRegisteredAddress: GetRegisteredAddress,
+		GetRegisteredAddress: GetRegisteredAddress,
 	}
 
-	//if chain != nil {
-	//	ctx.EpochSize = chain.Engine().EpochSize()
-	//	ctx.GetValidators = chain.Engine().GetValidators
-	//	ctx.GetHeaderByNumber = chain.GetHeaderByNumber
-	//} else {
-	//	ctx.GetValidators = func(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator { return nil }
-	//	ctx.GetHeaderByNumber = func(uint64) *types.Header { panic("evm context without blockchain context") }
-	//}
+	if chain != nil {
+		ctx.EpochSize = chain.Engine().EpochSize()
+		ctx.GetValidators = chain.Engine().GetValidators
+		ctx.GetHeaderByNumber = chain.GetHeaderByNumber
+	} else {
+		ctx.GetValidators = func(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator { return nil }
+		ctx.GetHeaderByNumber = func(uint64) *types.Header { panic("evm context without blockchain context") }
+	}
 	return ctx
 }
 
@@ -101,4 +105,61 @@ func GetHashFn(ref *types.Header, chain chainContext) func(uint64) common.Hash {
 // This does not take the necessary gas into account to make the transfer valid.
 func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 	return db.GetBalance(addr).Cmp(amount) >= 0
+}
+func GetRegisteredAddress(evm *vm.EVM, registryId common.Hash) (common.Address, error) {
+	caller := &SharedEVMRunner{evm}
+	return contracts.GetRegisteredAddress(caller, registryId)
+}
+
+// VerifySealFn returns a function which returns true when the given header has a verifiable seal.
+func VerifySealFn(ref *types.Header, chain chainContext) func(*types.Header) bool {
+	return func(header *types.Header) bool {
+		// If the block is later than the unsealed reference block, return false.
+		if header.Number.Cmp(ref.Number) > 0 {
+			return false
+		}
+
+		// FIXME: Implementation currently relies on the Istanbul engine's internal view of the
+		// chain, so return false if this is not an Istanbul chain. As a consequence of this the
+		// seal is always verified against the canonical chain, which makes behavior undefined if
+		// this function is evaluated on a chain which does not have the highest total difficulty.
+		if chain.Config().Istanbul == nil {
+			return false
+		}
+
+		// Submit the header to the engine's seal verification function.
+		return chain.Engine().VerifySeal(header) == nil
+	}
+}
+
+// TobinTransfer performs a transfer that may take a tax from the sent amount and give it to the reserve.
+// If the calculation or transfer of the tax amount fails for any reason, the regular transfer goes ahead.
+// NB: Gas is not charged or accounted for this calculation.
+func TobinTransfer(evm *vm.EVM, sender, recipient common.Address, amount *big.Int) {
+	// Run only primary evm.Call() with tracer
+	if evm.GetDebug() {
+		evm.SetDebug(false)
+		defer func() { evm.SetDebug(true) }()
+	}
+	if amount.Cmp(big.NewInt(0)) != 0 {
+		caller := &SharedEVMRunner{evm}
+		tax, taxRecipient, err := reserve.ComputeTobinTax(caller, sender, amount)
+		if err == nil {
+			Transfer(evm.StateDB, sender, recipient, new(big.Int).Sub(amount, tax))
+			Transfer(evm.StateDB, sender, taxRecipient, tax)
+			return
+		} else {
+			log.Error("Failed to get tobin tax", "error", err)
+		}
+	}
+
+	// Complete a normal transfer if the amount is 0 or the tobin tax value is unable to be fetched and parsed.
+	// We transfer even when the amount is 0 because state trie clearing [EIP161] is necessary at the end of a transaction
+	Transfer(evm.StateDB, sender, recipient, amount)
+}
+
+// Transfer subtracts amount from sender and adds amount to recipient using the given Db
+func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	db.SubBalance(sender, amount)
+	db.AddBalance(recipient, amount)
 }

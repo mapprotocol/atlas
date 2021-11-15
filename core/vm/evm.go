@@ -18,15 +18,16 @@ package vm
 
 import (
 	"errors"
-	params2 "github.com/mapprotocol/atlas/params"
-	"math/big"
-	"sync/atomic"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/types"
+	params2 "github.com/mapprotocol/atlas/params"
+	"math/big"
+	"sync/atomic"
+	"time"
 )
 
 // emptyCodeHash is used by create to ensure deployment is disallowed to already
@@ -41,6 +42,19 @@ type (
 	// GetHashFunc returns the n'th block hash in the blockchain
 	// and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
+
+	////////////////////////////////////////////////////////////////////////////////
+	// GetHeaderByNumberFunc returns the header of the nth block in the chain.
+	GetHeaderByNumberFunc func(uint64) *types.Header
+	// VerifySealFunc returns true if the given header contains a valid seal
+	// according to the engine's consensus rules.
+	VerifySealFunc func(*types.Header) bool
+
+	// GetValidatorsFunc is the signature for the GetValidators function
+	GetValidatorsFunc func(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator
+
+	// GetRegisteredAddressFunc returns the address for a registered contract
+	GetRegisteredAddressFunc func(evm *EVM, registryId common.Hash) (common.Address, error)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -94,6 +108,20 @@ type BlockContext struct {
 	BlockNumber *big.Int       // Provides information for NUMBER
 	Time        *big.Int       // Provides information for TIME
 	Difficulty  *big.Int       // Provides information for DIFFICULTY
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// GetParentSealBitmap returns the parent seal bitmap corresponding to n
+	GetHeaderByNumber GetHeaderByNumberFunc
+	// VerifySeal verifies or returns an error for the given header
+	VerifySeal VerifySealFunc
+
+	// Message information
+	Origin   common.Address // Provides information for ORIGIN
+	GasPrice *big.Int       // Provides information for GASPRICE
+
+	EpochSize            uint64
+	GetValidators        GetValidatorsFunc
+	GetRegisteredAddress GetRegisteredAddressFunc
 }
 
 // TxContext provides the EVM with information about a transaction.
@@ -408,6 +436,18 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 		}
 	}
 	return ret, gas, err
+}
+
+func (evm *EVM) GetStateDB() StateDB {
+	return evm.StateDB
+}
+
+func (evm *EVM) GetDebug() bool {
+	return evm.vmConfig.Debug
+}
+
+func (evm *EVM) SetDebug(value bool) {
+	evm.vmConfig.Debug = value
 }
 
 type codeAndHash struct {
