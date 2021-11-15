@@ -50,7 +50,7 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
 var (
 	faucetAddr    = common.HexToAddress("0xf675187ff5b76d2430b353f6736aa051253118ee")
-	faucetBalance = balance
+	faucetBalance = new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18))
 )
 
 // Genesis specifies the header fields, state of a genesis block. It also defines hard
