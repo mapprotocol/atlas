@@ -829,7 +829,6 @@ func (ctx *deployContext) registerValidators() error {
 
 		// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
 		pubKey := validator.PublicKey()[1:]
-		fmt.Println("blsPub[:]------>", len(validator.MustBLSProofOfPossession()))
 		err = validators.SimpleCallFrom(address, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
 		if err != nil {
 			return err
@@ -997,30 +996,30 @@ func (ctx *deployContext) verifyState() error {
 	snapshotVersion := ctx.statedb.Snapshot()
 	defer ctx.statedb.RevertToSnapshot(snapshotVersion)
 
-	var reserveSpenders []common.Address
-	if _, err := ctx.contract("Reserve").Query(&reserveSpenders, "getExchangeSpenders"); err != nil {
-		return err
-	}
-	fmt.Printf("Checking getExchangeSpenders. spenders = %s\n", reserveSpenders)
+	//var reserveSpenders []common.Address
+	//if _, err := ctx.contract("Reserve").Query(&reserveSpenders, "getExchangeSpenders"); err != nil {
+	//	return err
+	//}
+	//fmt.Printf("Checking getExchangeSpenders. spenders = %s\n", reserveSpenders)
 
-	var (
-		numerator   = new(*big.Int)
-		denominator = new(*big.Int)
-	)
-	out := &[]interface{}{
-		numerator,
-		denominator,
-	}
-	if _, err := ctx.contract("SortedOracles").Query(out, "medianRate", env.MustProxyAddressFor("StableToken")); err != nil {
-		return err
-	}
-	fmt.Printf("Checking medianRate. numerator = %s  denominator = %s \n", (*numerator).String(), (*denominator).String())
+	//var (
+	//	numerator   = new(*big.Int)
+	//	denominator = new(*big.Int)
+	//)
+	//out := &[]interface{}{
+	//	numerator,
+	//	denominator,
+	//}
+	//if _, err := ctx.contract("SortedOracles").Query(out, "medianRate", env.MustProxyAddressFor("StableToken")); err != nil {
+	//	return err
+	//}
+	//fmt.Printf("Checking medianRate. numerator = %s  denominator = %s \n", (*numerator).String(), (*denominator).String())
 
-	var gasPrice *big.Int
-	if _, err := ctx.contract("GasPriceMinimum").Query(&gasPrice, "getGasPriceMinimum", env.MustProxyAddressFor("StableToken")); err != nil {
-		return err
-	}
-	fmt.Printf("Checking gas price minimum. cusdValue = %s\n", gasPrice.String())
+	//var gasPrice *big.Int
+	//if _, err := ctx.contract("GasPriceMinimum").Query(&gasPrice, "getGasPriceMinimum", env.MustProxyAddressFor("StableToken")); err != nil {
+	//	return err
+	//}
+	//fmt.Printf("Checking gas price minimum. cusdValue = %s\n", gasPrice.String())
 
 	return nil
 }
