@@ -131,27 +131,38 @@ func handleGetBlockBodies66(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(&query); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	response := answerGetBlockBodiesQuery(backend, query.GetBlockBodiesPacket, peer)
+	response, err := answerGetBlockBodiesQuery(backend, query.GetBlockBodiesPacket, peer)
+	if err != nil {
+		return err
+	}
 	return peer.ReplyBlockBodiesRLP(query.RequestId, response)
 }
 
-func answerGetBlockBodiesQuery(backend Backend, query GetBlockBodiesPacket, peer *Peer) []rlp.RawValue {
+func answerGetBlockBodiesQuery(backend Backend, query GetBlockBodiesPacket, peer *Peer) ([]rlp.RawValue, error) {
 	// Gather blocks until the fetch or network limits is reached
 	var (
 		bytes  int
 		bodies []rlp.RawValue
 	)
 	for lookups, hash := range query {
-		if bytes >= softResponseLimit || len(bodies) >= maxBodiesServe ||
-			lookups >= 2*maxBodiesServe {
+		if bytes >= softResponseLimit || len(bodies) >= maxBodiesServe || lookups >= 2*maxBodiesServe {
 			break
 		}
-		if data := backend.Chain().GetBodyRLP(hash); len(data) != 0 {
-			bodies = append(bodies, data)
-			bytes += len(data)
+		if body := backend.Chain().GetBody(hash); body != nil {
+			bd := &BlockBody{
+				BlockHash: hash,
+				Body:      body,
+			}
+			bdBytes, err := rlp.EncodeToBytes(bd)
+			if err != nil {
+				return nil, err
+			}
+			bdRLP := rlp.RawValue(bdBytes)
+			bodies = append(bodies, bdRLP)
+			bytes += len(bdRLP)
 		}
 	}
-	return bodies
+	return bodies, nil
 }
 
 func handleGetNodeData66(backend Backend, msg Decoder, peer *Peer) error {
