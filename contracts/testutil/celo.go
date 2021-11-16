@@ -5,23 +5,23 @@ import (
 	"github.com/mapprotocol/atlas/params"
 )
 
-type CeloMock struct {
+type AtlasMock struct {
 	Runner               *MockEVMRunner
 	Registry             *RegistryMock
 	BlockchainParameters *BlockchainParametersMock
 }
 
-func NewCeloMock() CeloMock {
-	celo := CeloMock{
+func NewAtlasMock() AtlasMock {
+	atlas := AtlasMock{
 		Runner:               NewMockEVMRunner(),
 		Registry:             NewRegistryMock(),
 		BlockchainParameters: NewBlockchainParametersMock(),
 	}
 
-	celo.Runner.RegisterContract(params.RegistrySmartContractAddress, celo.Registry)
+	atlas.Runner.RegisterContract(params.RegistrySmartContractAddress, atlas.Registry)
 
-	celo.Registry.AddContract(params.BlockchainParametersRegistryId, common.HexToAddress("0x01"))
-	celo.Runner.RegisterContract(common.HexToAddress("0x01"), celo.BlockchainParameters)
+	atlas.Registry.AddContract(params.BlockchainParametersRegistryId, common.HexToAddress("0x01"))
+	atlas.Runner.RegisterContract(common.HexToAddress("0x01"), atlas.BlockchainParameters)
 
-	return celo
+	return atlas
 }

@@ -518,7 +518,7 @@ func defaultRelayer2() []*RelayerMember {
 	return cm
 }
 
-// MainnetGenesisBlock returns the Celo main net genesis block.
+// MainnetGenesisBlock returns the atlas main net genesis block.
 func MainnetGenesisBlock() *Genesis {
 	mainnetAlloc := &GenesisAlloc{}
 	mainnetAlloc.UnmarshalJSON([]byte(mainnetAllocJSON))

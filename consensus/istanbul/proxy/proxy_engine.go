@@ -40,7 +40,7 @@ type BackendForProxyEngine interface {
 	// If sendToSelf is set to true, then the function will send an event to self via a message event
 	Multicast(addresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf bool) error
 
-	// Unicast will asynchronously send a celo message to peer
+	// Unicast will asynchronously send a message to peer
 	Unicast(peer consensus.Peer, payload []byte, ethMsgCode uint64)
 
 	// GetValEnodeTableEntries retrieves the entries in the valEnodeTable filtered on the "validators" parameter.
@@ -161,7 +161,7 @@ func (p *proxyEngine) GetProxiedValidatorsInfo() ([]*ProxiedValidatorInfo, error
 	return proxiedValidatorsInfo, nil
 }
 
-// SendMsgToProxiedValidators will send a `celo` message to the proxied validators.
+// SendMsgToProxiedValidators will send a message to the proxied validators.
 func (p *proxyEngine) SendMsgToProxiedValidators(msgCode uint64, msg *istanbul.Message) error {
 	logger := p.logger.New("func", "SendMsgToProxiedValidators")
 	p.proxiedValidatorsMu.RLock()

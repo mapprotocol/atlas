@@ -22,25 +22,25 @@ var NoopExchangeRate = ExchangeRate{common.Big1, common.Big1}
 
 var CELOCurrency = Currency{
 	Address:    params.ZeroAddress,
-	toCELORate: NoopExchangeRate,
+	toMAPRate: NoopExchangeRate,
 }
 
 // Currency represent a system currency
-// than can be converted to CELO
+// than can be converted to MAP
 // Two currencies are deemed equal if they have the same address
 type Currency struct {
 	Address    common.Address
-	toCELORate ExchangeRate
+	toMAPRate ExchangeRate
 }
 
-// ToCELO converts an currency's token amount to a CELO amount
-func (c *Currency) ToCELO(tokenAmount *big.Int) *big.Int {
-	return c.toCELORate.ToBase(tokenAmount)
+// ToMAP converts an currency's token amount to a MAP amount
+func (c *Currency) ToMAP(tokenAmount *big.Int) *big.Int {
+	return c.toMAPRate.ToBase(tokenAmount)
 }
 
-// FromCELO converts an CELO amount to a currency tokens amount
-func (c *Currency) FromCELO(celoAmount *big.Int) *big.Int {
-	return c.toCELORate.FromBase(celoAmount)
+// FromMAP converts an MAP amount to a currency tokens amount
+func (c *Currency) FromMAP(mapAmount *big.Int) *big.Int {
+	return c.toMAPRate.FromBase(mapAmount)
 }
 
 // CmpToCurrency compares a currency amount to an amount in a different currency
@@ -56,15 +56,15 @@ func (c *Currency) CmpToCurrency(currencyAmount *big.Int, sndCurrencyAmount *big
 	leftSide := new(big.Int).Mul(
 		currencyAmount,
 		new(big.Int).Mul(
-			c.toCELORate.denominator,
-			sndCurrency.toCELORate.numerator,
+			c.toMAPRate.denominator,
+			sndCurrency.toMAPRate.numerator,
 		),
 	)
 	rightSide := new(big.Int).Mul(
 		sndCurrencyAmount,
 		new(big.Int).Mul(
-			sndCurrency.toCELORate.denominator,
-			c.toCELORate.numerator,
+			sndCurrency.toMAPRate.denominator,
+			c.toMAPRate.numerator,
 		),
 	)
 
@@ -107,7 +107,7 @@ func (er *ExchangeRate) FromBase(goldAmount *big.Int) *big.Int {
 type CurrencyManager struct {
 	vmRunner vm.EVMRunner
 
-	currencyCache    map[common.Address]*Currency                               // map of exchange rates of the form (CELO, token)
+	currencyCache    map[common.Address]*Currency                               // map of exchange rates of the form (MAP, token)
 	_getExchangeRate func(vm.EVMRunner, *common.Address) (*ExchangeRate, error) // function to obtain exchange rate from blockchain state
 }
 
@@ -142,7 +142,7 @@ func (cc *CurrencyManager) GetCurrency(currencyAddress *common.Address) (*Curren
 
 	val = &Currency{
 		Address:    *currencyAddress,
-		toCELORate: *currencyExchangeRate,
+		toMAPRate: *currencyExchangeRate,
 	}
 
 	cc.currencyCache[*currencyAddress] = val
@@ -176,7 +176,7 @@ func (cc *CurrencyManager) CmpValues(val1 *big.Int, currencyAddr1 *common.Addres
 	return currency1.CmpToCurrency(val1, val2, currency2)
 }
 
-// GetExchangeRate retrieves currency-to-CELO exchange rate
+// GetExchangeRate retrieves currency-to-MAP exchange rate
 func GetExchangeRate(vmRunner vm.EVMRunner, currencyAddress *common.Address) (*ExchangeRate, error) {
 	if currencyAddress == nil {
 		return &NoopExchangeRate, nil

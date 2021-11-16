@@ -143,8 +143,6 @@ type Wallet interface {
 	//
 	// NOTE: DEPRACATED, use SignData for future releases.
 	// This is needed for backwards compatibility on a network where validators
-	// started on celo-blockchain 1.8. 1.9 removed the SignHash function,
-	// replacing it with SignData, which always hashes the input before signing.
 	SignHash(account Account, hash []byte) ([]byte, error)
 
 	// SignBLS generates a BLS signature over the provided data with a direct or composite hasher

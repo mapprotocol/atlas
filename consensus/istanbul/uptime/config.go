@@ -6,7 +6,6 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 )
 
-// Check CIP-21 Spec (https://github.com/celo-org/celo-proposals/blob/master/CIPs/cip-0021.md)
 const (
 	// MinSafeLookbackWindow is the minimum number allowed for lookbackWindow size
 	MinSafeLookbackWindow = 3

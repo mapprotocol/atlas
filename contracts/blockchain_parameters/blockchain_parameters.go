@@ -51,7 +51,7 @@ func getMinimumVersion(vmRunner vm.EVMRunner) (*params.VersionInfo, error) {
 }
 
 // GetIntrinsicGasForAlternativeFeeCurrencyOrDefault retrieves the intrisic gas for transactions that pay gas in
-// with an alternative currency (not CELO).
+// with an alternative currency.
 // In case of error, it returns the default value
 func GetIntrinsicGasForAlternativeFeeCurrencyOrDefault(vmRunner vm.EVMRunner) uint64 {
 	gas, err := getIntrinsicGasForAlternativeFeeCurrency(vmRunner)
@@ -64,7 +64,7 @@ func GetIntrinsicGasForAlternativeFeeCurrencyOrDefault(vmRunner vm.EVMRunner) ui
 }
 
 // getIntrinsicGasForAlternativeFeeCurrency retrieves the intrisic gas for transactions that pay gas in
-// with an alternative currency (not CELO)
+// with an alternative currency
 func getIntrinsicGasForAlternativeFeeCurrency(vmRunner vm.EVMRunner) (uint64, error) {
 	var gas *big.Int
 	err := intrinsicGasForAlternativeFeeCurrencyMethod.Query(vmRunner, &gas)
