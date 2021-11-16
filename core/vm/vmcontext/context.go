@@ -44,7 +44,7 @@ func New(from common.Address, gasPrice *big.Int, header *types.Header, chain cha
 
 	ctx := vm.BlockContext{
 		CanTransfer: CanTransfer,
-		Transfer:    Transfer,
+		Transfer:    TobinTransfer,
 		GetHash:     GetHashFn(header, chain),
 		VerifySeal:  VerifySealFn(header, chain),
 		Origin:      from,

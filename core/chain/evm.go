@@ -23,6 +23,7 @@ import (
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 )
 
 // NewEVMBlockContext creates a new context for use in the EVM.
@@ -36,7 +37,7 @@ func NewEVMBlockContext(header *types.Header, chain abstract.ChainContext, autho
 	}
 	return vm.BlockContext{
 		CanTransfer: CanTransfer,
-		Transfer:    Transfer,
+		Transfer:    vmcontext.TobinTransfer,
 		GetHash:     GetHashFn(header, chain),
 		Coinbase:    beneficiary,
 		BlockNumber: new(big.Int).Set(header.Number),
