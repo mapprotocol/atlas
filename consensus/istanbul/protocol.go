@@ -20,27 +20,6 @@ import (
 	"github.com/mapprotocol/atlas/p2p"
 )
 
-// Constants to match up protocol versions and messages
-const (
-	// No longer supported, can be removed.
-	// The corresponding version upstream (eth/65) is removed in upstream PR #22636.
-	Celo64 = 64 // eth/63 + the istanbul messages
-	Celo65 = 65 // incorporates changes from eth/64 (EIP)
-
-	// Supported versions
-	Celo66 = 66 // incorporates changes from eth/65 (EIP-2464)
-)
-
-// protocolName is the official short name of the protocol used during capability negotiation.
-const ProtocolName = "istanbul"
-
-// ProtocolVersions are the supported versions of the istanbul protocol (first is primary).
-// (First is primary in the sense that it's the most current one supported)
-var ProtocolVersions = []uint{Celo66}
-
-// protocolLengths are the number of implemented message corresponding to different protocol versions.
-var ProtocolLengths = map[uint]uint64{Celo64: 22, Celo65: 27, Celo66: 27}
-
 // Message codes for istanbul related messages
 // If you want to add a code, you need to increment the protocolLengths Array size
 // and update the IsIstanbulMsg function below!
