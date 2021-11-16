@@ -101,7 +101,7 @@ func TestGetGasPriceMinimum(t *testing.T) {
 		g.Expect(ret).To(Equal(FallbackGasPriceMinimum))
 	})
 
-	t.Run("should return gasPriceMinimum for CELO", func(t *testing.T) {
+	t.Run("should return gasPriceMinimum", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		runner := testutil.NewMockEVMRunner()
@@ -121,7 +121,7 @@ func TestGetGasPriceMinimum(t *testing.T) {
 		g.Expect(ret.Uint64()).To(Equal(uint64(777777)))
 	})
 
-	t.Run("should return gasPriceMinimum for CELO", func(t *testing.T) {
+	t.Run("should return gasPriceMinimum", func(t *testing.T) {
 		g := NewGomegaWithT(t)
 
 		runner := testutil.NewMockEVMRunner()

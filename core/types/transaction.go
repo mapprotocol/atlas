@@ -258,7 +258,7 @@ func (t *txdata) UnmarshalJSON(input []byte) error {
 
 // ethCompatibleTxRlpList is used for RLP encoding/decoding of eth-compatible transactions.
 // As such, it:
-// (a) excludes the Celo-only fields,
+// (a) excludes the atlas-only fields,
 // (b) doesn't need the Hash or EthCompatible fields, and
 // (c) doesn't need the `json` or `gencodec` tags
 type ethCompatibleTxRlpList struct {

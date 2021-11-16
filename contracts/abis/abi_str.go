@@ -1,6 +1,5 @@
 package abis
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/Registry.json
 const RegistryStr = `[
 	{
 		"constant": true,
@@ -91,7 +90,6 @@ const BlockchainParametersStr = `[
 	}
 ]`
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/SortedOracles.json
 const SortedOraclesStr = `[
 	{
 		"constant": true,
@@ -118,7 +116,6 @@ const SortedOraclesStr = `[
 	}
 ]`
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/ERC20.json
 const ERC20Str = `[
 	{
 		"constant": true,
@@ -140,7 +137,6 @@ const ERC20Str = `[
 		"type": "function"
 }]`
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/FeeCurrency.json
 const FeeCurrencyStr = `[
 	{
 		"constant": true,
@@ -287,7 +283,6 @@ const ElectionsStr string = `[
 	}
 ]`
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/EpochRewards.json
 const EpochRewardsStr string = `[
 	{
 		"constant": true,
@@ -369,7 +364,6 @@ const EpochRewardsStr string = `[
 ]
 `
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/Freezer.json
 const FreezerStr = `[
 	{
 		"constant": true,
@@ -588,7 +582,6 @@ const RandomStr = `[
 	}
 ]`
 
-// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/Validators.json
 const ValidatorsStr = `[
 	{
 		"constant": true,

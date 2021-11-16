@@ -50,7 +50,7 @@ var (
 )
 
 type ProxyEngine interface {
-	// HandleMsg is the `celo` subprotocol message handler for proxies.
+	// HandleMsg is the `atlas` subprotocol message handler for proxies.
 	HandleMsg(peer consensus.Peer, msgCode uint64, payload []byte) (bool, error)
 
 	// RegisterProxiedValidatorPeer is the callback function that should be called
@@ -66,7 +66,7 @@ type ProxyEngine interface {
 	// SendDelegateSignMsgToProxiedValidator will send a delegate sign message to the proxied validator.
 	SendDelegateSignMsgToProxiedValidator(msg []byte) error
 
-	// SendMsgToProxiedValidators will send the `celo` message to the proxied validators.
+	// SendMsgToProxiedValidators will send the message to the proxied validators.
 	SendMsgToProxiedValidators(msgCode uint64, msg *istanbul.Message) error
 
 	// GetProxiedValidatorsInfo will return information about the proxied validators.

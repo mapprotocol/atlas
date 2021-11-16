@@ -51,7 +51,7 @@ type BackendForProxiedValidatorEngine interface {
 	// If sendToSelf is set to true, then the function will send an event to self via a message event
 	Multicast(addresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf bool) error
 
-	// Unicast will asynchronously send a celo message to peer
+	// Unicast will asynchronously send a message to peer
 	Unicast(peer consensus.Peer, payload []byte, ethMsgCode uint64)
 
 	// GetValEnodeTableEntries retrieves the entries in the valEnodeTable filtered on the "validators" parameter.
