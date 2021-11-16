@@ -24,14 +24,10 @@ import (
 	//"reflect"
 	"testing"
 
-	//"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
-	//"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
-	//"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	//"github.com/mapprotocol/atlas/core/vm"
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {
