@@ -109,7 +109,7 @@ func (sb *Backend) Gossip(payload []byte, ethMsgCode uint64) error {
 
 // sendMsg will asynchronously send the the messages to all the peers in the destPeers param.
 func (sb *Backend) asyncMulticast(destPeers map[enode.ID]consensus.Peer, payload []byte, ethMsgCode uint64) {
-	logger := sb.logger.New("func", "AsyncMulticastCeloMsg", "msgCode", ethMsgCode)
+	logger := sb.logger.New("func", "asyncMulticast", "msgCode", ethMsgCode)
 
 	for _, peer := range destPeers {
 		peer := peer // Create new instance of peer for the goroutine

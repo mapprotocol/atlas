@@ -117,9 +117,9 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	if err != nil {
 		return err
 	}
-	totalValidatorRewardsConvertedToCelo := stableTokenCurrency.ToMAP(totalValidatorRewards)
+	totalValidatorRewardsConvertedToMAP := stableTokenCurrency.ToMAP(totalValidatorRewards)
 
-	if err = gold_token.Mint(vmRunner, reserveAddress, totalValidatorRewardsConvertedToCelo); err != nil {
+	if err = gold_token.Mint(vmRunner, reserveAddress, totalValidatorRewardsConvertedToMAP); err != nil {
 		return err
 	}
 
