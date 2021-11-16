@@ -20,7 +20,7 @@ var (
 // NoopExchangeRate represents an exchange rate of 1 to 1
 var NoopExchangeRate = ExchangeRate{common.Big1, common.Big1}
 
-var CELOCurrency = Currency{
+var MAPCurrency = Currency{
 	Address:    params.ZeroAddress,
 	toMAPRate: NoopExchangeRate,
 }
@@ -50,9 +50,9 @@ func (c *Currency) CmpToCurrency(currencyAmount *big.Int, sndCurrencyAmount *big
 	}
 
 	// Below code block is basically evaluating this comparison:
-	// currencyAmount * c.toCELORate.denominator / c.toCELORate.numerator < sndCurrencyAmount * sndCurrency.toCELORate.denominator / sndCurrency.toCELORate.numerator
+	// currencyAmount * c.toMAPRate.denominator / c.toMAPRate.numerator < sndCurrencyAmount * sndCurrency.toMAPRate.denominator / sndCurrency.toMAPRate.numerator
 	// It will transform that comparison to this, to remove having to deal with fractional values.
-	// currencyAmount * c.toCELORate.denominator * sndCurrency.toCELORate.numerator < sndCurrencyAmount * sndCurrency.toCELORate.denominator * c.toCELORate.numerator
+	// currencyAmount * c.toMAPRate.denominator * sndCurrency.toMAPRate.numerator < sndCurrencyAmount * sndCurrency.toMAPRate.denominator * c.toMAPRate.numerator
 	leftSide := new(big.Int).Mul(
 		currencyAmount,
 		new(big.Int).Mul(
@@ -127,7 +127,7 @@ func newManager(_getExchangeRate func(vm.EVMRunner, *common.Address) (*ExchangeR
 // GetCurrency retrieves fee currency
 func (cc *CurrencyManager) GetCurrency(currencyAddress *common.Address) (*Currency, error) {
 	if currencyAddress == nil {
-		return &CELOCurrency, nil
+		return &MAPCurrency, nil
 	}
 
 	val, ok := cc.currencyCache[*currencyAddress]

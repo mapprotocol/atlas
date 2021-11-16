@@ -45,8 +45,8 @@ var (
 	// ErrNoProxiedValidator is returned if the proxy has no connected proxied validator
 	ErrNoProxiedValidator = errors.New("no connected proxied validator")
 
-	// ErrNoCelostatsProxy is returned if there is no connected proxy that sent the celostats message to be signed
-	ErrNoCelostatsProxy = errors.New("no connected proxy that sent the celostats message to be signed")
+	// ErrNoAtlasstatsProxy is returned if there is no connected proxy that sent the atlasstats message to be signed
+	ErrNoAtlasstatsProxy = errors.New("no connected proxy that sent the atlasstats message to be signed")
 )
 
 type ProxyEngine interface {
@@ -99,7 +99,7 @@ type ProxiedValidatorEngine interface {
 	UnregisterProxyPeer(proxyPeer consensus.Peer) error
 
 	// SendDelegateSignMsgToProxy will send a delegate sign message back to the proxy that is designated to
-	// handle celostats.
+	// handle atlasstats.
 	SendDelegateSignMsgToProxy(msg []byte, peerID enode.ID) error
 
 	// SendForwardMsg will send a forward message to all of the proxies.

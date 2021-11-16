@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetGasPriceSuggestion(t *testing.T) {
-	celoAddress := common.HexToAddress("0x076")
+	addr := common.HexToAddress("0x076")
 	gpmAddress := common.HexToAddress("0x090")
 
 	t.Run("should return gas price minimum multiplied by 5", func(t *testing.T) {
@@ -21,7 +21,7 @@ func TestGetGasPriceSuggestion(t *testing.T) {
 		runner := testutil.NewMockEVMRunner()
 		registry := testutil.NewRegistryMock()
 		runner.RegisterContract(params.RegistrySmartContractAddress, registry)
-		registry.AddContract(params.GoldTokenRegistryId, celoAddress)
+		registry.AddContract(params.GoldTokenRegistryId, addr)
 
 		contract := testutil.NewSingleMethodContract(params.GasPriceMinimumRegistryId, "getGasPriceMinimum",
 			func(currency common.Address) *big.Int { return big.NewInt(777777) },
@@ -38,7 +38,7 @@ func TestGetGasPriceSuggestion(t *testing.T) {
 }
 func TestGetGasPriceMinimum(t *testing.T) {
 	cusdAddress := common.HexToAddress("0x077")
-	celoAddress := common.HexToAddress("0x076")
+	mapAddress := common.HexToAddress("0x076")
 	gpmAddress := common.HexToAddress("0x090")
 
 	t.Run("should fail when vmRunner is failing", func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestGetGasPriceMinimum(t *testing.T) {
 		registry := testutil.NewRegistryMock()
 		runner.RegisterContract(params.RegistrySmartContractAddress, registry)
 		registry.AddContract(params.StableTokenRegistryId, cusdAddress)
-		registry.AddContract(params.GoldTokenRegistryId, celoAddress)
+		registry.AddContract(params.GoldTokenRegistryId, mapAddress)
 
 		// with gold currency
 		ret, err := GetGasPriceMinimum(runner, nil)
@@ -107,10 +107,10 @@ func TestGetGasPriceMinimum(t *testing.T) {
 		runner := testutil.NewMockEVMRunner()
 		registry := testutil.NewRegistryMock()
 		runner.RegisterContract(params.RegistrySmartContractAddress, registry)
-		registry.AddContract(params.GoldTokenRegistryId, celoAddress)
+		registry.AddContract(params.GoldTokenRegistryId, mapAddress)
 
 		contract := testutil.NewSingleMethodContract(params.GasPriceMinimumRegistryId, "getGasPriceMinimum", func(currency common.Address) *big.Int {
-			g.Expect(currency).To(Equal(celoAddress))
+			g.Expect(currency).To(Equal(mapAddress))
 			return big.NewInt(777777)
 		})
 		runner.RegisterContract(gpmAddress, contract)

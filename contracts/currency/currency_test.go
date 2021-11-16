@@ -238,11 +238,11 @@ func TestCurrency(t *testing.T) {
 
 		expensiveCurrency := Currency{
 			Address:    common.HexToAddress("0x1"),
-			toCELORate: *expensiveToken,
+			toMAPRate: *expensiveToken,
 		}
 		cheapCurrency := Currency{
 			Address:    common.HexToAddress("0x2"),
-			toCELORate: *cheapToken,
+			toMAPRate: *cheapToken,
 		}
 
 		g.Expect(expensiveCurrency.CmpToCurrency(big.NewInt(10), big.NewInt(10), &cheapCurrency)).Should(Equal(1))

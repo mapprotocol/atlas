@@ -31,7 +31,7 @@ func (pv *proxiedValidatorEngine) SendDelegateSignMsgToProxy(msg []byte, peerID 
 
 	if proxy == nil {
 		// If we got here, then the proxy that sent the message to be signed is not up anymore
-		return ErrNoCelostatsProxy
+		return ErrNoAtlasstatsProxy
 	}
 
 	pv.backend.Unicast(proxy.peer, msg, istanbul.DelegateSignMsg)

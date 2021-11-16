@@ -369,9 +369,9 @@ func (w *worker) constructAndSubmitNewBlock(ctx context.Context) {
 		}
 		w.submitTaskToEngine(&task{receipts: b.receipts, state: b.state, block: block, createdAt: time.Now()})
 
-		feesCelo := totalFees(block, b.receipts)
+		fees := totalFees(block, b.receipts)
 		log.Info("Commit new mining work", "number", block.Number(), "txs", b.tcount, "gas", block.GasUsed(),
-			"fees", feesCelo, "elapsed", common.PrettyDuration(time.Since(start)))
+			"fees", fees, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	}
 }
