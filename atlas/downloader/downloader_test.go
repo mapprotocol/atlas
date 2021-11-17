@@ -78,13 +78,13 @@ func newTester() *downloadTester {
 		ownHeaders:  map[common.Hash]*types.Header{testGenesis.Hash(): testGenesis.Header()},
 		ownBlocks:   map[common.Hash]*types.Block{testGenesis.Hash(): testGenesis},
 		ownReceipts: map[common.Hash]types.Receipts{testGenesis.Hash(): nil},
-		ownChainTd:  map[common.Hash]*big.Int{testGenesis.Hash(): testGenesis.Difficulty()},
+		ownChainTd:  map[common.Hash]*big.Int{testGenesis.Hash(): testGenesis.TotalDifficulty()},
 
 		// Initialize ancient store with test genesis block
 		ancientHeaders:  map[common.Hash]*types.Header{testGenesis.Hash(): testGenesis.Header()},
 		ancientBlocks:   map[common.Hash]*types.Block{testGenesis.Hash(): testGenesis},
 		ancientReceipts: map[common.Hash]types.Receipts{testGenesis.Hash(): nil},
-		ancientChainTd:  map[common.Hash]*big.Int{testGenesis.Hash(): testGenesis.Difficulty()},
+		ancientChainTd:  map[common.Hash]*big.Int{testGenesis.Hash(): testGenesis.TotalDifficulty()},
 	}
 	tester.stateDb = rawdb.NewMemoryDatabase()
 	tester.stateDb.Put(testGenesis.Root().Bytes(), []byte{0x00})
@@ -284,7 +284,7 @@ func (dl *downloadTester) InsertHeaderChain(headers []*types.Header, checkFreq i
 		dl.ownHeaders[hash] = header
 
 		td := dl.getTd(header.ParentHash)
-		dl.ownChainTd[hash] = new(big.Int).Add(td, header.Difficulty)
+		dl.ownChainTd[hash] = new(big.Int).Add(td, big.NewInt(header.Number.Int64()+1))
 	}
 	return len(headers), nil
 }
@@ -307,7 +307,7 @@ func (dl *downloadTester) InsertChain(blocks types.Blocks) (i int, err error) {
 		dl.ownReceipts[block.Hash()] = make(types.Receipts, 0)
 		dl.stateDb.Put(block.Root().Bytes(), []byte{0x00})
 		td := dl.getTd(block.ParentHash())
-		dl.ownChainTd[block.Hash()] = new(big.Int).Add(td, block.Difficulty())
+		dl.ownChainTd[block.Hash()] = new(big.Int).Add(td, block.TotalDifficulty())
 	}
 	return len(blocks), nil
 }
@@ -332,7 +332,7 @@ func (dl *downloadTester) InsertReceiptChain(blocks types.Blocks, receipts []typ
 
 			// Migrate from active db to ancient db
 			dl.ancientHeaders[blocks[i].Hash()] = blocks[i].Header()
-			dl.ancientChainTd[blocks[i].Hash()] = new(big.Int).Add(dl.ancientChainTd[blocks[i].ParentHash()], blocks[i].Difficulty())
+			dl.ancientChainTd[blocks[i].Hash()] = new(big.Int).Add(dl.ancientChainTd[blocks[i].ParentHash()], blocks[i].TotalDifficulty())
 			delete(dl.ownHeaders, blocks[i].Hash())
 			delete(dl.ownChainTd, blocks[i].Hash())
 		} else {
@@ -451,8 +451,8 @@ func (dlp *downloadTesterPeer) RequestHeadersByNumber(origin uint64, amount int,
 // peer in the download tester. The returned function can be used to retrieve
 // batches of block bodies from the particularly requested peer.
 func (dlp *downloadTesterPeer) RequestBodies(hashes []common.Hash) error {
-	txs, uncles := dlp.chain.bodies(hashes)
-	go dlp.dl.downloader.DeliverBodies(dlp.id, txs, uncles)
+	txs := dlp.chain.bodies(hashes)
+	go dlp.dl.downloader.DeliverBodies(dlp.id, txs, []*types.Randomness{}, []*types.EpochSnarkData{})
 	return nil
 }
 
@@ -762,7 +762,7 @@ func TestInactiveDownloader63(t *testing.T) {
 	if err := tester.downloader.DeliverHeaders("bad peer", []*types.Header{}); err != errNoSyncActive {
 		t.Errorf("error mismatch: have %v, want %v", err, errNoSyncActive)
 	}
-	if err := tester.downloader.DeliverBodies("bad peer", [][]*types.Transaction{}, [][]*types.Header{}); err != errNoSyncActive {
+	if err := tester.downloader.DeliverBodies("bad peer", [][]*types.Transaction{}, []*types.Randomness{}, []*types.EpochSnarkData{}); err != errNoSyncActive {
 		t.Errorf("error mismatch: have %v, want %v", err, errNoSyncActive)
 	}
 	if err := tester.downloader.DeliverReceipts("bad peer", [][]*types.Receipt{}); err != errNoSyncActive {
@@ -891,7 +891,7 @@ func testEmptyShortCircuit(t *testing.T, protocol uint, mode SyncMode) {
 	// Validate the number of block bodies that should have been requested
 	bodiesNeeded, receiptsNeeded := 0, 0
 	for _, block := range chain.blockm {
-		if mode != LightSync && block != tester.genesis && (len(block.Transactions()) > 0 || len(block.Uncles()) > 0) {
+		if mode != LightSync && block != tester.genesis && len(block.Transactions()) > 0 {
 			bodiesNeeded++
 		}
 	}
