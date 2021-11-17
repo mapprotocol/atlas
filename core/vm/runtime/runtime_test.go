@@ -18,7 +18,6 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"os"
 	"strings"
@@ -27,9 +26,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+
 	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/atlas/tracers"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/asm"
+	atlaschain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -219,7 +221,6 @@ func fakeHeader(n uint64, parentHash common.Hash) *types.Header {
 		Time:       1000,
 		Nonce:      types.BlockNonce{0x1},
 		Extra:      []byte{},
-		Difficulty: big.NewInt(0),
 		GasLimit:   100000,
 	}
 	return &header
@@ -294,7 +295,7 @@ func TestBlockhash(t *testing.T) {
 	input := common.Hex2Bytes("f8a8fd6d")
 	chain := &dummyChain{}
 	ret, _, err := Execute(data, input, &Config{
-		GetHashFn:   chain.GetHashFn(header, chain),
+		GetHashFn:   atlaschain.GetHashFn(header, chain),
 		BlockNumber: new(big.Int).Set(header.Number),
 	})
 	if err != nil {
