@@ -17,24 +17,26 @@
 package eth
 
 import (
-	"github.com/mapprotocol/atlas/core/chain"
 	"math"
 	"math/big"
 	"math/rand"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var (
@@ -69,9 +71,9 @@ func newTestBackendWithGenerator(blocks int, generator func(int, *chain.BlockGen
 		Alloc:  chain.GenesisAlloc{testAddr: {Balance: big.NewInt(1000000)}},
 	}).MustCommit(db)
 
-	block_chain, _ := chain.NewBlockChain(db, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+	block_chain, _ := chain.NewBlockChain(db, nil, params.TestChainConfig, consensustest.NewFaker(), vm.Config{}, nil, nil)
 
-	bs, _ := chain.GenerateChain(params.TestChainConfig, block_chain.Genesis(), ethash.NewFaker(), db, blocks, generator)
+	bs, _ := chain.GenerateChain(params.TestChainConfig, block_chain.Genesis(), consensustest.NewFaker(), db, blocks, generator)
 	if _, err := block_chain.InsertChain(bs); err != nil {
 		panic(err)
 	}
@@ -98,7 +100,7 @@ func (b *testBackend) TxPool() TxPool              { return b.txpool }
 func (b *testBackend) RunPeer(peer *Peer, handler Handler) error {
 	// Normally the backend would do peer mainentance and handshakes. All that
 	// is omitted and we will just give control back to the handler.
-	return handler(peer)
+	return handler(peer, consensustest.NewFaker())
 }
 func (b *testBackend) PeerInfo(enode.ID) interface{} { panic("not implemented") }
 
@@ -345,7 +347,7 @@ func testGetBlockBodies(t *testing.T, protocol uint) {
 					block := backend.chain.GetBlockByNumber(uint64(num))
 					hashes = append(hashes, block.Hash())
 					if len(bodies) < tt.expected {
-						bodies = append(bodies, &BlockBody{Transactions: block.Transactions(), Uncles: block.Uncles()})
+						bodies = append(bodies, &BlockBody{BlockHash: block.Hash(), Body: block.Body()})
 					}
 					break
 				}
@@ -355,7 +357,7 @@ func testGetBlockBodies(t *testing.T, protocol uint) {
 			hashes = append(hashes, hash)
 			if tt.available[j] && len(bodies) < tt.expected {
 				block := backend.chain.GetBlockByHash(hash)
-				bodies = append(bodies, &BlockBody{Transactions: block.Transactions(), Uncles: block.Uncles()})
+				bodies = append(bodies, &BlockBody{BlockHash: block.Hash(), Body: block.Body()})
 			}
 		}
 		// Send the hash request and verify the response
@@ -390,13 +392,13 @@ func testGetNodeData(t *testing.T, protocol uint) {
 		switch i {
 		case 0:
 			// In block 1, the test bank sends account #1 some ether.
-			tx, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(10000), params.TxGas, nil, nil), signer, testKey)
+			tx, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(10000), ethparams.TxGas, nil, nil), signer, testKey)
 			block.AddTx(tx)
 		case 1:
 			// In block 2, the test bank sends some more ether to account #1.
 			// acc1Addr passes it on to account #2.
-			tx1, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(1000), params.TxGas, nil, nil), signer, testKey)
-			tx2, _ := types.SignTx(types.NewTransaction(block.TxNonce(acc1Addr), acc2Addr, big.NewInt(1000), params.TxGas, nil, nil), signer, acc1Key)
+			tx1, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(1000), ethparams.TxGas, nil, nil), signer, testKey)
+			tx2, _ := types.SignTx(types.NewTransaction(block.TxNonce(acc1Addr), acc2Addr, big.NewInt(1000), ethparams.TxGas, nil, nil), signer, acc1Key)
 			block.AddTx(tx1)
 			block.AddTx(tx2)
 		case 2:
@@ -499,13 +501,13 @@ func testGetBlockReceipts(t *testing.T, protocol uint) {
 		switch i {
 		case 0:
 			// In block 1, the test bank sends account #1 some ether.
-			tx, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(10000), params.TxGas, nil, nil), signer, testKey)
+			tx, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(10000), ethparams.TxGas, nil, nil), signer, testKey)
 			block.AddTx(tx)
 		case 1:
 			// In block 2, the test bank sends some more ether to account #1.
 			// acc1Addr passes it on to account #2.
-			tx1, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(1000), params.TxGas, nil, nil), signer, testKey)
-			tx2, _ := types.SignTx(types.NewTransaction(block.TxNonce(acc1Addr), acc2Addr, big.NewInt(1000), params.TxGas, nil, nil), signer, acc1Key)
+			tx1, _ := types.SignTx(types.NewTransaction(block.TxNonce(testAddr), acc1Addr, big.NewInt(1000), ethparams.TxGas, nil, nil), signer, testKey)
+			tx2, _ := types.SignTx(types.NewTransaction(block.TxNonce(acc1Addr), acc2Addr, big.NewInt(1000), ethparams.TxGas, nil, nil), signer, acc1Key)
 			block.AddTx(tx1)
 			block.AddTx(tx2)
 		case 2:
