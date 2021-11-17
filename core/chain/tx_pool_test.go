@@ -20,7 +20,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -32,11 +31,27 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	ethparams "github.com/ethereum/go-ethereum/params"
+
+	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
+)
+
+var (
+	// ErrTipVeryHigh is a sanity error to avoid extremely big numbers specified
+	// in the tip field.
+	ErrTipVeryHigh = errors.New("max priority fee per gas higher than 2^256-1")
+	// ErrTipAboveFeeCap is a sanity error to ensure no one is able to specify a
+	// transaction with a tip higher than the total fee cap.
+	ErrTipAboveFeeCap = errors.New("max priority fee per gas higher than max fee per gas")
+
+	// ErrFeeCapVeryHigh is a sanity error to avoid extremely big numbers specified
+	// in the fee cap field.
+	ErrFeeCapVeryHigh = errors.New("max fee per gas higher than 2^256-1")
 )
 
 var (
@@ -47,10 +62,6 @@ var (
 	// eip1559Config is a chain config with EIP-1559 enabled at block 0.
 	eip1559Config *params.ChainConfig
 )
-
-// testTxPoolConfig is a transaction pool configuration without stateful disk
-// sideeffects used during testing.
-var testTxPoolConfig TxPoolConfig
 
 func init() {
 	testTxPoolConfig = DefaultTxPoolConfig
@@ -65,14 +76,13 @@ func init() {
 type testBlockChain struct {
 	gasLimit      uint64 // must be first field for 64 bit alignment (atomic access)
 	statedb       *state.StateDB
-	gasLimit      uint64
 	chainHeadFeed *event.Feed
 }
 
 func (bc *testBlockChain) CurrentBlock() *types.Block {
 	return types.NewBlock(&types.Header{
 		GasLimit: atomic.LoadUint64(&bc.gasLimit),
-	}, nil, nil, nil, trie.NewStackTrie(nil))
+	}, nil, nil, &types.Randomness{})
 }
 
 func (bc *testBlockChain) GetBlock(hash common.Hash, number uint64) *types.Block {
@@ -85,6 +95,10 @@ func (bc *testBlockChain) StateAt(common.Hash) (*state.StateDB, error) {
 
 func (bc *testBlockChain) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
 	return bc.chainHeadFeed.Subscribe(ch)
+}
+
+func (bc *testBlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner {
+	return nil
 }
 
 func transaction(nonce uint64, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
@@ -216,7 +230,7 @@ func (c *testChain) State() (*state.StateDB, error) {
 		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		// simulate that the new head block included tx0 and tx1
 		c.statedb.SetNonce(c.address, 2)
-		c.statedb.SetBalance(c.address, new(big.Int).SetUint64(params.Ether))
+		c.statedb.SetBalance(c.address, new(big.Int).SetUint64(ethparams.Ether))
 		*c.trigger = false
 	}
 	return stdb, nil
@@ -236,7 +250,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	)
 
 	// setup pool with 2 transaction in it
-	statedb.SetBalance(address, new(big.Int).SetUint64(params.Ether))
+	statedb.SetBalance(address, new(big.Int).SetUint64(ethparams.Ether))
 	blockchain := &testChain{&testBlockChain{1000000000, statedb, new(event.Feed)}, address, &trigger}
 
 	tx0 := transaction(0, 100000, key)
@@ -1459,7 +1473,7 @@ func TestTransactionPoolRepricingDynamicFee(t *testing.T) {
 	defer pool.Stop()
 
 	// Keep track of transaction events to ensure all executables get announced
-	events := make(chan NewTxsEvent, 32)
+	events := make(chan core.NewTxsEvent, 32)
 	sub := pool.txFeed.Subscribe(events)
 	defer sub.Unsubscribe()
 
@@ -1833,7 +1847,7 @@ func TestTransactionPoolUnderpricingDynamicFee(t *testing.T) {
 	pool.config.GlobalQueue = 2
 
 	// Keep track of transaction events to ensure all executables get announced
-	events := make(chan NewTxsEvent, 32)
+	events := make(chan core.NewTxsEvent, 32)
 	sub := pool.txFeed.Subscribe(events)
 	defer sub.Unsubscribe()
 
@@ -2141,7 +2155,7 @@ func TestTransactionReplacementDynamicFee(t *testing.T) {
 	testAddBalance(pool, crypto.PubkeyToAddress(key.PublicKey), big.NewInt(1000000000))
 
 	// Keep track of transaction events to ensure all executables get announced
-	events := make(chan NewTxsEvent, 32)
+	events := make(chan core.NewTxsEvent, 32)
 	sub := pool.txFeed.Subscribe(events)
 	defer sub.Unsubscribe()
 
