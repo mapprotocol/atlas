@@ -18,13 +18,11 @@ package rawdb
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
-	"io/ioutil"
+	"github.com/stretchr/testify/require"
 	"math/rand"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
