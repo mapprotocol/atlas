@@ -28,10 +28,12 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/mapprotocol/atlas/core/types"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // Tests block header storage and retrieval operations.
@@ -72,7 +74,7 @@ func TestBodyStorage(t *testing.T) {
 	db := NewMemoryDatabase()
 
 	// Create a test body to move around the database and make sure it's really new
-	body := &types.Body{Uncles: []*types.Header{{Extra: []byte("test header")}}}
+	body := &types.Body{Randomness: &types.Randomness{}, EpochSnarkData: &types.EpochSnarkData{}}
 
 	hasher := sha3.NewLegacyKeccak256()
 	rlp.Encode(hasher, body)
@@ -85,7 +87,7 @@ func TestBodyStorage(t *testing.T) {
 	WriteBody(db, hash, 0, body)
 	if entry := ReadBody(db, hash, 0); entry == nil {
 		t.Fatalf("Stored body not found")
-	} else if types.DeriveSha(types.Transactions(entry.Transactions), newHasher()) != types.DeriveSha(types.Transactions(body.Transactions), newHasher()) || types.CalcUncleHash(entry.Uncles) != types.CalcUncleHash(body.Uncles) {
+	} else if types.DeriveSha(types.Transactions(entry.Transactions), newHasher()) != types.DeriveSha(types.Transactions(body.Transactions), newHasher()) {
 		t.Fatalf("Retrieved body mismatch: have %v, want %v", entry, body)
 	}
 	if entry := ReadBodyRLP(db, hash, 0); entry == nil {
@@ -112,7 +114,6 @@ func TestBlockStorage(t *testing.T) {
 	// Create a test block to move around the database and make sure it's really new
 	block := types.NewBlockWithHeader(&types.Header{
 		Extra:       []byte("test block"),
-		UncleHash:   types.EmptyUncleHash,
 		TxHash:      types.EmptyRootHash,
 		ReceiptHash: types.EmptyRootHash,
 	})
@@ -139,7 +140,7 @@ func TestBlockStorage(t *testing.T) {
 	}
 	if entry := ReadBody(db, block.Hash(), block.NumberU64()); entry == nil {
 		t.Fatalf("Stored body not found")
-	} else if types.DeriveSha(types.Transactions(entry.Transactions), newHasher()) != types.DeriveSha(block.Transactions(), newHasher()) || types.CalcUncleHash(entry.Uncles) != types.CalcUncleHash(block.Uncles()) {
+	} else if types.DeriveSha(types.Transactions(entry.Transactions), newHasher()) != types.DeriveSha(block.Transactions(), newHasher()) {
 		t.Fatalf("Retrieved body mismatch: have %v, want %v", entry, block.Body())
 	}
 	// Delete the block and verify the execution
@@ -160,7 +161,6 @@ func TestPartialBlockStorage(t *testing.T) {
 	db := NewMemoryDatabase()
 	block := types.NewBlockWithHeader(&types.Header{
 		Extra:       []byte("test block"),
-		UncleHash:   types.EmptyUncleHash,
 		TxHash:      types.EmptyRootHash,
 		ReceiptHash: types.EmptyRootHash,
 	})
@@ -197,7 +197,6 @@ func TestBadBlockStorage(t *testing.T) {
 	block := types.NewBlockWithHeader(&types.Header{
 		Number:      big.NewInt(1),
 		Extra:       []byte("bad block"),
-		UncleHash:   types.EmptyUncleHash,
 		TxHash:      types.EmptyRootHash,
 		ReceiptHash: types.EmptyRootHash,
 	})
@@ -215,7 +214,6 @@ func TestBadBlockStorage(t *testing.T) {
 	blockTwo := types.NewBlockWithHeader(&types.Header{
 		Number:      big.NewInt(2),
 		Extra:       []byte("bad block two"),
-		UncleHash:   types.EmptyUncleHash,
 		TxHash:      types.EmptyRootHash,
 		ReceiptHash: types.EmptyRootHash,
 	})
@@ -234,7 +232,6 @@ func TestBadBlockStorage(t *testing.T) {
 		block := types.NewBlockWithHeader(&types.Header{
 			Number:      big.NewInt(int64(n)),
 			Extra:       []byte("bad block"),
-			UncleHash:   types.EmptyUncleHash,
 			TxHash:      types.EmptyRootHash,
 			ReceiptHash: types.EmptyRootHash,
 		})
@@ -449,7 +446,6 @@ func TestAncientStorage(t *testing.T) {
 	block := types.NewBlockWithHeader(&types.Header{
 		Number:      big.NewInt(0),
 		Extra:       []byte("test block"),
-		UncleHash:   types.EmptyUncleHash,
 		TxHash:      types.EmptyRootHash,
 		ReceiptHash: types.EmptyRootHash,
 	})
@@ -533,9 +529,8 @@ func TestCanonicalHashIteration(t *testing.T) {
 func TestHashesInRange(t *testing.T) {
 	mkHeader := func(number, seq int) *types.Header {
 		h := types.Header{
-			Difficulty: new(big.Int),
-			Number:     big.NewInt(int64(number)),
-			GasLimit:   uint64(seq),
+			Number:   big.NewInt(int64(number)),
+			GasLimit: uint64(seq),
 		}
 		return &h
 	}
@@ -645,7 +640,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 			Number: big.NewInt(int64(i)),
 			Extra:  []byte("test block"),
 		}
-		blocks[i] = types.NewBlockWithHeader(header).WithBody(txs, nil)
+		blocks[i] = types.NewBlockWithHeader(header).WithBody(txs, &types.Randomness{}, &types.EpochSnarkData{})
 		blocks[i].Hash() // pre-cache the block hash
 	}
 	return blocks
