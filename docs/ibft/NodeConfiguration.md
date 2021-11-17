@@ -123,8 +123,23 @@ func DefaultGenesisBlock() *Genesis {
 
 ## Start to mine
 
-Build it! go version cannot be less than 1.15.  
-To start a `atlas` instance for mining, run it with all your usual flags, extended by:
+Before start up, notify:
+- It needs to become validator.
+
+- It's best not to use `eth,personal` RPC  When node is unlocked.
+
+- If you need to use `eth,personal` RPC, it's best not to let anyone know in case someone transfers money without a password.
+
+After started up, input command `admin.nodeInfo` to get `enode` in atlas console, use command `admin.addPeer` to link four different nodes and wait for mining blocks.
+```
+admin.addPeer("enode://cb63c953384918826f4a9413ce54e255918027fe78e6ed1f65ce9705e2c434c57b6e8307044601d098489d243a298984afa4c7a8dcc862b38fc604e4050699e9@127.0.0.1:21221")
+admin.addPeer("enode://60e990d0b4ff7c8d9c0403feb7637c4d3f21f7a38777b776501bb09be05622a1ed1090da9cb77ba850fb6fcdea5416e84edcf0477cab8d81b2d19e6c1a813888@127.0.0.1:21222")
+admin.addPeer("enode://cd63432c612e3185e24b0be116c5e2a0804a94cb65cf0ba2787c42863bc577ef2004b04faa4e12ce1fcc2d5ff040e27241f354b62d7ab59cc6db63e2d2b19c9c@127.0.0.1:21223")
+admin.addPeer("enode://40d2dc2a51298f3d9e2eabea17ae20781cb65ceb351681db6ab45e8086ded21aa1fcac08767bab383dec89723565c9f161dbb3cfa7cfd8ef41d049cdf0f44f26@127.0.0.1:21224")
+```
+
+- example
+  To start a `atlas` instance for mining, run it with all your usual flags, extended by:
 
 ```shell
 $ atlas <usual-flags> --datadir ./data1 --ipcpath data1 --port 20201 --unlock 0x6c5938b49bacde73a8db7c3a7da208846898bff5 --mine --miner.etherbase 0x6c5938b49bacde73a8db7c3a7da208846898bff5 console
@@ -132,13 +147,3 @@ $ atlas <usual-flags> --datadir ./data1 --ipcpath data1 --port 20201 --unlock 0x
 
 Repeat four times to start up four different nodes, `miner.etherbase` params is just address we defined, `unlock` params is the same as `miner.etherbase`,
 it's better to has different `datadir` params every node, `ipcpath` params should be the same as `datadir`.
-
-After started up, input command `admin.nodeInfo` to get `enode` in atlas console, use command `admin.addPeer` to link four different nodes and wait for mining blocks.
-- example
-
-```
-admin.addPeer("enode://cb63c953384918826f4a9413ce54e255918027fe78e6ed1f65ce9705e2c434c57b6e8307044601d098489d243a298984afa4c7a8dcc862b38fc604e4050699e9@127.0.0.1:21221")
-admin.addPeer("enode://60e990d0b4ff7c8d9c0403feb7637c4d3f21f7a38777b776501bb09be05622a1ed1090da9cb77ba850fb6fcdea5416e84edcf0477cab8d81b2d19e6c1a813888@127.0.0.1:21222")
-admin.addPeer("enode://cd63432c612e3185e24b0be116c5e2a0804a94cb65cf0ba2787c42863bc577ef2004b04faa4e12ce1fcc2d5ff040e27241f354b62d7ab59cc6db63e2d2b19c9c@127.0.0.1:21223")
-admin.addPeer("enode://40d2dc2a51298f3d9e2eabea17ae20781cb65ceb351681db6ab45e8086ded21aa1fcac08767bab383dec89723565c9f161dbb3cfa7cfd8ef41d049cdf0f44f26@127.0.0.1:21224")
-```
