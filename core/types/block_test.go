@@ -26,9 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/mapprotocol/atlas/params"
 )
 
 // from bcValidBlockTest.json, "SimpleTx"
@@ -44,7 +45,6 @@ func TestBlockEncoding(t *testing.T) {
 			t.Errorf("%s mismatch: got %v, want %v", f, got, want)
 		}
 	}
-	check("Difficulty", block.Difficulty(), big.NewInt(131072))
 	check("GasLimit", block.GasLimit(), uint64(3141592))
 	check("GasUsed", block.GasUsed(), uint64(21000))
 	check("Coinbase", block.Coinbase(), common.HexToAddress("8888f1f195afa192cfee860698584c030f4c9db1"))
@@ -80,7 +80,6 @@ func TestEIP2718BlockEncoding(t *testing.T) {
 			t.Errorf("%s mismatch: got %v, want %v", f, got, want)
 		}
 	}
-	check("Difficulty", block.Difficulty(), big.NewInt(131072))
 	check("GasLimit", block.GasLimit(), uint64(3141592))
 	check("GasUsed", block.GasUsed(), uint64(42000))
 	check("Coinbase", block.Coinbase(), common.HexToAddress("8888f1f195afa192cfee860698584c030f4c9db1"))
@@ -126,15 +125,6 @@ func TestEIP2718BlockEncoding(t *testing.T) {
 	}
 	if !bytes.Equal(ourBlockEnc, blockEnc) {
 		t.Errorf("encoded block mismatch:\ngot:  %x\nwant: %x", ourBlockEnc, blockEnc)
-	}
-}
-
-func TestUncleHash(t *testing.T) {
-	uncles := make([]*Header, 0)
-	h := CalcUncleHash(uncles)
-	exp := common.HexToHash("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
-	if h != exp {
-		t.Fatalf("empty uncle hash is wrong, got %x != %x", h, exp)
 	}
 }
 
@@ -185,7 +175,6 @@ func makeBenchBlock() *Block {
 		uncles   = make([]*Header, 3)
 	)
 	header := &Header{
-		Difficulty: math.BigPow(11, 11),
 		Number:     math.BigPow(2, 9),
 		GasLimit:   12345678,
 		GasUsed:    1476322,
@@ -206,7 +195,6 @@ func makeBenchBlock() *Block {
 	}
 	for i := range uncles {
 		uncles[i] = &Header{
-			Difficulty: math.BigPow(11, 11),
 			Number:     math.BigPow(2, 9),
 			GasLimit:   12345678,
 			GasUsed:    1476322,
@@ -214,5 +202,5 @@ func makeBenchBlock() *Block {
 			Extra:      []byte("benchmark uncle"),
 		}
 	}
-	return NewBlock(header, txs, uncles, receipts, newHasher())
+	return NewBlock(header, txs, receipts, &Randomness{})
 }
