@@ -51,7 +51,6 @@ func benchRLP(b *testing.B, encode bool) {
 		{
 			"legacy-header",
 			&Header{
-				Difficulty: big.NewInt(10000000000),
 				Number:     big.NewInt(1000),
 				GasLimit:   8_000_000,
 				GasUsed:    8_000_000,
@@ -62,7 +61,6 @@ func benchRLP(b *testing.B, encode bool) {
 		{
 			"london-header",
 			&Header{
-				Difficulty: big.NewInt(10000000000),
 				Number:     big.NewInt(1000),
 				GasLimit:   8_000_000,
 				GasUsed:    8_000_000,
