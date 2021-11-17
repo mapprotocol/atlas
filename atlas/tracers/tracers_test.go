@@ -20,7 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/json"
-	"github.com/mapprotocol/atlas/core/chain"
+
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
@@ -32,13 +32,17 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/tests"
+
 	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // To generate a new callTracer test, copy paste the makeTest method below into
@@ -121,6 +125,28 @@ type callTracerTest struct {
 	Result  *callTrace     `json:"result"`
 }
 
+func MakePreState(db ethdb.Database, accounts chain.GenesisAlloc, snapshotter bool) (*snapshot.Tree, *state.StateDB) {
+	sdb := state.NewDatabase(db)
+	statedb, _ := state.New(common.Hash{}, sdb, nil)
+	for addr, a := range accounts {
+		statedb.SetCode(addr, a.Code)
+		statedb.SetNonce(addr, a.Nonce)
+		statedb.SetBalance(addr, a.Balance)
+		for k, v := range a.Storage {
+			statedb.SetState(addr, k, v)
+		}
+	}
+	// Commit and re-open to start with a clean state.
+	root, _ := statedb.Commit(false)
+
+	var snaps *snapshot.Tree
+	if snapshotter {
+		snaps, _ = snapshot.New(db, sdb.TrieDB(), 1, root, false, true, false)
+	}
+	statedb, _ = state.New(root, sdb, snaps)
+	return snaps, statedb
+}
+
 func TestPrestateTracerCreate2(t *testing.T) {
 	unsignedTx := types.NewTransaction(1, common.HexToAddress("0x00000000000000000000000000000000deadbeef"),
 		new(big.Int), 5000000, big.NewInt(1), []byte{})
@@ -171,16 +197,16 @@ func TestPrestateTracerCreate2(t *testing.T) {
 		Code:    []byte{},
 		Balance: big.NewInt(500000000000000),
 	}
-	_, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), alloc, false)
+	_, statedb := MakePreState(rawdb.NewMemoryDatabase(), alloc, false)
 
 	// Create the tracer, the EVM environment and run it
-	tracer, err := New("prestateTracer", txContext)
+	tracer, err := New("prestateTracer", new(Context))
 	if err != nil {
 		t.Fatalf("failed to create call tracer: %v", err)
 	}
 	evm := vm.NewEVM(context, txContext, statedb, params.MainnetChainConfig, vm.Config{Debug: true, Tracer: tracer})
 
-	msg, err := tx.AsMessage(signer)
+	msg, err := tx.AsMessage(signer, nil)
 	if err != nil {
 		t.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
@@ -250,7 +276,7 @@ func testCallTracer(tracer string, dirPath string, t *testing.T) {
 				Difficulty:  (*big.Int)(test.Context.Difficulty),
 				GasLimit:    uint64(test.Context.GasLimit),
 			}
-			_, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
+			_, statedb := MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
 
 			// Create the tracer, the EVM environment and run it
 			tracer, err := New(tracer, new(Context))
@@ -259,7 +285,7 @@ func testCallTracer(tracer string, dirPath string, t *testing.T) {
 			}
 			evm := vm.NewEVM(context, txContext, statedb, test.Genesis.Config, vm.Config{Debug: true, Tracer: tracer})
 
-			msg, err := tx.AsMessage(signer)
+			msg, err := tx.AsMessage(signer, nil)
 			if err != nil {
 				t.Fatalf("failed to prepare transaction for tracing: %v", err)
 			}
@@ -331,15 +357,15 @@ func BenchmarkTransactionTrace(b *testing.B) {
 		GasPrice: tx.GasPrice(),
 	}
 	context := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
+		CanTransfer: chain.CanTransfer,
+		Transfer:    chain.Transfer,
 		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(uint64(5)),
 		Time:        new(big.Int).SetUint64(uint64(5)),
 		Difficulty:  big.NewInt(0xffffffff),
 		GasLimit:    gas,
 	}
-	alloc := core.GenesisAlloc{}
+	alloc := chain.GenesisAlloc{}
 	// The code pushes 'deadbeef' into memory, then the other params, and calls CREATE2, then returns
 	// the address
 	loop := []byte{
@@ -347,17 +373,17 @@ func BenchmarkTransactionTrace(b *testing.B) {
 		byte(vm.PUSH1), 0, // jumpdestination
 		byte(vm.JUMP),
 	}
-	alloc[common.HexToAddress("0x00000000000000000000000000000000deadbeef")] = core.GenesisAccount{
+	alloc[common.HexToAddress("0x00000000000000000000000000000000deadbeef")] = chain.GenesisAccount{
 		Nonce:   1,
 		Code:    loop,
 		Balance: big.NewInt(1),
 	}
-	alloc[from] = core.GenesisAccount{
+	alloc[from] = chain.GenesisAccount{
 		Nonce:   1,
 		Code:    []byte{},
 		Balance: big.NewInt(500000000000000),
 	}
-	_, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), alloc, false)
+	_, statedb := MakePreState(rawdb.NewMemoryDatabase(), alloc, false)
 	// Create the tracer, the EVM environment and run it
 	tracer := vm.NewStructLogger(&vm.LogConfig{
 		Debug: false,
@@ -375,7 +401,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		snap := statedb.Snapshot()
-		st := core.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
+		st := chain.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
 		_, err = st.TransitionDb()
 		if err != nil {
 			b.Fatal(err)
@@ -429,15 +455,15 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 		GasPrice: tx.GasPrice(),
 	}
 	context := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
+		CanTransfer: chain.CanTransfer,
+		Transfer:    chain.Transfer,
 		Coinbase:    test.Context.Miner,
 		BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 		Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
 		Difficulty:  (*big.Int)(test.Context.Difficulty),
 		GasLimit:    uint64(test.Context.GasLimit),
 	}
-	_, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
+	_, statedb := MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
 
 	// Create the tracer, the EVM environment and run it
 	tracer, err := New(tracerName, new(Context))
@@ -450,7 +476,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		snap := statedb.Snapshot()
-		st := core.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
+		st := chain.NewStateTransition(evm, msg, new(core.GasPool).AddGas(tx.Gas()))
 		if _, err = st.TransitionDb(); err != nil {
 			b.Fatalf("failed to execute transaction: %v", err)
 		}
