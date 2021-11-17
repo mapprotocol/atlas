@@ -22,8 +22,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // Tests that the custom union field encoder and decoder works correctly.
@@ -135,12 +136,11 @@ func TestEth66Messages(t *testing.T) {
 		err error
 	)
 	header = &types.Header{
-		Difficulty: big.NewInt(2222),
-		Number:     big.NewInt(3333),
-		GasLimit:   4444,
-		GasUsed:    5555,
-		Time:       6666,
-		Extra:      []byte{0x77, 0x88},
+		Number:   big.NewInt(3333),
+		GasLimit: 4444,
+		GasUsed:  5555,
+		Time:     6666,
+		Extra:    []byte{0x77, 0x88},
 	}
 	// Init the transactions, taken from a different test
 	{
@@ -159,8 +159,12 @@ func TestEth66Messages(t *testing.T) {
 	}
 	// init the block body data, both object and rlp form
 	blockBody = &BlockBody{
-		Transactions: txs,
-		Uncles:       []*types.Header{header},
+		BlockHash: header.Hash(),
+		Body: &types.Body{
+			Transactions:   txs,
+			Randomness:     &types.Randomness{},
+			EpochSnarkData: &types.EpochSnarkData{},
+		},
 	}
 	blockBodyRlp, err = rlp.EncodeToBytes(blockBody)
 	if err != nil {

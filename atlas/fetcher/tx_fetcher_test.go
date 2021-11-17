@@ -18,7 +18,6 @@ package fetcher
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -26,6 +25,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
+
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 )
 
