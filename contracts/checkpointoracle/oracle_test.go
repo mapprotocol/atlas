@@ -29,11 +29,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
+
 	"github.com/mapprotocol/atlas/accounts/abi/bind"
 	"github.com/mapprotocol/atlas/accounts/abi/bind/backends"
 	"github.com/mapprotocol/atlas/contracts/checkpointoracle/contract"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/core/chain"
 )
 
 var (
@@ -175,7 +176,7 @@ func TestCheckpointRegister(t *testing.T) {
 	sort.Sort(accounts)
 
 	// Deploy registrar contract
-	contractBackend := backends.NewSimulatedBackend(core.GenesisAlloc{accounts[0].addr: {Balance: big.NewInt(1000000000)}, accounts[1].addr: {Balance: big.NewInt(1000000000)}, accounts[2].addr: {Balance: big.NewInt(1000000000)}})
+	contractBackend := backends.NewSimulatedBackend(chain.GenesisAlloc{accounts[0].addr: {Balance: big.NewInt(1000000000)}, accounts[1].addr: {Balance: big.NewInt(1000000000)}, accounts[2].addr: {Balance: big.NewInt(1000000000)}}, 2100000)
 	defer contractBackend.Close()
 
 	transactOpts := bind.NewKeyedTransactor(accounts[0].key)
