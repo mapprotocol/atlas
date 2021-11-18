@@ -21,10 +21,10 @@ import (
 	"reflect"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 var testAddresses = []string{
@@ -41,10 +41,10 @@ func TestStickyProposer(t *testing.T) {
 	for _, strAddr := range testAddresses {
 		addr := common.HexToAddress(strAddr)
 		addrs = append(addrs, addr)
-		validators = append(validators, New(addr, blscrypto.SerializedPublicKey{}))
+		validators = append(validators, New(addr, bls.SerializedPublicKey{}))
 	}
 
-	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]blscrypto.SerializedPublicKey, len(addrs)))
+	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)))
 	if err != nil {
 		t.Fatalf("CombineIstanbulExtraToValidatorData(...): %v", err)
 	}
@@ -98,10 +98,10 @@ func TestRoundRobinProposer(t *testing.T) {
 	for _, strAddr := range testAddresses {
 		addr := common.HexToAddress(strAddr)
 		addrs = append(addrs, addr)
-		validators = append(validators, New(addr, blscrypto.SerializedPublicKey{}))
+		validators = append(validators, New(addr, bls.SerializedPublicKey{}))
 	}
 
-	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]blscrypto.SerializedPublicKey, len(addrs)))
+	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)))
 	if err != nil {
 		t.Fatalf("CombineIstanbulExtraToValidatorData(...): %v", err)
 	}
@@ -155,10 +155,10 @@ func TestShuffledRoundRobinProposer(t *testing.T) {
 	for _, strAddr := range testAddresses {
 		addr := common.HexToAddress(strAddr)
 		addrs = append(addrs, addr)
-		validators = append(validators, New(addr, blscrypto.SerializedPublicKey{}))
+		validators = append(validators, New(addr, bls.SerializedPublicKey{}))
 	}
 
-	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]blscrypto.SerializedPublicKey, len(addrs)))
+	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)))
 	if err != nil {
 		t.Fatalf("CombineIstanbulExtraToValidatorData(...): %v", err)
 	}
