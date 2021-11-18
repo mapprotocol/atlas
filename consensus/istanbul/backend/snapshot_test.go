@@ -24,16 +24,17 @@ import (
 	"sort"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
-	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 type testerValSetDiff struct {
@@ -108,7 +109,7 @@ func convertValNamesToValidatorsData(accounts *testerAccountPool, valNames []str
 	for i, valName := range valNames {
 		returnArray[i] = istanbul.ValidatorData{
 			Address:      accounts.address(valName),
-			BLSPublicKey: blscrypto.SerializedPublicKey{},
+			BLSPublicKey: bls.SerializedPublicKey{},
 		}
 	}
 
@@ -222,12 +223,12 @@ func TestValSetChange(t *testing.T) {
 		for j, validator := range tt.validators {
 			validators[j] = istanbul.ValidatorData{
 				Address:      accounts.address(validator),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			}
 		}
 
 		// Create the genesis block with the initial set of validators
-		genesis := &core.Genesis{
+		genesis := &chain.Genesis{
 			Config: params.IstanbulTestChainConfig,
 		}
 		extra, _ := rlp.EncodeToBytes(&types.IstanbulExtra{})
@@ -288,7 +289,7 @@ func TestValSetChange(t *testing.T) {
 
 			ist := &types.IstanbulExtra{
 				AddedValidators:           convertValNames(accounts, valsetdiff.addedValidators),
-				AddedValidatorsPublicKeys: make([]blscrypto.SerializedPublicKey, len(valsetdiff.addedValidators)),
+				AddedValidatorsPublicKeys: make([]bls.SerializedPublicKey, len(valsetdiff.addedValidators)),
 				RemovedValidators:         convertValNamesToRemovedValidators(accounts, oldVals, valsetdiff.removedValidators),
 				AggregatedSeal:            types.IstanbulAggregatedSeal{},
 				ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
@@ -329,7 +330,7 @@ func TestValSetChange(t *testing.T) {
 		for j, validator := range tt.results {
 			validators[j] = istanbul.ValidatorData{
 				Address:      accounts.address(validator),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			}
 		}
 		result := snap.validators()
@@ -356,11 +357,11 @@ func TestSaveAndLoad(t *testing.T) {
 		ValSet: validator.NewSet([]istanbul.ValidatorData{
 			{
 				Address:      common.BytesToAddress([]byte("1234567894")),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			},
 			{
 				Address:      common.BytesToAddress([]byte("1234567895")),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			},
 		}),
 	}
