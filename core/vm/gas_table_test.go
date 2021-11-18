@@ -24,8 +24,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/mapprotocol/atlas/core/rawdb"
+
 	"github.com/mapprotocol/atlas/core/state"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 func TestMemoryGasCost(t *testing.T) {
