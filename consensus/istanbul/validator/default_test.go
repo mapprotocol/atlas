@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 var (
@@ -50,7 +51,7 @@ func testNewValidatorSet(t *testing.T) {
 	for i := 0; i < ValCnt; i++ {
 		key, _ := crypto.GenerateKey()
 		blsPrivateKey, _ := blscrypto.ECDSAToBLS(key)
-		blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+		blsPublicKey, _ := bls.PrivateToPublic(blsPrivateKey)
 		addr := crypto.PubkeyToAddress(key.PublicKey)
 		val := New(addr, blsPublicKey)
 		b = append(b, val.Address().Bytes()...)
@@ -70,10 +71,10 @@ func testNormalValSet(t *testing.T) {
 	b2 := common.Hex2Bytes(testAddress2)
 	addr1 := common.BytesToAddress(b1)
 	addr2 := common.BytesToAddress(b2)
-	val1 := New(addr1, blscrypto.SerializedPublicKey{})
-	val2 := New(addr2, blscrypto.SerializedPublicKey{})
+	val1 := New(addr1, bls.SerializedPublicKey{})
+	val2 := New(addr2, bls.SerializedPublicKey{})
 
-	validators, _ := istanbul.CombineIstanbulExtraToValidatorData([]common.Address{addr1, addr2}, []blscrypto.SerializedPublicKey{{}, {}})
+	validators, _ := istanbul.CombineIstanbulExtraToValidatorData([]common.Address{addr1, addr2}, []bls.SerializedPublicKey{{}, {}})
 	valSet := newDefaultSet(validators)
 	if valSet == nil {
 		t.Errorf("the format of validator set is invalid")
@@ -116,7 +117,7 @@ func testAddAndRemoveValidator(t *testing.T) {
 		[]istanbul.ValidatorData{
 			{
 				Address:      common.BytesToAddress([]byte(string(rune(3)))),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			},
 		},
 	) {
@@ -126,7 +127,7 @@ func testAddAndRemoveValidator(t *testing.T) {
 		[]istanbul.ValidatorData{
 			{
 				Address:      common.BytesToAddress([]byte(string(rune(3)))),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			},
 		},
 	) {
@@ -136,11 +137,11 @@ func testAddAndRemoveValidator(t *testing.T) {
 		[]istanbul.ValidatorData{
 			{
 				Address:      common.BytesToAddress([]byte(string(rune(2)))),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			},
 			{
 				Address:      common.BytesToAddress([]byte(string(rune(1)))),
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			},
 		},
 	)
@@ -179,7 +180,7 @@ func generateValidators(n int) ([]istanbul.ValidatorData, [][]byte) {
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
 		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-		blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+		blsPublicKey, _ := bls.PrivateToPublic(blsPrivateKey)
 		vals = append(vals, istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
 			BLSPublicKey: blsPublicKey,
@@ -215,7 +216,7 @@ func testQuorumSizes(t *testing.T) {
 
 func TestValidatorRLPEncoding(t *testing.T) {
 
-	val := New(common.BytesToAddress([]byte(string(rune(2)))), blscrypto.SerializedPublicKey{1, 2, 3})
+	val := New(common.BytesToAddress([]byte(string(rune(2)))), bls.SerializedPublicKey{1, 2, 3})
 
 	rawVal, err := rlp.EncodeToBytes(val)
 	if err != nil {
@@ -235,8 +236,8 @@ func TestValidatorRLPEncoding(t *testing.T) {
 func TestValidatorSetRLPEncoding(t *testing.T) {
 
 	valSet := NewSet([]istanbul.ValidatorData{
-		{Address: common.BytesToAddress([]byte(string(rune(2)))), BLSPublicKey: blscrypto.SerializedPublicKey{1, 2, 3}},
-		{Address: common.BytesToAddress([]byte(string(rune(4)))), BLSPublicKey: blscrypto.SerializedPublicKey{3, 1, 4}},
+		{Address: common.BytesToAddress([]byte(string(rune(2)))), BLSPublicKey: bls.SerializedPublicKey{1, 2, 3}},
+		{Address: common.BytesToAddress([]byte(string(rune(4)))), BLSPublicKey: bls.SerializedPublicKey{3, 1, 4}},
 	})
 
 	rawVal, err := rlp.EncodeToBytes(valSet)
