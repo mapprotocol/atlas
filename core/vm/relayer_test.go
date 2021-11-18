@@ -2,22 +2,23 @@ package vm
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/core/state"
-	params2 "github.com/mapprotocol/atlas/params"
-	"math/big"
-	"strings"
-	"testing"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var (
-	testABI2, _        = abi.JSON(strings.NewReader(params2.RelayerABIJSON))
+	testABI2, _        = abi.JSON(strings.NewReader(params.RelayerABIJSON))
 	priKey, _          = crypto.GenerateKey()
 	from               = crypto.PubkeyToAddress(priKey.PublicKey)
 	pub                = crypto.FromECDSAPub(&priKey.PublicKey)
@@ -32,7 +33,7 @@ func TestContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	input, err := relayerABI.Pack("register", pub, new(big.Int).SetUint64(fee), value)
@@ -57,7 +58,7 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	register := NewRegisterImpl()
@@ -79,12 +80,12 @@ func TestRegister(t *testing.T) {
 	//query epoch
 	fmt.Println()
 	//save data
-	err = register.Save(evm.StateDB, params2.RelayerAddress)
+	err = register.Save(evm.StateDB, params.RelayerAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//load data
-	err = register.Load(evm.StateDB, params2.RelayerAddress)
+	err = register.Load(evm.StateDB, params.RelayerAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +115,7 @@ func TestSaveAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	//evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	//register := NewRegisterImpl()
 	register := RegisterImpl{
@@ -123,12 +124,12 @@ func TestSaveAndLoad(t *testing.T) {
 		accounts:   make(map[uint64]Register),
 	}
 	//save data
-	err = register.Save(statedb, params2.RelayerAddress)
+	err = register.Save(statedb, params.RelayerAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//load data
-	err = register.Load(statedb, params2.RelayerAddress)
+	err = register.Load(statedb, params.RelayerAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +185,7 @@ func TestRegisterDoElections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(" FirstEpochID:", params2.FirstNewEpochID)
+	fmt.Println(" FirstEpochID:", params.FirstNewEpochID)
 	fmt.Println(" epoch 1 ", GetEpochFromID(1))
 	fmt.Println(" epoch 2 ", GetEpochFromID(2))
 	fmt.Println(" epoch 3 ", GetEpochFromID(3))
@@ -292,7 +293,7 @@ func TestGetBalance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	//evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 
 	register := NewRegisterImpl()
@@ -308,26 +309,26 @@ func TestStateDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	reg := NewRegisterImpl()
 	reg.curEpochID = 11223
-	if err := reg.Save(statedb, params2.RelayerAddress); err != nil {
+	if err := reg.Save(statedb, params.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	reg.curEpochID = 2
-	if err := reg.Load(statedb, params2.RelayerAddress); err != nil {
+	if err := reg.Load(statedb, params.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 
 	fmt.Println("------------------------------")
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	hs := NewHeaderStore()
 	//hs.epoch2reward[11233] = big.NewInt(11233)
-	if err := hs.Store(statedb, params2.RelayerAddress); err != nil {
+	if err := hs.Store(statedb, params.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	//hs.epoch2reward[2] = big.NewInt(2)
-	if err := hs.Load(statedb, params2.RelayerAddress); err != nil {
+	if err := hs.Load(statedb, params.RelayerAddress); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	fmt.Println(reg)
