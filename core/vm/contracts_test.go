@@ -20,16 +20,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/state"
-	params2 "github.com/mapprotocol/atlas/params"
 	"io/ioutil"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // precompiledTest defines the input/output pairs for precompiled contract tests.
@@ -99,7 +99,7 @@ var blake2FMalformedInputTests = []precompiledFailureTest{
 func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	contract := NewContract(nil, nil, big.NewInt(0), 0)
 
@@ -126,7 +126,7 @@ func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
 func testPrecompiledOOG(addr string, test precompiledTest, t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	contract := NewContract(nil, nil, big.NewInt(0), 0)
 
@@ -150,7 +150,7 @@ func testPrecompiledOOG(addr string, test precompiledTest, t *testing.T) {
 func testPrecompiledFailure(addr string, test precompiledFailureTest, t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	statedb.GetOrNewStateObject(params2.RelayerAddress)
+	statedb.GetOrNewStateObject(params.RelayerAddress)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 	contract := NewContract(nil, nil, big.NewInt(0), 0)
 
@@ -187,7 +187,7 @@ func benchmarkPrecompiled(addr string, test precompiledTest, bench *testing.B) {
 	bench.Run(fmt.Sprintf("%s-Gas=%d", test.Name, reqGas), func(bench *testing.B) {
 		db := rawdb.NewMemoryDatabase()
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-		statedb.GetOrNewStateObject(params2.RelayerAddress)
+		statedb.GetOrNewStateObject(params.RelayerAddress)
 		evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
 		contract := NewContract(nil, nil, big.NewInt(0), 0)
 
