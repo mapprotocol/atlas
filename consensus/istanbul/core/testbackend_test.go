@@ -26,7 +26,7 @@ import (
 	"time"
 
 	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	"github.com/celo-org/celo-bls-go/bls"
+	celobls "github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -40,6 +40,7 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 // ErrorReporter is the intersection of the testing.B and testing.T interfaces.
@@ -158,15 +159,15 @@ func (self *testSystemBackend) Gossip(payload []byte, ethMsgCode uint64) error {
 	return nil
 }
 
-func (self *testSystemBackend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
-	privateKey, _ := bls.DeserializePrivateKey(self.blsKey)
+func (self *testSystemBackend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
+	privateKey, _ := celobls.DeserializePrivateKey(self.blsKey)
 	defer privateKey.Destroy()
 
 	signature, _ := privateKey.SignMessage(data, extra, useComposite, cip22)
 	defer signature.Destroy()
 	signatureBytes, _ := signature.Serialize()
 
-	return blscrypto.SerializedSignatureFromBytes(signatureBytes)
+	return bls.SerializedSignatureFromBytes(signatureBytes)
 }
 
 func (self *testSystemBackend) Commit(proposal istanbul.Proposal, aggregatedSeal types.IstanbulAggregatedSeal, aggregatedEpochValidatorSetSeal types.IstanbulEpochValidatorSetSeal, stateProcessResult *StateProcessResult) error {
@@ -376,7 +377,7 @@ func generateValidators(n int) ([]istanbul.ValidatorData, [][]byte, []*ecdsa.Pri
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
 		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-		blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+		blsPublicKey, _ := bls.PrivateToPublic(blsPrivateKey)
 		vals = append(vals, istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
 			BLSPublicKey: blsPublicKey,
