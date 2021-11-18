@@ -22,16 +22,17 @@ import (
 	"testing"
 	"time"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
+	. "github.com/onsi/gomega"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/core"
 	bccore "github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/types"
-	. "github.com/onsi/gomega"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 func stopEngine(engine *Backend) {
@@ -341,7 +342,7 @@ func TestPrepareExtra(t *testing.T) {
 
 	extra, err := rlp.EncodeToBytes(&types.IstanbulExtra{
 		AddedValidators:           []common.Address{},
-		AddedValidatorsPublicKeys: []blscrypto.SerializedPublicKey{},
+		AddedValidatorsPublicKeys: []bls.SerializedPublicKey{},
 		RemovedValidators:         big.NewInt(0),
 		Seal:                      []byte{},
 		AggregatedSeal:            types.IstanbulAggregatedSeal{},
@@ -383,7 +384,7 @@ func TestWriteSeal(t *testing.T) {
 			common.HexToAddress("0x6beaaed781d2d2ab6350f5c4566a2c6eaac407a6"),
 			common.HexToAddress("0x8be76812f765c24641ec63dc2852b378aba2b440"),
 		},
-		AddedValidatorsPublicKeys: []blscrypto.SerializedPublicKey{},
+		AddedValidatorsPublicKeys: []bls.SerializedPublicKey{},
 		RemovedValidators:         big.NewInt(12), // 1100, remove third and fourth validators
 		Seal:                      []byte{},
 		AggregatedSeal:            types.IstanbulAggregatedSeal{Bitmap: big.NewInt(0), Signature: []byte{}, Round: big.NewInt(0)},
@@ -426,7 +427,7 @@ func TestWriteAggregatedSeal(t *testing.T) {
 			common.HexToAddress("0x6beaaed781d2d2ab6350f5c4566a2c6eaac407a6"),
 			common.HexToAddress("0x8be76812f765c24641ec63dc2852b378aba2b440"),
 		},
-		AddedValidatorsPublicKeys: []blscrypto.SerializedPublicKey{},
+		AddedValidatorsPublicKeys: []bls.SerializedPublicKey{},
 		RemovedValidators:         big.NewInt(12), // 1100, remove third and fourth validators
 		Seal:                      []byte{},
 		AggregatedSeal:            types.IstanbulAggregatedSeal{},
