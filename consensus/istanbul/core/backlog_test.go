@@ -18,12 +18,12 @@ package core
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 	"reflect"
 	"testing"
 	"time"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	elog "github.com/ethereum/go-ethereum/log"
@@ -229,8 +229,8 @@ func TestStoreBacklog(t *testing.T) {
 		Round:    big.NewInt(12),
 		Sequence: big.NewInt(11),
 	}
-	p1 := validator.New(common.BytesToAddress([]byte("12345667890")), blscrypto.SerializedPublicKey{})
-	p2 := validator.New(common.BytesToAddress([]byte("47324349949")), blscrypto.SerializedPublicKey{})
+	p1 := validator.New(common.BytesToAddress([]byte("12345667890")), bls.SerializedPublicKey{})
+	p2 := validator.New(common.BytesToAddress([]byte("47324349949")), bls.SerializedPublicKey{})
 
 	mPreprepare := istanbul.NewPreprepareMessage(
 		&istanbul.Preprepare{View: v10, Proposal: makeBlock(10)},
@@ -299,7 +299,7 @@ func TestClearBacklogForSequence(t *testing.T) {
 	).(*msgBacklogImpl)
 
 	// The backlog's state is sequence number 1, round 0.  Store future messages with sequence number 2
-	p1 := validator.New(common.BytesToAddress([]byte("12345667890")), blscrypto.SerializedPublicKey{})
+	p1 := validator.New(common.BytesToAddress([]byte("12345667890")), bls.SerializedPublicKey{})
 
 	mPreprepare := istanbul.NewPreprepareMessage(
 		&istanbul.Preprepare{
