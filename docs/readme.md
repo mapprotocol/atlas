@@ -14,13 +14,25 @@ Once the dependencies are installed, run
 
 ## Running atlas
 
-Going `atlas -h` can get help infos.
+- Normal node
 
-### Running on the atlas main network
+  example command:
+  `atlas <usual-flags> --datadir ./data1 --port 20201 --rpc console`
 
-```
-$ atlas console
-```
+- Miner node
+  
+  Notify! It needs to become validator. 
+
+  It's best not to use `eth,personal` RPC  When node is unlocked. 
+  
+  If you need to use `eth,personal` RPC, it's best not to let anyone know in case someone transfers money without a password.
+  
+  example command:
+  `atlas <usual-flags> --datadir ./data1 --port 20201 --unlock 0x6c5938b49bacde73a8db7c3a7da208846898bff5 --mine --miner.etherbase 0x6c5938b49bacde73a8db7c3a7da208846898bff5`
+
+- Other help
+
+  Going `atlas -h` can get help infos.
 
 ## Cross Chain Interface
 
