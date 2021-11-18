@@ -20,13 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/mapprotocol/atlas/consensus/istanbul"
-	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 )
 
@@ -263,123 +259,6 @@ OUTER:
 		}
 		if signedCount < r0.current.ValidatorSet().MinQuorumSize() {
 			t.Errorf("the expected signed count should be greater than or equal to %v, but got %v", r0.current.ValidatorSet().MinQuorumSize(), signedCount)
-		}
-	}
-}
-
-// round is not checked for now
-func TestVerifyCommit(t *testing.T) {
-	// for log purpose
-	privateKey, _ := crypto.GenerateKey()
-	blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-	blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
-	peer := validator.New(getPublicKeyAddress(privateKey), blsPublicKey)
-	valSet := validator.NewSet([]istanbul.ValidatorData{
-		{
-			Address:      peer.Address(),
-			BLSPublicKey: blsPublicKey,
-		},
-	})
-	// }, istanbul.RoundRobin)
-
-	sys := NewTestSystemWithBackend(uint64(1), uint64(0))
-
-	testCases := []struct {
-		expected   error
-		commit     *istanbul.CommittedSubject
-		roundState RoundState
-	}{
-		{
-			// normal case
-			expected: nil,
-			commit: &istanbul.CommittedSubject{
-				Subject: &istanbul.Subject{
-					View:   &istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(0)},
-					Digest: newTestProposal().Hash(),
-				},
-			},
-			roundState: newTestRoundState(
-				&istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(0)},
-				valSet,
-			),
-		},
-		{
-			// old message
-			expected: errInconsistentSubject,
-			commit: &istanbul.CommittedSubject{
-				Subject: &istanbul.Subject{
-					View:   &istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(0)},
-					Digest: newTestProposal().Hash(),
-				},
-			},
-			roundState: newTestRoundState(
-				&istanbul.View{Round: big.NewInt(1), Sequence: big.NewInt(1)},
-				valSet,
-			),
-		},
-		{
-			// different digest
-			expected: errInconsistentSubject,
-			commit: &istanbul.CommittedSubject{
-				Subject: &istanbul.Subject{
-					View:   &istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(0)},
-					Digest: common.BytesToHash([]byte("1234567890")),
-				},
-			},
-			roundState: newTestRoundState(
-				&istanbul.View{Round: big.NewInt(1), Sequence: big.NewInt(1)},
-				valSet,
-			),
-		},
-		{
-			// malicious package(lack of sequence)
-			expected: errInconsistentSubject,
-			commit: &istanbul.CommittedSubject{
-				Subject: &istanbul.Subject{
-					View:   &istanbul.View{Round: big.NewInt(0), Sequence: nil},
-					Digest: newTestProposal().Hash(),
-				},
-			},
-			roundState: newTestRoundState(
-				&istanbul.View{Round: big.NewInt(1), Sequence: big.NewInt(1)},
-				valSet,
-			),
-		},
-		{
-			// wrong prepare message with same sequence but different round
-			expected: errInconsistentSubject,
-			commit: &istanbul.CommittedSubject{
-				Subject: &istanbul.Subject{
-					View:   &istanbul.View{Round: big.NewInt(1), Sequence: big.NewInt(0)},
-					Digest: newTestProposal().Hash(),
-				},
-			},
-			roundState: newTestRoundState(
-				&istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(0)},
-				valSet,
-			),
-		},
-		{
-			// wrong prepare message with same round but different sequence
-			expected: errInconsistentSubject,
-			commit: &istanbul.CommittedSubject{
-				Subject: &istanbul.Subject{
-					View:   &istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(1)},
-					Digest: newTestProposal().Hash(),
-				},
-			},
-			roundState: newTestRoundState(
-				&istanbul.View{Round: big.NewInt(0), Sequence: big.NewInt(0)},
-				valSet,
-			),
-		},
-	}
-	for i, test := range testCases {
-		c := sys.backends[0].engine.(*core)
-		c.current = test.roundState
-
-		if err := c.verifyCommit(test.commit); err != test.expected {
-			t.Errorf("result %d: error mismatch: have %v, want %v", i, err, test.expected)
 		}
 	}
 }
