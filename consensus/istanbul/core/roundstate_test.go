@@ -8,19 +8,19 @@ import (
 	"strings"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 func TestRoundStateRLPEncoding(t *testing.T) {
 	dummyRoundState := func() RoundState {
 		valSet := validator.NewSet([]istanbul.ValidatorData{
-			{Address: common.HexToAddress("2"), BLSPublicKey: blscrypto.SerializedPublicKey{1, 2, 3}},
-			{Address: common.HexToAddress("4"), BLSPublicKey: blscrypto.SerializedPublicKey{3, 1, 4}},
+			{Address: common.HexToAddress("2"), BLSPublicKey: bls.SerializedPublicKey{1, 2, 3}},
+			{Address: common.HexToAddress("4"), BLSPublicKey: bls.SerializedPublicKey{3, 1, 4}},
 		})
 		view := &istanbul.View{Round: big.NewInt(1), Sequence: big.NewInt(2)}
 		return newRoundState(view, valSet, valSet.GetByIndex(0))
@@ -101,7 +101,7 @@ func TestRoundStateSummary(t *testing.T) {
 
 		valData := make([]istanbul.ValidatorData, len(validatorAddresses))
 		for i, addr := range validatorAddresses {
-			valData[i] = istanbul.ValidatorData{Address: addr, BLSPublicKey: blscrypto.SerializedPublicKey{1, 2, 3}}
+			valData[i] = istanbul.ValidatorData{Address: addr, BLSPublicKey: bls.SerializedPublicKey{1, 2, 3}}
 		}
 		valSet := validator.NewSet(valData)
 
