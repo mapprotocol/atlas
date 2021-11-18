@@ -20,8 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 func TestValidatorSetDiff(t *testing.T) {
@@ -113,14 +114,14 @@ func TestValidatorSetDiff(t *testing.T) {
 		for _, addr := range tt.inputOldValset {
 			convertedInputOldValSet = append(convertedInputOldValSet, ValidatorData{
 				Address:      addr,
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			})
 		}
 		convertedInputNewValSet := []ValidatorData{}
 		for _, addr := range tt.inputNewValset {
 			convertedInputNewValSet = append(convertedInputNewValSet, ValidatorData{
 				Address:      addr,
-				BLSPublicKey: blscrypto.SerializedPublicKey{},
+				BLSPublicKey: bls.SerializedPublicKey{},
 			})
 		}
 		addedVals, removedVals := ValidatorSetDiff(convertedInputOldValSet, convertedInputNewValSet)
