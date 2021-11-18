@@ -56,7 +56,7 @@ func FundAccounts(genesisConfig *Config, accounts []env.Account) {
 	for i, acc := range accounts {
 		cusdBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k cUSD
 		ceurBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k cEUR
-		goldBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k CELO
+		goldBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k Atlas
 	}
 	genesisConfig.StableTokenEUR.InitialBalances = ceurBalances
 	genesisConfig.StableToken.InitialBalances = cusdBalances

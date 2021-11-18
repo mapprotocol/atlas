@@ -85,7 +85,7 @@ First, you need to configure the nodes (this will run `geth init`, configure `st
 marker validator-init --geth path/to/geth/binary path/to/env
 ```
 
-**NOTE**: If you don't specify geth binary path. It will attempt to use `$CELO_BLOCKCHAIN/build/bin/geth`
+**NOTE**: If you don't specify geth binary path. It will attempt to use `$ATLAS_BLOCKCHAIN/build/bin/geth`
 
 
 And then, run the nodes:

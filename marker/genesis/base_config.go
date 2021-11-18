@@ -39,7 +39,7 @@ func BaseConfig() *Config {
 			},
 		},
 		StableToken: StableTokenParameters{
-			Name:                        "Celo Dollar",
+			Name:                        "Atlas Dollar",
 			Symbol:                      "cUSD",
 			Decimals:                    18,
 			Rate:                        fixed("1"),
@@ -48,7 +48,7 @@ func BaseConfig() *Config {
 			ExchangeIdentifier:          "Exchange",
 		},
 		StableTokenEUR: StableTokenParameters{
-			Name:                        "Celo Euro",
+			Name:                        "Atlas Euro",
 			Symbol:                      "cEUR",
 			Decimals:                    18,
 			Rate:                        fixed("1"),
@@ -58,11 +58,11 @@ func BaseConfig() *Config {
 		},
 		Validators: ValidatorsParameters{
 			GroupLockedGoldRequirements: LockedGoldRequirements{
-				Value:    bigIntStr("10000000000000000000000"), // 10k CELO per validator
+				Value:    bigIntStr("10000000000000000000000"), // 10k Atlas per validator
 				Duration: 180 * Day,
 			},
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
-				Value: bigIntStr("10000000000000000000000"), // 10k CELO
+				Value: bigIntStr("10000000000000000000000"), // 10k Atlas
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
 				Duration: 60 * Day,
 			},

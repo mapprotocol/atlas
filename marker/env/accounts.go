@@ -34,7 +34,7 @@ func NewMnemonic() (string, error) {
 	return bip39.NewMnemonic(entropy)
 }
 
-// Account represents a Celo Account
+// Account represents a atlas Account
 type Account struct {
 	Address    common.Address
 	PrivateKey *ecdsa.PrivateKey

@@ -95,7 +95,7 @@ var loadTestSkipGasEstimationFlag = cli.BoolFlag{
 
 var loadTestMixFeeCurrencyFlag = cli.BoolFlag{
 	Name:  "mixfeecurrency",
-	Usage: "Switches between paying for gas in cUSD and CELO",
+	Usage: "Switches between paying for gas in cUSD and ATLAS",
 }
 
 var initValidatorsCommand = cli.Command{
@@ -161,9 +161,9 @@ func readWorkdir(ctx *cli.Context) (string, error) {
 func readGethPath(ctx *cli.Context) (string, error) {
 	gethPath := ctx.String(gethPathFlag.Name)
 	if gethPath == "" {
-		gethPath = path.Join(os.Getenv("CELO_BLOCKCHAIN"), "build/bin/geth")
+		gethPath = path.Join(os.Getenv("ATLAS_BLOCKCHAIN"), "build/bin/geth")
 		if fileutils.FileExists(gethPath) {
-			log.Info("Missing --geth flag, using CELO_BLOCKCHAIN derived path", "geth", gethPath)
+			log.Info("Missing --geth flag, using ATLAS_BLOCKCHAIN derived path", "geth", gethPath)
 		} else {
 			return "", fmt.Errorf("Missing --geth flag")
 		}
