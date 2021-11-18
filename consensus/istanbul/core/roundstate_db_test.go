@@ -6,16 +6,16 @@ import (
 	"math/rand"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/params/bls"
 )
 
 func TestRSDBRoundStateDB(t *testing.T) {
-	pubkey1 := blscrypto.SerializedPublicKey{1, 2, 3}
-	pubkey2 := blscrypto.SerializedPublicKey{3, 1, 4}
+	pubkey1 := bls.SerializedPublicKey{1, 2, 3}
+	pubkey2 := bls.SerializedPublicKey{3, 1, 4}
 	dummyRoundState := func() RoundState {
 		valSet := validator.NewSet([]istanbul.ValidatorData{
 			{Address: common.BytesToAddress([]byte(string(rune(2)))), BLSPublicKey: pubkey1},
@@ -56,8 +56,8 @@ func TestRSDBRoundStateDB(t *testing.T) {
 }
 
 func TestRSDBDeleteEntriesOlderThan(t *testing.T) {
-	pubkey1 := blscrypto.SerializedPublicKey{1, 2, 3}
-	pubkey2 := blscrypto.SerializedPublicKey{3, 1, 4}
+	pubkey1 := bls.SerializedPublicKey{1, 2, 3}
+	pubkey2 := bls.SerializedPublicKey{3, 1, 4}
 	createRoundState := func(view *istanbul.View) RoundState {
 		valSet := validator.NewSet([]istanbul.ValidatorData{
 			{Address: common.BytesToAddress([]byte(string(rune(2)))), BLSPublicKey: pubkey1},
@@ -131,8 +131,8 @@ func TestRSDBKeyEncodingOrder(t *testing.T) {
 }
 
 func TestRSDBGetOldestValidView(t *testing.T) {
-	pubkey1 := blscrypto.SerializedPublicKey{1, 2, 3}
-	pubkey2 := blscrypto.SerializedPublicKey{3, 1, 4}
+	pubkey1 := bls.SerializedPublicKey{1, 2, 3}
+	pubkey2 := bls.SerializedPublicKey{3, 1, 4}
 	valSet := validator.NewSet([]istanbul.ValidatorData{
 		{Address: common.BytesToAddress([]byte(string(rune(2)))), BLSPublicKey: pubkey1},
 		{Address: common.BytesToAddress([]byte(string(rune(4)))), BLSPublicKey: pubkey2},
