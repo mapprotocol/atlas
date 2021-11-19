@@ -149,9 +149,7 @@ aware of and agree upon. This consists of a small JSON file (e.g. call it `genes
 }
 ```
 
-The above fields should be fine for most purposes, although we'd recommend changing
-the `nonce` to some random value so you prevent unknown remote nodes from being able
-to connect to you. If you'd like to pre-fund some accounts for easier testing, create
+If you'd like to pre-fund some accounts for easier testing, create
 the accounts and populate the `alloc` field with their addresses.
 
 ```json
@@ -186,10 +184,15 @@ do also specify a custom `--datadir` flag.
 $ atlas --datadir=path/to/custom/data/folder --bootnodes=<bootnode-enode-url-from-above>
 ```
 
+Repeat four times,the nodes connect to each other for IBFT consensus.
+
 *Note: Since your network will be completely cut off from the main and test networks, you'll
 also need to configure a miner to process transactions and create new blocks for you.*
 
 #### Running a private miner
+
+First, it needs to become a validator.
+See https://github.com/mapprotocol/atlas/blob/main/docs/ibft/NodeConfiguration.md
 
 Mining on the public Atlas network is a complex task as it's only feasible using GPUs,
 requiring an OpenCL or CUDA enabled `ethminer` instance. For information on such a setup, please consult the EtherMining subreddit and the ethminer repository.
