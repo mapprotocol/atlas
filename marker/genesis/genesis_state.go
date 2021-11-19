@@ -45,14 +45,10 @@ func generateGenesisState(accounts *env.AccountsConfig, cfg *Config, buildPath s
 
 // NewDeployment generates a new deployment
 func newDeployment(genesisConfig *Config, accounts *env.AccountsConfig, buildPath string) *deployContext {
-	benchDataDir := "/root/data_ibft888"
-
-	db, _ := rawdb.NewLevelDBDatabase(benchDataDir, 128, 1024, "", false)
-
 	logger := log.New("obj", "deployment")
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
-	adminAddress := accounts.AdminAccount().Address
+	adminAddress := Admin_my.Address
 
 	logger.Info("New deployment", "admin_address", adminAddress.Hex())
 	return &deployContext{
@@ -215,9 +211,9 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 	return genesisAlloc, nil
 }
 
-// Initialize Admin
+// Initialize Admin_my
 func (ctx *deployContext) fundAdminAccount() {
-	ctx.statedb.SetBalance(ctx.accounts.AdminAccount().Address, new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(Admin_my.Address, new(big.Int).Set(adminGoldBalance)) //todo zhangwei
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -240,7 +236,7 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 
 	logger.Info("Deploy Proxy")
 	ctx.statedb.SetCode(proxyAddress, proxyByteCode)
-	ctx.statedb.SetState(proxyAddress, proxyOwnerStorageLocation, ctx.accounts.AdminAccount().Address.Hash())
+	ctx.statedb.SetState(proxyAddress, proxyOwnerStorageLocation, Admin_my.Address.Hash()) // todo Admin_my zhangwei
 
 	logger.Info("Deploy Implementation")
 	ctx.statedb.SetCode(implAddress, bytecode)
@@ -342,7 +338,7 @@ func (ctx *deployContext) deployGovernanceApproverMultiSig() error {
 }
 
 func (ctx *deployContext) deployGovernance() error {
-	approver := ctx.accounts.AdminAccount().Address
+	approver := Admin_my.Address // todo Admin_my zhangwei
 	if ctx.genesisConfig.Governance.UseMultiSig {
 		approver = env.MustProxyAddressFor("GovernanceApproverMultiSig")
 	}
@@ -808,7 +804,7 @@ func (ctx *deployContext) createAccounts(accs []env.Account, namePrefix string) 
 }
 
 func (ctx *deployContext) registerValidators() error {
-	validatorAccounts := ctx.accounts.ValidatorAccounts()
+	validatorAccounts := Validators_my
 	requiredAmount := ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value
 
 	if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
@@ -846,7 +842,7 @@ func (ctx *deployContext) registerValidators() error {
 }
 
 func (ctx *deployContext) registerValidatorGroups() error {
-	validatorGroupsAccounts := ctx.accounts.ValidatorGroupAccounts()
+	validatorGroupsAccounts := Groups_my
 
 	if err := ctx.createAccounts(validatorGroupsAccounts, "group"); err != nil {
 		return err
@@ -857,6 +853,7 @@ func (ctx *deployContext) registerValidatorGroups() error {
 
 	groupRequiredGold := new(big.Int).Mul(
 		ctx.genesisConfig.Validators.GroupLockedGoldRequirements.Value,
+		//big.NewInt(int64(ctx.accounts.ValidatorsPerGroup)),
 		big.NewInt(int64(ctx.accounts.ValidatorsPerGroup)),
 	)
 	groupCommission := ctx.genesisConfig.Validators.Commission.BigInt()
@@ -883,8 +880,8 @@ func (ctx *deployContext) registerValidatorGroups() error {
 
 func (ctx *deployContext) addValidatorsToGroups() error {
 	validators := ctx.contract("Validators")
-
-	validatorGroups := ctx.accounts.ValidatorGroups()
+	ctx.accounts.ValidatorGroups()
+	validatorGroups := getValidatorGroup()
 	for groupIdx, group := range validatorGroups {
 		groupAddress := group.Address
 		prevGroupAddress := params.ZeroAddress
@@ -924,7 +921,7 @@ func (ctx *deployContext) addValidatorsToGroups() error {
 func (ctx *deployContext) voteForGroups() error {
 	election := ctx.contract("Election")
 
-	validatorGroups := ctx.accounts.ValidatorGroupAccounts()
+	validatorGroups := Groups_my
 
 	// value previously locked on registerValidatorGroups()
 	lockedGoldOnGroup := new(big.Int).Mul(
@@ -1036,4 +1033,26 @@ func (ctx *deployContext) verifyState() error {
 	//fmt.Println(out)
 
 	return nil
+}
+
+func getValidatorGroup() []env.ValidatorGroup {
+	groupAccounts := Groups_my
+	groups := make([]env.ValidatorGroup, 1)
+
+	validatorAccounts := Validators_my
+
+	for i := 0; i < (len(groups) - 1); i++ {
+		groups[i] = env.ValidatorGroup{
+			Account:    groupAccounts[i],
+			Validators: validatorAccounts[:4],
+		}
+	}
+
+	// last group might not be full, use an open slice for Validators_my
+	i := len(groups) - 1
+	groups[i] = env.ValidatorGroup{
+		Account:    groupAccounts[i],
+		Validators: validatorAccounts[:4],
+	}
+	return groups
 }

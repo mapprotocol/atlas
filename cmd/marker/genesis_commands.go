@@ -17,6 +17,14 @@ var templateFlags = []cli.Flag{
 		Name:  "template",
 		Usage: "Optional template to use (default: local)",
 	},
+	cli.StringFlag{
+		Name:  "ValidatorsKeyDir",
+		Usage: "Optional template to use (default: local)",
+	},
+	cli.StringFlag{
+		Name:  "GroupsKeyDir",
+		Usage: "Optional template to use (default: local)",
+	},
 	cli.IntFlag{
 		Name:  "validators",
 		Usage: "Number of Validators",
@@ -155,7 +163,7 @@ func createGenesis(ctx *cli.Context) error {
 		return err
 	}
 
-	generatedGenesis, err := genesis.GenerateGenesis(env.Accounts(), genesisConfig, buildpath)
+	generatedGenesis, err := genesis.GenerateGenesis(ctx, env.Accounts(), genesisConfig, buildpath)
 	if err != nil {
 		return err
 	}
@@ -208,7 +216,7 @@ func createGenesisFromConfig(ctx *cli.Context) error {
 		return err
 	}
 
-	genesis, err := genesis.GenerateGenesis(env.Accounts(), genesisConfig, buildpath)
+	genesis, err := genesis.GenerateGenesis(ctx, env.Accounts(), genesisConfig, buildpath)
 	if err != nil {
 		return err
 	}

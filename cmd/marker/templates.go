@@ -33,11 +33,11 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 	envCfg := &env.Config{
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
-			NumValidators:        3,
-			ValidatorsPerGroup:   1,
+			NumValidators:        4, // todo zhangwei
+			ValidatorsPerGroup:   4,
 			NumDeveloperAccounts: 10,
 		},
-		ChainID: big.NewInt(1000 * (1 + rand.Int63n(9999))),
+		ChainID: big.NewInt(211),
 	}
 	env, err := env.New(workdir, envCfg)
 	if err != nil {
@@ -85,7 +85,7 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, env.Accounts().AdminAccount().Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.Admin_my.Address, params.IstanbulConfig{
 		Epoch:          1000,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
@@ -130,7 +130,7 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, env.Accounts().AdminAccount().Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.Admin_my.Address, params.IstanbulConfig{
 		Epoch:          10,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
