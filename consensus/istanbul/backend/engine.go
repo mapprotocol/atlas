@@ -444,14 +444,12 @@ func (sb *Backend) EpochSize() uint64 {
 func (sb *Backend) LookbackWindow(header *types.Header, state *state.StateDB) uint64 {
 	// Check if donut was already active at the beginning of the epoch
 	// as we want to activate the change at epoch change
-	firstBlockOfEpoch := istanbul.MustGetEpochFirstBlockGivenBlockNumber(header.Number.Uint64(), sb.config.Epoch)
-	cip21Activated := sb.chain.Config().IsDonut(new(big.Int).SetUint64(firstBlockOfEpoch))
 
 	vmRunner := sb.chain.NewEVMRunner(header, state)
 	return uptime.ComputeLookbackWindow(
 		sb.config.Epoch,
 		sb.config.DefaultLookbackWindow,
-		cip21Activated,
+		false,
 		func() (uint64, error) { return blockchain_parameters.GetLookbackWindow(vmRunner) },
 	)
 }

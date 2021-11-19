@@ -605,18 +605,6 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (*istanbulCore.StateProces
 		return nil, 0, errMismatchTxhashes
 	}
 
-	// If the current block occurred before the Donut hard fork, check that the author and coinbase are equal.
-	if !sb.chain.Config().IsDonut(block.Number()) {
-		addr, err := sb.Author(block.Header())
-		if err != nil {
-			sb.logger.Error("Could not recover original author of the block to verify against the header's coinbase", "err", err, "func", "Verify")
-			return nil, 0, errInvalidProposal
-		} else if addr != block.Header().Coinbase {
-			sb.logger.Error("Block proposal author and coinbase must be the same when Donut hard fork is active")
-			return nil, 0, errInvalidCoinbase
-		}
-	}
-
 	err := sb.VerifyHeader(sb.chain, block.Header(), false)
 
 	// ignore errEmptyAggregatedSeal error because we don't have the committed seals yet

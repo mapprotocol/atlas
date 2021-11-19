@@ -234,11 +234,6 @@ func (c *ChainConfig) IsLondon(num *big.Int) bool {
 	return isForked(c.LondonBlock, num)
 }
 
-// IsDonut returns whether num represents a block number after the Donut fork
-func (c *ChainConfig) IsDonut(num *big.Int) bool {
-	return isForked(c.DonutBlock, num)
-}
-
 // IsCatalyst returns whether num is either equal to the Merge fork block or greater.
 func (c *ChainConfig) IsCatalyst(num *big.Int) bool {
 	return isForked(c.CatalystBlock, num)

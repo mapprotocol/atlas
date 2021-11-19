@@ -396,7 +396,7 @@ func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core
 
 	w.mu.RLock()
 	txFeeRecipient := w.txFeeRecipient
-	if !w.chainConfig.IsDonut(b.header.Number) && w.txFeeRecipient != w.coinbase {
+	if w.txFeeRecipient != w.coinbase {
 		txFeeRecipient = w.coinbase
 		log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the coinbase.")
 	}
