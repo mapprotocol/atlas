@@ -33,7 +33,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 	envCfg := &env.Config{
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
-			NumValidators:        4, // todo zhangwei
+			NumValidators:        4,
 			ValidatorsPerGroup:   4,
 			NumDeveloperAccounts: 10,
 		},
@@ -85,7 +85,7 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.Admin_my.Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
 		Epoch:          1000,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
@@ -130,7 +130,7 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.Admin_my.Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
 		Epoch:          10,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,

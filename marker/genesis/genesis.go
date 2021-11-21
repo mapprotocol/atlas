@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -16,7 +17,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"math/big"
-	"path/filepath"
 	"time"
 )
 
@@ -24,9 +24,9 @@ import (
 //var genesisMsgHash = bytes.Repeat([]byte{0x00}, 32)
 
 var genesisMsgHash = common.HexToHash("ecc833a7747eaa8327335e8e0c6b6d8aa3a38d0063591e43ce116ccf5c89753e")
-var Validators_my []env.Account
-var Groups_my []env.Account
-var Admin_my env.Account
+
+var GroupsAT []env.Account
+var AdminAT env.Account
 
 // CreateCommonGenesisConfig generates a config starting point which templates can then customize further
 func CreateCommonGenesisConfig(chainID *big.Int, adminAccountAddress common.Address, istanbulConfig params.IstanbulConfig) *Config {
@@ -76,12 +76,10 @@ func FundAccounts(genesisConfig *Config, accounts []env.Account) {
 // GenerateGenesis will create a new genesis block with full atlas blockchain already configured
 func GenerateGenesis(ctx *cli.Context, accounts *env.AccountsConfig, cfg *Config, contractsBuildPath string) (*chain.Genesis, error) {
 	////////////////////////////////////////////////////////////////////////
-	Validators_my = loadValidators(ctx)
-	//Validators_my = append(Validators_my, loadValidators2(ctx)...)
-	Groups_my = loadGroups(ctx)
-	Admin_my = Validators_my[0]
+	UnmarshalMarkerConfig()
 	////////////////////////////////////////////////////////////////////////
-	extraData, err := generateGenesisExtraData(Validators_my[:4])
+	ValidatorsAT := getValidators(GroupsAT[0].Address)
+	extraData, err := generateGenesisExtraData(ValidatorsAT[:4])
 	//fmt.Println("extraData: ", hexutil.Encode(extraData))
 	if err != nil {
 		return nil, err
@@ -95,7 +93,7 @@ func GenerateGenesis(ctx *cli.Context, accounts *env.AccountsConfig, cfg *Config
 	return &chain.Genesis{
 		Config:    cfg.ChainConfig(),
 		ExtraData: extraData,
-		Coinbase:  Admin_my.Address,
+		Coinbase:  AdminAT.Address,
 		Timestamp: cfg.GenesisTimestamp,
 		Alloc:     genesisAlloc,
 	}, nil
@@ -136,34 +134,55 @@ func generateGenesisExtraData(validatorAccounts []env.Account) ([]byte, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-func loadValidators(ctx *cli.Context) []env.Account {
-	keyDir := ""
-	if ctx.IsSet("ValidatorsKeyDir") {
-		keyDir = ctx.String("ValidatorsKeyDir")
-	}
-	return loadPrivate(keyDir, 4, "")
+
+type AccoutInfo struct {
+	Account  string
+	Password string
+}
+type Groups []struct {
+	Group      AccoutInfo
+	Validators []AccoutInfo
+}
+type MarkerInfo struct {
+	AdminInfo AccoutInfo
+	Groups    Groups
 }
 
-func loadGroups(ctx *cli.Context) []env.Account {
-	keyDir := ""
-	if ctx.IsSet("GroupsKeyDir") {
-		keyDir = ctx.String("GroupsKeyDir")
-	}
-	return loadPrivate(keyDir, 1, "")
-}
-func loadPrivate(keyDir string, num int, password string) []env.Account {
-	files, err := ioutil.ReadDir(keyDir)
+var Validators map[common.Address][]env.Account
+
+func UnmarshalMarkerConfig() {
+	keyDir := fmt.Sprintf("../atlas/marker/config/markerConfig.json")
+	data, err := ioutil.ReadFile(keyDir)
 	if err != nil {
-		return nil
+		log.Crit(" readFile Err:", "err:", err.Error())
 	}
+
+	markerCfg := &MarkerInfo{}
+	_ = json.Unmarshal(data, markerCfg)
+
+	var tt []AccoutInfo
+	var ttt [][]AccoutInfo
+	for _, v := range (*markerCfg).Groups {
+		tt = append(tt, v.Group)
+		ttt = append(ttt, v.Validators)
+	}
+	GroupsAT = loadPrivate(tt)
+	Validators = make(map[common.Address][]env.Account)
+	for i, v := range GroupsAT {
+		Validators[v.Address] = loadPrivate(ttt[i])
+	}
+	AdminAT = loadPrivate([]AccoutInfo{markerCfg.AdminInfo})[0]
+}
+func loadPrivate(paths []AccoutInfo) []env.Account {
+	num := len(paths)
 	accounts := make([]env.Account, num)
-	for i, fi := range files {
-		path := filepath.Join(keyDir, fi.Name())
+	for i, v := range paths {
+		path := v.Account
 		keyjson, err := ioutil.ReadFile(path)
 		if err != nil {
 			log.Error("loadPrivate ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
 		}
-		key, err := keystore.DecryptKey(keyjson, password)
+		key, err := keystore.DecryptKey(keyjson, v.Password)
 		if err != nil {
 			log.Error("loadPrivate DecryptKey", fmt.Errorf("error decrypting key: %v", err))
 		}
@@ -177,4 +196,8 @@ func loadPrivate(keyDir string, num int, password string) []env.Account {
 		}
 	}
 	return accounts
+}
+
+func getValidators(address common.Address) []env.Account {
+	return Validators[address]
 }

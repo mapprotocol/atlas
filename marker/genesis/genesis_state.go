@@ -48,7 +48,7 @@ func newDeployment(genesisConfig *Config, accounts *env.AccountsConfig, buildPat
 	logger := log.New("obj", "deployment")
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
-	adminAddress := Admin_my.Address
+	adminAddress := AdminAT.Address
 
 	logger.Info("New deployment", "admin_address", adminAddress.Hex())
 	return &deployContext{
@@ -211,9 +211,9 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 	return genesisAlloc, nil
 }
 
-// Initialize Admin_my
+// Initialize AdminAT
 func (ctx *deployContext) fundAdminAccount() {
-	ctx.statedb.SetBalance(Admin_my.Address, new(big.Int).Set(adminGoldBalance)) //todo zhangwei
+	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance)) //todo zhangwei
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -236,7 +236,7 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 
 	logger.Info("Deploy Proxy")
 	ctx.statedb.SetCode(proxyAddress, proxyByteCode)
-	ctx.statedb.SetState(proxyAddress, proxyOwnerStorageLocation, Admin_my.Address.Hash()) // todo Admin_my zhangwei
+	ctx.statedb.SetState(proxyAddress, proxyOwnerStorageLocation, AdminAT.Address.Hash())
 
 	logger.Info("Deploy Implementation")
 	ctx.statedb.SetCode(implAddress, bytecode)
@@ -338,7 +338,7 @@ func (ctx *deployContext) deployGovernanceApproverMultiSig() error {
 }
 
 func (ctx *deployContext) deployGovernance() error {
-	approver := Admin_my.Address // todo Admin_my zhangwei
+	approver := AdminAT.Address
 	if ctx.genesisConfig.Governance.UseMultiSig {
 		approver = env.MustProxyAddressFor("GovernanceApproverMultiSig")
 	}
@@ -804,37 +804,46 @@ func (ctx *deployContext) createAccounts(accs []env.Account, namePrefix string) 
 }
 
 func (ctx *deployContext) registerValidators() error {
-	validatorAccounts := Validators_my
-	requiredAmount := ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value
+	registerValidatorAT := func(ValidatorsAT []env.Account) error {
+		validatorAccounts := ValidatorsAT
+		requiredAmount := ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value
 
-	if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
-		return err
+		if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
+			return err
+		}
+
+		lockedGold := ctx.contract("LockedGold")
+		validators := ctx.contract("Validators")
+
+		for _, validator := range validatorAccounts {
+			address := validator.Address
+			logger := ctx.logger.New("validator", address)
+
+			ctx.statedb.AddBalance(address, requiredAmount)
+
+			logger.Info("Lock validator gold", "amount", requiredAmount)
+			if _, err := lockedGold.Call(contract.CallOpts{Origin: address, Value: requiredAmount}, "lock"); err != nil {
+				return err
+			}
+
+			logger.Info("Register validator")
+			blsPub, err := validator.BLSPublicKey()
+			if err != nil {
+				return err
+			}
+
+			// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
+			pubKey := validator.PublicKey()[1:]
+			err = validators.SimpleCallFrom(address, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	}
-
-	lockedGold := ctx.contract("LockedGold")
-	validators := ctx.contract("Validators")
-
-	for _, validator := range validatorAccounts {
-		address := validator.Address
-		logger := ctx.logger.New("validator", address)
-
-		ctx.statedb.AddBalance(address, requiredAmount)
-
-		logger.Info("Lock validator gold", "amount", requiredAmount)
-		if _, err := lockedGold.Call(contract.CallOpts{Origin: address, Value: requiredAmount}, "lock"); err != nil {
-			return err
-		}
-
-		logger.Info("Register validator")
-		blsPub, err := validator.BLSPublicKey()
-		if err != nil {
-			return err
-		}
-
-		// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
-		pubKey := validator.PublicKey()[1:]
-		err = validators.SimpleCallFrom(address, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
-		if err != nil {
+	for _, v := range GroupsAT {
+		ValidatorsAT := getValidators(v.Address)
+		if err := registerValidatorAT(ValidatorsAT); err != nil {
 			return err
 		}
 	}
@@ -842,7 +851,7 @@ func (ctx *deployContext) registerValidators() error {
 }
 
 func (ctx *deployContext) registerValidatorGroups() error {
-	validatorGroupsAccounts := Groups_my
+	validatorGroupsAccounts := GroupsAT
 
 	if err := ctx.createAccounts(validatorGroupsAccounts, "group"); err != nil {
 		return err
@@ -853,7 +862,6 @@ func (ctx *deployContext) registerValidatorGroups() error {
 
 	groupRequiredGold := new(big.Int).Mul(
 		ctx.genesisConfig.Validators.GroupLockedGoldRequirements.Value,
-		//big.NewInt(int64(ctx.accounts.ValidatorsPerGroup)),
 		big.NewInt(int64(ctx.accounts.ValidatorsPerGroup)),
 	)
 	groupCommission := ctx.genesisConfig.Validators.Commission.BigInt()
@@ -921,7 +929,7 @@ func (ctx *deployContext) addValidatorsToGroups() error {
 func (ctx *deployContext) voteForGroups() error {
 	election := ctx.contract("Election")
 
-	validatorGroups := Groups_my
+	validatorGroups := GroupsAT
 
 	// value previously locked on registerValidatorGroups()
 	lockedGoldOnGroup := new(big.Int).Mul(
@@ -1036,23 +1044,22 @@ func (ctx *deployContext) verifyState() error {
 }
 
 func getValidatorGroup() []env.ValidatorGroup {
-	groupAccounts := Groups_my
+	groupAccounts := GroupsAT
 	groups := make([]env.ValidatorGroup, 1)
-
-	validatorAccounts := Validators_my
-
 	for i := 0; i < (len(groups) - 1); i++ {
+		tt := getValidators(groupAccounts[i].Address)
 		groups[i] = env.ValidatorGroup{
 			Account:    groupAccounts[i],
-			Validators: validatorAccounts[:4],
+			Validators: tt,
 		}
 	}
 
-	// last group might not be full, use an open slice for Validators_my
+	// last group might not be full, use an open slice for ValidatorsAT
 	i := len(groups) - 1
+	tt := getValidators(groupAccounts[i].Address)
 	groups[i] = env.ValidatorGroup{
 		Account:    groupAccounts[i],
-		Validators: validatorAccounts[:4],
+		Validators: tt,
 	}
 	return groups
 }
