@@ -336,7 +336,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	if london {
 		effectiveTip = cmath.BigMin(st.gasTipCap, new(big.Int).Sub(st.gasFeeCap, st.evm.Context.BaseFee))
 	}
-	st.state.AddBalance(st.evm.Context.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), effectiveTip))
+	// burn all tips
+	st.state.AddBalance(common.Address{}, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), effectiveTip))
 
 	return &ExecutionResult{
 		UsedGas:    st.gasUsed(),
