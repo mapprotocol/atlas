@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var _ = (*genesisSpecMarshaling)(nil)
@@ -33,7 +33,7 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 		BaseFee    *math.HexOrDecimal256                       `json:"baseFeePerGas"`
 	}
 	var enc Genesis
-	//enc.Config = g.Config
+	enc.Config = g.Config
 	enc.Nonce = math.HexOrDecimal64(g.Nonce)
 	enc.Timestamp = math.HexOrDecimal64(g.Timestamp)
 	enc.ExtraData = g.ExtraData
@@ -76,7 +76,7 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 		return err
 	}
 	if dec.Config != nil {
-		//g.Config = dec.Config
+		g.Config = dec.Config
 	}
 	if dec.Nonce != nil {
 		g.Nonce = uint64(*dec.Nonce)
