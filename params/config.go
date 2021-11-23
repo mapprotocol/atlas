@@ -95,7 +95,7 @@ var (
 			LookbackWindow: 12,
 		},
 	}
-	MainnetNetWorkID uint64 = 177
+	MainnetNetWorkID uint64 = 22776
 	TestnetWorkID    uint64 = 212
 	DevnetWorkID     uint64 = 213
 	SingleWorkID     uint64 = 214
