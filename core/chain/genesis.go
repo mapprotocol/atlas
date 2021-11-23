@@ -51,6 +51,8 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 var (
 	faucetAddr    = common.HexToAddress("0xf675187ff5b76d2430b353f6736aa051253118ee")
 	faucetBalance = new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18))
+	// private key: baf7c2008a568f91a75caf45b6e849b953513c10b5f3d73270d40c62a4ff5002
+	tempAddr = common.HexToAddress("0xd13fe09e7a304709b1c4ed6bd3a2d6c272357bbb")
 )
 
 // Genesis specifies the header fields, state of a genesis block. It also defines hard
@@ -385,8 +387,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	ga := genesisRegisterProxyContract()
-	// faucet
-	ga[faucetAddr] = GenesisAccount{Balance: faucetBalance}
+	ga[tempAddr] = GenesisAccount{Balance: faucetBalance}
 
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
