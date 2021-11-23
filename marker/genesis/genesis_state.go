@@ -213,7 +213,7 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 
 // Initialize AdminAT
 func (ctx *deployContext) fundAdminAccount() {
-	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance)) //todo zhangwei
+	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
