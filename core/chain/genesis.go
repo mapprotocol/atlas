@@ -402,7 +402,12 @@ func DefaultGenesisBlock() *Genesis {
 		// add genesis contract to allc
 		dr[addr] = allc
 	}
-
+	// add genesis contract to allc
+	DefaultAlloc := &GenesisAlloc{}
+	DefaultAlloc.UnmarshalJSON([]byte(mainnetAllocJSON))
+	for k, v := range *DefaultAlloc {
+		dr[k] = v
+	}
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
 		Nonce:     66,

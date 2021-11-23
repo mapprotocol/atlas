@@ -20,12 +20,6 @@ package atlas
 import (
 	"errors"
 	"fmt"
-	"math/big"
-	"runtime"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -36,6 +30,11 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"math/big"
+	"runtime"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/apis/atlasapi"

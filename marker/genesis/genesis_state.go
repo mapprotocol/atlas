@@ -194,7 +194,7 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		}
 
 		if dumpAcc.Code != nil {
-			account.Code = common.Hex2Bytes(dumpAcc.Code.String())
+			account.Code = dumpAcc.Code
 		}
 
 		if len(dumpAcc.Storage) > 0 {
