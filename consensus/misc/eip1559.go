@@ -85,10 +85,11 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
 		y := x.Div(x, parentGasTargetBig)
 		baseFeeDelta := x.Div(y, baseFeeChangeDenominator)
-
-		return math.BigMax(
-			x.Sub(parent.BaseFee, baseFeeDelta),
-			common.Big0,
-		)
+		bf := math.BigMax(x.Sub(parent.BaseFee, baseFeeDelta), common.Big0)
+		if bf.Cmp(params.Base) > -1 {
+			return bf
+		} else {
+			return params.Base
+		}
 	}
 }
