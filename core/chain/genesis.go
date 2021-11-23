@@ -384,13 +384,16 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
+	ga := genesisRegisterProxyContract()
+	// faucet
+	ga[faucetAddr] = GenesisAccount{Balance: faucetBalance}
 
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
 		Nonce:     66,
 		ExtraData: hexutil.MustDecode(mainnetExtraData),
 		GasLimit:  50000000,
-		Alloc:     genesisRegisterProxyContract(),
+		Alloc:     ga,
 	}
 }
 
