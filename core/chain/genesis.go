@@ -99,14 +99,14 @@ type GenesisAccount struct {
 
 // field type overrides for gencodec
 type genesisSpecMarshaling struct {
-	Nonce      math.HexOrDecimal64
-	Timestamp  math.HexOrDecimal64
-	ExtraData  hexutil.Bytes
-	GasLimit   math.HexOrDecimal64
-	GasUsed    math.HexOrDecimal64
-	Number     math.HexOrDecimal64
-	BaseFee    *math.HexOrDecimal256
-	Alloc      map[common.UnprefixedAddress]GenesisAccount
+	Nonce     math.HexOrDecimal64
+	Timestamp math.HexOrDecimal64
+	ExtraData hexutil.Bytes
+	GasLimit  math.HexOrDecimal64
+	GasUsed   math.HexOrDecimal64
+	Number    math.HexOrDecimal64
+	BaseFee   *math.HexOrDecimal256
+	Alloc     map[common.UnprefixedAddress]GenesisAccount
 }
 
 type genesisAccountMarshaling struct {
@@ -294,18 +294,6 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(g.Number))
 	register := vm.NewRegisterImpl()
-	hh := g.Number
-	relayer := defaultRelayer2()
-	for _, member := range relayer {
-		var err error
-		err = register.InsertAccount2(hh, member.Coinbase, params.ElectionMinLimitForRegister)
-		if err != nil {
-			log.Error("ToBlock InsertAccount", "error", err)
-		} else {
-			vm.GenesisAddLockedBalance(statedb, member.Coinbase, params.ElectionMinLimitForRegister)
-		}
-	}
-	//	fmt.Println("DoElection")
 	_, err = register.DoElections(statedb, 1, 0)
 	if err != nil {
 		log.Error("ToBlock DoElections", "error", err)
@@ -396,18 +384,13 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
-	dr := defaultRelayer()
-	for addr, allc := range genesisRegisterProxyContract() {
-		// add genesis contract to allc
-		dr[addr] = allc
-	}
 
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
 		Nonce:     66,
 		ExtraData: hexutil.MustDecode(mainnetExtraData),
 		GasLimit:  50000000,
-		Alloc:     dr,
+		Alloc:     genesisRegisterProxyContract(),
 	}
 }
 
