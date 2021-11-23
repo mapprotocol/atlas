@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,9 +22,9 @@ import (
 )
 
 // Keccak256 of "The Times 09/Apr/2020 With $2.3 Trillion Injection, Fed’s Plan Far Exceeds Its 2008 Rescue"
-//var genesisMsgHash = bytes.Repeat([]byte{0x00}, 32)
+var genesisMsgHash = bytes.Repeat([]byte{0x00}, 32)
 
-var genesisMsgHash = common.HexToHash("ecc833a7747eaa8327335e8e0c6b6d8aa3a38d0063591e43ce116ccf5c89753e")
+//var genesisMsgHash = common.HexToHash("ecc833a7747eaa8327335e8e0c6b6d8aa3a38d0063591e43ce116ccf5c89753e")
 
 var GroupsAT []env.Account
 var AdminAT env.Account
@@ -127,7 +128,7 @@ func generateGenesisExtraData(validatorAccounts []env.Account) ([]byte, error) {
 	}
 
 	var extraBytes []byte
-	extraBytes = append(extraBytes, genesisMsgHash.Bytes()...)
+	extraBytes = append(extraBytes, genesisMsgHash...)
 	extraBytes = append(extraBytes, payload...)
 
 	return extraBytes, nil

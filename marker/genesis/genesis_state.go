@@ -1040,6 +1040,26 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Println(out)
 
+	//var (
+	//	min   = new(*big.Int)
+	//	max = new(*big.Int)
+	//)
+	//out := &[]interface{}{
+	//	min,
+	//	max,
+	//}
+	//if _, err := ctx.contract("Election").Query(out, "getElectableValidators"); err != nil {
+	//	return err
+	//}
+	//fmt.Println(*min,*max)
+
+	//a:= common.HexToHash("0x49dc7107d41d3c01a9f941a7d9a9f9177349b5521aeb56861470e42cf05da2ee") //Validators common.hash
+	//a:= common.HexToHash("0x235a6f54090e9b94aa4e585a699c4375a2ff8f572c68114d138f0ed121527849") //Election  common.hash
+	//var ret common.Address
+	//if _, err := ctx.contract("Registry").Query(&ret, "getAddressFor",a); err != nil {
+	//	return err
+	//}
+	//fmt.Println(ret)
 	return nil
 }
 

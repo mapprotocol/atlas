@@ -57,12 +57,12 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (g *Genesis) UnmarshalJSON(input []byte) error {
 	type Genesis struct {
-		Config     *params.ChainConfig                         `json:"config"`
-		Nonce      *math.HexOrDecimal64                        `json:"nonce"`
-		Timestamp  *math.HexOrDecimal64                        `json:"timestamp"`
-		ExtraData  *hexutil.Bytes                              `json:"extraData"`
-		GasLimit   *math.HexOrDecimal64                        `json:"gasLimit"   gencodec:"required"`
-		Difficulty *math.HexOrDecimal256                       `json:"difficulty" gencodec:"required"`
+		Config    *params.ChainConfig  `json:"config"`
+		Nonce     *math.HexOrDecimal64 `json:"nonce"`
+		Timestamp *math.HexOrDecimal64 `json:"timestamp"`
+		ExtraData *hexutil.Bytes       `json:"extraData"`
+		GasLimit  *math.HexOrDecimal64 `json:"gasLimit"   gencodec:"required"`
+		//Difficulty *math.HexOrDecimal256                       `json:"difficulty" gencodec:"required"`
 		Mixhash    *common.Hash                                `json:"mixHash"`
 		Coinbase   *common.Address                             `json:"coinbase"`
 		Alloc      map[common.UnprefixedAddress]GenesisAccount `json:"alloc"      gencodec:"required"`
@@ -91,9 +91,9 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'gasLimit' for Genesis")
 	}
 	g.GasLimit = uint64(*dec.GasLimit)
-	if dec.Difficulty == nil {
-		return errors.New("missing required field 'difficulty' for Genesis")
-	}
+	//if dec.Difficulty == nil {
+	//	return errors.New("missing required field 'difficulty' for Genesis")
+	//}
 	//g.Difficulty = (*big.Int)(dec.Difficulty)
 	if dec.Mixhash != nil {
 		g.Mixhash = *dec.Mixhash
