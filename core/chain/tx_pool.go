@@ -850,10 +850,10 @@ func (pool *TxPool) enqueueTx(hash common.Hash, tx *types.Transaction, local boo
 	if pool.all.Get(hash) == nil && !addAll {
 		log.Error("Missing transaction in lookup set, please report the issue", "hash", hash)
 	}
-	//if addAll {
-	//	pool.all.Add(tx, local)
-	//	pool.priced.Put(tx, local)
-	//}
+	if addAll {
+		pool.all.Add(tx, local)
+		pool.priced.Put(tx, local)
+	}
 	// If we never record the heartbeat, do it right now.
 	if _, exist := pool.beats[from]; !exist {
 		pool.beats[from] = time.Now()
