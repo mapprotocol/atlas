@@ -34,7 +34,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
 			NumValidators:        4,
-			ValidatorsPerGroup:   4,
+			ValidatorsPerGroup:   10, //max group size is 10
 			NumDeveloperAccounts: 10,
 		},
 		ChainID: big.NewInt(211),
