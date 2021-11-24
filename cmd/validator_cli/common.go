@@ -5,21 +5,20 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/validator_cli/env"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
-	"log"
 	"math"
 	"math/big"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -38,14 +37,15 @@ func checkFee(fee *big.Int) {
 
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
 	// Ensure a valid value field and resolve the account nonce
+	logger := log.New("func", "sendContractTransaction")
 	nonce, err := client.PendingNonceAt(context.Background(), from)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("PendingNonceAt", err)
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		log.Error("SuggestGasPrice", "err", err)
 	}
 
 	gasLimit := uint64(2100000) // in units
@@ -63,46 +63,44 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
 	chainID, _ := client.ChainID(context.Background())
-	fmt.Println("TX data nonce ", nonce, " transfer value ", value, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
+	logger.Info("TxInfo", "TX data nonce ", nonce, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("SignTx", "err", err)
 	}
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("SendTransaction", err)
 	}
 
 	return signedTx.Hash()
 }
 
-func loadPrivateKey(path string) common.Address {
-	var err error
-	if path == "" {
-		file, err := getAllFile(datadirPrivateKey)
-		if err != nil {
-			printError(" getAllFile file name error", err)
-		}
-		kab, _ := filepath.Abs(datadirPrivateKey)
-		path = filepath.Join(kab, file)
-	}
-	priKey, err = crypto.LoadECDSA(path)
+func loadPrivateKey(keyfile string) common.Address {
+	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
-		printError("LoadECDSA error", err)
-	}
-	from = crypto.PubkeyToAddress(priKey.PublicKey)
-	return from
-}
-func loadAccount(path string, password string) env.Account {
-	keyjson, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Panic("loadPrivate ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+		printError(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		log.Panic("loadPrivate DecryptKey", fmt.Errorf("error decrypting key: %v", err))
+		printError(fmt.Errorf("error decrypting key: %v", err))
+	}
+	priKey = key.PrivateKey
+	from = crypto.PubkeyToAddress(priKey.PublicKey)
+	//fmt.Println("address ", from.Hex(), "key", hex.EncodeToString(crypto.FromECDSA(priKey)))
+	return from
+}
+func loadAccount(path string, password string) env.Account {
+	logger := log.New("func", "getResult")
+	keyjson, err := ioutil.ReadFile(path)
+	if err != nil {
+		logger.Crit("loadPrivate ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+	}
+	key, err := keystore.DecryptKey(keyjson, password)
+	if err != nil {
+		logger.Crit("loadPrivate DecryptKey", fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey1 := key.PrivateKey
 	publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
@@ -133,7 +131,7 @@ func getAllFile(path string) (string, error) {
 }
 
 func printError(error ...interface{}) {
-	log.Fatal("!", error)
+	log.Error("!", error)
 }
 
 func ethToWei(ctx *cli.Context, zero bool) *big.Int {
@@ -153,22 +151,16 @@ func weiToEth(value *big.Int) uint64 {
 }
 
 func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
-	fmt.Println("Please waiting ", " txHash ", txHash.String())
-
-	count := 0
+	logger := log.New("func", "getResult")
+	logger.Info("Please waiting ", " txHash ", txHash.String())
 	for {
 		time.Sleep(time.Millisecond * 200)
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
 		if err != nil {
-			log.Fatal(err)
+			logger.Info("TransactionByHash", "err", err)
 		}
-		count++
 		if !isPending {
 			break
-		}
-		if count >= 40 {
-			fmt.Println("Please use querytx sub command query later.")
-			os.Exit(0)
 		}
 	}
 
@@ -176,11 +168,11 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 }
 
 func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending bool) {
-
+	logger := log.New("func", "queryTx")
 	if pending {
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
 		if err != nil {
-			log.Fatal(err)
+			logger.Error("TransactionByHash", "err", err)
 		}
 		if isPending {
 			println("In tx_pool no validator  process this, please query later")
@@ -190,36 +182,41 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 	receipt, err := conn.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
-		log.Fatal(err)
+		for {
+			time.Sleep(time.Millisecond * 200)
+			receipt, err = conn.TransactionReceipt(context.Background(), txHash)
+			if err == nil {
+				break
+			}
+		}
+		logger.Error("TransactionReceipt", "err", err)
 	}
 
 	if receipt.Status == types.ReceiptStatusSuccessful {
-		block, err := conn.BlockByHash(context.Background(), receipt.BlockHash)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
-		if contract && common.IsHexAddress(from.Hex()) {
-			queryAccountBalance(conn)
-		}
+		//block, err := conn.BlockByHash(context.Background(), receipt.BlockHash)
+		//if err != nil {
+		//	logger.Error("BlockByHash", err)
+		//}
+		//logger.Info("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
+		logger.Info("Transaction Success", "block Number", receipt.BlockNumber.Uint64())
 	} else if receipt.Status == types.ReceiptStatusFailed {
-		fmt.Println("Transaction Failed ", " Block Number", receipt.BlockNumber.Uint64())
+		logger.Info("Transaction Failed ", "Block Number", receipt.BlockNumber.Uint64())
 	}
 }
 
-func packInput(abiMethod string, params ...interface{}) []byte {
-	input, err := abiValidators.Pack(abiMethod, params...)
+func packInput(abi *abi.ABI, abiMethod string, params ...interface{}) []byte {
+	input, err := abi.Pack(abiMethod, params...)
 	if err != nil {
-		printError(abiMethod, " error ", err)
+		printError(abiMethod, " error", err)
 	}
 	return input
 }
 
 func PrintBalance(conn *ethclient.Client, from common.Address) {
+	logger := log.New("func", "PrintBalance")
 	balance, err := conn.BalanceAt(context.Background(), from, nil)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("BalanceAt", "err", err)
 	}
 	balance2 := new(big.Float)
 	balance2.SetString(balance.String())
@@ -245,20 +242,22 @@ func loadPrivate(ctx *cli.Context) {
 }
 
 func dialConn(ctx *cli.Context) (*ethclient.Client, string) {
+	logger := log.New("func", "dialConn")
 	ip = ctx.GlobalString("rpcaddr") //utils.RPCListenAddrFlag.Name)
 	port = ctx.GlobalInt("rpcport")  //utils.RPCPortFlag.Name)
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	conn, err := ethclient.Dial(url)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Atlaschain client: %v", err)
+		logger.Error("Failed to connect to the Atlaschain client: %v", err)
 	}
 	return conn, url
 }
 
 func printBaseInfo(conn *ethclient.Client, url string) *types.Header {
+	logger := log.New("func", "printBaseInfo")
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("HeaderByNumber", "err", err)
 	}
 
 	if common.IsHexAddress(from.Hex()) {
@@ -286,114 +285,4 @@ func loadSigningKey(keyfile string) common.Address {
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
 	//fmt.Println("address ", from.Hex(), "key", hex.EncodeToString(crypto.FromECDSA(priKey)))
 	return from
-}
-
-func queryRegisterInfo(conn *ethclient.Client) {
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var input []byte
-	input = packInput("getValidator", from)
-	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
-	if err != nil {
-		printError("method CallContract error", err)
-	}
-
-	method, _ := abiValidators.Methods["getValidator"]
-	ret, err := method.Outputs.Unpack(output)
-	if len(ret) != 0 {
-		args := struct {
-			register  bool
-			validator bool
-			epoch     *big.Int
-		}{
-			ret[0].(bool),
-			ret[1].(bool),
-			ret[2].(*big.Int),
-		}
-		fmt.Println("query successfully,your account:")
-		fmt.Println("register: ", args.register)
-		fmt.Println("validator:", args.validator)
-		fmt.Println("current epoch:", args.epoch)
-	} else {
-		fmt.Println("Contract query failed result len == 0")
-	}
-}
-
-func queryAccountBalance(conn *ethclient.Client) {
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	input := packInput("getValidatorBalance", from)
-	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
-	if err != nil {
-		printError("method CallContract error", err)
-	}
-
-	//fmt.Println()
-	//PrintBalance(conn, from)
-
-	method, _ := abiValidators.Methods["getValidatorBalance"]
-	ret, err := method.Outputs.Unpack(output)
-	if len(ret) != 0 {
-		args := struct {
-			registered    *big.Int
-			unregistering *big.Int
-			unregistered  *big.Int
-		}{
-			ret[0].(*big.Int),
-			ret[1].(*big.Int),
-			ret[2].(*big.Int),
-		}
-		fmt.Println("query successfully,your account(uint eth):")
-		fmt.Println("registered amount:    ", weiToEth(args.registered))
-		fmt.Println("unregistering amount: ", weiToEth(args.unregistering))
-		fmt.Println("unregistered amount:  ", weiToEth(args.unregistered))
-		//fmt.Println("reward amount:        ", weiToEth(args.reward))
-		//fmt.Println("fine amount:          ", weiToEth(args.fine))
-	} else {
-		fmt.Println("Contract query failed result len == 0")
-	}
-}
-
-func queryValidatorEpoch(conn *ethclient.Client) {
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	input := packInput("getPeriodHeight", from)
-	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
-	if err != nil {
-		printError("method CallContract error", err)
-	}
-
-	method, _ := abiValidators.Methods["getPeriodHeight"]
-	ret, err := method.Outputs.Unpack(output)
-	if len(ret) != 0 {
-		args := struct {
-			start     *big.Int
-			end       *big.Int
-			validator bool
-		}{
-			ret[0].(*big.Int),
-			ret[1].(*big.Int),
-			ret[2].(bool),
-		}
-		if args.validator {
-			fmt.Println("query successfully, your account is validator")
-			fmt.Println("start height in epoch: ", args.start)
-			fmt.Println("end height in epoch:   ", args.end)
-			//fmt.Println("remain height in epoch:", args.remain)
-		} else {
-			fmt.Println("query successfully, your account isn't in current epoch")
-		}
-
-	} else {
-		fmt.Println("Contract query failed result len == 0")
-	}
 }

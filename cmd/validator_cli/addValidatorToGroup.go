@@ -17,18 +17,23 @@ func addValidatorToGroup(ctx *cli.Context) error {
 	conn, url := dialConn(ctx)
 	printBaseInfo(conn, url)
 
-	validator := loadAccount("", "password")
+	path := ""
+	password = ""
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	validator := loadAccount(path, password)
 	groupAddress := loadAccount("", "password")
+	loadPrivateKey(path)
 	log.Info("Add validator to group", "validator", validator.Address, "groupAddress", groupAddress.Address)
 
-	loadPrivateKey("")
-	input := packInput("affiliate", groupAddress)
+	input := packInput(abiValidators, "affiliate", groupAddress)
 	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 
 	loadPrivateKey("")
 	log.Info("Register validator")
-	input = packInput("addMember", validator.Address)
+	input = packInput(abiValidators, "addMember", validator.Address)
 	txHash = sendContractTransaction(conn, groupAddress.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 
