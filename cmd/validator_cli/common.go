@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/console/prompt"
@@ -47,17 +48,17 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	if err != nil {
 		log.Error("SuggestGasPrice", "err", err)
 	}
-
-	gasLimit := uint64(2100000) // in units
-	// If the contract surely has code (or code is not needed), estimate the transaction
-	//msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	//gasLimit, err = client.EstimateGas(context.Background(), msg)
-	//if err != nil {
-	//	fmt.Println("Contract exec failed", err)
-	//}
-	//if gasLimit < 1 {
-	//	gasLimit = 866328
-	//}
+	gasLimit := uint64(3100000) // in units
+	//If the contract surely has code (or code is not needed), estimate the transaction
+	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	gasLimit, err = client.EstimateGas(context.Background(), msg)
+	if err != nil {
+		logger.Error("Contract exec failed", "err", err)
+	}
+	if gasLimit < 1 {
+		//gasLimit = 866328
+		gasLimit = 2100000
+	}
 
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
@@ -72,7 +73,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		log.Error("SendTransaction", err)
+		log.Error("SendTransaction", "err", err)
 	}
 
 	return signedTx.Hash()

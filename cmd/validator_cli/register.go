@@ -92,18 +92,15 @@ func registerValidator(ctx *cli.Context) error {
 	createAccount(conn, validator, "validator")
 
 	//---------------------------- lock ----------------------------------
-	pubKey := validator.PublicKey()[1:]
 	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Atlas per validator,
 	log.Info("Lock group gold", "amount", groupRequiredGold)
 	input := packInput(abiLocaledGold, "lock")
-	txHash := sendContractTransaction(conn, validator.Address, LockedGoldAddress, nil, priKey, input)
+	txHash := sendContractTransaction(conn, validator.Address, LockedGoldAddress, groupRequiredGold, priKey, input)
 	getResult(conn, txHash, true)
 
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("Register validator")
-	fmt.Println("pubKey", pubKey)
-	fmt.Println("blsPub", blsPub[:])
-	fmt.Println("BLS", validator.MustBLSProofOfPossession())
+	pubKey := validator.PublicKey()[1:]
 	input = packInput(abiValidators, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
 	txHash = sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
