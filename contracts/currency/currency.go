@@ -21,7 +21,7 @@ var (
 var NoopExchangeRate = ExchangeRate{common.Big1, common.Big1}
 
 var MAPCurrency = Currency{
-	Address:    params.ZeroAddress,
+	Address:   params.ZeroAddress,
 	toMAPRate: NoopExchangeRate,
 }
 
@@ -29,7 +29,7 @@ var MAPCurrency = Currency{
 // than can be converted to MAP
 // Two currencies are deemed equal if they have the same address
 type Currency struct {
-	Address    common.Address
+	Address   common.Address
 	toMAPRate ExchangeRate
 }
 
@@ -141,7 +141,7 @@ func (cc *CurrencyManager) GetCurrency(currencyAddress *common.Address) (*Curren
 	}
 
 	val = &Currency{
-		Address:    *currencyAddress,
+		Address:   *currencyAddress,
 		toMAPRate: *currencyExchangeRate,
 	}
 
@@ -222,7 +222,7 @@ func CurrencyWhitelist(vmRunner vm.EVMRunner) ([]common.Address, error) {
 	if err == contracts.ErrSmartContractNotDeployed {
 		log.Warn("Registry address lookup failed", "err", err)
 	} else if err != nil {
-		log.Error("getWhitelist invocation failed", "err", err)
+		//log.Error("getWhitelist invocation failed", "err", err)
 	} else {
 		log.Trace("getWhitelist invocation success")
 	}
