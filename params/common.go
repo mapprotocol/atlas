@@ -2,19 +2,18 @@ package params
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
-	ethparams "github.com/ethereum/go-ethereum/params"
-
-	"math/big"
 )
 
 var (
 	baseUnit           = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	FbaseUnit          = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	Base               = new(big.Int).SetUint64(ethparams.InitialBaseFee)
+	Base               = big.NewInt(1e8)
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))

@@ -19,7 +19,6 @@ package fetcher
 import (
 	"bytes"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	mrand "math/rand"
 	"sort"
 	"time"
@@ -29,6 +28,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 )
 
@@ -278,7 +279,6 @@ func (f *TxFetcher) Enqueue(peer string, txs []*types.Transaction, direct bool) 
 	errs := f.addTxs(txs)
 	for i, err := range errs {
 		if err != nil {
-			log.Info("========== Enqueue ", "err", err)
 			// Track the transaction hash if the price is too low for us.
 			// Avoid re-request this transaction when we receive another
 			// announcement.

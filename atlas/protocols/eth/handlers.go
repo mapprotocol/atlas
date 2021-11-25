@@ -383,7 +383,6 @@ func answerGetPooledTransactions(backend Backend, query GetPooledTransactionsPac
 }
 
 func handleTransactions(backend Backend, msg Decoder, peer *Peer) error {
-	log.Info("=============== into handleTransactions")
 	// Transactions arrived, make sure we have a valid and fresh chain to handle them
 	if !backend.AcceptTxs() {
 		return nil
@@ -399,7 +398,6 @@ func handleTransactions(backend Backend, msg Decoder, peer *Peer) error {
 			return fmt.Errorf("%w: transaction %d is nil", errDecode, i)
 		}
 		peer.markTransaction(tx.Hash())
-		log.Info("handleTransactions ", "tx hash", tx.Hash())
 	}
 	return backend.Handle(peer, &txs)
 }
