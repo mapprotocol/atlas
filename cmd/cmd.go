@@ -126,7 +126,6 @@ var (
 		utils.DNSDiscoveryFlag,
 		utils.MainnetFlag,
 		utils.DeveloperFlag,
-		utils.SingleFlag,
 		utils.TestnetFlag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
@@ -258,9 +257,6 @@ func prepare(ctx *cli.Context) {
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Atlas in ephemeral dev mode...")
 
-	case ctx.GlobalIsSet(utils.SingleFlag.Name):
-		log.Info("Starting Atlas in ephemeral dev mode...")
-
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
 		log.Info("Starting Atlas on map protocol atlas mainnet...")
 	}
@@ -384,7 +380,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend atlasapi.Backend) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.SingleFlag.Name) {
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
