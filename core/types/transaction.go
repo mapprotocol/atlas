@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"container/heap"
 	"errors"
+	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -318,6 +319,7 @@ func (tx *Transaction) GasTipCapCmp(other *Transaction) int {
 
 // GasTipCapIntCmp compares the gasTipCap of the transaction against the given gasTipCap.
 func (tx *Transaction) GasTipCapIntCmp(other *big.Int) int {
+	log.Info("========== GasTipCapIntCmp", "gasTipCap", tx.inner.gasTipCap(), "gasPrice", other)
 	return tx.inner.gasTipCap().Cmp(other)
 }
 
