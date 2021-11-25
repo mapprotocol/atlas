@@ -134,6 +134,15 @@ func GlobalTextMarshaler(ctx *cli.Context, name string) TextMarshaler {
 	return val.(textMarshalerVal).v
 }
 
+// LocalTextMarshaler returns the value of a TextMarshalerFlag from the flag set.
+func LocalTextMarshaler(ctx *cli.Context, name string) TextMarshaler {
+	val := ctx.Generic(name)
+	if val == nil {
+		return nil
+	}
+	return val.(textMarshalerVal).v
+}
+
 // BigFlag is a command line flag that accepts 256 bit big integers in decimal or
 // hexadecimal syntax.
 type BigFlag struct {

@@ -2,6 +2,7 @@ package params
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -139,4 +140,11 @@ func BytesToAddress(b []byte) common.Address {
 	var a common.Address
 	a.SetBytes(b)
 	return a
+}
+func MustBigInt(str string) *big.Int {
+	i, ok := new(big.Int).SetString(str, 10)
+	if !ok {
+		panic(fmt.Errorf("Invalid string for big.Int: %s", str))
+	}
+	return i
 }
