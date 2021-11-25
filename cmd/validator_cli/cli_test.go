@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"io/ioutil"
 	"testing"
@@ -22,7 +23,7 @@ func TestJsonTransferKey(t *testing.T) {
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		printError(fmt.Errorf("error decrypting key: %v", err))
+		log.Error("", fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey = key.PrivateKey
 	privHex := hex.EncodeToString(crypto.FromECDSA(priKey))

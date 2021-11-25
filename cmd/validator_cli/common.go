@@ -32,7 +32,7 @@ var (
 
 func checkFee(fee *big.Int) {
 	if fee.Sign() < 0 || fee.Cmp(Base) > 0 {
-		printError("Please set correct fee value")
+		log.Error("Please set correct fee value")
 	}
 }
 
@@ -82,11 +82,11 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 func loadPrivateKey(keyfile string) common.Address {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
-		printError(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
+		log.Error("loadPrivateKey", fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		printError(fmt.Errorf("error decrypting key: %v", err))
+		log.Error("DecryptKey", fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey = key.PrivateKey
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
@@ -97,11 +97,11 @@ func loadAccount(path string, password string) env.Account {
 	logger := log.New("func", "getResult")
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
-		logger.Crit("loadPrivate ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+		logger.Crit("loadPrivate ReadFile", "err", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		logger.Crit("loadPrivate DecryptKey", fmt.Errorf("error decrypting key: %v", err))
+		logger.Crit("loadPrivate DecryptKey", "err", fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey1 := key.PrivateKey
 	publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
@@ -116,7 +116,7 @@ func loadAccount(path string, password string) env.Account {
 func getAllFile(path string) (string, error) {
 	rd, err := ioutil.ReadDir(path)
 	if err != nil {
-		printError("path ", err)
+		log.Error("path ", err)
 	}
 	for _, fi := range rd {
 		if fi.IsDir() {
@@ -131,14 +131,10 @@ func getAllFile(path string) (string, error) {
 	return "", err
 }
 
-func printError(error ...interface{}) {
-	log.Error("!", error)
-}
-
 func ethToWei(ctx *cli.Context, zero bool) *big.Int {
 	Value = ctx.GlobalUint64(ValueFlag.Name)
 	if !zero && Value <= 0 {
-		printError("value must bigger than 0")
+		log.Error("value must bigger than 0")
 	}
 	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	value := new(big.Int).Mul(big.NewInt(int64(Value)), baseUnit)
@@ -208,7 +204,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 func packInput(abi *abi.ABI, abiMethod string, params ...interface{}) []byte {
 	input, err := abi.Pack(abiMethod, params...)
 	if err != nil {
-		printError(abiMethod, " error", err)
+		log.Error(abiMethod, " error", err)
 	}
 	return input
 }
@@ -234,11 +230,11 @@ func loadPrivate(ctx *cli.Context) {
 	} else if store != "" {
 		loadSigningKey(store)
 	} else {
-		printError("Must specify --key or --keystore")
+		log.Error("Must specify --key or --keystore")
 	}
 
 	if priKey == nil {
-		printError("load privateKey failed")
+		log.Error("load privateKey failed")
 	}
 }
 
@@ -274,13 +270,13 @@ func printBaseInfo(conn *ethclient.Client, url string) *types.Header {
 func loadSigningKey(keyfile string) common.Address {
 	keyjson, err := ioutil.ReadFile(keyfile)
 	if err != nil {
-		printError(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
+		log.Error("ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
 	}
 	password, _ := prompt.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
 	//password := "secret"
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		printError(fmt.Errorf("error decrypting key: %v", err))
+		log.Error("DecryptKey", fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey = key.PrivateKey
 	from = crypto.PubkeyToAddress(priKey.PublicKey)

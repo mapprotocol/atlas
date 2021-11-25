@@ -2,8 +2,6 @@ package main
 
 import (
 	"crypto/ecdsa"
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
@@ -27,6 +25,12 @@ var registerValidatorCommand = cli.Command{
 	Name:   "registerValidator",
 	Usage:  "register validator ",
 	Action: MigrateFlags(registerValidator),
+	Flags:  ValidatorFlags,
+}
+var setMaxGroupSizeCommand = cli.Command{
+	Name:   "setMaxGroupSize",
+	Usage:  "set Max Group Size",
+	Action: MigrateFlags(setMaxGroupSize),
 	Flags:  ValidatorFlags,
 }
 
@@ -110,33 +114,33 @@ func registerValidator(ctx *cli.Context) error {
 	return nil
 }
 func registerGroup(ctx *cli.Context) error {
-	validator := loadAccount("", "password")
-
-	blsPub, err := validator.BLSPublicKey()
-	if err != nil {
-		return err
-	}
-	fmt.Println(abiValidators.Methods)
-
-	loadPrivate(ctx)
-	conn, url := dialConn(ctx)
-	printBaseInfo(conn, url)
-	// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
-	pubKey := validator.PublicKey()[1:]
-	groupRequiredGold := new(big.Int).Mul(
-		params.MustBigInt("10000000000000000000000"), // 10k Atlas per validator,
-		big.NewInt(4),
-	)
-
-	log.Info("Lock group gold", "amount", groupRequiredGold)
-	input := packInput(abiLocaledGold, "lock")
-	txHash := sendContractTransaction(conn, validator.Address, LockedGoldAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
-
-	log.Info("Register validator")
-	input = packInput(abiValidators, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
-	txHash = sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
+	//validator := loadAccount("", "password")
+	//
+	//blsPub, err := validator.BLSPublicKey()
+	//if err != nil {
+	//	return err
+	//}
+	//fmt.Println(abiValidators.Methods)
+	//
+	//loadPrivate(ctx)
+	//conn, url := dialConn(ctx)
+	//printBaseInfo(conn, url)
+	//// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
+	//pubKey := validator.PublicKey()[1:]
+	//groupRequiredGold := new(big.Int).Mul(
+	//	params.MustBigInt("10000000000000000000000"), // 10k Atlas per validator,
+	//	big.NewInt(4),
+	//)
+	//
+	//log.Info("Lock group gold", "amount", groupRequiredGold)
+	//input := packInput(abiLocaledGold, "lock")
+	//txHash := sendContractTransaction(conn, validator.Address, LockedGoldAddress, nil, priKey, input)
+	//getResult(conn, txHash, true)
+	//
+	//log.Info("Register validator")
+	//input = packInput(abiValidators, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
+	//txHash = sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	//getResult(conn, txHash, true)
 
 	return nil
 }
@@ -159,4 +163,21 @@ func createAccount(conn *ethclient.Client, account env.Account, namePrefix strin
 	input = packInput(abiAccounts, "setAccountDataEncryptionKey", account.PublicKey())
 	txHash = sendContractTransaction(conn, account.Address, AccountsAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
+}
+
+func setMaxGroupSize(ctx *cli.Context) error {
+	path := ""
+	password = ""
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	validator := loadAccount(path, password)
+	loadPrivateKey(path)
+	conn, _ := dialConn(ctx)
+	//----------------------------- registerValidator ---------------------------------
+	log.Info("====== set Max Group Size ======")
+	input := packInput(abiValidators, "setMaxGroupSize", big.NewInt(100))
+	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	getResult(conn, txHash, true)
+	return nil
 }

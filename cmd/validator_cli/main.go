@@ -90,7 +90,9 @@ func init() {
 		registerGroupCommand,
 		registerValidatorCommand,
 		queryGroupsCommand,
-		addValidatorToGroupCommand,
+		addToGroupCommand,
+		removeMemberCommand,
+		setMaxGroupSizeCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
