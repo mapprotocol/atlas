@@ -20,6 +20,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -42,17 +43,27 @@ func NewEVMBlockContext(header *types.Header, chain abstract.ChainContext, autho
 	if header.BaseFee != nil {
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
-	return vm.BlockContext{
-		CanTransfer: CanTransfer,
-		Transfer:    vmcontext.TobinTransfer,
-		GetHash:     GetHashFn(header, chain),
-		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(header.Number),
-		Time:        new(big.Int).SetUint64(header.Time),
-		Difficulty:  new(big.Int).Set(header.Number),
-		BaseFee:     baseFee,
-		GasLimit:    header.GasLimit,
+	ctx := vm.BlockContext{
+		CanTransfer:          CanTransfer,
+		Transfer:             vmcontext.TobinTransfer,
+		GetHash:              GetHashFn(header, chain),
+		Coinbase:             beneficiary,
+		BlockNumber:          new(big.Int).Set(header.Number),
+		Time:                 new(big.Int).SetUint64(header.Time),
+		Difficulty:           new(big.Int).Set(header.Number),
+		BaseFee:              baseFee,
+		GasLimit:             header.GasLimit,
+		GetRegisteredAddress: vmcontext.GetRegisteredAddress,
 	}
+
+	if chain != nil {
+		ctx.EpochSize = chain.Engine().EpochSize()
+		ctx.GetValidators = chain.Engine().GetValidators
+	} else {
+		ctx.GetValidators = func(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator { return nil }
+		ctx.GetHeaderByNumber = func(uint64) *types.Header { panic("evm context without blockchain context") }
+	}
+	return ctx
 }
 
 // NewEVMTxContext creates a new transaction context for a single transaction.
