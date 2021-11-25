@@ -774,7 +774,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(TestnetFlag.Name):
 		urls = params.TestnetBootnodes
-	case cfg.BootstrapNodes != nil || ctx.GlobalBool(SingleFlag.Name):
+	case cfg.BootstrapNodes != nil:
 		return // already set, don't apply defaults.
 	}
 
@@ -1106,7 +1106,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.NetRestrict = list
 	}
 
-	if ctx.GlobalBool(DeveloperFlag.Name) || ctx.GlobalBool(CatalystFlag.Name) || ctx.GlobalBool(SingleFlag.Name) {
+	if ctx.GlobalBool(DeveloperFlag.Name) || ctx.GlobalBool(CatalystFlag.Name) {
 		// --dev mode can't use p2p networking.
 		cfg.MaxPeers = 0
 		cfg.ListenAddr = ""
@@ -1537,55 +1537,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			}
 			chaindb.Close()
 		}
-		//if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-		//	cfg.Miner.GasPrice = big.NewInt(1)
-		//}
-	case ctx.GlobalBool(SingleFlag.Name):
-		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = params.SingleWorkID
+		if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
+			cfg.Miner.GasPrice = big.NewInt(1)
 		}
-		// Create new developer account or reuse existing one
-		var (
-			singler    accounts.Account
-			passphrase string
-			err        error
-		)
-		if list := MakePasswordList(ctx); len(list) > 0 {
-			// Just take the first value. Although the function returns a possible multiple values and
-			// some usages iterate through them as attempts, that doesn't make sense in this setting,
-			// when we're definitely concerned with only one account.
-			passphrase = list[0]
-		}
-		// setEtherbase has been called above, configuring the miner address from command line flags.
-		if cfg.Miner.Etherbase != (common.Address{}) {
-			singler = accounts.Account{Address: cfg.Miner.Etherbase}
-		} else if accs := ks.Accounts(); len(accs) > 0 {
-			singler = ks.Accounts()[0]
-		} else {
-			singler, err = ks.NewAccount(passphrase)
-			if err != nil {
-				Fatalf("Failed to create developer account: %v", err)
-			}
-		}
-		if err := ks.Unlock(singler, passphrase); err != nil {
-			Fatalf("Failed to unlock developer account: %v", err)
-		}
-		log.Info("Using singler account", "address", singler.Address)
 
-		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = atlaschain.SingleGenesisBlock(singler.Address)
-		if ctx.GlobalIsSet(DataDirFlag.Name) {
-			// Check if we have an already initialized chain and fall back to
-			// that if so. Otherwise we need to generate a new genesis spec.
-			chaindb := MakeChainDatabase(ctx, stack, false)
-			if rawdb.ReadCanonicalHash(chaindb, 0) != (common.Hash{}) {
-				cfg.Genesis = nil // fallback to db content
-			}
-			chaindb.Close()
-		}
-		//if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-		//	cfg.Miner.GasPrice = big.NewInt(1)
-		//}
 	default:
 		if cfg.NetworkId == params.MainnetNetWorkID {
 			SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)

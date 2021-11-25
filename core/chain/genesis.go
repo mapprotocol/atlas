@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	ethparams "github.com/ethereum/go-ethereum/params"
@@ -425,21 +424,6 @@ func DevnetGenesisBlock(faucet common.Address) *Genesis {
 	return &Genesis{
 		Config:    params.DevnetConfig,
 		ExtraData: []byte{1, 2, 3},
-		GasLimit:  11500000,
-		Alloc:     dc,
-	}
-}
-
-// SingleGenesisBlock returns the 'geth --dev' genesis block.
-func SingleGenesisBlock(faucet common.Address) *Genesis {
-	// Override the default period to the user requested one
-	config := *params.SingleNetConfig
-	dc := defaultRelayer()
-	dc[faucet] = GenesisAccount{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
-	// Assemble and return the genesis with the precompiles and faucet pre-funded
-	return &Genesis{
-		Config:    &config,
-		ExtraData: append(append(make([]byte, 32), faucet[:]...), make([]byte, crypto.SignatureLength)...),
 		GasLimit:  11500000,
 		Alloc:     dc,
 	}
