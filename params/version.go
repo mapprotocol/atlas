@@ -6,10 +6,47 @@ import (
 
 const (
 	VersionMajor = 0        // Major version component of the current release
-	VersionMinor = 1       // Minor version component of the current release
+	VersionMinor = 1        // Minor version component of the current release
 	VersionPatch = 0        // Patch version component of the current release
 	VersionMeta  = "stable" // Version metadata to append to the version string
 )
+
+type VersionInfo struct {
+	Major uint64
+	Minor uint64
+	Patch uint64
+}
+
+// Cmp compares x and y and returns:
+//
+//   -1 if x <  y
+//    0 if x == y
+//   +1 if x >  y
+//
+func cmp(x uint64, y uint64) int {
+	if x < y {
+		return -1
+	}
+	if x > y {
+		return 1
+	}
+	return 0
+}
+
+func (v *VersionInfo) Cmp(version *VersionInfo) int {
+	if v.Major == version.Major {
+		if v.Minor == version.Minor {
+			return cmp(v.Patch, version.Patch)
+		}
+		return cmp(v.Minor, version.Minor)
+	}
+	return cmp(v.Major, version.Major)
+}
+
+var CurrentVersionInfo = func() *VersionInfo {
+	return &VersionInfo{VersionMajor, VersionMinor, VersionPatch}
+}()
+
 
 // Version holds the textual version string.
 var Version = func() string {

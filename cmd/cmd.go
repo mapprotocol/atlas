@@ -30,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"gopkg.in/urfave/cli.v1"
+
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
@@ -39,7 +41,6 @@ import (
 	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/mapprotocol/atlas/helper/debug"
 	"github.com/mapprotocol/atlas/helper/flags"
-	"gopkg.in/urfave/cli.v1"
 )
 
 const (
@@ -66,15 +67,7 @@ var (
 		utils.NoUSBFlag,
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
-		utils.OverrideBerlinFlag,
-		utils.EthashCacheDirFlag,
-		utils.EthashCachesInMemoryFlag,
-		utils.EthashCachesOnDiskFlag,
-		utils.EthashCachesLockMmapFlag,
-		utils.EthashDatasetDirFlag,
-		utils.EthashDatasetsInMemoryFlag,
-		utils.EthashDatasetsOnDiskFlag,
-		utils.EthashDatasetsLockMmapFlag,
+		//utils.OverrideLondonFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
 		utils.TxPoolJournalFlag,
@@ -115,16 +108,15 @@ var (
 		utils.ListenPortFlag,
 		utils.MaxPeersFlag,
 		utils.MaxPendingPeersFlag,
-		utils.MiningEnabledFlag,
-		utils.MinerThreadsFlag,
-		utils.MinerNotifyFlag,
-		utils.MinerGasTargetFlag,
-		utils.MinerGasLimitFlag,
-		utils.MinerGasPriceFlag,
-		utils.MinerEtherbaseFlag,
-		utils.MinerExtraDataFlag,
-		utils.MinerRecommitIntervalFlag,
-		utils.MinerNoVerfiyFlag,
+		//utils.MiningEnabledFlag,
+		//utils.MinerThreadsFlag,
+		//utils.MinerNotifyFlag,
+		//utils.MinerGasLimitFlag,
+		//utils.MinerGasPriceFlag,
+		//utils.MinerEtherbaseFlag,
+		//utils.MinerExtraDataFlag,
+		//utils.MinerRecommitIntervalFlag,
+		//utils.MinerNoVerifyFlag,
 		utils.NATFlag,
 		utils.NoDiscoverFlag,
 		utils.DiscoveryV5Flag,
@@ -144,11 +136,15 @@ var (
 		utils.GpoBlocksFlag,
 		utils.GpoPercentileFlag,
 		utils.GpoMaxGasPriceFlag,
-		utils.EWASMInterpreterFlag,
-		utils.EVMInterpreterFlag,
-		utils.MinerNotifyFullFlag,
+		//utils.MinerNotifyFullFlag,
 		configFileFlag,
 		utils.CatalystFlag,
+		utils.MiningEnabledFlag,
+		utils.MinerEtherbaseFlag,
+		utils.MinerExtraDataFlag,
+		utils.MinerThreadsFlag,
+		utils.MinerGasPriceFlag,
+		utils.TxFeeRecipientFlag,
 	}
 
 	rpcFlags = []cli.Flag{
@@ -157,12 +153,6 @@ var (
 		utils.HTTPPortFlag,
 		utils.HTTPCORSDomainFlag,
 		utils.HTTPVirtualHostsFlag,
-		utils.LegacyRPCEnabledFlag,
-		utils.LegacyRPCListenAddrFlag,
-		utils.LegacyRPCPortFlag,
-		utils.LegacyRPCCORSDomainFlag,
-		utils.LegacyRPCVirtualHostsFlag,
-		utils.LegacyRPCApiFlag,
 		utils.GraphQLEnabledFlag,
 		utils.GraphQLCORSDomainFlag,
 		utils.GraphQLVirtualHostsFlag,
@@ -219,8 +209,8 @@ func init() {
 		attachCommand,
 		javascriptCommand,
 		// See misccmd.go:
-		makecacheCommand,
-		makedagCommand,
+		//makecacheCommand,
+		//makedagCommand,
 		versionCommand,
 		licenseCommand,
 		// See config.go

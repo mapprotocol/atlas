@@ -10,9 +10,11 @@ import (
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core/rawdb"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -161,10 +163,10 @@ func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, uni
 	if parent == nil {
 		return errUnknownAncestor
 	}
-	return v.verifyHeader(headers[index], parent, false, unixNow)
+	return v.verifyHeader(headers[index], parent, false, unixNow, chainType)
 }
 
-func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, unixNow int64) error {
+func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, unixNow int64, chainType rawdb.ChainType) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
@@ -194,15 +196,20 @@ func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, uni
 		return fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
 	}
 
-	// Verify that the gas limit remains within allowed bounds
-	diff := int64(parent.GasLimit) - int64(header.GasLimit)
-	if diff < 0 {
-		diff *= -1
-	}
-	limit := parent.GasLimit / params.GasLimitBoundDivisor
-
-	if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
-		return fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.GasLimit, limit)
+	// Verify the block's gas usage and (if applicable) verify the base fee.
+	lb, _ := chains.ChainType2LondonBlock(chainType)
+	cfg := &params.ChainConfig{LondonBlock: lb}
+	if !cfg.IsLondon(header.Number) {
+		// Verify BaseFee not present before EIP-1559 fork.
+		if header.BaseFee != nil {
+			return fmt.Errorf("invalid baseFee before fork: have %d, expected 'nil'", header.BaseFee)
+		}
+		if err := misc.VerifyGaslimit(parent.GasLimit, header.GasLimit); err != nil {
+			return err
+		}
+	} else if err := VerifyEip1559Header(cfg, parent, header); err != nil {
+		// Verify the header's EIP-1559 attributes.
+		return err
 	}
 	// Verify that the block number is parent's +1
 	if diff := new(big.Int).Sub(header.Number, parent.Number); diff.Cmp(big.NewInt(1)) != 0 {
@@ -210,4 +217,67 @@ func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, uni
 	}
 
 	return nil
+}
+
+func VerifyEip1559Header(config *params.ChainConfig, parent, header *ethereum.Header) error {
+	// Verify that the gas limit remains within allowed bounds
+	parentGasLimit := parent.GasLimit
+	if !config.IsLondon(parent.Number) {
+		parentGasLimit = parent.GasLimit * params.ElasticityMultiplier
+	}
+	if err := misc.VerifyGaslimit(parentGasLimit, header.GasLimit); err != nil {
+		return err
+	}
+	// Verify the header is not malformed
+	if header.BaseFee == nil {
+		return fmt.Errorf("header is missing baseFee")
+	}
+	// Verify the baseFee is correct based on the parent header.
+	expectedBaseFee := CalcBaseFee(config, parent)
+	if header.BaseFee.Cmp(expectedBaseFee) != 0 {
+		return fmt.Errorf("invalid baseFee: have %s, want %s, parentBaseFee %s, parentGasUsed %d",
+			expectedBaseFee, header.BaseFee, parent.BaseFee, parent.GasUsed)
+	}
+	return nil
+}
+
+// CalcBaseFee calculates the basefee of the header.
+func CalcBaseFee(config *params.ChainConfig, parent *ethereum.Header) *big.Int {
+	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
+	if !config.IsLondon(parent.Number) {
+		return new(big.Int).SetUint64(params.InitialBaseFee)
+	}
+
+	var (
+		parentGasTarget          = parent.GasLimit / params.ElasticityMultiplier
+		parentGasTargetBig       = new(big.Int).SetUint64(parentGasTarget)
+		baseFeeChangeDenominator = new(big.Int).SetUint64(params.BaseFeeChangeDenominator)
+	)
+	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
+	if parent.GasUsed == parentGasTarget {
+		return new(big.Int).Set(parent.BaseFee)
+	}
+	if parent.GasUsed > parentGasTarget {
+		// If the parent block used more gas than its target, the baseFee should increase.
+		gasUsedDelta := new(big.Int).SetUint64(parent.GasUsed - parentGasTarget)
+		x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
+		y := x.Div(x, parentGasTargetBig)
+		baseFeeDelta := math.BigMax(
+			x.Div(y, baseFeeChangeDenominator),
+			common.Big1,
+		)
+
+		return x.Add(parent.BaseFee, baseFeeDelta)
+	} else {
+		// Otherwise if the parent block used less gas than its target, the baseFee should decrease.
+		gasUsedDelta := new(big.Int).SetUint64(parentGasTarget - parent.GasUsed)
+		x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
+		y := x.Div(x, parentGasTargetBig)
+		baseFeeDelta := x.Div(y, baseFeeChangeDenominator)
+
+		return math.BigMax(
+			x.Sub(parent.BaseFee, baseFeeDelta),
+			common.Big0,
+		)
+	}
 }

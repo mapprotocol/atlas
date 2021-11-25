@@ -3,83 +3,19 @@ package chainsdb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	eth_types "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/chains/headers/ethereum"
-	"github.com/mapprotocol/atlas/core/rawdb"
 	"io/ioutil"
 	"math/big"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	eth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+
+	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+	"github.com/mapprotocol/atlas/core/rawdb"
 )
-
-// This test checks status reporting of InsertHeaderChain.
-func TestHeaderInsertion01(t *testing.T) {
-
-	chainDb0, _ := OpenDatabase("data222", 20, 20)
-
-	db := HeaderChainStore{
-		chainDb: chainDb0,
-	}
-	storeMgr = &db
-	chainType := rawdb.ChainType(321)
-	var (
-		db001   = rawdb.NewMemoryDatabase()
-		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
-	)
-
-	rawdb.WriteTdChains(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
-	rawdb.WriteReceiptsChains(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
-	rawdb.WriteCanonicalHashChains(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
-	rawdb.WriteHeadBlockHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadHeaderHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteChainConfigChains(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
-
-	hc, _ := GetStoreMgr(chainType)
-	// chain A: G->A1->A2...A128
-	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
-
-	chainA001 := converChainList(chainA)
-
-	// chain B: G->A1->B2...B128
-	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db001, 10)
-	chainB001 := converChainList(chainB)
-	log.Root().SetHandler(log.StdoutHandler)
-	// Inserting 64 headers on an empty chain, expecting
-	// 1 callbacks, 1 canon-status, 0 sidestatus,
-	testInsert01(t, hc, chainA001[:64], CanonStatTyState, nil)
-
-	// Inserting 64 identical headers, expecting
-	// 0 callbacks, 0 canon-status, 0 sidestatus,
-	testInsert01(t, hc, chainA001[:64], NonStatTyState, nil)
-
-	// Inserting the same some old, some new headers
-	// 1 callbacks, 1 canon, 0 side
-	testInsert01(t, hc, chainA001[32:96], CanonStatTyState, nil)
-
-	// Inserting side blocks, but not overtaking the canon chain
-	testInsert01(t, hc, chainB001[0:32], SideStatTyState, nil)
-
-	// Inserting more side blocks, but we don't have the parent
-	testInsert01(t, hc, chainB001[34:36], NonStatTyState, nil)
-
-	// Inserting more sideblocks, overtaking the canon chain
-	testInsert01(t, hc, chainB001[32:97], CanonStatTyState, nil)
-
-	// Inserting more A-headers, taking back the canonicality
-	testInsert01(t, hc, chainA001[90:100], CanonStatTyState, nil)
-
-	// And B becomes canon again
-	testInsert01(t, hc, chainB001[97:107], CanonStatTyState, nil)
-
-	// And B becomes even longer
-	testInsert01(t, hc, chainB001[107:128], CanonStatTyState, nil)
-}
 
 func testInsert01(t *testing.T, hc *HeaderChainStore, chain []*ethereum.Header, wantStatus WriteStatus, wantErr error) {
 	t.Helper()
@@ -272,123 +208,6 @@ func TestHeaderChainStore_ReadCanonicalHash(t *testing.T) {
 		})
 	}
 }
-func Test_thread_InsertHeaderChain(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data333", 20, 20)
-
-	db := HeaderChainStore{
-		chainDb: chainDb0,
-	}
-	storeMgr = &db
-	chainType := rawdb.ChainType(333)
-	var (
-		db001   = rawdb.NewMemoryDatabase()
-		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
-	)
-
-	rawdb.WriteTdChains(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
-	rawdb.WriteReceiptsChains(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
-	rawdb.WriteCanonicalHashChains(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
-	rawdb.WriteHeadBlockHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadHeaderHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteChainConfigChains(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
-
-	hc, _ := GetStoreMgr(chainType)
-	// chain A: G->A1->A2...A128
-	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
-
-	chainA001 := converChainList(chainA)
-
-	for i := 0; i < 1000; i++ {
-
-		go func() {
-			hc.InsertHeaderChain(chainA001, time.Now())
-			fmt.Println("111")
-		}()
-	}
-	time.Sleep(5 * time.Second)
-
-}
-func Test_thread_WriteHeader(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data333", 20, 20)
-
-	db := HeaderChainStore{
-		chainDb: chainDb0,
-	}
-	storeMgr = &db
-	chainType := rawdb.ChainType(333)
-	var (
-		db001   = rawdb.NewMemoryDatabase()
-		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
-	)
-
-	rawdb.WriteTdChains(chainDb0, genesis.Hash(), genesis.NumberU64(), genesis.Difficulty(), chainType)
-	rawdb.WriteReceiptsChains(chainDb0, genesis.Hash(), genesis.NumberU64(), nil, chainType)
-	rawdb.WriteCanonicalHashChains(chainDb0, genesis.Hash(), genesis.NumberU64(), chainType)
-	rawdb.WriteHeadBlockHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadFastBlockHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteHeadHeaderHashChains(chainDb0, genesis.Hash(), chainType)
-	rawdb.WriteChainConfigChains(chainDb0, genesis.Hash(), (&core.Genesis{}).Config, chainType)
-
-	hc, _ := GetStoreMgr(chainType)
-	// chain A: G->A1->A2...A128
-	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
-
-	chainA001 := converChainList(chainA)
-
-	for i := 0; i < 1000; i++ {
-
-		go func() {
-			hc.WriteHeader(chainA001[0])
-			fmt.Println(hc.ReadHeader(chainA001[0].Hash(), 1))
-		}()
-	}
-	time.Sleep(5 * time.Second)
-
-}
-
-func TestGenesis1(t *testing.T) {
-	chainDb0, _ := OpenDatabase("data222", 20, 20)
-
-	db := HeaderChainStore{
-		chainDb: chainDb0,
-	}
-	storeMgr = &db
-	var (
-		db001   = rawdb.NewMemoryDatabase()
-		genesis = (&core.Genesis{Nonce: 111}).MustCommit(db001)
-	)
-
-	// chain A: G->A1->A2...A128
-	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db001, 10)
-
-	// chain B: G->A1->B2...B128
-	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db001, 10)
-	chainB001 := converChainList(chainB)
-	chainB001[0].Number = big.NewInt(0)
-	type args struct {
-		header    *ethereum.Header
-		chainType rawdb.ChainType
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "",
-			args: args{
-				header:    chainB001[0],
-				chainType: 1001,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			Genesis()
-		})
-	}
-}
 
 func TestRead_chaintype_config(t *testing.T) {
 	data, err := ioutil.ReadFile(fmt.Sprintf("config/chaintype_config.json"))
@@ -403,7 +222,7 @@ func TestRead_chaintype_config(t *testing.T) {
 	fmt.Println(config)
 }
 func TestRead_ethconfig(t *testing.T) {
-	data, err := ioutil.ReadFile(fmt.Sprintf("config/%v_config.json", "eth_dev"))
+	data, err := ioutil.ReadFile(fmt.Sprintf("config/%v_config.json", "eth"))
 	if err != nil {
 		log.Error("read eht store config err", err)
 	}

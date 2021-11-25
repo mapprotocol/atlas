@@ -18,18 +18,19 @@ package filters
 
 import (
 	"context"
-	"github.com/mapprotocol/atlas/core/chain"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 func makeReceipt(addr common.Address) *types.Receipt {
@@ -60,7 +61,7 @@ func BenchmarkFilters(b *testing.B) {
 	defer db.Close()
 
 	genesis := chain.GenesisBlockForTesting(db, addr1, big.NewInt(1000000))
-	chain, receipts := chain.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), db, 100010, func(i int, gen *chain.BlockGen) {
+	chain, receipts := chain.GenerateChain(params.TestChainConfig, genesis, consensustest.NewFaker(), db, 100010, func(i int, gen *chain.BlockGen) {
 		switch i {
 		case 2403:
 			receipt := makeReceipt(addr1)
@@ -116,7 +117,7 @@ func TestFilters(t *testing.T) {
 	defer db.Close()
 
 	genesis := chain.GenesisBlockForTesting(db, addr, big.NewInt(1000000))
-	chain, receipts := chain.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), db, 1000, func(i int, gen *chain.BlockGen) {
+	chain, receipts := chain.GenerateChain(params.TestChainConfig, genesis, consensustest.NewFaker(), db, 1000, func(i int, gen *chain.BlockGen) {
 		switch i {
 		case 1:
 			receipt := types.NewReceipt(nil, false, 0)

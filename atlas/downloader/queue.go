@@ -28,10 +28,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 const (
@@ -40,10 +40,10 @@ const (
 )
 
 var (
-	blockCacheMaxItems     = 8192             // Maximum number of blocks to cache before throttling the download
-	blockCacheInitialItems = 2048             // Initial number of blocks to start fetching, before we know the sizes of the blocks
-	blockCacheMemory       = 64 * 1024 * 1024 // Maximum amount of memory to use for block caching
-	blockCacheSizeWeight   = 0.1              // Multiplier to approximate the average block size based on past ones
+	blockCacheMaxItems     = 8192              // Maximum number of blocks to cache before throttling the download
+	blockCacheInitialItems = 2048              // Initial number of blocks to start fetching, before we know the sizes of the blocks
+	blockCacheMemory       = 256 * 1024 * 1024 // Maximum amount of memory to use for block caching
+	blockCacheSizeWeight   = 0.1               // Multiplier to approximate the average block size based on past ones
 )
 
 var (
@@ -64,10 +64,12 @@ type fetchRequest struct {
 type fetchResult struct {
 	pending int32 // Flag telling what deliveries are outstanding
 
-	Header       *types.Header
-	Uncles       []*types.Header
-	Transactions types.Transactions
-	Receipts     types.Receipts
+	//Uncles       []*types.Header
+	Header         *types.Header
+	Transactions   types.Transactions
+	Receipts       types.Receipts
+	Randomness     *types.Randomness
+	EpochSnarkData *types.EpochSnarkData
 }
 
 func newFetchResult(header *types.Header, fastSync bool) *fetchResult {
@@ -366,9 +368,9 @@ func (q *queue) Results(block bool) []*fetchResult {
 	for _, result := range results {
 		// Recalculate the result item weights to prevent memory exhaustion
 		size := result.Header.Size()
-		for _, uncle := range result.Uncles {
-			size += uncle.Size()
-		}
+		//for _, uncle := range result.Uncles {
+		//	size += uncle.Size()
+		//}
 		for _, receipt := range result.Receipts {
 			size += receipt.Size()
 		}
@@ -780,22 +782,24 @@ func (q *queue) DeliverHeaders(id string, headers []*types.Header, headerProcCh 
 // DeliverBodies injects a block body retrieval response into the results queue.
 // The method returns the number of blocks bodies accepted from the delivery and
 // also wakes any threads waiting for data delivery.
-func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLists [][]*types.Header) (int, error) {
+func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, randomnessList []*types.Randomness, epochSnarkDataList []*types.EpochSnarkData) (int, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	trieHasher := trie.NewStackTrie(nil)
 	validate := func(index int, header *types.Header) error {
-		if types.DeriveSha(types.Transactions(txLists[index]), trie.NewStackTrie(nil)) != header.TxHash {
+		if types.DeriveSha(types.Transactions(txLists[index]), trieHasher) != header.TxHash {
 			return errInvalidBody
 		}
-		if types.CalcUncleHash(uncleLists[index]) != header.UncleHash {
-			return errInvalidBody
-		}
+		//if types.CalcUncleHash(uncleLists[index]) != header.UncleHash {
+		//	return errInvalidBody
+		//}
 		return nil
 	}
 
 	reconstruct := func(index int, result *fetchResult) {
 		result.Transactions = txLists[index]
-		result.Uncles = uncleLists[index]
+		result.Randomness = randomnessList[index]
+		result.EpochSnarkData = epochSnarkDataList[index]
 		result.SetBodyDone()
 	}
 	return q.deliver(id, q.blockTaskPool, q.blockTaskQueue, q.blockPendPool,
@@ -808,8 +812,9 @@ func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLi
 func (q *queue) DeliverReceipts(id string, receiptList [][]*types.Receipt) (int, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	trieHasher := trie.NewStackTrie(nil)
 	validate := func(index int, header *types.Header) error {
-		if types.DeriveSha(types.Receipts(receiptList[index]), trie.NewStackTrie(nil)) != header.ReceiptHash {
+		if types.DeriveSha(types.Receipts(receiptList[index]), trieHasher) != header.ReceiptHash {
 			return errInvalidReceipt
 		}
 		return nil

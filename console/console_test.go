@@ -33,7 +33,6 @@ import (
 	"github.com/mapprotocol/atlas/atlas"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/mapprotocol/atlas/cmd/node"
-	"github.com/mapprotocol/atlas/consensus/ethash"
 	"github.com/mapprotocol/atlas/miner"
 )
 
@@ -78,7 +77,7 @@ func (p *hookedPrompter) SetWordCompleter(completer prompt.WordCompleter) {}
 type tester struct {
 	workspace string
 	stack     *node.Node
-	ethereum  *eth.Ethereum
+	ethereum  *atlas.Ethereum
 	console   *Console
 	input     *hookedPrompter
 	output    *bytes.Buffer
@@ -103,14 +102,11 @@ func newTester(t *testing.T, confOverride func(*ethconfig.Config)) *tester {
 		Miner: miner.Config{
 			Etherbase: common.HexToAddress(testAddress),
 		},
-		Ethash: ethash.Config{
-			PowMode: ethash.ModeTest,
-		},
 	}
 	if confOverride != nil {
 		confOverride(ethConf)
 	}
-	ethBackend, err := eth.New(stack, ethConf)
+	ethBackend, err := atlas.New(stack, ethConf)
 	if err != nil {
 		t.Fatalf("failed to register Ethereum protocol: %v", err)
 	}

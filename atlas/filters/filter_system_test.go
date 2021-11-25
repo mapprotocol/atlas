@@ -19,7 +19,7 @@ package filters
 import (
 	"context"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
+
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -29,15 +29,18 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/bloombits"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/bloombits"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var (
@@ -128,7 +131,7 @@ func (b *testBackend) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subsc
 }
 
 func (b *testBackend) BloomStatus() (uint64, uint64) {
-	return params.BloomBitsBlocks, b.sections
+	return ethparams.BloomBitsBlocks, b.sections
 }
 
 func (b *testBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
@@ -148,7 +151,7 @@ func (b *testBackend) ServiceFilter(ctx context.Context, session *bloombits.Matc
 				task.Bitsets = make([][]byte, len(task.Sections))
 				for i, section := range task.Sections {
 					if rand.Int()%4 != 0 { // Handle occasional missing deliveries
-						head := rawdb.ReadCanonicalHash(b.db, (section+1)*params.BloomBitsBlocks-1)
+						head := rawdb.ReadCanonicalHash(b.db, (section+1)*ethparams.BloomBitsBlocks-1)
 						task.Bitsets[i], _ = rawdb.ReadBloomBits(b.db, task.Bit, section, head)
 					}
 				}
@@ -171,7 +174,7 @@ func TestBlockSubscription(t *testing.T) {
 		backend     = &testBackend{db: db}
 		api         = NewPublicFilterAPI(backend, false, deadline)
 		genesis     = new(chain.Genesis).MustCommit(db)
-		chain, _    = chain.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), db, 10, func(i int, gen *chain.BlockGen) {})
+		chain, _    = chain.GenerateChain(params.TestChainConfig, genesis, consensustest.NewFaker(), db, 10, func(i int, gen *chain.BlockGen) {})
 		chainEvents = []core.ChainEvent{}
 	)
 

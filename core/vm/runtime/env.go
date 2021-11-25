@@ -17,8 +17,9 @@
 package runtime
 
 import (
-	"github.com/mapprotocol/atlas/core/processor"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 )
 
 func NewEnv(cfg *Config) *vm.EVM {
@@ -27,15 +28,19 @@ func NewEnv(cfg *Config) *vm.EVM {
 		GasPrice: cfg.GasPrice,
 	}
 	blockContext := vm.BlockContext{
-		CanTransfer: processor.CanTransfer,
-		Transfer:    processor.Transfer,
-		GetHash:     cfg.GetHashFn,
-		Coinbase:    cfg.Coinbase,
-		BlockNumber: cfg.BlockNumber,
-		Time:        cfg.Time,
-		Difficulty:  cfg.Difficulty,
-		GasLimit:    cfg.GasLimit,
+		CanTransfer:          chain.CanTransfer,
+		Transfer:             vmcontext.TobinTransfer,
+		GetHash:              cfg.GetHashFn,
+		Coinbase:             cfg.Coinbase,
+		BlockNumber:          cfg.BlockNumber,
+		Time:                 cfg.Time,
+		Difficulty:           cfg.Difficulty,
+		GasLimit:             cfg.GasLimit,
+		BaseFee:              cfg.BaseFee,
+		GetRegisteredAddress: vmcontext.GetRegisteredAddress,
 	}
-
+	if cfg.ChainConfig.Istanbul != nil {
+		blockContext.EpochSize = cfg.ChainConfig.Istanbul.Epoch
+	}
 	return vm.NewEVM(blockContext, txContext, cfg.State, cfg.ChainConfig, cfg.EVMConfig)
 }

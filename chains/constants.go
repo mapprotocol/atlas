@@ -1,11 +1,14 @@
 package chains
 
 import (
+	"math/big"
+
 	"github.com/mapprotocol/atlas/core/rawdb"
+	params2 "github.com/mapprotocol/atlas/params"
 )
 
 const (
-	ChainTypeMAP     rawdb.ChainType = 211
+	ChainTypeMAP     rawdb.ChainType = rawdb.ChainType(params2.MainNetChainID)
 	ChainTypeETH     rawdb.ChainType = 1
 	ChainTypeETHTest rawdb.ChainType = 3 // start 800
 	ChainTypeETHDev  rawdb.ChainType = 10
@@ -30,6 +33,11 @@ var chainType2ChainGroup = map[rawdb.ChainType]ChainGroup{
 	ChainTypeETHTest: ChainGroupETH,
 }
 
+var chainType2LondonBlock = map[rawdb.ChainType]*big.Int{
+	ChainTypeETH:     big.NewInt(12_965_000),
+	ChainTypeETHTest: big.NewInt(10_499_401),
+}
+
 type ChainGroup uint64
 
 func IsSupportedChain(chain rawdb.ChainType) bool {
@@ -47,4 +55,12 @@ func ChainType2ChainGroup(chain rawdb.ChainType) (ChainGroup, error) {
 		return 0, ErrNotSupportChain
 	}
 	return group, nil
+}
+
+func ChainType2LondonBlock(chain rawdb.ChainType) (*big.Int, error) {
+	lb, ok := chainType2LondonBlock[chain]
+	if !ok {
+		return nil, ErrNotSupportChain
+	}
+	return lb, nil
 }

@@ -20,8 +20,15 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
+	"github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rlp"
+	ed25519 "github.com/hdevalence/ed25519consensus"
 	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/core/types"
 	params2 "github.com/mapprotocol/atlas/params"
+	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,9 +37,30 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/blake2b"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/ethereum/go-ethereum/crypto/bn256"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/log"
+	ethparams "github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 	//lint:ignore SA1019 Needed for precompile
 	"golang.org/x/crypto/ripemd160"
+)
+
+func atlasPrecompileAddress(index byte) common.Address {
+	return common.BytesToAddress(append([]byte{0}, (atlasPrecompiledContractsAddressOffset - index)))
+}
+
+var (
+	atlasPrecompiledContractsAddressOffset = byte(0xff)
+
+	transferAddress              = atlasPrecompileAddress(2)
+	fractionMulExpAddress        = atlasPrecompileAddress(3)
+	proofOfPossessionAddress     = atlasPrecompileAddress(4)
+	getValidatorAddress          = atlasPrecompileAddress(5)
+	numberValidatorsAddress      = atlasPrecompileAddress(6)
+	epochSizeAddress             = atlasPrecompileAddress(7)
+	blockNumberFromHeaderAddress = atlasPrecompileAddress(8)
+	hashHeaderAddress            = atlasPrecompileAddress(9)
+	getParentSealBitmapAddress   = atlasPrecompileAddress(10)
+	getVerifiedSealBitmapAddress = atlasPrecompileAddress(11)
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -51,9 +79,9 @@ var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{2}): &sha256hash{},
 	common.BytesToAddress([]byte{3}): &ripemd160hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
-	params2.RelayerAddress:           &relayer{},
-	params2.HeaderStoreAddress:       &store{},
-	params2.TxVerifyAddress:          &verify{},
+	params.RelayerAddress:            &relayer{},
+	params.HeaderStoreAddress:        &store{},
+	params.TxVerifyAddress:           &verify{},
 }
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
@@ -67,9 +95,9 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{6}): &bn256AddByzantium{},
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulByzantium{},
 	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
-	params2.RelayerAddress:           &relayer{},
-	params2.HeaderStoreAddress:       &store{},
-	params2.TxVerifyAddress:          &verify{},
+	params.RelayerAddress:            &relayer{},
+	params.HeaderStoreAddress:        &store{},
+	params.TxVerifyAddress:           &verify{},
 }
 
 // PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum
@@ -84,9 +112,21 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
 	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}): &blake2F{},
-	params2.RelayerAddress:           &relayer{},
-	params2.HeaderStoreAddress:       &store{},
-	params2.TxVerifyAddress:          &verify{},
+	params.RelayerAddress:            &relayer{},
+	params.HeaderStoreAddress:        &store{},
+	params.TxVerifyAddress:           &verify{},
+
+	// Atlas Precompiled Contracts
+	transferAddress:              &transfer{},
+	fractionMulExpAddress:        &fractionMulExp{},
+	proofOfPossessionAddress:     &proofOfPossession{},
+	getValidatorAddress:          &getValidator{},
+	numberValidatorsAddress:      &numberValidators{},
+	epochSizeAddress:             &epochSize{},
+	blockNumberFromHeaderAddress: &blockNumberFromHeader{},
+	hashHeaderAddress:            &hashHeader{},
+	getParentSealBitmapAddress:   &getParentSealBitmap{},
+	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
@@ -101,9 +141,21 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
 	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}): &blake2F{},
-	params2.RelayerAddress:           &relayer{},
-	params2.HeaderStoreAddress:       &store{},
-	params2.TxVerifyAddress:          &verify{},
+	params.RelayerAddress:            &relayer{},
+	params.HeaderStoreAddress:        &store{},
+	params.TxVerifyAddress:           &verify{},
+	///////////////////////////////
+	// Atlas Precompiled Contracts
+	transferAddress:              &transfer{},
+	fractionMulExpAddress:        &fractionMulExp{},
+	proofOfPossessionAddress:     &proofOfPossession{},
+	getValidatorAddress:          &getValidator{},
+	numberValidatorsAddress:      &numberValidators{},
+	epochSizeAddress:             &epochSize{},
+	blockNumberFromHeaderAddress: &blockNumberFromHeader{},
+	hashHeaderAddress:            &hashHeader{},
+	getParentSealBitmapAddress:   &getParentSealBitmap{},
+	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
 }
 
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
@@ -118,9 +170,21 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{16}): &bls12381Pairing{},
 	common.BytesToAddress([]byte{17}): &bls12381MapG1{},
 	common.BytesToAddress([]byte{18}): &bls12381MapG2{},
-	params2.RelayerAddress:            &relayer{},
-	params2.HeaderStoreAddress:        &store{},
-	params2.TxVerifyAddress:           &verify{},
+	params.RelayerAddress:             &relayer{},
+	params.HeaderStoreAddress:         &store{},
+	params.TxVerifyAddress:            &verify{},
+	////////////////////////////////////
+	// Atlas Precompiled Contracts
+	transferAddress:              &transfer{},
+	fractionMulExpAddress:        &fractionMulExp{},
+	proofOfPossessionAddress:     &proofOfPossession{},
+	getValidatorAddress:          &getValidator{},
+	numberValidatorsAddress:      &numberValidators{},
+	epochSizeAddress:             &epochSize{},
+	blockNumberFromHeaderAddress: &blockNumberFromHeader{},
+	hashHeaderAddress:            &hashHeader{},
+	getParentSealBitmapAddress:   &getParentSealBitmap{},
+	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
 }
 
 var (
@@ -178,7 +242,7 @@ func RunPrecompiledContract(evm *EVM, contract *Contract, p PrecompiledContract,
 type ecrecover struct{}
 
 func (c *ecrecover) RequiredGas(input []byte) uint64 {
-	return params.EcrecoverGas
+	return ethparams.EcrecoverGas
 }
 
 func (c *ecrecover) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -220,7 +284,7 @@ type sha256hash struct{}
 // This method does not require any overflow checking as the input size gas costs
 // required for anything significant is so high it's impossible to pay for.
 func (c *sha256hash) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*params.Sha256PerWordGas + params.Sha256BaseGas
+	return uint64(len(input)+31)/32*ethparams.Sha256PerWordGas + ethparams.Sha256BaseGas
 }
 func (c *sha256hash) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
 	h := sha256.Sum256(input)
@@ -235,7 +299,7 @@ type ripemd160hash struct{}
 // This method does not require any overflow checking as the input size gas costs
 // required for anything significant is so high it's impossible to pay for.
 func (c *ripemd160hash) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*params.Ripemd160PerWordGas + params.Ripemd160BaseGas
+	return uint64(len(input)+31)/32*ethparams.Ripemd160PerWordGas + ethparams.Ripemd160BaseGas
 }
 func (c *ripemd160hash) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
 	ripemd := ripemd160.New()
@@ -251,7 +315,7 @@ type dataCopy struct{}
 // This method does not require any overflow checking as the input size gas costs
 // required for anything significant is so high it's impossible to pay for.
 func (c *dataCopy) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*params.IdentityPerWordGas + params.IdentityBaseGas
+	return uint64(len(input)+31)/32*ethparams.IdentityPerWordGas + ethparams.IdentityBaseGas
 }
 func (c *dataCopy) Run(evm *EVM, contract *Contract, in []byte) ([]byte, error) {
 	return in, nil
@@ -449,7 +513,7 @@ type bn256AddIstanbul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256AddIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256AddGasIstanbul
+	return ethparams.Bn256AddGasIstanbul
 }
 
 func (c *bn256AddIstanbul) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -462,7 +526,7 @@ type bn256AddByzantium struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256AddByzantium) RequiredGas(input []byte) uint64 {
-	return params.Bn256AddGasByzantium
+	return ethparams.Bn256AddGasByzantium
 }
 
 func (c *bn256AddByzantium) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -487,7 +551,7 @@ type bn256ScalarMulIstanbul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256ScalarMulIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256ScalarMulGasIstanbul
+	return ethparams.Bn256ScalarMulGasIstanbul
 }
 
 func (c *bn256ScalarMulIstanbul) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -500,7 +564,7 @@ type bn256ScalarMulByzantium struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256ScalarMulByzantium) RequiredGas(input []byte) uint64 {
-	return params.Bn256ScalarMulGasByzantium
+	return ethparams.Bn256ScalarMulGasByzantium
 }
 
 func (c *bn256ScalarMulByzantium) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -555,7 +619,7 @@ type bn256PairingIstanbul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256PairingIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256PairingBaseGasIstanbul + uint64(len(input)/192)*params.Bn256PairingPerPointGasIstanbul
+	return ethparams.Bn256PairingBaseGasIstanbul + uint64(len(input)/192)*ethparams.Bn256PairingPerPointGasIstanbul
 }
 
 func (c *bn256PairingIstanbul) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -568,7 +632,7 @@ type bn256PairingByzantium struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256PairingByzantium) RequiredGas(input []byte) uint64 {
-	return params.Bn256PairingBaseGasByzantium + uint64(len(input)/192)*params.Bn256PairingPerPointGasByzantium
+	return ethparams.Bn256PairingBaseGasByzantium + uint64(len(input)/192)*ethparams.Bn256PairingPerPointGasByzantium
 }
 
 func (c *bn256PairingByzantium) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -648,7 +712,7 @@ type bls12381G1Add struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G1Add) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G1AddGas
+	return ethparams.Bls12381G1AddGas
 }
 
 func (c *bls12381G1Add) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -686,7 +750,7 @@ type bls12381G1Mul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G1Mul) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G1MulGas
+	return ethparams.Bls12381G1MulGas
 }
 
 func (c *bls12381G1Mul) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -730,13 +794,13 @@ func (c *bls12381G1MultiExp) RequiredGas(input []byte) uint64 {
 	}
 	// Lookup discount value for G1 point, scalar value pair length
 	var discount uint64
-	if dLen := len(params.Bls12381MultiExpDiscountTable); k < dLen {
-		discount = params.Bls12381MultiExpDiscountTable[k-1]
+	if dLen := len(ethparams.Bls12381MultiExpDiscountTable); k < dLen {
+		discount = ethparams.Bls12381MultiExpDiscountTable[k-1]
 	} else {
-		discount = params.Bls12381MultiExpDiscountTable[dLen-1]
+		discount = ethparams.Bls12381MultiExpDiscountTable[dLen-1]
 	}
 	// Calculate gas and return the result
-	return (uint64(k) * params.Bls12381G1MulGas * discount) / 1000
+	return (uint64(k) * ethparams.Bls12381G1MulGas * discount) / 1000
 }
 
 func (c *bls12381G1MultiExp) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -779,7 +843,7 @@ type bls12381G2Add struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G2Add) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G2AddGas
+	return ethparams.Bls12381G2AddGas
 }
 
 func (c *bls12381G2Add) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -817,7 +881,7 @@ type bls12381G2Mul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G2Mul) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G2MulGas
+	return ethparams.Bls12381G2MulGas
 }
 
 func (c *bls12381G2Mul) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -861,13 +925,13 @@ func (c *bls12381G2MultiExp) RequiredGas(input []byte) uint64 {
 	}
 	// Lookup discount value for G2 point, scalar value pair length
 	var discount uint64
-	if dLen := len(params.Bls12381MultiExpDiscountTable); k < dLen {
-		discount = params.Bls12381MultiExpDiscountTable[k-1]
+	if dLen := len(ethparams.Bls12381MultiExpDiscountTable); k < dLen {
+		discount = ethparams.Bls12381MultiExpDiscountTable[k-1]
 	} else {
-		discount = params.Bls12381MultiExpDiscountTable[dLen-1]
+		discount = ethparams.Bls12381MultiExpDiscountTable[dLen-1]
 	}
 	// Calculate gas and return the result
-	return (uint64(k) * params.Bls12381G2MulGas * discount) / 1000
+	return (uint64(k) * ethparams.Bls12381G2MulGas * discount) / 1000
 }
 
 func (c *bls12381G2MultiExp) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -910,7 +974,7 @@ type bls12381Pairing struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381Pairing) RequiredGas(input []byte) uint64 {
-	return params.Bls12381PairingBaseGas + uint64(len(input)/384)*params.Bls12381PairingPerPairGas
+	return ethparams.Bls12381PairingBaseGas + uint64(len(input)/384)*ethparams.Bls12381PairingPerPairGas
 }
 
 func (c *bls12381Pairing) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -989,7 +1053,7 @@ type bls12381MapG1 struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381MapG1) RequiredGas(input []byte) uint64 {
-	return params.Bls12381MapG1Gas
+	return ethparams.Bls12381MapG1Gas
 }
 
 func (c *bls12381MapG1) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -1024,7 +1088,7 @@ type bls12381MapG2 struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381MapG2) RequiredGas(input []byte) uint64 {
-	return params.Bls12381MapG2Gas
+	return ethparams.Bls12381MapG2Gas
 }
 
 func (c *bls12381MapG2) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
@@ -1075,7 +1139,7 @@ func (c *relayer) RequiredGas(input []byte) uint64 {
 	if err != nil {
 		return baseGas
 	}
-	if gas, ok := params2.RelayerGas[string(method.Name)]; ok {
+	if gas, ok := params.RelayerGas[string(method.Name)]; ok {
 		return gas
 	} else {
 		return baseGas
@@ -1134,4 +1198,505 @@ func (tv *verify) RequiredGas(input []byte) uint64 {
 
 func (tv *verify) Run(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	return RunTxVerify(evm, contract, input)
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Native transfer contract to make Atlas Gold ERC20 compatible.
+type transfer struct{}
+
+func (c *transfer) RequiredGas(input []byte) uint64 {
+	return params2.CallValueTransferGas
+}
+
+func (c *transfer) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	caller := contract.CallerAddress
+	atlasGoldAddress, err := evm.Context.GetRegisteredAddress(evm, params2.GoldTokenRegistryId)
+	if err != nil {
+		return nil, err
+	}
+
+	// input is comprised of 3 arguments:
+	//   from:  32 bytes representing the address of the sender
+	//   to:    32 bytes representing the address of the recipient
+	//   value: 32 bytes, a 256 bit integer representing the amount of Atlas Gold to transfer
+	// 3 arguments x 32 bytes each = 96 bytes total input
+	if len(input) < 96 {
+		return nil, ErrInputLength
+	}
+
+	if caller != atlasGoldAddress {
+		return nil, fmt.Errorf("Unable to call transfer from unpermissioned address")
+	}
+	from := common.BytesToAddress(input[0:32])
+	to := common.BytesToAddress(input[32:64])
+
+	var parsed bool
+	value, parsed := math.ParseBig256(hexutil.Encode(input[64:96]))
+	if !parsed {
+		return nil, fmt.Errorf("Error parsing transfer: unable to parse value from " + hexutil.Encode(input[64:96]))
+	}
+
+	if from == params2.ZeroAddress {
+		// Mint case: Create cGLD out of thin air
+		evm.StateDB.AddBalance(to, value)
+	} else {
+		// Fail if we're trying to transfer more than the available balance
+		if !evm.Context.CanTransfer(evm.StateDB, from, value) {
+			return nil, ErrInsufficientBalance
+		}
+
+		//evm.Context.Transfer(evm, from, to, value)
+	}
+
+	return input, err
+}
+
+// computes a * (b ^ exponent) to `decimals` places of precision, where a and b are fractions
+type fractionMulExp struct{}
+
+func max(x, y int64) int64 {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func (c *fractionMulExp) RequiredGas(input []byte) uint64 {
+	if len(input) < 192 {
+		return params2.FractionMulExpGas
+	}
+	exponent, parsed := math.ParseBig256(hexutil.Encode(input[128:160]))
+	if !parsed {
+		return params2.FractionMulExpGas
+	}
+	decimals, parsed := math.ParseBig256(hexutil.Encode(input[160:192]))
+	if !parsed {
+		return params2.FractionMulExpGas
+	}
+	if !decimals.IsInt64() || !exponent.IsInt64() {
+		return params2.FractionMulExpGas
+	}
+
+	numbers := max(decimals.Int64(), exponent.Int64())
+
+	if numbers > 100000 {
+		return params2.FractionMulExpGas
+	}
+
+	gas := params2.FractionMulExpGas
+
+	for numbers > 10 {
+		gas = gas * 3
+		numbers = numbers / 2
+	}
+
+	return gas
+}
+
+func (c *fractionMulExp) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of 6 arguments:
+	//   aNumerator:   32 bytes, 256 bit integer, numerator for the first fraction (a)
+	//   aDenominator: 32 bytes, 256 bit integer, denominator for the first fraction (a)
+	//   bNumerator:   32 bytes, 256 bit integer, numerator for the second fraction (b)
+	//   bDenominator: 32 bytes, 256 bit integer, denominator for the second fraction (b)
+	//   exponent:     32 bytes, 256 bit integer, exponent to raise the second fraction (b) to
+	//   decimals:     32 bytes, 256 bit integer, places of precision
+	//
+	// 6 args x 32 bytes each = 192 bytes total input length
+	if len(input) < 192 {
+		return nil, ErrInputLength
+	}
+
+	parseErrorStr := "Error parsing input: unable to parse %s value from %s"
+
+	aNumerator, parsed := math.ParseBig256(hexutil.Encode(input[0:32]))
+	if !parsed {
+		return nil, fmt.Errorf(parseErrorStr, "aNumerator", hexutil.Encode(input[0:32]))
+	}
+
+	aDenominator, parsed := math.ParseBig256(hexutil.Encode(input[32:64]))
+	if !parsed {
+		return nil, fmt.Errorf(parseErrorStr, "aDenominator", hexutil.Encode(input[32:64]))
+	}
+
+	bNumerator, parsed := math.ParseBig256(hexutil.Encode(input[64:96]))
+	if !parsed {
+		return nil, fmt.Errorf(parseErrorStr, "bNumerator", hexutil.Encode(input[64:96]))
+	}
+
+	bDenominator, parsed := math.ParseBig256(hexutil.Encode(input[96:128]))
+	if !parsed {
+		return nil, fmt.Errorf(parseErrorStr, "bDenominator", hexutil.Encode(input[96:128]))
+	}
+
+	exponent, parsed := math.ParseBig256(hexutil.Encode(input[128:160]))
+	if !parsed {
+		return nil, fmt.Errorf(parseErrorStr, "exponent", hexutil.Encode(input[128:160]))
+	}
+
+	decimals, parsed := math.ParseBig256(hexutil.Encode(input[160:192]))
+	if !parsed {
+		return nil, fmt.Errorf(parseErrorStr, "decimals", hexutil.Encode(input[160:192]))
+	}
+
+	// Handle passing of zero denominators
+	if aDenominator == big.NewInt(0) || bDenominator == big.NewInt(0) {
+		return nil, fmt.Errorf("Input Error: Denominator of zero provided!")
+	}
+
+	if !decimals.IsInt64() || !exponent.IsInt64() || max(decimals.Int64(), exponent.Int64()) > 100000 {
+		return nil, fmt.Errorf("Input Error: Decimals or exponent too large")
+	}
+
+	numeratorExp := new(big.Int).Mul(aNumerator, new(big.Int).Exp(bNumerator, exponent, nil))
+	denominatorExp := new(big.Int).Mul(aDenominator, new(big.Int).Exp(bDenominator, exponent, nil))
+
+	decimalAdjustment := new(big.Int).Exp(big.NewInt(10), decimals, nil)
+
+	numeratorDecimalAdjusted := new(big.Int).Div(new(big.Int).Mul(numeratorExp, decimalAdjustment), denominatorExp).Bytes()
+	denominatorDecimalAdjusted := decimalAdjustment.Bytes()
+
+	numeratorPadded := common.LeftPadBytes(numeratorDecimalAdjusted, 32)
+	denominatorPadded := common.LeftPadBytes(denominatorDecimalAdjusted, 32)
+
+	return append(numeratorPadded, denominatorPadded...), nil
+}
+
+type proofOfPossession struct{}
+
+func (c *proofOfPossession) RequiredGas(input []byte) uint64 {
+	return params2.ProofOfPossessionGas
+}
+
+func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of 3 arguments:
+	//   address:   20 bytes, an address used to generate the proof-of-possession
+	//   publicKey: 96 bytes, representing the public key (defined as a const in bls package)
+	//   signature: 48 bytes, representing the signature on `address` (defined as a const in bls package)
+	// the total length of input required is the sum of these constants
+	if len(input) != common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES {
+		return nil, ErrInputLength
+	}
+	addressBytes := input[:common.AddressLength]
+
+	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
+	publicKey, err := bls.DeserializePublicKeyCached(publicKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	defer publicKey.Destroy()
+
+	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
+	signature, err := bls.DeserializeSignature(signatureBytes)
+	if err != nil {
+		return nil, err
+	}
+	defer signature.Destroy()
+
+	err = publicKey.VerifyPoP(addressBytes, signature)
+	if err != nil {
+		return nil, err
+	}
+
+	return true32Byte, nil
+}
+
+// bn256PairingIstanbul implements a pairing pre-compile for the bn256 curve
+// conforming to Istanbul consensus rules.
+
+// ed25519Verify implements a native Ed25519 signature verification.
+type ed25519Verify struct{}
+
+// RequiredGas returns the gas required to execute the pre-compiled contract.
+func (c *ed25519Verify) RequiredGas(input []byte) uint64 {
+	const sha2_512WordLength = 64
+
+	// round up to next whole word
+	lengthCeil := len(input) + sha2_512WordLength - 1
+	words := uint64(lengthCeil / sha2_512WordLength)
+	return params2.Ed25519VerifyGas + params2.Sha2_512BaseGas + (words * params2.Sha2_512PerWordGas)
+}
+
+func (c *ed25519Verify) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// Setup success/failure return values
+	var fail32byte, success32Byte = true32Byte, false32Byte
+
+	// Check if all required arguments are present
+	if len(input) < 96 {
+		return fail32byte, nil
+	}
+
+	publicKey := input[0:32]  // 32 bytes
+	signature := input[32:96] // 64 bytes
+	message := input[96:]     // arbitrary length
+
+	// Verify the Ed25519 signature against the public key and message
+	// https://godoc.org/golang.org/x/crypto/ed25519#Verify
+	if ed25519.Verify(publicKey, message, signature) {
+		return success32Byte, nil
+	}
+	return fail32byte, nil
+}
+
+type getValidator struct{}
+
+func (c *getValidator) RequiredGas(input []byte) uint64 {
+	return params2.GetValidatorGas
+}
+
+// Return the validators that are required to sign the given, possibly unsealed, block number. If this block is
+// the last in an epoch, note that that may mean one or more of those validators may no longer be elected
+// for subsequent blocks.
+// WARNING: Validator set is always constructed from the canonical chain, therefore this precompile is undefined
+// if the engine is aware of a chain with higher total difficulty.
+func (c *getValidator) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of two arguments:
+	//   index: 32 byte integer representing the index of the validator to get
+	//   blockNumber: 32 byte integer representing the block number to access
+	if len(input) < 64 {
+		return nil, ErrInputLength
+	}
+
+	index := new(big.Int).SetBytes(input[0:32])
+
+	blockNumber := new(big.Int).SetBytes(input[32:64])
+	if blockNumber.Cmp(common.Big0) == 0 {
+		// Validator set for the genesis block is empty, so any index is out of bounds.
+		return nil, ErrValidatorsOutOfBounds
+	}
+	if blockNumber.Cmp(evm.Context.BlockNumber) > 0 {
+		return nil, ErrBlockNumberOutOfBounds
+	}
+
+	// Note: Passing empty hash as here as it is an extra expense and the hash is not actually used.
+	validators := evm.Context.GetValidators(new(big.Int).Sub(blockNumber, common.Big1), common.Hash{})
+
+	// Ensure index, which is guaranteed to be non-negative, is valid.
+	if index.Cmp(big.NewInt(int64(len(validators)))) >= 0 {
+		return nil, ErrValidatorsOutOfBounds
+	}
+
+	validatorAddress := validators[index.Uint64()].Address()
+	addressBytes := common.LeftPadBytes(validatorAddress[:], 32)
+
+	return addressBytes, nil
+}
+
+type getValidatorBLS struct{}
+
+func (c *getValidatorBLS) RequiredGas(input []byte) uint64 {
+	return params2.GetValidatorBLSGas
+}
+
+func copyBLSNumber(result []byte, offset int, uncompressedBytes []byte, offset2 int) {
+	for i := 0; i < 48; i++ {
+		result[63-i+offset] = uncompressedBytes[i+offset2]
+	}
+}
+
+// Return the validator BLS public key for the validator at given index. The public key is given in uncompressed format, 4*48 bytes.
+func (c *getValidatorBLS) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of two arguments:
+	//   index: 32 byte integer representing the index of the validator to get
+	//   blockNumber: 32 byte integer representing the block number to access
+	if len(input) < 64 {
+		return nil, ErrInputLength
+	}
+
+	index := new(big.Int).SetBytes(input[0:32])
+
+	blockNumber := new(big.Int).SetBytes(input[32:64])
+	if blockNumber.Cmp(common.Big0) == 0 {
+		// Validator set for the genesis block is empty, so any index is out of bounds.
+		return nil, ErrValidatorsOutOfBounds
+	}
+	if blockNumber.Cmp(evm.Context.BlockNumber) > 0 {
+		return nil, ErrBlockNumberOutOfBounds
+	}
+
+	// Note: Passing empty hash as here as it is an extra expense and the hash is not actually used.
+	validators := evm.Context.GetValidators(new(big.Int).Sub(blockNumber, common.Big1), common.Hash{})
+
+	// Ensure index, which is guaranteed to be non-negative, is valid.
+	if index.Cmp(big.NewInt(int64(len(validators)))) >= 0 {
+		return nil, ErrValidatorsOutOfBounds
+	}
+
+	validator := validators[index.Uint64()]
+	uncompressedBytes := validator.BLSPublicKeyUncompressed()
+	if len(uncompressedBytes) != 192 {
+		return nil, ErrUnexpected
+	}
+
+	result := make([]byte, 256)
+	for i := 0; i < 256; i++ {
+		result[i] = 0
+	}
+
+	copyBLSNumber(result, 0, uncompressedBytes, 0)
+	copyBLSNumber(result, 64, uncompressedBytes, 48)
+	copyBLSNumber(result, 128, uncompressedBytes, 96)
+	copyBLSNumber(result, 192, uncompressedBytes, 144)
+
+	return result, nil
+}
+
+type numberValidators struct{}
+
+func (c *numberValidators) RequiredGas(input []byte) uint64 {
+	return params2.GetValidatorGas
+}
+
+// Return the number of validators that are required to sign this current, possibly unsealed, block. If this block is
+// the last in an epoch, note that that may mean one or more of those validators may no longer be elected
+// for subsequent blocks.
+// WARNING: Validator set is always constructed from the canonical chain, therefore this precompile is undefined
+// if the engine is aware of a chain with higher total difficulty.
+func (c *numberValidators) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of a single argument:
+	//   blockNumber: 32 byte integer representing the block number to access
+	if len(input) < 32 {
+		return nil, ErrInputLength
+	}
+
+	blockNumber := new(big.Int).SetBytes(input[0:32])
+	if blockNumber.Cmp(common.Big0) == 0 {
+		// Genesis validator set is empty. Return 0.
+		return make([]byte, 32), nil
+	}
+	if blockNumber.Cmp(evm.Context.BlockNumber) > 0 {
+		return nil, ErrBlockNumberOutOfBounds
+	}
+
+	// Note: Passing empty hash as here as it is an extra expense and the hash is not actually used.
+	validators := evm.Context.GetValidators(new(big.Int).Sub(blockNumber, common.Big1), common.Hash{})
+
+	numberValidators := big.NewInt(int64(len(validators))).Bytes()
+	numberValidatorsBytes := common.LeftPadBytes(numberValidators[:], 32)
+	return numberValidatorsBytes, nil
+}
+
+type epochSize struct{}
+
+func (c *epochSize) RequiredGas(input []byte) uint64 {
+	return params2.GetEpochSizeGas
+}
+
+func (c *epochSize) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	epochSize := new(big.Int).SetUint64(evm.Context.EpochSize).Bytes()
+	epochSizeBytes := common.LeftPadBytes(epochSize[:], 32)
+
+	return epochSizeBytes, nil
+}
+
+type blockNumberFromHeader struct{}
+
+func (c *blockNumberFromHeader) RequiredGas(input []byte) uint64 {
+	return params2.GetBlockNumberFromHeaderGas
+}
+
+func (c *blockNumberFromHeader) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	var header types.Header
+	err := rlp.DecodeBytes(input, &header)
+	if err != nil {
+		return nil, ErrInputDecode
+	}
+
+	blockNumber := header.Number.Bytes()
+	blockNumberBytes := common.LeftPadBytes(blockNumber[:], 32)
+
+	return blockNumberBytes, nil
+}
+
+type hashHeader struct{}
+
+func (c *hashHeader) RequiredGas(input []byte) uint64 {
+	return params2.HashHeaderGas
+}
+
+func (c *hashHeader) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	var header types.Header
+	err := rlp.DecodeBytes(input, &header)
+	if err != nil {
+		return nil, ErrInputDecode
+	}
+
+	hashBytes := header.Hash().Bytes()
+
+	return hashBytes, nil
+}
+
+type getParentSealBitmap struct{}
+
+func (c *getParentSealBitmap) RequiredGas(input []byte) uint64 {
+	return params2.GetParentSealBitmapGas
+}
+
+// Return the signer bitmap from the parent seal of a past block in the chain.
+// Requested parent seal must have occurred within 4 epochs of the current block number.
+func (c *getParentSealBitmap) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of a single argument:
+	//   blockNumber: 32 byte integer representing the block number to access
+	if len(input) < 32 {
+		return nil, ErrInputLength
+	}
+
+	blockNumber := new(big.Int).SetBytes(input[0:32])
+
+	// Ensure the request is for information from a previously sealed block.
+	if blockNumber.Cmp(common.Big0) == 0 || blockNumber.Cmp(evm.Context.BlockNumber) > 0 {
+		return nil, ErrBlockNumberOutOfBounds
+	}
+
+	// Ensure the request is for a sufficiently recent block to limit state expansion.
+	historyLimit := new(big.Int).SetUint64(evm.Context.EpochSize * 4)
+	if blockNumber.Cmp(new(big.Int).Sub(evm.Context.BlockNumber, historyLimit)) <= 0 {
+		return nil, ErrBlockNumberOutOfBounds
+	}
+
+	header := evm.Context.GetHeaderByNumber(blockNumber.Uint64())
+	if header == nil {
+		log.Error("Unexpected failure to retrieve block in getParentSealBitmap precompile", "blockNumber", blockNumber)
+		return nil, ErrUnexpected
+	}
+
+	extra, err := types.ExtractIstanbulExtra(header)
+	if err != nil {
+		log.Error("Header without Istanbul extra data encountered in getParentSealBitmap precompile", "blockNumber", blockNumber, "err", err)
+		return nil, ErrEngineIncompatible
+	}
+
+	return common.LeftPadBytes(extra.ParentAggregatedSeal.Bitmap.Bytes()[:], 32), nil
+}
+
+// getVerifiedSealBitmap is a precompile to verify the seal on a given header and extract its bitmap.
+type getVerifiedSealBitmap struct{}
+
+func (c *getVerifiedSealBitmap) RequiredGas(input []byte) uint64 {
+	return params2.GetVerifiedSealBitmapGas
+}
+
+func (c *getVerifiedSealBitmap) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
+	// input is comprised of a single argument:
+	//   header:  rlp encoded block header
+	var header types.Header
+	if err := rlp.DecodeBytes(input, &header); err != nil {
+		return nil, ErrInputDecode
+	}
+
+	// Verify the seal against the engine rules.
+	if !evm.Context.VerifySeal(&header) {
+		return nil, ErrInputVerification
+	}
+
+	// Extract the verified seal from the header.
+	extra, err := types.ExtractIstanbulExtra(&header)
+	if err != nil {
+		log.Error("Header without Istanbul extra data encountered in getVerifiedSealBitmap precompile", "extraData", header.Extra, "err", err)
+		// Seal verified by a non-Istanbul engine. Return an error.
+		return nil, ErrEngineIncompatible
+	}
+
+	return common.LeftPadBytes(extra.AggregatedSeal.Bitmap.Bytes()[:], 32), nil
 }

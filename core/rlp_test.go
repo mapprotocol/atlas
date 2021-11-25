@@ -18,25 +18,26 @@ package core
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 func getBlock(transactions int, uncles int, dataSize int) *types.Block {
 	var (
 		aa = common.HexToAddress("0x000000000000000000000000000000000000aaaa")
 		// Generate a canonical chain to act as the main dataset
-		engine = ethash.NewFaker()
+		engine = consensustest.NewFaker()
 		db     = rawdb.NewMemoryDatabase()
 		// A sender who makes transactions, has some funds
 		key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")

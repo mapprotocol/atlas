@@ -19,12 +19,19 @@ package atlas
 import (
 	"context"
 	"errors"
-	"github.com/mapprotocol/atlas/core/processor"
-	"github.com/mapprotocol/atlas/core/txsdetails"
+	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
+	"time"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
+	ethparams "github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/mapprotocol/atlas/accounts"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/bloombits"
@@ -32,13 +39,8 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/mapprotocol/atlas/atlas/downloader"
-	"github.com/mapprotocol/atlas/atlas/gasprice"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/mapprotocol/atlas/miner"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // EthAPIBackend implements ethapi.Backend for full nodes
@@ -135,6 +137,12 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
+func (b *EthAPIBackend) PendingBlockAndReceipts() (*types.Block, types.Receipts) {
+	// todo ibft
+	//return b.eth.miner.PendingBlockAndReceipts()
+	return b.eth.miner.PendingBlock(), nil
+}
+
 func (b *EthAPIBackend) StateAndHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*state.StateDB, *types.Header, error) {
 	// Pending state is only known by the miner
 	if number == rpc.PendingBlockNumber {
@@ -179,28 +187,32 @@ func (b *EthAPIBackend) GetReceipts(ctx context.Context, hash common.Hash) (type
 }
 
 func (b *EthAPIBackend) GetLogs(ctx context.Context, hash common.Hash) ([][]*types.Log, error) {
-	receipts := b.eth.blockchain.GetReceiptsByHash(hash)
-	if receipts == nil {
-		return nil, nil
+	db := b.eth.ChainDb()
+	number := rawdb.ReadHeaderNumber(db, hash)
+	if number == nil {
+		return nil, errors.New("failed to get block number from hash")
 	}
-	logs := make([][]*types.Log, len(receipts))
-	for i, receipt := range receipts {
-		logs[i] = receipt.Logs
+	logs := rawdb.ReadLogs(db, hash, *number)
+	if logs == nil {
+		return nil, errors.New("failed to get logs for block")
 	}
 	return logs, nil
 }
 
 func (b *EthAPIBackend) GetTd(ctx context.Context, hash common.Hash) *big.Int {
-	return b.eth.blockchain.GetTdByHash(hash)
+	if header := b.eth.blockchain.GetHeaderByHash(hash); header != nil {
+		return b.eth.blockchain.GetTd(hash, header.Number.Uint64())
+	}
+	return nil
 }
 
-func (b *EthAPIBackend) GetEVM(ctx context.Context, msg processor.Message, state *state.StateDB, header *types.Header, vmConfig *vm.Config) (*vm.EVM, func() error, error) {
+func (b *EthAPIBackend) GetEVM(ctx context.Context, msg chain.Message, state *state.StateDB, header *types.Header, vmConfig *vm.Config) (*vm.EVM, func() error, error) {
 	vmError := func() error { return nil }
 	if vmConfig == nil {
 		vmConfig = b.eth.blockchain.GetVMConfig()
 	}
-	txContext := processor.NewEVMTxContext(msg)
-	context := processor.NewEVMBlockContext(header, b.eth.BlockChain(), nil)
+	txContext := chain.NewEVMTxContext(msg)
+	context := chain.NewEVMBlockContext(header, b.eth.BlockChain(), nil)
 	return vm.NewEVM(context, txContext, state, b.eth.blockchain.Config(), *vmConfig), vmError, nil
 }
 
@@ -233,10 +245,7 @@ func (b *EthAPIBackend) SendTx(ctx context.Context, signedTx *types.Transaction)
 }
 
 func (b *EthAPIBackend) GetPoolTransactions() (types.Transactions, error) {
-	pending, err := b.eth.txPool.Pending()
-	if err != nil {
-		return nil, err
-	}
+	pending := b.eth.txPool.Pending(false)
 	var txs types.Transactions
 	for _, batch := range pending {
 		txs = append(txs, batch...)
@@ -265,7 +274,11 @@ func (b *EthAPIBackend) TxPoolContent() (map[common.Address]types.Transactions, 
 	return b.eth.TxPool().Content()
 }
 
-func (b *EthAPIBackend) TxPool() *txsdetails.TxPool {
+func (b *EthAPIBackend) TxPoolContentFrom(addr common.Address) (types.Transactions, types.Transactions) {
+	return b.eth.TxPool().ContentFrom(addr)
+}
+
+func (b *EthAPIBackend) TxPool() *chain.TxPool {
 	return b.eth.TxPool()
 }
 
@@ -273,12 +286,16 @@ func (b *EthAPIBackend) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.S
 	return b.eth.TxPool().SubscribeNewTxsEvent(ch)
 }
 
-func (b *EthAPIBackend) Downloader() *downloader.Downloader {
-	return b.eth.Downloader()
+func (b *EthAPIBackend) SyncProgress() ethereum.SyncProgress {
+	return b.eth.Downloader().Progress()
 }
 
-func (b *EthAPIBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
-	return b.gpo.SuggestPrice(ctx)
+func (b *EthAPIBackend) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
+	return b.gpo.SuggestTipCap(ctx)
+}
+
+func (b *EthAPIBackend) FeeHistory(ctx context.Context, blockCount int, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (firstBlock *big.Int, reward [][]*big.Int, baseFee []*big.Int, gasUsedRatio []float64, err error) {
+	return b.gpo.FeeHistory(ctx, blockCount, lastBlock, rewardPercentiles)
 }
 
 func (b *EthAPIBackend) ChainDb() ethdb.Database {
@@ -305,13 +322,17 @@ func (b *EthAPIBackend) RPCGasCap() uint64 {
 	return b.eth.config.RPCGasCap
 }
 
+func (b *EthAPIBackend) RPCEVMTimeout() time.Duration {
+	return b.eth.config.RPCEVMTimeout
+}
+
 func (b *EthAPIBackend) RPCTxFeeCap() float64 {
 	return b.eth.config.RPCTxFeeCap
 }
 
 func (b *EthAPIBackend) BloomStatus() (uint64, uint64) {
 	sections, _, _ := b.eth.bloomIndexer.Sections()
-	return params.BloomBitsBlocks, sections
+	return ethparams.BloomBitsBlocks, sections
 }
 
 func (b *EthAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
@@ -340,6 +361,6 @@ func (b *EthAPIBackend) StateAtBlock(ctx context.Context, block *types.Block, re
 	return b.eth.stateAtBlock(block, reexec, base, checkLive)
 }
 
-func (b *EthAPIBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (processor.Message, vm.BlockContext, *state.StateDB, error) {
+func (b *EthAPIBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (chain.Message, vm.BlockContext, *state.StateDB, error) {
 	return b.eth.stateAtTransaction(block, txIndex, reexec)
 }

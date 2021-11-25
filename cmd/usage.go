@@ -51,6 +51,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			utils.IdentityFlag,
 			utils.LightKDFFlag,
 			utils.WhitelistFlag,
+			utils.TxFeeRecipientFlag,
 		},
 	},
 	{
@@ -77,19 +78,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		Name: "SINGLE CHAIN",
 		Flags: []cli.Flag{
 			utils.SingleFlag,
-		},
-	},
-	{
-		Name: "ETHASH",
-		Flags: []cli.Flag{
-			utils.EthashCacheDirFlag,
-			utils.EthashCachesInMemoryFlag,
-			utils.EthashCachesOnDiskFlag,
-			utils.EthashCachesLockMmapFlag,
-			utils.EthashDatasetDirFlag,
-			utils.EthashDatasetsInMemoryFlag,
-			utils.EthashDatasetsOnDiskFlag,
-			utils.EthashDatasetsLockMmapFlag,
 		},
 	},
 	{
@@ -181,15 +169,14 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		Flags: []cli.Flag{
 			utils.MiningEnabledFlag,
 			utils.MinerThreadsFlag,
-			utils.MinerNotifyFlag,
-			utils.MinerNotifyFullFlag,
+			//utils.MinerNotifyFlag,
+			//utils.MinerNotifyFullFlag,
 			utils.MinerGasPriceFlag,
-			utils.MinerGasTargetFlag,
-			utils.MinerGasLimitFlag,
+			//utils.MinerGasLimitFlag,
 			utils.MinerEtherbaseFlag,
 			utils.MinerExtraDataFlag,
-			utils.MinerRecommitIntervalFlag,
-			utils.MinerNoVerfiyFlag,
+			//utils.MinerRecommitIntervalFlag,
+			//utils.MinerNoVerifyFlag,
 		},
 	},
 	{
@@ -204,8 +191,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		Name: "VIRTUAL MACHINE",
 		Flags: []cli.Flag{
 			utils.VMEnableDebugFlag,
-			utils.EVMInterpreterFlag,
-			utils.EWASMInterpreterFlag,
 		},
 	},
 	{
@@ -218,18 +203,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 	{
 		Name:  "METRICS AND STATS",
 		Flags: metricsFlags,
-	},
-	{
-		Name: "ALIASED (deprecated)",
-		Flags: []cli.Flag{
-			utils.NoUSBFlag,
-			utils.LegacyRPCEnabledFlag,
-			utils.LegacyRPCListenAddrFlag,
-			utils.LegacyRPCPortFlag,
-			utils.LegacyRPCCORSDomainFlag,
-			utils.LegacyRPCVirtualHostsFlag,
-			utils.LegacyRPCApiFlag,
-		},
 	},
 	{
 		Name: "MISC",

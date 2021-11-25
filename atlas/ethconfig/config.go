@@ -18,58 +18,47 @@
 package ethconfig
 
 import (
-	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/txsdetails"
-	params2 "github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"math/big"
-	"os"
-	"os/user"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
+
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/gasprice"
-	"github.com/mapprotocol/atlas/cmd/node"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/consensus/clique"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/miner"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // FullNodeGPO contains default gasprice oracle settings for full node.
 var FullNodeGPO = gasprice.Config{
-	Blocks:     20,
-	Percentile: 60,
-	MaxPrice:   gasprice.DefaultMaxPrice,
+	Blocks:           20,
+	Percentile:       60,
+	MaxHeaderHistory: 1024,
+	MaxBlockHistory:  1024,
+	MaxPrice:         gasprice.DefaultMaxPrice,
+	IgnorePrice:      gasprice.DefaultIgnorePrice,
 }
 
 // LightClientGPO contains default gasprice oracle settings for light client.
 var LightClientGPO = gasprice.Config{
-	Blocks:     2,
-	Percentile: 60,
-	MaxPrice:   gasprice.DefaultMaxPrice,
+	Blocks:           2,
+	Percentile:       60,
+	MaxHeaderHistory: 300,
+	MaxBlockHistory:  5,
+	MaxPrice:         gasprice.DefaultMaxPrice,
+	IgnorePrice:      gasprice.DefaultIgnorePrice,
 }
 
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
-	SyncMode: downloader.FastSync,
-	Ethash: ethash.Config{
-		CacheDir:         "ethash",
-		CachesInMem:      2,
-		CachesOnDisk:     3,
-		CachesLockMmap:   false,
-		DatasetsInMem:    1,
-		DatasetsOnDisk:   2,
-		DatasetsLockMmap: false,
-	},
-	NetworkId:               params2.MainnetNetWorkID,
+	SyncMode:                downloader.SnapSync,
+	NetworkId:               params.MainnetNetWorkID,
 	TxLookupLimit:           2350000,
 	LightPeers:              100,
+	LightServ:               0,
 	UltraLightFraction:      75,
 	DatabaseCache:           512,
 	TrieCleanCache:          154,
@@ -78,38 +67,41 @@ var Defaults = Config{
 	TrieDirtyCache:          256,
 	TrieTimeout:             60 * time.Minute,
 	SnapshotCache:           102,
+	GatewayFee:              big.NewInt(0),
 	Miner: miner.Config{
 		GasFloor: 8000000,
 		GasCeil:  8000000,
-		GasPrice: big.NewInt(params.GWei),
+		GasPrice: big.NewInt(ethparams.GWei),
 		Recommit: 3 * time.Second,
 	},
-	TxPool:      txsdetails.DefaultTxPoolConfig,
-	RPCGasCap:   25000000,
-	GPO:         FullNodeGPO,
-	RPCTxFeeCap: 1, // 1 ether
+	TxPool:        chain.DefaultTxPoolConfig,
+	RPCGasCap:     50000000,
+	RPCEVMTimeout: 5 * time.Second,
+	GPO:           FullNodeGPO,
+	RPCTxFeeCap:   1, // 1 ether
+	Istanbul:      *istanbul.DefaultConfig,
 }
 
-func init() {
-	home := os.Getenv("HOME")
-	if home == "" {
-		if user, err := user.Current(); err == nil {
-			home = user.HomeDir
-		}
-	}
-	if runtime.GOOS == "darwin" {
-		Defaults.Ethash.DatasetDir = filepath.Join(home, "Library", "Ethash")
-	} else if runtime.GOOS == "windows" {
-		localappdata := os.Getenv("LOCALAPPDATA")
-		if localappdata != "" {
-			Defaults.Ethash.DatasetDir = filepath.Join(localappdata, "Ethash")
-		} else {
-			Defaults.Ethash.DatasetDir = filepath.Join(home, "AppData", "Local", "Ethash")
-		}
-	} else {
-		Defaults.Ethash.DatasetDir = filepath.Join(home, ".ethash")
-	}
-}
+//func init() {
+//	home := os.Getenv("HOME")
+//	if home == "" {
+//		if user, err := user.Current(); err == nil {
+//			home = user.HomeDir
+//		}
+//	}
+//	if runtime.GOOS == "darwin" {
+//		Defaults.Ethash.DatasetDir = filepath.Join(home, "Library", "Ethash")
+//	} else if runtime.GOOS == "windows" {
+//		localappdata := os.Getenv("LOCALAPPDATA")
+//		if localappdata != "" {
+//			Defaults.Ethash.DatasetDir = filepath.Join(localappdata, "Ethash")
+//		} else {
+//			Defaults.Ethash.DatasetDir = filepath.Join(home, "AppData", "Local", "Ethash")
+//		}
+//	} else {
+//		Defaults.Ethash.DatasetDir = filepath.Join(home, ".ethash")
+//	}
+//}
 
 //go:generate gencodec -type Config -formats toml -out gen_config.go
 
@@ -127,6 +119,7 @@ type Config struct {
 	// for nodes to connect to.
 	EthDiscoveryURLs  []string
 	SnapDiscoveryURLs []string
+	//DiscoveryURLs     []string
 
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand
@@ -137,13 +130,21 @@ type Config struct {
 	Whitelist map[uint64]common.Hash `toml:"-"`
 
 	// Light client options
-	LightServ          int  `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
-	LightIngress       int  `toml:",omitempty"` // Incoming bandwidth limit for light servers
-	LightEgress        int  `toml:",omitempty"` // Outgoing bandwidth limit for light servers
-	LightPeers         int  `toml:",omitempty"` // Maximum number of LES client peers
-	LightNoPrune       bool `toml:",omitempty"` // Whether to disable light chain pruning
-	LightNoSyncServe   bool `toml:",omitempty"` // Whether to serve light clients before syncing
-	SyncFromCheckpoint bool `toml:",omitempty"` // Whether to sync the header chain from the configured checkpoint
+	LightServ    int  `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
+	LightIngress int  `toml:",omitempty"` // Incoming bandwidth limit for light servers
+	LightEgress  int  `toml:",omitempty"` // Outgoing bandwidth limit for light servers
+	LightPeers   int  `toml:",omitempty"` // Maximum number of LES client peers
+	LightNoPrune bool `toml:",omitempty"` // Whether to disable light chain pruning
+
+	//LightNoSyncServe   bool `toml:",omitempty"` // Whether to serve light clients before syncing
+	//SyncFromCheckpoint bool `toml:",omitempty"` // Whether to sync the header chain from the configured checkpoint
+	// Minimum gateway fee value to serve a transaction from a light client
+	GatewayFee *big.Int `toml:",omitempty"`
+	// Validator is the address used to sign consensus messages. Also the address for block transaction rewards.
+	Validator common.Address `toml:",omitempty"`
+	// TxFeeRecipient is the GatewayFeeRecipient light clients need to specify in order for their transactions to be accepted by this node.
+	TxFeeRecipient common.Address `toml:",omitempty"`
+	BLSbase        common.Address `toml:",omitempty"`
 
 	// Ultra Light client options
 	UltraLightServers      []string `toml:",omitempty"` // List of trusted ultra light servers
@@ -162,16 +163,16 @@ type Config struct {
 	TrieDirtyCache          int
 	TrieTimeout             time.Duration
 	SnapshotCache           int
-	Preimages               bool
+	//Preimages               bool
 
 	// Mining options
 	Miner miner.Config
 
 	// Ethash options
-	Ethash ethash.Config
+	//Ethash ethash.Config
 
 	// Transaction pool options
-	TxPool txsdetails.TxPoolConfig
+	TxPool chain.TxPoolConfig
 
 	// Gas Price Oracle options
 	GPO gasprice.Config
@@ -179,59 +180,31 @@ type Config struct {
 	// Enables tracking of SHA3 preimages in the VM
 	EnablePreimageRecording bool
 
+	// Istanbul options
+	Istanbul istanbul.Config
+
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
 
-	// Type of the EWASM interpreter ("" for default)
-	EWASMInterpreter string
-
-	// Type of the EVM interpreter ("" for default)
-	EVMInterpreter string
-
 	// RPCGasCap is the global gas cap for eth-call variants.
 	RPCGasCap uint64
+
+	// RPCEVMTimeout is the global timeout for eth-call.
+	RPCEVMTimeout time.Duration
 
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transction variants. The unit is ether.
 	RPCTxFeeCap float64
 
 	// Checkpoint is a hardcoded checkpoint which can be nil.
-	Checkpoint *params.TrustedCheckpoint `toml:",omitempty"`
+	Checkpoint *ethparams.TrustedCheckpoint `toml:",omitempty"`
 
 	// CheckpointOracle is the configuration for checkpoint oracle.
-	CheckpointOracle *params.CheckpointOracleConfig `toml:",omitempty"`
+	CheckpointOracle *ethparams.CheckpointOracleConfig `toml:",omitempty"`
 
 	// Berlin block override (TODO: remove after the fork)
-	OverrideBerlin *big.Int `toml:",omitempty"`
-}
-
-// CreateConsensusEngine creates a consensus engine for the given chain configuration.
-func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *ethash.Config, notify []string, noverify bool, db ethdb.Database) consensus.Engine {
-	// If proof-of-authority is requested, set it up
-	if chainConfig.Clique != nil {
-		return clique.New(chainConfig.Clique, db)
-	}
-	// Otherwise assume proof-of-work
-	switch config.PowMode {
-	case ethash.ModeFake:
-		log.Warn("Ethash used in fake mode")
-	case ethash.ModeTest:
-		log.Warn("Ethash used in test mode")
-	case ethash.ModeShared:
-		log.Warn("Ethash used in shared mode")
-	}
-	engine := ethash.New(ethash.Config{
-		PowMode:          config.PowMode,
-		CacheDir:         stack.ResolvePath(config.CacheDir),
-		CachesInMem:      config.CachesInMem,
-		CachesOnDisk:     config.CachesOnDisk,
-		CachesLockMmap:   config.CachesLockMmap,
-		DatasetDir:       config.DatasetDir,
-		DatasetsInMem:    config.DatasetsInMem,
-		DatasetsOnDisk:   config.DatasetsOnDisk,
-		DatasetsLockMmap: config.DatasetsLockMmap,
-		NotifyFull:       config.NotifyFull,
-	}, notify, noverify)
-	engine.SetThreads(-1) // Disable CPU mining
-	return engine
+	OverrideLondon *big.Int `toml:",omitempty"`
+	// Churrito block override (TODO: remove after the fork)
+	OverrideChurrito *big.Int `toml:",omitempty"`
+	Preimages bool
 }

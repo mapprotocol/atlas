@@ -99,3 +99,29 @@ type CallContext interface {
 	// Create a new contract
 	Create(env *EVM, me ContractRef, data []byte, gas, value *big.Int) ([]byte, common.Address, error)
 }
+
+// EVMRunner provides a simplified API to run EVM calls
+// EVM's sender, gasPrice, txFeeRecipient and state are set by the runner on each call
+// This object can be re-used many times in contrast to the EVM's single use behaviour.
+type EVMRunner interface {
+	// Execute performs a potentially write operation over the runner's state
+	// It can be seen as a message (input,value) from sender to recipient that returns `ret`
+	Execute(recipient common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, err error)
+
+	// ExecuteFrom is like Execute, but lets you specify the sender to use for the EVM call.
+	// It exists only for use in the Tobin tax calculation done as part of TobinTransfer, because that
+	// originally used the transaction's sender instead of the zero address.
+	ExecuteFrom(sender, recipient common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, err error)
+
+	// Query performs a read operation over the runner's state
+	// It can be seen as a message (input,value) from sender to recipient that returns `ret`
+	Query(recipient common.Address, input []byte, gas uint64) (ret []byte, err error)
+
+	// StopGasMetering backward compatibility method to stop gas metering
+	// Deprecated. DO NOT USE
+	StopGasMetering()
+
+	// StartGasMetering backward compatibility method to start gas metering
+	// Deprecated. DO NOT USE
+	StartGasMetering()
+}

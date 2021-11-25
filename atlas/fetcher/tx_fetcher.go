@@ -19,7 +19,7 @@ package fetcher
 import (
 	"bytes"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/txsdetails"
+	"github.com/mapprotocol/atlas/core/chain"
 	mrand "math/rand"
 	"sort"
 	"time"
@@ -27,9 +27,9 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 const (
@@ -281,7 +281,7 @@ func (f *TxFetcher) Enqueue(peer string, txs []*types.Transaction, direct bool) 
 			// Track the transaction hash if the price is too low for us.
 			// Avoid re-request this transaction when we receive another
 			// announcement.
-			if err == txsdetails.ErrUnderpriced || err == txsdetails.ErrReplaceUnderpriced {
+			if err == chain.ErrUnderpriced || err == chain.ErrReplaceUnderpriced {
 				for f.underpriced.Cardinality() >= maxTxUnderpricedSetSize {
 					f.underpriced.Pop()
 				}
@@ -291,10 +291,10 @@ func (f *TxFetcher) Enqueue(peer string, txs []*types.Transaction, direct bool) 
 			switch err {
 			case nil: // Noop, but need to handle to not count these
 
-			case txsdetails.ErrAlreadyKnown:
+			case chain.ErrAlreadyKnown:
 				duplicate++
 
-			case txsdetails.ErrUnderpriced, txsdetails.ErrReplaceUnderpriced:
+			case chain.ErrUnderpriced, chain.ErrReplaceUnderpriced:
 				underpriced++
 
 			default:

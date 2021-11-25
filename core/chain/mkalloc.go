@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+//go:build none
 // +build none
 
 /*
@@ -29,13 +30,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"os"
 	"sort"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/rlp"
+
+	"github.com/mapprotocol/atlas/core/chain"
 )
 
 type allocItem struct{ Addr, Balance *big.Int }

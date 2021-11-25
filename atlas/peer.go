@@ -27,6 +27,12 @@ import (
 
 // ethPeerInfo represents a short summary of the `eth` sub-protocol metadata known
 // about a connected peer.
+// todo ibft replace
+//type PeerInfo struct {
+//	Version    int      `json:"version"`    // Ethereum protocol version negotiated
+//	Difficulty *big.Int `json:"difficulty"` // Total difficulty of the peer's blockchain
+//	Head       string   `json:"head"`       // SHA3 hash of the peer's best owned block
+//}
 type ethPeerInfo struct {
 	Version    uint     `json:"version"`    // Ethereum protocol version negotiated
 	Difficulty *big.Int `json:"difficulty"` // Total difficulty of the peer's blockchain

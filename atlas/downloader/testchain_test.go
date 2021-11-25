@@ -18,16 +18,18 @@ package downloader
 
 import (
 	"fmt"
-	chain2 "github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/ethereum/go-ethereum/crypto"
+	ethparams "github.com/ethereum/go-ethereum/params"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	atlaschain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // Test chain parameters.
@@ -35,7 +37,7 @@ var (
 	testKey, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	testAddress = crypto.PubkeyToAddress(testKey.PublicKey)
 	testDB      = rawdb.NewMemoryDatabase()
-	testGenesis = chain2.GenesisBlockForTesting(testDB, testAddress, big.NewInt(1000000000))
+	testGenesis = atlaschain.GenesisBlockForTesting(testDB, testAddress, big.NewInt(1000000000))
 )
 
 // The common prefix of all test chains:
@@ -69,7 +71,7 @@ func newTestChain(length int, genesis *types.Block) *testChain {
 	tc.genesis = genesis
 	tc.chain = append(tc.chain, genesis.Hash())
 	tc.headerm[tc.genesis.Hash()] = tc.genesis.Header()
-	tc.tdm[tc.genesis.Hash()] = tc.genesis.Difficulty()
+	tc.tdm[tc.genesis.Hash()] = tc.genesis.TotalDifficulty()
 	tc.blockm[tc.genesis.Hash()] = tc.genesis
 	tc.generate(length-1, 0, genesis, false)
 	return tc
@@ -118,7 +120,7 @@ func (tc *testChain) generate(n int, seed byte, parent *types.Block, heavy bool)
 	// start := time.Now()
 	// defer func() { fmt.Printf("test chain generated in %v\n", time.Since(start)) }()
 
-	blocks, receipts := chain2.GenerateChain(params.TestChainConfig, parent, ethash.NewFaker(), testDB, n, func(i int, block *chain2.BlockGen) {
+	blocks, receipts := atlaschain.GenerateChain(params.TestChainConfig, parent, consensustest.NewFaker(), testDB, n, func(i int, block *atlaschain.BlockGen) {
 		block.SetCoinbase(common.Address{seed})
 		// If a heavy chain is requested, delay blocks to raise difficulty
 		if heavy {
@@ -127,7 +129,7 @@ func (tc *testChain) generate(n int, seed byte, parent *types.Block, heavy bool)
 		// Include transactions to the miner to make blocks more interesting.
 		if parent == tc.genesis && i%22 == 0 {
 			signer := types.MakeSigner(params.TestChainConfig, block.Number())
-			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed}, big.NewInt(1000), params.TxGas, nil, nil), signer, testKey)
+			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed}, big.NewInt(1000), ethparams.TxGas, nil, nil), signer, testKey)
 			if err != nil {
 				panic(err)
 			}
@@ -145,7 +147,7 @@ func (tc *testChain) generate(n int, seed byte, parent *types.Block, heavy bool)
 	// Convert the block-chain into a hash-chain and header/block maps
 	td := new(big.Int).Set(tc.td(parent.Hash()))
 	for i, b := range blocks {
-		td := td.Add(td, b.Difficulty())
+		td := td.Add(td, b.TotalDifficulty())
 		hash := b.Hash()
 		tc.chain = append(tc.chain, hash)
 		tc.blockm[hash] = b
@@ -208,16 +210,14 @@ func (tc *testChain) receipts(hashes []common.Hash) [][]*types.Receipt {
 }
 
 // bodies returns the block bodies of the given block hashes.
-func (tc *testChain) bodies(hashes []common.Hash) ([][]*types.Transaction, [][]*types.Header) {
+func (tc *testChain) bodies(hashes []common.Hash) [][]*types.Transaction {
 	transactions := make([][]*types.Transaction, 0, len(hashes))
-	uncles := make([][]*types.Header, 0, len(hashes))
 	for _, hash := range hashes {
 		if block, ok := tc.blockm[hash]; ok {
 			transactions = append(transactions, block.Transactions())
-			uncles = append(uncles, block.Uncles())
 		}
 	}
-	return transactions, uncles
+	return transactions
 }
 
 func (tc *testChain) hashToNumber(target common.Hash) (uint64, bool) {

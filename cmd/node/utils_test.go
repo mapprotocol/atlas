@@ -67,15 +67,6 @@ func (s *InstrumentedService) Stop() error {
 
 type FullService struct{}
 
-func NewFullService(stack *Node) (*FullService, error) {
-	fs := new(FullService)
-
-	stack.RegisterProtocols(fs.Protocols())
-	stack.RegisterAPIs(fs.APIs())
-	stack.RegisterLifecycle(fs)
-	return fs, nil
-}
-
 func (f *FullService) Start() error { return nil }
 
 func (f *FullService) Stop() error { return nil }

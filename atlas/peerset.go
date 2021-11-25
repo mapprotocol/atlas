@@ -22,9 +22,10 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/mapprotocol/atlas/atlas/protocols/eth"
 	"github.com/mapprotocol/atlas/atlas/protocols/snap"
-	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 var (
@@ -209,6 +210,18 @@ func (ps *peerSet) peersWithoutTransaction(hash common.Hash) []*ethPeer {
 		}
 	}
 	return list
+}
+
+// Peers returns all registered peers
+func (ps *peerSet) Peers() map[string]*ethPeer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	set := make(map[string]*ethPeer)
+	for id, p := range ps.peers {
+		set[id] = p
+	}
+	return set
 }
 
 // len returns if the current number of `eth` peers in the set. Since the `snap`

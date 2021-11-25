@@ -22,17 +22,18 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	params2 "github.com/mapprotocol/atlas/params"
 )
 
 // Config is a basic type specifying certain configuration flags for running
 // the EVM.
 type Config struct {
-	ChainConfig *params.ChainConfig
+	ChainConfig *params2.ChainConfig
 	Difficulty  *big.Int
 	Origin      common.Address
 	Coinbase    common.Address
@@ -43,6 +44,7 @@ type Config struct {
 	Value       *big.Int
 	Debug       bool
 	EVMConfig   vm.Config
+	BaseFee     *big.Int
 
 	State     *state.StateDB
 	GetHashFn func(n uint64) common.Hash
@@ -51,7 +53,7 @@ type Config struct {
 // sets defaults on the config
 func setDefaults(cfg *Config) {
 	if cfg.ChainConfig == nil {
-		cfg.ChainConfig = &params.ChainConfig{
+		cfg.ChainConfig = &params2.ChainConfig{
 			ChainID:             big.NewInt(1),
 			HomesteadBlock:      new(big.Int),
 			DAOForkBlock:        new(big.Int),
@@ -66,7 +68,7 @@ func setDefaults(cfg *Config) {
 			IstanbulBlock:       new(big.Int),
 			MuirGlacierBlock:    new(big.Int),
 			BerlinBlock:         new(big.Int),
-			YoloV3Block:         nil,
+			LondonBlock:         new(big.Int),
 		}
 	}
 
@@ -92,6 +94,9 @@ func setDefaults(cfg *Config) {
 		cfg.GetHashFn = func(n uint64) common.Hash {
 			return common.BytesToHash(crypto.Keccak256([]byte(new(big.Int).SetUint64(n).String())))
 		}
+	}
+	if cfg.BaseFee == nil {
+		cfg.BaseFee = big.NewInt(params.InitialBaseFee)
 	}
 }
 

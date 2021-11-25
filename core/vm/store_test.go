@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"fmt"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/params"
@@ -14,9 +13,9 @@ import (
 
 func getHeaderStore() *HeaderStore {
 	var hs = &HeaderStore{
-		epoch2reward: map[uint64]*big.Int{
-			1: big.NewInt(48976200),
-		},
+		//epoch2reward: map[uint64]*big.Int{
+		//	1: big.NewInt(48976200),
+		//},
 		height2receiveTimes: map[uint64]uint64{
 			510980: 3,
 		},
@@ -33,8 +32,8 @@ func getHeaderStore() *HeaderStore {
 }
 
 func modifyHeaderStore(hs *HeaderStore) *HeaderStore {
-	hs.epoch2reward[1] = big.NewInt(1111111111111)
-	hs.epoch2reward[2] = big.NewInt(2222222222222)
+	//hs.epoch2reward[1] = big.NewInt(1111111111111)
+	//hs.epoch2reward[2] = big.NewInt(2222222222222)
 	hs.height2receiveTimes[510980] = 1
 	hs.height2receiveTimes[8888888] = 2
 	hs.epoch2syncInfo[1] = append(hs.epoch2syncInfo[1], &RelayerSyncInfo{
@@ -79,107 +78,107 @@ func TestCloneHeaderStore(t *testing.T) {
 	}
 }
 
-func TestHeaderStore_AddEpochReward(t *testing.T) {
+//func TestHeaderStore_AddEpochReward(t *testing.T) {
+//
+//	type args struct {
+//		epochID uint64
+//		reward  *big.Int
+//	}
+//	tests := []struct {
+//		name       string
+//		hs         *HeaderStore
+//		args       args
+//		fn         func(hs *HeaderStore)
+//		wantReward *big.Int
+//	}{
+//		{
+//			name: "don`t-set-epoch2reward",
+//			hs:   NewHeaderStore(),
+//			args: args{
+//				epochID: 0,
+//				reward:  big.NewInt(100),
+//			},
+//			fn:         func(hs *HeaderStore) {},
+//			wantReward: big.NewInt(100),
+//		},
+//		{
+//			name: "add-epoch-reward",
+//			hs:   NewHeaderStore(),
+//			args: args{
+//				epochID: 2,
+//				reward:  big.NewInt(100),
+//			},
+//			fn: func(hs *HeaderStore) {
+//				//hs.AddEpochReward(2, big.NewInt(20))
+//			},
+//			wantReward: big.NewInt(120),
+//		},
+//		{
+//			name: "set-epoch2reward",
+//			hs:   NewHeaderStore(),
+//			args: args{
+//				epochID: 5,
+//				reward:  big.NewInt(100),
+//			},
+//			fn: func(hs *HeaderStore) {
+//				hs.SetEpoch2reward(5)
+//			},
+//			wantReward: big.NewInt(100),
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			tt.fn(tt.hs)
+//			//tt.hs.AddEpochReward(tt.args.epochID, tt.args.reward)
+//			getReward := tt.hs.GetEpochReward(tt.args.epochID)
+//			if getReward.Cmp(tt.wantReward) != 0 {
+//				t.Errorf("AddEpochReward() getReward = %v, want %v", getReward, tt.wantReward)
+//			}
+//		})
+//	}
+//}
 
-	type args struct {
-		epochID uint64
-		reward  *big.Int
-	}
-	tests := []struct {
-		name       string
-		hs         *HeaderStore
-		args       args
-		fn         func(hs *HeaderStore)
-		wantReward *big.Int
-	}{
-		{
-			name: "don`t-set-epoch2reward",
-			hs:   NewHeaderStore(),
-			args: args{
-				epochID: 0,
-				reward:  big.NewInt(100),
-			},
-			fn:         func(hs *HeaderStore) {},
-			wantReward: big.NewInt(100),
-		},
-		{
-			name: "add-epoch-reward",
-			hs:   NewHeaderStore(),
-			args: args{
-				epochID: 2,
-				reward:  big.NewInt(100),
-			},
-			fn: func(hs *HeaderStore) {
-				hs.AddEpochReward(2, big.NewInt(20))
-			},
-			wantReward: big.NewInt(120),
-		},
-		{
-			name: "set-epoch2reward",
-			hs:   NewHeaderStore(),
-			args: args{
-				epochID: 5,
-				reward:  big.NewInt(100),
-			},
-			fn: func(hs *HeaderStore) {
-				hs.SetEpoch2reward(5)
-			},
-			wantReward: big.NewInt(100),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.fn(tt.hs)
-			tt.hs.AddEpochReward(tt.args.epochID, tt.args.reward)
-			getReward := tt.hs.GetEpochReward(tt.args.epochID)
-			if getReward.Cmp(tt.wantReward) != 0 {
-				t.Errorf("AddEpochReward() getReward = %v, want %v", getReward, tt.wantReward)
-			}
-		})
-	}
-}
-
-func TestHeaderStore_GetEpochReward(t *testing.T) {
-	type args struct {
-		epochID uint64
-	}
-	tests := []struct {
-		name string
-		hs   *HeaderStore
-		args args
-		fn   func(hs *HeaderStore)
-		want *big.Int
-	}{
-		{
-			name: "t-1",
-			hs:   NewHeaderStore(),
-			args: args{
-				epochID: 10,
-			},
-			fn: func(hs *HeaderStore) {
-				hs.AddEpochReward(10, big.NewInt(998))
-			},
-			want: big.NewInt(998),
-		},
-		{
-			name: "t-2",
-			hs:   NewHeaderStore(),
-			args: args{
-				epochID: 10,
-			},
-			fn:   func(hs *HeaderStore) {},
-			want: big.NewInt(0),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.fn(tt.hs)
-			if got := tt.hs.GetEpochReward(tt.args.epochID); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetEpochReward() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+//func TestHeaderStore_GetEpochReward(t *testing.T) {
+//	type args struct {
+//		epochID uint64
+//	}
+//	tests := []struct {
+//		name string
+//		hs   *HeaderStore
+//		args args
+//		fn   func(hs *HeaderStore)
+//		want *big.Int
+//	}{
+//		{
+//			name: "t-1",
+//			hs:   NewHeaderStore(),
+//			args: args{
+//				epochID: 10,
+//			},
+//			fn: func(hs *HeaderStore) {
+//				hs.AddEpochReward(10, big.NewInt(998))
+//			},
+//			want: big.NewInt(998),
+//		},
+//		{
+//			name: "t-2",
+//			hs:   NewHeaderStore(),
+//			args: args{
+//				epochID: 10,
+//			},
+//			fn:   func(hs *HeaderStore) {},
+//			want: big.NewInt(0),
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			tt.fn(tt.hs)
+//			if got := tt.hs.GetEpochReward(tt.args.epochID); !reflect.DeepEqual(got, tt.want) {
+//				t.Errorf("GetEpochReward() = %v, want %v", got, tt.want)
+//			}
+//		})
+//	}
+//}
 
 func TestHeaderStore_GetReceiveTimes(t *testing.T) {
 	type args struct {
@@ -628,11 +627,11 @@ func TestHeaderStore_Store(t *testing.T) {
 		{
 			name: "t-1",
 			hs: &HeaderStore{
-				epoch2reward: map[uint64]*big.Int{
-					1: big.NewInt(111),
-					2: big.NewInt(222),
-					3: big.NewInt(333),
-				},
+				//epoch2reward: map[uint64]*big.Int{
+				//	1: big.NewInt(111),
+				//	2: big.NewInt(222),
+				//	3: big.NewInt(333),
+				//},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
 					202: 2,
@@ -671,11 +670,11 @@ func TestHeaderStore_Load(t *testing.T) {
 		{
 			name: "cache-exist",
 			hs: &HeaderStore{
-				epoch2reward: map[uint64]*big.Int{
-					1: big.NewInt(1111111111111111),
-					2: big.NewInt(2222222222222222),
-					3: big.NewInt(3333333333333333),
-				},
+				//epoch2reward: map[uint64]*big.Int{
+				//	1: big.NewInt(1111111111111111),
+				//	2: big.NewInt(2222222222222222),
+				//	3: big.NewInt(3333333333333333),
+				//},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
 					202: 2,
@@ -690,20 +689,20 @@ func TestHeaderStore_Load(t *testing.T) {
 				_ = hs.Store(state, params.HeaderStoreAddress)
 			},
 			after: func(hs *HeaderStore) {
-				for e, r := range hs.epoch2reward {
-					fmt.Printf("epoch: %v, reward: %v\n", e, r)
-				}
+				//for e, r := range hs.epoch2reward {
+				//	fmt.Printf("epoch: %v, reward: %v\n", e, r)
+				//}
 			},
 			wantErr: false,
 		},
 		{
 			name: "cache-not-exist",
 			hs: &HeaderStore{
-				epoch2reward: map[uint64]*big.Int{
-					1: big.NewInt(1111111111111111),
-					2: big.NewInt(2222222222222222),
-					3: big.NewInt(3333333333333333),
-				},
+				//epoch2reward: map[uint64]*big.Int{
+				//	1: big.NewInt(1111111111111111),
+				//	2: big.NewInt(2222222222222222),
+				//	3: big.NewInt(3333333333333333),
+				//},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
 					202: 2,
@@ -724,9 +723,9 @@ func TestHeaderStore_Load(t *testing.T) {
 
 			},
 			after: func(hs *HeaderStore) {
-				for e, r := range hs.epoch2reward {
-					fmt.Printf("epoch: %v, reward: %v\n", e, r)
-				}
+				//for e, r := range hs.epoch2reward {
+				//	fmt.Printf("epoch: %v, reward: %v\n", e, r)
+				//}
 			},
 			wantErr: false,
 		},
@@ -804,9 +803,6 @@ func TestHistoryWorkEfficiency(t *testing.T) {
 
 func TestHeaderStore_CalcReward(t *testing.T) {
 	hs := &HeaderStore{
-		epoch2reward: map[uint64]*big.Int{
-			1: big.NewInt(5000000),
-		},
 		height2receiveTimes: map[uint64]uint64{},
 		epoch2syncInfo: map[uint64][]*RelayerSyncInfo{
 			1: {
@@ -903,6 +899,33 @@ func TestHeaderStore_CalcReward(t *testing.T) {
 			want: map[common.Address]*big.Int{
 				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"): big.NewInt(1666668),
 				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"): big.NewInt(3333332),
+			},
+		},
+		{
+			name: "t-4",
+			hs: &HeaderStore{
+				epoch2syncInfo: map[uint64][]*RelayerSyncInfo{
+					4: {
+						{
+							Relayer: common.HexToAddress("0x32CD75ca677e9C37FD989272afA8504CB8F6eB52"),
+							Times:   30,
+							Reward:  &big.Int{},
+						},
+						{
+							Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+							Times:   30,
+							Reward:  &big.Int{},
+						},
+					},
+				},
+			},
+			args: args{
+				epochID:   4,
+				allAmount: new(big.Int).Mul(big.NewInt(1e18), big.NewInt(10)),
+			},
+			want: map[common.Address]*big.Int{
+				common.HexToAddress("0x32CD75ca677e9C37FD989272afA8504CB8F6eB52"): big.NewInt(4999999999999999980),
+				common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"): big.NewInt(5000000000000000020),
 			},
 		},
 	}

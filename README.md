@@ -1,6 +1,6 @@
 ## Atlas chain 
 
-Atlas chain is a truly fast, permissionless, secure and scalable public blockchain platform. [more](https://mapprotocol.github.io/atlas/)
+Atlas chain is a truly fast, permissionless, secure and scalable public blockchain platform. [more](https://docs.maplabs.io/)
 
 <a href="https://github.com/mapprotocol/atlas/blob/main/COPYING"><img src="https://img.shields.io/badge/license-GPL%20%20Atlas-lightgrey.svg"></a>
 
@@ -109,103 +109,6 @@ connect via HTTP, WS or IPC to a `atlas` node configured with the above flags an
 need to speak JSON-RPC on all transports. You can reuse the same connection for multiple requests!
 
 **Note: Please understand the security implications of opening up an HTTP/WS based transport before doing so! Hackers on the internet are actively trying to subvert Atlas nodes with exposed APIs! Further, all browser tabs can access locally running web servers, so malicious web pages could try to subvert locally available APIs!**
-
-### Operating a private network
-
-Maintaining your own private network is more involved as a lot of configurations taken for
-granted in the official networks need to be manually set up.
-
-#### Defining the private genesis state
-First, you'll need to create the genesis state of your networks, which all nodes need to be
-aware of and agree upon. This consists of a small JSON file (e.g. call it `genesis.json`):
-
-```json
-{
-  "config": {
-    "chainId": <arbitrary positive integer>,
-    "homesteadBlock": 0,
-    "daoForkBlock":0,
-	"daoForkSupport":true,
-    "eip150Block": 0,
-    "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "eip155Block": 0,
-    "eip158Block": 0,
-    "byzantiumBlock": 0,
-    "constantinopleBlock": 0,
-    "petersburgBlock": 0,
-    "muirGlacierBlock":0,
-    "istanbulBlock": 0,
-    "berlinBlock": 0
-  },
-  "alloc": {},
-  "coinbase": "0x0000000000000000000000000000000000000000",
-  "difficulty": "0x20000",
-  "extraData": "",
-  "gasLimit": "0x2fefd8",
-  "nonce": "0x0000000000000042",
-  "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "timestamp": "0x00"
-}
-```
-
-The above fields should be fine for most purposes, although we'd recommend changing
-the `nonce` to some random value so you prevent unknown remote nodes from being able
-to connect to you. If you'd like to pre-fund some accounts for easier testing, create
-the accounts and populate the `alloc` field with their addresses.
-
-```json
-"alloc": {
-  "0x0000000000000000000000000000000000000001": {
-    "balance": "111111111"
-  },
-  "0x0000000000000000000000000000000000000002": {
-    "balance": "222222222"
-  }
-}
-```
-
-With the genesis state defined in the above JSON file, you'll need to initialize **every**
-`atlas` node with it prior to starting it up to ensure all blockchain parameters are correctly
-set:
-
-```shell
-$ atlas init path/to/genesis.json
-```
-
-
-#### Starting up your member nodes
-
-With the bootnode operational and externally reachable (you can try
-`telnet <ip> <port>` to ensure it's indeed reachable), start every subsequent `atlas`
-node pointed to the bootnode for peer discovery via the `--bootnodes` flag. It will
-probably also be desirable to keep the data directory of your private network separated, so
-do also specify a custom `--datadir` flag.
-
-```shell
-$ atlas --datadir=path/to/custom/data/folder --bootnodes=<bootnode-enode-url-from-above>
-```
-
-*Note: Since your network will be completely cut off from the main and test networks, you'll
-also need to configure a miner to process transactions and create new blocks for you.*
-
-#### Running a private miner
-
-Mining on the public Atlas network is a complex task as it's only feasible using GPUs,
-requiring an OpenCL or CUDA enabled `ethminer` instance. For information on such a setup, please consult the EtherMining subreddit and the ethminer repository.
-
-In a private network setting, however a single CPU miner instance is more than enough for
-practical purposes as it can produce a stable stream of blocks at the correct intervals
-without needing heavy resources (consider running on a single thread, no need for multiple
-ones either). To start a `atlas` instance for mining, run it with all your usual flags, extended
-by:
-
-```shell
-$ atlas <usual-flags> --miner.etherbase=0x0000000000000000000000000000000000000000
-```
-
-Which will start mining blocks and transactions on a single CPU thread, crediting all
-proceedings to the account specified by `--miner.etherbase`. You can further tune the mining by changing the default gas price transactions converge to (`--miner.gasprice`).
 
 ## Contribution
 

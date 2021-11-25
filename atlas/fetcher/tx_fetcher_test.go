@@ -18,7 +18,6 @@ package fetcher
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/core/txsdetails"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -26,6 +25,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
+
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 )
 
@@ -870,9 +871,9 @@ func TestTransactionFetcherUnderpricedDedup(t *testing.T) {
 					errs := make([]error, len(txs))
 					for i := 0; i < len(errs); i++ {
 						if i%2 == 0 {
-							errs[i] = txsdetails.ErrUnderpriced
+							errs[i] = chain.ErrUnderpriced
 						} else {
-							errs[i] = txsdetails.ErrReplaceUnderpriced
+							errs[i] = chain.ErrReplaceUnderpriced
 						}
 					}
 					return errs
@@ -942,7 +943,7 @@ func TestTransactionFetcherUnderpricedDoSProtection(t *testing.T) {
 				func(txs []*types.Transaction) []error {
 					errs := make([]error, len(txs))
 					for i := 0; i < len(errs); i++ {
-						errs[i] = txsdetails.ErrUnderpriced
+						errs[i] = chain.ErrUnderpriced
 					}
 					return errs
 				},
