@@ -19,11 +19,11 @@ package bind
 import (
 	"context"
 	"errors"
-	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/mapprotocol/atlas/core/types"
 )
 
@@ -33,12 +33,12 @@ var (
 	// have any code associated with it (i.e. suicided).
 	ErrNoCode = errors.New("no contract code at given address")
 
-	// This error is raised when attempting to perform a pending state action
+	// ErrNoPendingState is raised when attempting to perform a pending state action
 	// on a backend that doesn't implement PendingContractCaller.
 	ErrNoPendingState = errors.New("backend does not support pending state")
 
-	// This error is returned by WaitDeployed if contract creation leaves an
-	// empty contract behind.
+	// ErrNoCodeAfterDeploy is returned by WaitDeployed if contract creation leaves
+	// an empty contract behind.
 	ErrNoCodeAfterDeploy = errors.New("no contract code after deployment")
 )
 
@@ -48,9 +48,10 @@ type ContractCaller interface {
 	// CodeAt returns the code of the given account. This is needed to differentiate
 	// between contract internal errors and the local chain being out of sync.
 	CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error)
-	// ContractCall executes an Ethereum contract call with the specified data as the
+
+	// CallContract executes an Ethereum contract call with the specified data as the
 	// input.
-	CallContract(ctx context.Context, call params2.CallMsg, blockNumber *big.Int) ([]byte, error)
+	CallContract(ctx context.Context, call types.CallMsg, blockNumber *big.Int) ([]byte, error)
 }
 
 // PendingContractCaller defines methods to perform contract calls on the pending state.
@@ -59,8 +60,9 @@ type ContractCaller interface {
 type PendingContractCaller interface {
 	// PendingCodeAt returns the code of the given account in the pending state.
 	PendingCodeAt(ctx context.Context, contract common.Address) ([]byte, error)
+
 	// PendingCallContract executes an Ethereum contract call against the pending state.
-	PendingCallContract(ctx context.Context, call params2.CallMsg) ([]byte, error)
+	PendingCallContract(ctx context.Context, call types.CallMsg) ([]byte, error)
 }
 
 // ContractTransactor defines the methods needed to allow operating with a contract
@@ -68,19 +70,31 @@ type PendingContractCaller interface {
 // used when the user does not provide some needed values, but rather leaves it up
 // to the transactor to decide.
 type ContractTransactor interface {
+	// HeaderByNumber returns a block header from the current canonical chain. If
+	// number is nil, the latest known header is returned.
+	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
+
 	// PendingCodeAt returns the code of the given account in the pending state.
 	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
+
 	// PendingNonceAt retrieves the current pending nonce associated with an account.
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
+
 	// SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 	// execution of a transaction.
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
+
+	// SuggestGasTipCap retrieves the currently suggested 1559 priority fee to allow
+	// a timely execution of a transaction.
+	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
+
 	// EstimateGas tries to estimate the gas needed to execute a specific
 	// transaction based on the current pending state of the backend blockchain.
 	// There is no guarantee that this is the true gas limit requirement as other
 	// transactions may be added or removed by miners, but it should provide a basis
 	// for setting a reasonable default.
-	EstimateGas(ctx context.Context, call params2.CallMsg) (gas uint64, err error)
+	EstimateGas(ctx context.Context, call types.CallMsg) (gas uint64, err error)
+
 	// SendTransaction injects the transaction into the pending pool for execution.
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 }

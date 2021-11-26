@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -209,5 +210,20 @@ func TestVerify_Verify(t *testing.T) {
 				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestKey(t *testing.T) {
+	for i := 0; i < 2048; i++ {
+		key1, err := rlp.EncodeToBytes(uint(i))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var key2 []byte
+		key2 = rlp.AppendUint64(key2[:0], uint64(i))
+
+		if !bytes.Equal(key1, key2) {
+			t.Fatal("key1 != key2")
+		}
 	}
 }

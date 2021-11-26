@@ -17,8 +17,10 @@
 package node
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"io"
 	"io/ioutil"
 	"net"
@@ -30,10 +32,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 var (
@@ -124,32 +126,6 @@ func TestLifecycleRegistry_Successful(t *testing.T) {
 
 	if !containsLifecycle(stack.lifecycles, noop) {
 		t.Fatalf("lifecycle was not properly registered on the node, %v", err)
-	}
-}
-
-// Tests whether a service's protocols can be registered properly on the node's p2p server.
-func TestRegisterProtocols(t *testing.T) {
-	stack, err := New(testNodeConfig())
-	if err != nil {
-		t.Fatalf("failed to create protocol stack: %v", err)
-	}
-	defer stack.Close()
-
-	fs, err := NewFullService(stack)
-	if err != nil {
-		t.Fatalf("could not create full service: %v", err)
-	}
-
-	for _, protocol := range fs.Protocols() {
-		if !containsProtocol(stack.server.Protocols, protocol) {
-			t.Fatalf("protocol %v was not successfully registered", protocol)
-		}
-	}
-
-	for _, api := range fs.APIs() {
-		if !containsAPI(stack.rpcAPIs, api) {
-			t.Fatalf("api %v was not successfully registered", api)
-		}
 	}
 }
 
@@ -641,4 +617,54 @@ func containsAPI(stackAPIs []rpc.API, api rpc.API) bool {
 		}
 	}
 	return false
+}
+
+// rpcRequest performs a JSON-RPC request to the given URL.
+func rpcRequest(t *testing.T, url string, extraHeaders ...string) *http.Response {
+	t.Helper()
+
+	// Create the request.
+	body := bytes.NewReader([]byte(`{"jsonrpc":"2.0","id":1,"method":"rpc_modules","params":[]}`))
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		t.Fatal("could not create http request:", err)
+	}
+	req.Header.Set("content-type", "application/json")
+
+	// Apply extra headers.
+	if len(extraHeaders)%2 != 0 {
+		panic("odd extraHeaders length")
+	}
+	for i := 0; i < len(extraHeaders); i += 2 {
+		key, value := extraHeaders[i], extraHeaders[i+1]
+		if strings.ToLower(key) == "host" {
+			req.Host = value
+		} else {
+			req.Header.Set(key, value)
+		}
+	}
+
+	// Perform the request.
+	t.Logf("checking RPC/HTTP on %s %v", url, extraHeaders)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}
+
+// wsRequest attempts to open a WebSocket connection to the given URL.
+func wsRequest(t *testing.T, url, browserOrigin string) error {
+	t.Helper()
+	t.Logf("checking WebSocket on %s (origin %q)", url, browserOrigin)
+
+	headers := make(http.Header)
+	if browserOrigin != "" {
+		headers.Set("Origin", browserOrigin)
+	}
+	conn, _, err := websocket.DefaultDialer.Dial(url, headers)
+	if conn != nil {
+		conn.Close()
+	}
+	return err
 }

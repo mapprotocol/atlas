@@ -18,10 +18,13 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"gopkg.in/urfave/cli.v1"
 
+	ethchain "github.com/ethereum/go-ethereum"
+	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/chains/txverify"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	atlastypes "github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -61,9 +64,15 @@ var ReceiptsJSON = `[
 ]`
 
 var (
-	fromAddr  = common.HexToAddress("0x1aec262a9429eb9167ac4033aaf8b4239c2743fe")
-	toAddr    = common.HexToAddress("0x970e05ffbb2c4a3b80082e82b24f48a29a9c7651")
-	SendValue = big.NewInt(588)
+	blockNumber      = big.NewInt(11025084)
+	txIndex     uint = 6
+	fromAddr         = common.HexToAddress("0x0000000000000000000000002252c2b255d20515666ae1a1fafd95b977886097")
+	toAddr           = common.HexToAddress("0x0000000000000000000000002252c2b255d20515666ae1a1fafd95b977886097")
+	SendValue        = big.NewInt(10)
+	srcChain         = big.NewInt(3)
+	dstChain         = big.NewInt(211)
+	routerAddr       = common.HexToAddress("0x23dd5a89c3ea51601b0674a4fa6ec6b3b14d0b7a")
+	coinAddr         = common.HexToAddress("0x23dd5a89c3ea51601b0674a4fa6ec6b3b14d0b7a")
 )
 
 type TxParams struct {
@@ -81,7 +90,17 @@ type TxProve struct {
 }
 
 func dialConn() *ethclient.Client {
-	conn, err := ethclient.Dial("http://192.168.10.215:8545")
+	//conn, err := ethclient.Dial("https://ropsten.infura.io/v3/8cce6b470ad44fb5a3621aa34243647f")
+	conn, err := ethclient.Dial("https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161")
+	if err != nil {
+		log.Fatalf("Failed to connect to the eth: %v", err)
+	}
+	return conn
+}
+
+func dialAtlasConn() *ethclient.Client {
+	//conn, err := ethclient.Dial("http://159.138.90.210:7445")
+	conn, err := ethclient.Dial("http://127.0.0.1:7445")
 	if err != nil {
 		log.Fatalf("Failed to connect to the eth: %v", err)
 	}
@@ -105,20 +124,21 @@ func getTransactionsHashByBlockNumber(conn *ethclient.Client, number *big.Int) [
 }
 
 func getReceiptsByTxsHash(conn *ethclient.Client, txsHash []common.Hash) []*types.Receipt {
-	//rs := make([]*types.Receipt, 0, len(txsHash))
-	//for _, h := range txsHash {
-	//	r, err := conn.TransactionReceipt(context.Background(), h)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	if r == nil {
-	//		panic("failed to connect to the eth node, please check the network")
-	//	}
-	//	rs = append(rs, r)
-	//}
-	//return rs
+	rs := make([]*types.Receipt, 0, len(txsHash))
+	for _, h := range txsHash {
+		r, err := conn.TransactionReceipt(context.Background(), h)
+		if err != nil {
+			panic(err)
+		}
+		if r == nil {
+			panic("failed to connect to the eth node, please check the network")
+		}
 
-	return GetReceiptsFromJSON()
+		rs = append(rs, r)
+	}
+	return rs
+
+	//return GetReceiptsFromJSON()
 }
 
 func GetReceiptsFromJSON() []*types.Receipt {
@@ -130,53 +150,37 @@ func GetReceiptsFromJSON() []*types.Receipt {
 }
 
 func getTxProve() []byte {
-	var (
-		blockNumber           = big.NewInt(273)
-		transactionIndex uint = 0
-	)
+	// get receipts from ethereum node
+	conn := dialConn()
+	txsHash := getTransactionsHashByBlockNumber(conn, blockNumber)
+	receipts := getReceiptsByTxsHash(conn, txsHash)
+	// get receipts from json
+	//receipts := GetReceiptsFromJSON()
 
-	// 调用以太坊接口获取 receipts
-	//conn := dialConn()
-	//txsHash := getTransactionsHashByBlockNumber(conn, blockNumber)
-	receipts := getReceiptsByTxsHash(nil, nil)
-
-	// 根据 receipts 生成 trie
 	tr, err := trie.New(common.Hash{}, trie.NewDatabase(memorydb.New()))
 	if err != nil {
 		panic(err)
 	}
-	for i, r := range receipts {
-		key, err := rlp.EncodeToBytes(uint(i))
-		if err != nil {
-			panic(err)
-		}
-		value, err := rlp.EncodeToBytes(r)
-		if err != nil {
-			panic(err)
-		}
 
-		tr.Update(key, value)
-	}
-
+	tr = atlastypes.DeriveTire(receipts, tr)
 	proof := light.NewNodeSet()
-	key, err := rlp.EncodeToBytes(transactionIndex)
+	key, err := rlp.EncodeToBytes(txIndex)
 	if err != nil {
 		panic(err)
 	}
 	if err = tr.Prove(key, 0, proof); err != nil {
 		panic(err)
 	}
-
 	txProve := TxProve{
 		Tx: &TxParams{
 			From:  fromAddr.Bytes(),
 			To:    toAddr.Bytes(),
 			Value: SendValue,
 		},
-		Receipt:          receipts[transactionIndex],
+		Receipt:          receipts[txIndex],
 		Prove:            proof.NodeList(),
 		BlockNumber:      blockNumber.Uint64(),
-		TransactionIndex: transactionIndex,
+		TransactionIndex: txIndex,
 	}
 
 	input, err := rlp.EncodeToBytes(txProve)
@@ -208,6 +212,35 @@ func TestReceiptsRootAndProof(t *testing.T) {
 	if err := v.Verify(router, srcChain, dstChain, getTxProve()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func PackInput(abi abi.ABI, abiMethod string, params ...interface{}) []byte {
+	input, err := abi.Pack(abiMethod, params...)
+	if err != nil {
+		panic(err)
+	}
+	return input
+}
+
+func TestTxVerify(t *testing.T) {
+	input := PackInput(abiTxVerify, "txVerify", routerAddr, coinAddr, srcChain, dstChain, getTxProve())
+	ret := call(dialAtlasConn(), from, params.TxVerifyAddress, input)
+	if !ret[0].(bool) {
+		t.Errorf("message: %s", ret[1].(string))
+	}
+}
+
+func call(client *ethclient.Client, from, toAddress common.Address, input []byte) []interface{} {
+	output, err := client.CallContract(context.Background(), ethchain.CallMsg{From: from, To: &toAddress, Data: input}, nil)
+	if err != nil {
+		panic(err)
+	}
+	method, _ := abiTxVerify.Methods["txVerify"]
+	ret, err := method.Outputs.Unpack(output)
+	if err != nil {
+		panic(err)
+	}
+	return ret
 }
 
 func TestAddr(t *testing.T) {

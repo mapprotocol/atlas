@@ -22,12 +22,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 func verifyUnbrokenCanonchain(hc *HeaderChain) error {
@@ -73,14 +74,14 @@ func TestHeaderInsertion(t *testing.T) {
 		genesis = new(Genesis).MustCommit(db)
 	)
 
-	hc, err := NewHeaderChain(db, params.AllEthashProtocolChanges, ethash.NewFaker(), func() bool { return false })
+	hc, err := NewHeaderChain(db, params.AllEthashProtocolChanges, consensustest.NewFaker(), func() bool { return false })
 	if err != nil {
 		t.Fatal(err)
 	}
 	// chain A: G->A1->A2...A128
-	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db, 10)
+	chainA := makeHeaderChain(genesis.Header(), 128, consensustest.NewFaker(), db, 10)
 	// chain B: G->A1->B2...B128
-	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db, 10)
+	chainB := makeHeaderChain(chainA[0], 128, consensustest.NewFaker(), db, 10)
 	log.Root().SetHandler(log.StdoutHandler)
 
 	// Inserting 64 headers on an empty chain, expecting

@@ -22,17 +22,17 @@ package chain
 
 import (
 	"io/ioutil"
-	"math/big"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // Tests a recovery for a short canonical chain where a recent block was already
@@ -1771,7 +1771,7 @@ func testRepair(t *testing.T, tt *rewindTest, snapshots bool) {
 	// Initialize a fresh chain
 	var (
 		genesis = new(Genesis).MustCommit(db)
-		engine  = ethash.NewFullFaker()
+		engine  = consensustest.NewFullFaker()
 		config  = &CacheConfig{
 			TrieCleanLimit: 256,
 			TrieDirtyLimit: 256,
@@ -1799,7 +1799,6 @@ func testRepair(t *testing.T, tt *rewindTest, snapshots bool) {
 	}
 	canonblocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, rawdb.NewMemoryDatabase(), tt.canonicalBlocks, func(i int, b *BlockGen) {
 		b.SetCoinbase(common.Address{0x02})
-		b.SetDifficulty(big.NewInt(1000000))
 	})
 	if _, err := chain.InsertChain(canonblocks[:tt.commitBlock]); err != nil {
 		t.Fatalf("Failed to import canonical chain start: %v", err)

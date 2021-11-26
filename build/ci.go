@@ -435,13 +435,12 @@ func maybeSkipArchive(env build.Environment) {
 		os.Exit(0)
 	}
 	if env.Branch != "master" && !strings.HasPrefix(env.Tag, "v1.") {
-		log.Printf("skipping because branch %q, tag %q is not on the whitelist", env.Branch, env.Tag)
+		log.Printf("skipping because branch %q, tag %q is not on the inclusion list", env.Branch, env.Tag)
 		os.Exit(0)
 	}
 }
 
 // Debian Packaging
-
 func doDebianSource(cmdline []string) {
 	var (
 		signer  = flag.String("signer", "", `Signing key name, also used as package author`)

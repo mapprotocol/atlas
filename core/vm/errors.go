@@ -35,7 +35,22 @@ var (
 	ErrReturnDataOutOfBounds    = errors.New("return data out of bounds")
 	ErrGasUintOverflow          = errors.New("gas uint64 overflow")
 	ErrRLPDecode                = errors.New("rlp decode error")
-	ErrNotSupportChain          = errors.New("not support chain")
+	ErrNotSupportChain          = errors.New("not supported chain")
+	ErrInvalidCode              = errors.New("invalid code: must not begin with 0xef")
+
+	// ErrInvalidSubroutineEntry means that a BEGINSUB was reached via iteration,
+	// as opposed to from a JUMPSUB instruction
+	ErrInvalidSubroutineEntry  = errors.New("invalid subroutine entry")
+	ErrNoCompatibleInterpreter = errors.New("no compatible interpreter")
+	ErrValidatorsOutOfBounds   = errors.New("validator index out of bounds")
+	ErrBlockNumberOutOfBounds  = errors.New("block number out of bounds")
+	ErrInputLength             = errors.New("invalid input length")
+	ErrInputDecode             = errors.New("unable to decode input")
+	ErrInputVerification       = errors.New("unable to verify header")
+	ErrEngineIncompatible      = errors.New("blockchain engine incompatible with request")
+	ErrUnexpected              = errors.New("unexpected execution error")
+	ErrInvalidRetsub           = errors.New("invalid retsub")
+	ErrReturnStackExceeded     = errors.New("return stack limit reached")
 )
 
 // ErrStackUnderflow wraps an evm error when the items on the stack less

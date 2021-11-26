@@ -84,7 +84,7 @@ func (v *Verify) queryLog(routerContractAddr common.Address, logs []*types.Log) 
 			}
 		}
 	}
-	return nil, errors.New("not found match log")
+	return nil, fmt.Errorf("not found event log, router contract addr: %v, event hash: %v", routerContractAddr, EventHash)
 }
 
 func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *types.Log) error {
@@ -131,17 +131,17 @@ func (v *Verify) getReceiptsRoot(chain rawdb.ChainType, blockNumber uint64) (com
 }
 
 func (v *Verify) verifyProof(receiptsRoot common.Hash, txProve *TxProve) error {
-	key, err := rlp.EncodeToBytes(txProve.TxIndex)
-	if err != nil {
-		return err
-	}
+	var buf bytes.Buffer
+	rs := types.Receipts{txProve.Receipt}
+	rs.EncodeIndex(0, &buf)
+	giveReceipt := buf.Bytes()
+
+	var key []byte
+	key = rlp.AppendUint64(key[:0], uint64(txProve.TxIndex))
+
 	getReceipt, err := trie.VerifyProof(receiptsRoot, key, txProve.Prove.NodeSet())
 	if err != nil {
 		return err
-	}
-	giveReceipt, err := rlp.EncodeToBytes(txProve.Receipt)
-	if err != nil {
-		panic(err)
 	}
 	if !bytes.Equal(giveReceipt, getReceipt) {
 		return errors.New("receipt mismatch")

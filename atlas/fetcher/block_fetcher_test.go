@@ -18,7 +18,7 @@ package fetcher
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/core/chain"
+
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -26,12 +26,14 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus/ethash"
+	"github.com/ethereum/go-ethereum/crypto"
+	ethparams "github.com/ethereum/go-ethereum/params"
+
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/params"
 )
 
 var (
@@ -39,7 +41,7 @@ var (
 	testKey, _   = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	testAddress  = crypto.PubkeyToAddress(testKey.PublicKey)
 	genesis      = chain.GenesisBlockForTesting(testdb, testAddress, big.NewInt(1000000000))
-	unknownBlock = types.NewBlock(&types.Header{GasLimit: params.GenesisGasLimit}, nil, nil, nil, trie.NewStackTrie(nil))
+	unknownBlock = types.NewBlock(&types.Header{GasLimit: ethparams.GenesisGasLimit}, nil, nil, &types.Randomness{})
 )
 
 // makeChain creates a chain of n blocks starting at and including parent.
@@ -47,13 +49,13 @@ var (
 // contains a transaction and every 5th an uncle to allow testing correct block
 // reassembly.
 func makeChain(n int, seed byte, parent *types.Block) ([]common.Hash, map[common.Hash]*types.Block) {
-	blocks, _ := chain.GenerateChain(params.TestChainConfig, parent, ethash.NewFaker(), testdb, n, func(i int, block *chain.BlockGen) {
+	blocks, _ := chain.GenerateChain(params.TestChainConfig, parent, consensustest.NewFaker(), testdb, n, func(i int, block *chain.BlockGen) {
 		block.SetCoinbase(common.Address{seed})
 
 		// If the block number is multiple of 3, send a bonus transaction to the miner
 		if parent == genesis && i%3 == 0 {
 			signer := types.MakeSigner(params.TestChainConfig, block.Number())
-			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed}, big.NewInt(1000), params.TxGas, nil, nil), signer, testKey)
+			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed}, big.NewInt(1000), ethparams.TxGas, nil, nil), signer, testKey)
 			if err != nil {
 				panic(err)
 			}
@@ -217,17 +219,17 @@ func (f *fetcherTester) makeBodyFetcher(peer string, blocks map[common.Hash]*typ
 	// Create a function that returns blocks from the closure
 	return func(hashes []common.Hash) error {
 		// Gather the block bodies to return
+		blockHashes := make([]common.Hash, 0, len(hashes))
 		transactions := make([][]*types.Transaction, 0, len(hashes))
-		uncles := make([][]*types.Header, 0, len(hashes))
 
 		for _, hash := range hashes {
 			if block, ok := closure[hash]; ok {
+				blockHashes = append(blockHashes, block.Hash())
 				transactions = append(transactions, block.Transactions())
-				uncles = append(uncles, block.Uncles())
 			}
 		}
 		// Return on a new thread
-		go f.fetcher.FilterBodies(peer, transactions, uncles, time.Now().Add(drift))
+		go f.fetcher.FilterBodies(peer, blockHashes, transactions, []*types.Randomness{}, []*types.EpochSnarkData{}, time.Now().Add(drift))
 
 		return nil
 	}
@@ -771,7 +773,7 @@ func TestEmptyBlockShortCircuit(t *testing.T) {
 		verifyFetchingEvent(t, fetching, true)
 
 		// Only blocks with data contents should request bodies
-		verifyCompletingEvent(t, completing, len(blocks[hashes[i]].Transactions()) > 0 || len(blocks[hashes[i]].Uncles()) > 0)
+		verifyCompletingEvent(t, completing, len(blocks[hashes[i]].Transactions()) > 0)
 
 		// Irrelevant of the construct, import should succeed
 		verifyImportEvent(t, imported, true)

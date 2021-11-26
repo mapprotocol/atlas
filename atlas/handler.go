@@ -18,7 +18,8 @@ package atlas
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/consensus"
 	"math"
 	"math/big"
 	"sync"
@@ -26,22 +27,27 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/forkid"
-	"github.com/mapprotocol/atlas/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/fetcher"
 	"github.com/mapprotocol/atlas/atlas/protocols/eth"
 	"github.com/mapprotocol/atlas/atlas/protocols/snap"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/forkid"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 const (
+	softResponseLimit = 2 * 1024 * 1024 // Target maximum size of returned blocks, headers or node data.
+	estHeaderRlpSize  = 500             // Approximate size of an RLP encoded block header
+
 	// txChanSize is the size of channel listening to NewTxsEvent.
 	// The number is referenced from the size of tx pool.
 	txChanSize = 4096
@@ -67,7 +73,7 @@ type txPool interface {
 
 	// Pending should return pending transactions.
 	// The slice should be modifiable by the caller.
-	Pending() (map[common.Address]types.Transactions, error)
+	Pending(enforceTips bool) map[common.Address]types.Transactions
 
 	// SubscribeNewTxsEvent should return an event subscription of
 	// NewTxsEvent and send events to the given channel.
@@ -77,15 +83,17 @@ type txPool interface {
 // handlerConfig is the collection of initialization parameters to create a full
 // node network handler.
 type handlerConfig struct {
-	Database   ethdb.Database            // Database for direct sync insertions
-	Chain      *chain.BlockChain         // Blockchain to serve data from
-	TxPool     txPool                    // Transaction pool to propagate from
-	Network    uint64                    // Network identifier to adfvertise
-	Sync       downloader.SyncMode       // Whether to fast or full sync
-	BloomCache uint64                    // Megabytes to alloc for fast sync bloom
-	EventMux   *event.TypeMux            // Legacy event mux, deprecate for `feed`
-	Checkpoint *params.TrustedCheckpoint // Hard coded checkpoint for sync challenges
-	Whitelist  map[uint64]common.Hash    // Hard coded whitelist for sync challenged
+	Database    ethdb.Database            // Database for direct sync insertions
+	Chain       *chain.BlockChain         // Blockchain to serve data from
+	TxPool      txPool                    // Transaction pool to propagate from
+	Network     uint64                    // Network identifier to adfvertise
+	Sync        downloader.SyncMode       // Whether to fast or full sync
+	BloomCache  uint64                    // Megabytes to alloc for fast sync bloom
+	EventMux    *event.TypeMux            // Legacy event mux, deprecate for `feed`
+	Checkpoint  *params.TrustedCheckpoint // Hard coded checkpoint for sync challenges
+	Whitelist   map[uint64]common.Hash    // Hard coded whitelist for sync challenged
+	Server      *p2p.Server
+	ProxyServer *p2p.Server
 }
 
 type handler struct {
@@ -118,12 +126,16 @@ type handler struct {
 	whitelist map[uint64]common.Hash
 
 	// channels for fetcher, syncer, txsyncLoop
-	txsyncCh chan *txsync
 	quitSync chan struct{}
 
 	chainSync *chainSyncer
 	wg        sync.WaitGroup
 	peerWG    sync.WaitGroup
+
+	//engine consensus.Engine
+
+	server      *p2p.Server
+	proxyServer *p2p.Server
 }
 
 // newHandler returns a handler for all Ethereum chain management protocol.
@@ -133,17 +145,24 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		config.EventMux = new(event.TypeMux) // Nicety initialization for tests
 	}
 	h := &handler{
-		networkID:  config.Network,
-		forkFilter: forkid.NewFilter(config.Chain),
-		eventMux:   config.EventMux,
-		database:   config.Database,
-		txpool:     config.TxPool,
-		chain:      config.Chain,
-		peers:      newPeerSet(),
-		whitelist:  config.Whitelist,
-		txsyncCh:   make(chan *txsync),
-		quitSync:   make(chan struct{}),
+		networkID:   config.Network,
+		forkFilter:  forkid.NewFilter(config.Chain),
+		eventMux:    config.EventMux,
+		database:    config.Database,
+		txpool:      config.TxPool,
+		chain:       config.Chain,
+		peers:       newPeerSet(),
+		whitelist:   config.Whitelist,
+		quitSync:    make(chan struct{}),
+		server:      config.Server,
+		proxyServer: config.ProxyServer,
 	}
+
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		handler.SetBroadcaster(h)
+		handler.SetP2PServer(h.server)
+	}
+
 	if config.Sync == downloader.FullSync {
 		// The database seems empty as the current block is the genesis. Yet the fast
 		// block is ahead, so fast sync was enabled for this node at a certain point.
@@ -234,6 +253,19 @@ func newHandler(config *handlerConfig) (*handler, error) {
 	return h, nil
 }
 
+func (h *handler) FindPeers(targets map[enode.ID]bool, purpose p2p.PurposeFlag) map[enode.ID]consensus.Peer {
+	m := make(map[enode.ID]consensus.Peer)
+	for _, p := range h.peers.Peers() {
+		id := p.Node().ID()
+		if targets[id] || (targets == nil) {
+			if p.PurposeIsSet(purpose) {
+				m[id] = p
+			}
+		}
+	}
+	return m
+}
+
 // runEthPeer registers an eth peer into the joint eth/snap peerset, adds it to
 // various subsistems and starts handling messages.
 func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
@@ -275,6 +307,7 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 			}
 		}
 	}
+
 	// Ignore maxPeers if this is a trusted peer
 	if !peer.Peer.Info().Network.Trusted {
 		if reject || h.peers.len() >= h.maxPeers {
@@ -288,7 +321,7 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 		peer.Log().Error("Ethereum peer registration failed", "err", err)
 		return err
 	}
-	defer h.removePeer(peer.ID())
+	defer h.unregisterPeer(peer.ID())
 
 	p := h.peers.peer(peer.ID())
 	if p == nil {
@@ -305,6 +338,14 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 			return err
 		}
 	}
+
+	// Register the peer with the consensus engine.
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		if err := handler.RegisterPeer(p, p.Peer.Server == h.proxyServer); err != nil {
+			return err
+		}
+	}
+
 	h.chainSync.handlePeerEvent(peer)
 
 	// Propagate existing transactions. new transactions appearing
@@ -337,7 +378,7 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 		}
 	}
 	// Handle incoming messages until the connection is torn down
-	return handler(peer)
+	return handler(peer, h.chain.Engine())
 }
 
 // runSnapExtension registers a `snap` peer into the joint eth/snap peerset and
@@ -355,9 +396,16 @@ func (h *handler) runSnapExtension(peer *snap.Peer, handler snap.Handler) error 
 	return handler(peer)
 }
 
-// removePeer unregisters a peer from the downloader and fetchers, removes it from
-// the set of tracked peers and closes the network connection to it.
+// removePeer requests disconnection of a peer.
 func (h *handler) removePeer(id string) {
+	peer := h.peers.peer(id)
+	if peer != nil {
+		peer.Peer.Disconnect(p2p.DiscUselessPeer)
+	}
+}
+
+// unregisterPeer removes a peer from the downloader, fetchers and main peer set.
+func (h *handler) unregisterPeer(id string) {
 	// Create a custom logger to avoid printing the entire id
 	var logger log.Logger
 	if len(id) < 16 {
@@ -382,11 +430,13 @@ func (h *handler) removePeer(id string) {
 	h.downloader.UnregisterPeer(id)
 	h.txFetcher.Drop(id)
 
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		handler.UnregisterPeer(peer, peer.Peer.Server == h.proxyServer)
+	}
+
 	if err := h.peers.unregisterPeer(id); err != nil {
 		logger.Error("Ethereum peer removal failed", "err", err)
 	}
-	// Hard disconnect at the networking layer
-	peer.Peer.Disconnect(p2p.DiscUselessPeer)
 }
 
 func (h *handler) Start(maxPeers int) {
@@ -404,9 +454,8 @@ func (h *handler) Start(maxPeers int) {
 	go h.minedBroadcastLoop()
 
 	// start sync handlers
-	h.wg.Add(2)
+	h.wg.Add(1)
 	go h.chainSync.loop()
-	go h.txsyncLoop64() // TODO(karalabe): Legacy initial tx echange, drop with eth/64.
 }
 
 func (h *handler) Stop() {
@@ -439,7 +488,8 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 		// Calculate the TD of the block (it's not imported yet, so block.Td is not valid)
 		var td *big.Int
 		if parent := h.chain.GetBlock(block.ParentHash(), block.NumberU64()-1); parent != nil {
-			td = new(big.Int).Add(block.Difficulty(), h.chain.GetTd(block.ParentHash(), block.NumberU64()-1))
+			//td = new(big.Int).Add(block.TotalDifficulty(), h.chain.GetTd(block.ParentHash(), block.NumberU64()-1))
+			td = block.TotalDifficulty()
 		} else {
 			log.Error("Propagating dangling block", "number", block.Number(), "hash", hash)
 			return

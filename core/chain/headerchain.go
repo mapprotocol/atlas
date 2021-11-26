@@ -20,7 +20,6 @@ import (
 	crand "crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core"
 	"math"
 	"math/big"
 	mrand "math/rand"
@@ -28,13 +27,15 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/consensus"
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -166,6 +167,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 	)
 
 	batch := hc.chainDb.NewBatch()
+	parentKnown := true // Set to true to force hc.HasHeader check the first iteration
 	for i, header := range headers {
 		var hash common.Hash
 		// The headers have already been validated at this point, so we already
@@ -177,10 +179,12 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 			hash = header.Hash()
 		}
 		number := header.Number.Uint64()
-		newTD.Add(newTD, header.Difficulty)
+		newTD.Add(newTD, big.NewInt(1))
 
+		// If the parent was not present, store it
 		// If the header is already known, skip it, otherwise store
-		if !hc.HasHeader(hash, number) {
+		alreadyKnown := parentKnown && hc.HasHeader(hash, number)
+		if !alreadyKnown {
 			// Irrelevant of the canonical status, write the TD and header to the database.
 			rawdb.WriteTd(batch, hash, number, newTD)
 			hc.tdCache.Add(hash, new(big.Int).Set(newTD))
@@ -193,6 +197,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 				firstInserted = i
 			}
 		}
+		parentKnown = alreadyKnown
 		lastHeader, lastHash, lastNumber = header, hash, number
 	}
 
@@ -312,11 +317,11 @@ func (hc *HeaderChain) ValidateHeaderChain(chain []*types.Header, checkFreq int)
 		}
 		// If the header is a banned one, straight out abort
 		if BadHashes[chain[i].ParentHash] {
-			return i - 1, core.ErrBlacklistedHash
+			return i - 1, core.ErrBannedHash
 		}
 		// If it's the last header in the cunk, we need to check it too
 		if i == len(chain)-1 && BadHashes[chain[i].Hash()] {
-			return i, core.ErrBlacklistedHash
+			return i, core.ErrBannedHash
 		}
 	}
 
@@ -391,29 +396,6 @@ func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, start time.Time)
 	return res.status, err
 }
 
-// GetBlockHashesFromHash retrieves a number of block hashes starting at a given
-// hash, fetching towards the genesis block.
-func (hc *HeaderChain) GetBlockHashesFromHash(hash common.Hash, max uint64) []common.Hash {
-	// Get the origin header from which to fetch
-	header := hc.GetHeaderByHash(hash)
-	if header == nil {
-		return nil
-	}
-	// Iterate the headers until enough is collected or the genesis reached
-	chain := make([]common.Hash, 0, max)
-	for i := uint64(0); i < max; i++ {
-		next := header.ParentHash
-		if header = hc.GetHeader(next, header.Number.Uint64()-1); header == nil {
-			break
-		}
-		chain = append(chain, next)
-		if header.Number.Sign() == 0 {
-			break
-		}
-	}
-	return chain
-}
-
 // GetAncestor retrieves the Nth ancestor of a given block. It assumes that either the given block or
 // a close ancestor of it is canonical. maxNonCanonical points to a downwards counter limiting the
 // number of blocks to be individually checked before we reach the canonical chain.
@@ -467,16 +449,6 @@ func (hc *HeaderChain) GetTd(hash common.Hash, number uint64) *big.Int {
 	// Cache the found body for next time and return
 	hc.tdCache.Add(hash, td)
 	return td
-}
-
-// GetTdByHash retrieves a block's total difficulty in the canonical chain from the
-// database by hash, caching it if found.
-func (hc *HeaderChain) GetTdByHash(hash common.Hash) *big.Int {
-	number := hc.GetBlockNumber(hash)
-	if number == nil {
-		return nil
-	}
-	return hc.GetTd(hash, *number)
 }
 
 // GetHeader retrieves a block header from the database by hash and number,
@@ -571,7 +543,7 @@ func (hc *HeaderChain) SetHead(head uint64, updateFn UpdateHeadBlocksCallback, d
 		if parent == nil {
 			parent = hc.genesisHeader
 		}
-		parentHash = hdr.ParentHash
+		parentHash = parent.Hash()
 
 		// Notably, since geth has the possibility for setting the head to a low
 		// height which is even lower than ancient head.

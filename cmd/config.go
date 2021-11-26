@@ -19,23 +19,23 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
-	params2 "github.com/mapprotocol/atlas/params"
-	"math/big"
 	"os"
 	"reflect"
 	"unicode"
 
 	"gopkg.in/urfave/cli.v1"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/naoina/toml"
+
+	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/mapprotocol/atlas/atlas/catalyst"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
+	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/cmd/utils"
-
-	"github.com/naoina/toml"
+	params2 "github.com/mapprotocol/atlas/params"
 )
 
 var (
@@ -64,7 +64,12 @@ var tomlSettings = toml.Config{
 		return field
 	},
 	MissingField: func(rt reflect.Type, field string) error {
-		link := ""
+		id := fmt.Sprintf("%s.%s", rt.String(), field)
+		if deprecated(id) {
+			log.Warn("Config field is deprecated and won't have an effect", "name", id)
+			return nil
+		}
+		var link string
 		if unicode.IsUpper(rune(rt.Name()[0])) && rt.PkgPath() != "main" {
 			link = fmt.Sprintf(", see https://godoc.org/%s#%s for available fields", rt.PkgPath(), rt.Name())
 		}
@@ -150,9 +155,9 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, atlasConfig) {
 // makeFullNode loads atlas configuration and creates the Ethereum backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
-	if ctx.GlobalIsSet(utils.OverrideBerlinFlag.Name) {
-		cfg.Eth.OverrideBerlin = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideBerlinFlag.Name))
-	}
+	//if ctx.GlobalIsSet(utils.OverrideLondonFlag.Name) {
+	//	cfg.Eth.OverrideLondon = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideLondonFlag.Name))
+	//}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 	chainsdb.NewStoreDb(ctx, cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles)
 	// Configure catalyst.
@@ -231,5 +236,28 @@ func applyMetricConfig(ctx *cli.Context, cfg *atlasConfig) {
 	}
 	if ctx.GlobalIsSet(utils.MetricsInfluxDBTagsFlag.Name) {
 		cfg.Metrics.InfluxDBTags = ctx.GlobalString(utils.MetricsInfluxDBTagsFlag.Name)
+	}
+	if ctx.GlobalIsSet(utils.MetricsEnableInfluxDBV2Flag.Name) {
+		cfg.Metrics.EnableInfluxDBV2 = ctx.GlobalBool(utils.MetricsEnableInfluxDBV2Flag.Name)
+	}
+	if ctx.GlobalIsSet(utils.MetricsInfluxDBTokenFlag.Name) {
+		cfg.Metrics.InfluxDBToken = ctx.GlobalString(utils.MetricsInfluxDBTokenFlag.Name)
+	}
+	if ctx.GlobalIsSet(utils.MetricsInfluxDBBucketFlag.Name) {
+		cfg.Metrics.InfluxDBBucket = ctx.GlobalString(utils.MetricsInfluxDBBucketFlag.Name)
+	}
+	if ctx.GlobalIsSet(utils.MetricsInfluxDBOrganizationFlag.Name) {
+		cfg.Metrics.InfluxDBOrganization = ctx.GlobalString(utils.MetricsInfluxDBOrganizationFlag.Name)
+	}
+}
+
+func deprecated(field string) bool {
+	switch field {
+	case "ethconfig.Config.EVMInterpreter":
+		return true
+	case "ethconfig.Config.EWASMInterpreter":
+		return true
+	default:
+		return false
 	}
 }

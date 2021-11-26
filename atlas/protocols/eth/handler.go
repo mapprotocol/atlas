@@ -18,18 +18,21 @@ package eth
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/p2p"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -61,7 +64,7 @@ const (
 
 // Handler is a callback to invoke from an outside runner after the boilerplate
 // exchanges have passed.
-type Handler func(peer *Peer) error
+type Handler func(peer *Peer, engine consensus.Engine) error
 
 // Backend defines the data retrieval methods to serve remote requests and the
 // callback methods to invoke on remote deliveries.
@@ -114,8 +117,8 @@ func MakeProtocols(backend Backend, network uint64, dnsdisc enode.Iterator) []p2
 				peer := NewPeer(version, p, rw, backend.TxPool())
 				defer peer.Close()
 
-				return backend.RunPeer(peer, func(peer *Peer) error {
-					return Handle(backend, peer)
+				return backend.RunPeer(peer, func(peer *Peer, engine consensus.Engine) error {
+					return Handle(backend, peer, engine)
 				})
 			},
 			NodeInfo: func() interface{} {
@@ -156,9 +159,9 @@ func nodeInfo(chain *chain.BlockChain, network uint64) *NodeInfo {
 // Handle is invoked whenever an `eth` connection is made that successfully passes
 // the protocol handshake. This method will keep processing messages until the
 // connection is torn down.
-func Handle(backend Backend, peer *Peer) error {
+func Handle(backend Backend, peer *Peer, engine consensus.Engine) error {
 	for {
-		if err := handleMessage(backend, peer); err != nil {
+		if err := handleMessage(backend, peer, engine); err != nil {
 			peer.Log().Debug("Message handling failed in `eth`", "err", err)
 			return err
 		}
@@ -171,44 +174,26 @@ type Decoder interface {
 	Time() time.Time
 }
 
-var eth65 = map[uint64]msgHandler{
-	GetBlockHeadersMsg:            handleGetBlockHeaders,
-	BlockHeadersMsg:               handleBlockHeaders,
-	GetBlockBodiesMsg:             handleGetBlockBodies,
-	BlockBodiesMsg:                handleBlockBodies,
-	GetNodeDataMsg:                handleGetNodeData,
-	NodeDataMsg:                   handleNodeData,
-	GetReceiptsMsg:                handleGetReceipts,
-	ReceiptsMsg:                   handleReceipts,
-	NewBlockHashesMsg:             handleNewBlockhashes,
-	NewBlockMsg:                   handleNewBlock,
-	TransactionsMsg:               handleTransactions,
-	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes,
-	GetPooledTransactionsMsg:      handleGetPooledTransactions,
-	PooledTransactionsMsg:         handlePooledTransactions,
-}
-
 var eth66 = map[uint64]msgHandler{
 	NewBlockHashesMsg:             handleNewBlockhashes,
 	NewBlockMsg:                   handleNewBlock,
 	TransactionsMsg:               handleTransactions,
 	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes,
-	// eth66 messages with request-id
-	GetBlockHeadersMsg:       handleGetBlockHeaders66,
-	BlockHeadersMsg:          handleBlockHeaders66,
-	GetBlockBodiesMsg:        handleGetBlockBodies66,
-	BlockBodiesMsg:           handleBlockBodies66,
-	GetNodeDataMsg:           handleGetNodeData66,
-	NodeDataMsg:              handleNodeData66,
-	GetReceiptsMsg:           handleGetReceipts66,
-	ReceiptsMsg:              handleReceipts66,
-	GetPooledTransactionsMsg: handleGetPooledTransactions66,
-	PooledTransactionsMsg:    handlePooledTransactions66,
+	GetBlockHeadersMsg:            handleGetBlockHeaders66,
+	BlockHeadersMsg:               handleBlockHeaders66,
+	GetBlockBodiesMsg:             handleGetBlockBodies66,
+	BlockBodiesMsg:                handleBlockBodies66,
+	GetNodeDataMsg:                handleGetNodeData66,
+	NodeDataMsg:                   handleNodeData66,
+	GetReceiptsMsg:                handleGetReceipts66,
+	ReceiptsMsg:                   handleReceipts66,
+	GetPooledTransactionsMsg:      handleGetPooledTransactions66,
+	PooledTransactionsMsg:         handlePooledTransactions66,
 }
 
 // handleMessage is invoked whenever an inbound message is received from a remote
 // peer. The remote connection is torn down upon returning any error.
-func handleMessage(backend Backend, peer *Peer) error {
+func handleMessage(backend Backend, peer *Peer, engine consensus.Engine) error {
 	// Read the next message from the remote peer, and ensure it's fully consumed
 	msg, err := peer.rw.ReadMsg()
 	if err != nil {
@@ -219,10 +204,22 @@ func handleMessage(backend Backend, peer *Peer) error {
 	}
 	defer msg.Discard()
 
-	var handlers = eth65
-	if peer.Version() >= ETH66 {
-		handlers = eth66
+	// Send messages to the consensus engine first. If they are consensus related,
+	// e.g. for IBFT, let the consensus handler handle the message.
+	if handler, ok := engine.(consensus.Handler); ok {
+		pubKey := peer.Node().Pubkey()
+		addr := crypto.PubkeyToAddress(*pubKey)
+		handled, err := handler.HandleMsg(addr, msg, peer)
+		if handled {
+			return err
+		}
 	}
+
+	var handlers = eth66
+	//if peer.Version() >= ETH67 { // Left in as a sample when new protocol is added
+	//	handlers = eth67
+	//}
+
 	// Track the amount of time it takes to serve the request and run the handler
 	if metrics.Enabled {
 		h := fmt.Sprintf("%s/%s/%d/%#02x", p2p.HandleHistName, ProtocolName, peer.Version(), msg.Code)

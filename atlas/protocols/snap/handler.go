@@ -19,19 +19,20 @@ package snap
 import (
 	"bytes"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/state"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/p2p"
 )
 
 const (
@@ -319,7 +320,7 @@ func handleMessage(backend Backend, peer *Peer) error {
 				if err != nil {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}
-				var acc state.Account
+				var acc ethtypes.StateAccount
 				if err := rlp.DecodeBytes(accTrie.Get(account[:]), &acc); err != nil {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}
@@ -469,7 +470,7 @@ func handleMessage(backend Backend, peer *Peer) error {
 				// Storage slots requested, open the storage trie and retrieve from there
 				account, err := snap.Account(common.BytesToHash(pathset[0]))
 				loads++ // always account database reads, even for failures
-				if err != nil {
+				if err != nil || account == nil {
 					break
 				}
 				stTrie, err := trie.NewSecure(common.BytesToHash(account.Root), triedb)

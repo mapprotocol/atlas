@@ -22,8 +22,8 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
 // Iterator is an iterator to step over all the accounts or the specific
@@ -385,7 +385,7 @@ func (it *diskStorageIterator) Hash() common.Hash {
 	return common.BytesToHash(it.it.Key()) // The prefix will be truncated
 }
 
-// Slot returns the raw strorage slot content the iterator is currently at.
+// Slot returns the raw storage slot content the iterator is currently at.
 func (it *diskStorageIterator) Slot() []byte {
 	return it.it.Value()
 }

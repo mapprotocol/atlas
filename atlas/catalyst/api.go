@@ -18,32 +18,32 @@
 package catalyst
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"time"
-	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/processor"
+
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/atlas"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/cmd/node"
-	chainParams "github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/atlas"
+	"github.com/mapprotocol/atlas/cmd/node"
+	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	atlasparams "github.com/mapprotocol/atlas/params"
 )
 
 // Register adds catalyst APIs to the node.
 func Register(stack *node.Node, backend *atlas.Ethereum) error {
-	chainconfig := backend.BlockChain().Config()
-	if chainconfig.CatalystBlock == nil {
-		return errors.New("catalystBlock is not set in genesis config")
-	} else if chainconfig.CatalystBlock.Sign() != 0 {
-		return errors.New("catalystBlock of genesis config must be zero")
-	}
+	//chainconfig := backend.BlockChain().Config()
+	//if chainconfig.TerminalTotalDifficulty == nil {
+	//	return errors.New("catalyst started without valid total difficulty")
+	//}
 
 	log.Warn("Catalyst mode enabled")
 	stack.RegisterAPIs([]rpc.API{
@@ -80,8 +80,10 @@ type blockExecutionEnv struct {
 
 func (env *blockExecutionEnv) commitTransaction(tx *types.Transaction, coinbase common.Address) error {
 	vmconfig := *env.chain.GetVMConfig()
-	receipt, err := processor.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
+	snap := env.state.Snapshot()
+	receipt, err := chain2.ApplyTransaction(env.chain.Config(), env.chain, &coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vmconfig)
 	if err != nil {
+		env.state.RevertToSnapshot(snap)
 		return err
 	}
 	env.txs = append(env.txs, tx)
@@ -126,10 +128,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		time.Sleep(wait)
 	}
 
-	pending, err := pool.Pending()
-	if err != nil {
-		return nil, err
-	}
+	pending := pool.Pending(true)
 
 	coinbase, err := api.atlas.Etherbase()
 	if err != nil {
@@ -144,6 +143,9 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		Extra:      []byte{},
 		Time:       params.Timestamp,
 	}
+	if config := api.atlas.BlockChain().Config(); config.IsLondon(header.Number) {
+		header.BaseFee = misc.CalcBaseFee(config, parent.Header())
+	}
 	err = api.atlas.Engine().Prepare(bc, header)
 	if err != nil {
 		return nil, err
@@ -156,12 +158,12 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 
 	var (
 		signer       = types.MakeSigner(bc.Config(), header.Number)
-		txHeap       = types.NewTransactionsByPriceAndNonce(signer, pending)
+		txHeap       = types.NewTransactionsByPriceAndNonce(signer, pending, nil)
 		transactions []*types.Transaction
 	)
 	for {
-		if env.gasPool.Gas() < chainParams.TxGas {
-			log.Trace("Not enough gas for further transactions", "have", env.gasPool, "want", chainParams.TxGas)
+		if env.gasPool.Gas() < ethparams.TxGas {
+			log.Trace("Not enough gas for further transactions", "have", env.gasPool, "want", ethparams.TxGas)
 			break
 		}
 		tx := txHeap.Peek()
@@ -173,7 +175,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		from, _ := types.Sender(signer, tx)
 
 		// Execute the transaction
-		env.state.Prepare(tx.Hash(), common.Hash{}, env.tcount)
+		env.state.Prepare(tx.Hash(), env.tcount)
 		err = env.commitTransaction(tx, coinbase)
 		switch err {
 		case core.ErrGasLimitReached:
@@ -206,7 +208,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 	}
 
 	// Create the block.
-	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, nil /* uncles */, env.receipts)
+	block, err := api.atlas.Engine().FinalizeAndAssemble(bc, header, env.state, transactions, env.receipts, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +247,7 @@ func decodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 	return txs, nil
 }
 
-func insertBlockParamsToBlock(params executableData) (*types.Block, error) {
+func insertBlockParamsToBlock(config *atlasparams.ChainConfig, parent *types.Header, params executableData) (*types.Block, error) {
 	txs, err := decodeTransactions(params.Transactions)
 	if err != nil {
 		return nil, err
@@ -254,20 +256,23 @@ func insertBlockParamsToBlock(params executableData) (*types.Block, error) {
 	number := big.NewInt(0)
 	number.SetUint64(params.Number)
 	header := &types.Header{
-		ParentHash:  params.ParentHash,
-		UncleHash:   types.EmptyUncleHash,
+		ParentHash: params.ParentHash,
+		//UncleHash:   types.EmptyUncleHash,
 		Coinbase:    params.Miner,
 		Root:        params.StateRoot,
 		TxHash:      types.DeriveSha(types.Transactions(txs), trie.NewStackTrie(nil)),
 		ReceiptHash: params.ReceiptRoot,
 		Bloom:       types.BytesToBloom(params.LogsBloom),
-		Difficulty:  big.NewInt(1),
-		Number:      number,
-		GasLimit:    params.GasLimit,
-		GasUsed:     params.GasUsed,
-		Time:        params.Timestamp,
+		//Difficulty:  big.NewInt(1),
+		Number:   number,
+		GasLimit: params.GasLimit,
+		GasUsed:  params.GasUsed,
+		Time:     params.Timestamp,
 	}
-	block := types.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */)
+	if config.IsLondon(number) {
+		header.BaseFee = misc.CalcBaseFee(config, parent)
+	}
+	block := types.NewBlockWithHeader(header).WithBody(txs, nil, nil)
 	return block, nil
 }
 
@@ -279,11 +284,10 @@ func (api *consensusAPI) NewBlock(params executableData) (*newBlockResponse, err
 	if parent == nil {
 		return &newBlockResponse{false}, fmt.Errorf("could not find parent %x", params.ParentHash)
 	}
-	block, err := insertBlockParamsToBlock(params)
+	block, err := insertBlockParamsToBlock(api.atlas.BlockChain().Config(), parent.Header(), params)
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = api.atlas.BlockChain().InsertChainWithoutSealVerification(block)
 	return &newBlockResponse{err == nil}, err
 }

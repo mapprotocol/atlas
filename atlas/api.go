@@ -21,8 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/apis/atlasapi"
-	"github.com/mapprotocol/atlas/core/chain"
 	"io"
 	"math/big"
 	"os"
@@ -32,9 +30,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/apis/atlasapi"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -62,9 +64,9 @@ func (api *PublicEthereumAPI) Coinbase() (common.Address, error) {
 }
 
 // Hashrate returns the POW hashrate
-func (api *PublicEthereumAPI) Hashrate() hexutil.Uint64 {
-	return hexutil.Uint64(api.e.Miner().Hashrate())
-}
+//func (api *PublicEthereumAPI) Hashrate() hexutil.Uint64 {
+//	return hexutil.Uint64(api.e.Miner().Hashrate())
+//}
 
 // PublicMinerAPI provides an API to control the miner.
 // It offers only methods that operate on data that pose no security risk when it is publicly accessible.
@@ -129,16 +131,23 @@ func (api *PrivateMinerAPI) SetGasPrice(gasPrice hexutil.Big) bool {
 	return true
 }
 
+// SetGasLimit sets the gaslimit to target towards during mining.
+//func (api *PrivateMinerAPI) SetGasLimit(gasLimit hexutil.Uint64) bool {
+//	api.e.Miner().SetGasCeil(uint64(gasLimit))
+//	return true
+//}
+
 // SetEtherbase sets the etherbase of the miner
 func (api *PrivateMinerAPI) SetEtherbase(etherbase common.Address) bool {
 	api.e.SetEtherbase(etherbase)
+	api.e.SetTxFeeRecipient(etherbase)
 	return true
 }
 
 // SetRecommitInterval updates the interval for miner sealing work recommitting.
-func (api *PrivateMinerAPI) SetRecommitInterval(interval int) {
-	api.e.Miner().SetRecommitInterval(time.Duration(interval) * time.Millisecond)
-}
+//func (api *PrivateMinerAPI) SetRecommitInterval(interval int) {
+//	api.e.Miner().SetRecommitInterval(time.Duration(interval) * time.Millisecond)
+//}
 
 // PrivateAdminAPI is the collection of Ethereum full node-related APIs
 // exposed over the private admin endpoint.
@@ -264,12 +273,16 @@ func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 
 // DumpBlock retrieves the entire state of the database at a given block.
 func (api *PublicDebugAPI) DumpBlock(blockNr rpc.BlockNumber) (state.Dump, error) {
+	opts := &state.DumpConfig{
+		OnlyWithAddresses: true,
+		Max:               AccountRangeMaxResults, // Sanity limit over RPC
+	}
 	if blockNr == rpc.PendingBlockNumber {
 		// If we're dumping the pending state, we need to request
 		// both the pending block as well as the pending state from
 		// the miner and operate on those
 		_, stateDb := api.eth.miner.Pending()
-		return stateDb.RawDump(false, false, true), nil
+		return stateDb.RawDump(opts), nil
 	}
 	var block *types.Block
 	if blockNr == rpc.LatestBlockNumber {
@@ -284,7 +297,7 @@ func (api *PublicDebugAPI) DumpBlock(blockNr rpc.BlockNumber) (state.Dump, error
 	if err != nil {
 		return state.Dump{}, err
 	}
-	return stateDb.RawDump(false, false, true), nil
+	return stateDb.RawDump(opts), nil
 }
 
 // PrivateDebugAPI is the collection of Ethereum full node APIs exposed over
@@ -332,7 +345,7 @@ func (api *PrivateDebugAPI) GetBadBlocks(ctx context.Context) ([]*BadBlockArgs, 
 		} else {
 			blockRlp = fmt.Sprintf("0x%x", rlpBytes)
 		}
-		if blockJSON, err = atlasapi.RPCMarshalBlock(block, true, true); err != nil {
+		if blockJSON, err = atlasapi.RPCMarshalBlock(block, true, true, api.eth.APIBackend.ChainConfig()); err != nil {
 			blockJSON = map[string]interface{}{"error": err.Error()}
 		}
 		results = append(results, &BadBlockArgs{
@@ -386,10 +399,17 @@ func (api *PublicDebugAPI) AccountRange(blockNrOrHash rpc.BlockNumberOrHash, sta
 		return state.IteratorDump{}, errors.New("either block number or block hash must be specified")
 	}
 
-	if maxResults > AccountRangeMaxResults || maxResults <= 0 {
-		maxResults = AccountRangeMaxResults
+	opts := &state.DumpConfig{
+		SkipCode:          nocode,
+		SkipStorage:       nostorage,
+		OnlyWithAddresses: !incompletes,
+		Start:             start,
+		Max:               uint64(maxResults),
 	}
-	return stateDb.IteratorDump(nocode, nostorage, incompletes, start, maxResults), nil
+	if maxResults > AccountRangeMaxResults || maxResults <= 0 {
+		opts.Max = AccountRangeMaxResults
+	}
+	return stateDb.IteratorDump(opts), nil
 }
 
 // StorageRangeResult is the result of a debug_storageRangeAt API call.
@@ -527,4 +547,65 @@ func (api *PrivateDebugAPI) getModifiedAccounts(startBlock, endBlock *types.Bloc
 		dirty = append(dirty, common.BytesToAddress(key))
 	}
 	return dirty, nil
+}
+
+// GetAccessibleState returns the first number where the node has accessible
+// state on disk. Note this being the post-state of that block and the pre-state
+// of the next block.
+// The (from, to) parameters are the sequence of blocks to search, which can go
+// either forwards or backwards
+func (api *PrivateDebugAPI) GetAccessibleState(from, to rpc.BlockNumber) (uint64, error) {
+	db := api.eth.ChainDb()
+	var pivot uint64
+	if p := rawdb.ReadLastPivotNumber(db); p != nil {
+		pivot = *p
+		log.Info("Found fast-sync pivot marker", "number", pivot)
+	}
+	var resolveNum = func(num rpc.BlockNumber) (uint64, error) {
+		// We don't have state for pending (-2), so treat it as latest
+		if num.Int64() < 0 {
+			block := api.eth.blockchain.CurrentBlock()
+			if block == nil {
+				return 0, fmt.Errorf("current block missing")
+			}
+			return block.NumberU64(), nil
+		}
+		return uint64(num.Int64()), nil
+	}
+	var (
+		start   uint64
+		end     uint64
+		delta   = int64(1)
+		lastLog time.Time
+		err     error
+	)
+	if start, err = resolveNum(from); err != nil {
+		return 0, err
+	}
+	if end, err = resolveNum(to); err != nil {
+		return 0, err
+	}
+	if start == end {
+		return 0, fmt.Errorf("from and to needs to be different")
+	}
+	if start > end {
+		delta = -1
+	}
+	for i := int64(start); i != int64(end); i += delta {
+		if time.Since(lastLog) > 8*time.Second {
+			log.Info("Finding roots", "from", start, "to", end, "at", i)
+			lastLog = time.Now()
+		}
+		if i < int64(pivot) {
+			continue
+		}
+		h := api.eth.BlockChain().GetHeaderByNumber(uint64(i))
+		if h == nil {
+			return 0, fmt.Errorf("missing header %d", i)
+		}
+		if ok, _ := api.eth.ChainDb().Has(h.Root[:]); ok {
+			return uint64(i), nil
+		}
+	}
+	return 0, fmt.Errorf("No state found")
 }
