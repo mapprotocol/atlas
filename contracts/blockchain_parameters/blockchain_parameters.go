@@ -66,6 +66,8 @@ func GetIntrinsicGasForAlternativeFeeCurrencyOrDefault(vmRunner vm.EVMRunner) ui
 // getIntrinsicGasForAlternativeFeeCurrency retrieves the intrisic gas for transactions that pay gas in
 // with an alternative currency
 func getIntrinsicGasForAlternativeFeeCurrency(vmRunner vm.EVMRunner) (uint64, error) {
+	return 0, nil
+	//TODO Replace with the following in the future
 	var gas *big.Int
 	err := intrinsicGasForAlternativeFeeCurrencyMethod.Query(vmRunner, &gas)
 
@@ -79,6 +81,8 @@ func getIntrinsicGasForAlternativeFeeCurrency(vmRunner vm.EVMRunner) (uint64, er
 // GetBlockGasLimitOrDefault retrieves the block max gas limit
 // In case of error, it returns the default value
 func GetBlockGasLimitOrDefault(vmRunner vm.EVMRunner) uint64 {
+	return params.DefaultGasLimit
+	//TODO Replace with the following in the future
 	val, err := getBlockGasLimit(vmRunner)
 	if err != nil {
 		logError("blockGasLimit", err)

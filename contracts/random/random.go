@@ -21,6 +21,8 @@ var (
 )
 
 func IsRunning(vmRunner vm.EVMRunner) bool {
+	return false
+	//TODO Replace with the following in the future
 	randomAddress, err := contracts.GetRegisteredAddress(vmRunner, params.RandomRegistryId)
 
 	if err == contracts.ErrSmartContractNotDeployed || err == contracts.ErrRegistryContractNotDeployed {
@@ -35,6 +37,8 @@ func IsRunning(vmRunner vm.EVMRunner) bool {
 // GetLastCommitment returns up the last commitment in the smart contract
 func GetLastCommitment(vmRunner vm.EVMRunner, validator common.Address) (common.Hash, error) {
 	lastCommitment := common.Hash{}
+	return lastCommitment, nil
+	//TODO Replace with the following in the future
 	err := commitmentsMethod.Query(vmRunner, &lastCommitment, validator)
 	if err != nil {
 		log.Error("Failed to get last commitment", "err", err)
@@ -51,7 +55,9 @@ func GetLastCommitment(vmRunner vm.EVMRunner, validator common.Address) (common.
 // ComputeCommitment calulcates the commitment for a given randomness.
 func ComputeCommitment(vmRunner vm.EVMRunner, randomness common.Hash) (common.Hash, error) {
 	commitment := common.Hash{}
-	// TODO(asa): Make an issue to not have to do this via StaticCall
+	return commitment, nil
+	//TODO Replace with the following in the future
+	//TODO(asa): Make an issue to not have to do this via StaticCall
 	err := computeCommitmentMethod.Query(vmRunner, &commitment, randomness)
 	if err != nil {
 		log.Error("Failed to call computeCommitment()", "err", err)
@@ -65,7 +71,8 @@ func ComputeCommitment(vmRunner vm.EVMRunner, randomness common.Hash) (common.Ha
 // proposer's previously committed to randomness, and commits new randomness for
 // a future block.
 func RevealAndCommit(vmRunner vm.EVMRunner, randomness, newCommitment common.Hash, proposer common.Address) error {
-
+	return nil
+	//TODO Replace with the following in the future
 	log.Trace("Revealing and committing randomness", "randomness", randomness.Hex(), "commitment", newCommitment.Hex())
 	err := revealAndCommitMethod.Execute(vmRunner, nil, common.Big0, randomness, newCommitment, proposer)
 
@@ -75,12 +82,16 @@ func RevealAndCommit(vmRunner vm.EVMRunner, randomness, newCommitment common.Has
 // Random performs an internal call to the EVM to retrieve the current randomness from the official Random contract.
 func Random(vmRunner vm.EVMRunner) (common.Hash, error) {
 	randomness := common.Hash{}
+	return randomness, nil
+	// TODO Replace with the following in the future
 	err := randomMethod.Query(vmRunner, &randomness)
 	return randomness, err
 }
 
 func BlockRandomness(vmRunner vm.EVMRunner, blockNumber uint64) (common.Hash, error) {
 	randomness := common.Hash{}
+	return randomness, nil
+	// TODO Replace with the following in the future
 	err := getBlockRandomnessMethod.Query(vmRunner, &randomness, big.NewInt(int64(blockNumber)))
 	return randomness, err
 }

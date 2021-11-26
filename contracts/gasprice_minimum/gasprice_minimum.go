@@ -73,6 +73,8 @@ func GetGasPriceMinimum(vmRunner vm.EVMRunner, currency *common.Address) (*big.I
 }
 
 func UpdateGasPriceMinimum(vmRunner vm.EVMRunner, lastUsedGas uint64) (*big.Int, error) {
+	return big.NewInt(0), nil
+	//TODO Replace with the following in the future
 	var updatedGasPriceMinimum *big.Int
 
 	// If an error occurs, the default block gas limit will be returned and a log statement will be produced by GetBlockGasLimitOrDefault

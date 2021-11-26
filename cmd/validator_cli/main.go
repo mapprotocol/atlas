@@ -89,9 +89,17 @@ func init() {
 	app.Commands = []cli.Command{
 		registerGroupCommand,
 		registerValidatorCommand,
+
 		queryGroupsCommand,
+		queryRegisteredValidatorSignersCommand,
+		queryTopGroupValidatorsCommand,
+
+		addFirstMemberCommand,
 		addToGroupCommand,
 		removeMemberCommand,
+		deregisterValidatorGroupCommand,
+		deregisterValidatorCommand,
+
 		setMaxGroupSizeCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
