@@ -390,8 +390,8 @@ func startNode(ctx *cli.Context, stack *node.Node, backend atlasapi.Backend) {
 			utils.Fatalf("Ethereum service not running: %v", err)
 		}
 		// Set the gas price to the limits from the CLI and start mining
-		gasprice := utils.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)
-		ethBackend.TxPool().SetGasPrice(gasprice)
+		//gasprice := utils.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)
+		//ethBackend.TxPool().SetGasPrice(gasprice)
 		// start mining
 		threads := ctx.GlobalInt(utils.MinerThreadsFlag.Name)
 		if err := ethBackend.StartMining(threads); err != nil {
