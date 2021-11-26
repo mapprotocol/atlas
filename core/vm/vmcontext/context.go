@@ -2,11 +2,9 @@ package vmcontext
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/contracts"
-	"github.com/mapprotocol/atlas/contracts/reserve"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	params2 "github.com/mapprotocol/atlas/params"
@@ -141,17 +139,18 @@ func TobinTransfer(evm *vm.EVM, sender, recipient common.Address, amount *big.In
 		evm.SetDebug(false)
 		defer func() { evm.SetDebug(true) }()
 	}
-	if amount.Cmp(big.NewInt(0)) != 0 {
-		caller := &SharedEVMRunner{evm}
-		tax, taxRecipient, err := reserve.ComputeTobinTax(caller, sender, amount)
-		if err == nil {
-			Transfer(evm.StateDB, sender, recipient, new(big.Int).Sub(amount, tax))
-			Transfer(evm.StateDB, sender, taxRecipient, tax)
-			return
-		} else {
-			log.Error("Failed to get tobin tax", "error", err)
-		}
-	}
+	//TODO Use the following code in the future
+	//if amount.Cmp(big.NewInt(0)) != 0 {
+	//	caller := &SharedEVMRunner{evm}
+	//	tax, taxRecipient, err := reserve.ComputeTobinTax(caller, sender, amount)
+	//	if err == nil {
+	//		Transfer(evm.StateDB, sender, recipient, new(big.Int).Sub(amount, tax))
+	//		Transfer(evm.StateDB, sender, taxRecipient, tax)
+	//		return
+	//	} else {
+	//		log.Error("Failed to get tobin tax", "error", err)
+	//	}
+	//}
 
 	// Complete a normal transfer if the amount is 0 or the tobin tax value is unable to be fetched and parsed.
 	// We transfer even when the amount is 0 because state trie clearing [EIP161] is necessary at the end of a transaction

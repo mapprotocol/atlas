@@ -53,6 +53,8 @@ func TobinTax(vmRunner vm.EVMRunner, sender common.Address) (tax Ratio, reserveA
 }
 
 func ComputeTobinTax(vmRunner vm.EVMRunner, sender common.Address, transferAmount *big.Int) (tax *big.Int, taxRecipient common.Address, err error) {
+	return nil, params.ZeroAddress, nil
+	//TODO Replace with the following in the future
 	taxRatio, recipient, err := TobinTax(vmRunner, sender)
 	if err != nil {
 		return nil, params.ZeroAddress, err
