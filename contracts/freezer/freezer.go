@@ -29,6 +29,8 @@ var (
 )
 
 func IsFrozen(vmRunner vm.EVMRunner, registryId common.Hash) (bool, error) {
+	return false, nil
+	//TODO Replace with the following in the future
 	address, err := contracts.GetRegisteredAddress(vmRunner, registryId)
 	if err != nil {
 		return false, err

@@ -21,7 +21,7 @@ var (
 var NoopExchangeRate = ExchangeRate{common.Big1, common.Big1}
 
 var MAPCurrency = Currency{
-	Address:    params.ZeroAddress,
+	Address:   params.ZeroAddress,
 	toMAPRate: NoopExchangeRate,
 }
 
@@ -29,7 +29,7 @@ var MAPCurrency = Currency{
 // than can be converted to MAP
 // Two currencies are deemed equal if they have the same address
 type Currency struct {
-	Address    common.Address
+	Address   common.Address
 	toMAPRate ExchangeRate
 }
 
@@ -141,7 +141,7 @@ func (cc *CurrencyManager) GetCurrency(currencyAddress *common.Address) (*Curren
 	}
 
 	val = &Currency{
-		Address:    *currencyAddress,
+		Address:   *currencyAddress,
 		toMAPRate: *currencyExchangeRate,
 	}
 
@@ -200,6 +200,7 @@ func GetExchangeRate(vmRunner vm.EVMRunner, currencyAddress *common.Address) (*E
 
 // GetBalanceOf returns an account's balance on a given ERC20 currency
 func GetBalanceOf(vmRunner vm.EVMRunner, accountOwner common.Address, contractAddress common.Address) (result *big.Int, err error) {
+
 	log.Trace("GetBalanceOf() Called", "accountOwner", accountOwner.Hex(), "contractAddress", contractAddress)
 
 	err = getBalanceMethod.Bind(contractAddress).Query(vmRunner, &result, accountOwner)
@@ -216,7 +217,8 @@ func GetBalanceOf(vmRunner vm.EVMRunner, accountOwner common.Address, contractAd
 // CurrencyWhitelist retrieves the list of currencies that can be used to pay transaction fees
 func CurrencyWhitelist(vmRunner vm.EVMRunner) ([]common.Address, error) {
 	returnList := []common.Address{}
-
+	return returnList, nil
+	//TODO Replace with the following in the future
 	err := getWhitelistMethod.Query(vmRunner, &returnList)
 
 	if err == contracts.ErrSmartContractNotDeployed {
