@@ -2,10 +2,13 @@ package main
 
 import (
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
+	"math/big"
 )
 
 var (
+	//------------------------------- pre set -------------------------------------
 	pathValidator01 = "D:/root/keystore/UTC--2021-09-08T08-00-15.473724074Z--1c0edab88dbb72b119039c4d14b1663525b3ac15"
 	pathValidator02 = "D:/root/keystore/UTC--2021-09-08T10-12-17.687481942Z--16fdbcac4d4cc24dca47b9b80f58155a551ca2af"
 	pathValidator03 = "D:/root/keystore/UTC--2021-09-08T10-16-18.520295371Z--2dc45799000ab08e60b7441c36fcc74060ccbe11"
@@ -18,6 +21,12 @@ var (
 
 	pathGroup = "D:/root/keystore/UTC--2021-11-11T13-28-01.812954600Z--ce90710a4673b87a6881b0907358119baf0304a5"
 )
+var addFirstMemberCommand = cli.Command{
+	Name:   "addFirstMember",
+	Usage:  "add first member validator to Groups ",
+	Action: MigrateFlags(addFirstMemberToGroup),
+	Flags:  ValidatorFlags,
+}
 
 var addToGroupCommand = cli.Command{
 	Name:   "addToGroup",
@@ -33,21 +42,61 @@ var removeMemberCommand = cli.Command{
 	Flags:  ValidatorFlags,
 }
 
+var deregisterValidatorGroupCommand = cli.Command{
+	Name:   "deregisterValidatorGroup",
+	Usage:  "deregister validator group",
+	Action: MigrateFlags(deregisterValidatorGroup),
+	Flags:  ValidatorFlags,
+}
+
+func addFirstMemberToGroup(ctx *cli.Context) error {
+	//--------------- pre set ----------------------------------
+	path := pathValidator1
+	passwordValidator := "111111"
+	passwordGroup := ""
+	//----------------------------------------------------------
+
+	conn, _ := dialConn(ctx)
+	validator := loadAccount(path, passwordValidator)
+	group := loadAccount(pathGroup, passwordGroup)
+	password = passwordValidator
+	loadPrivateKey(path)
+	log.Info("Add validator to group", "validator", validator.Address, "groupAddress", group.Address)
+
+	//--------------------- affiliate -------------------------------
+	log.Info("Validator affiliate to group")
+	input := packInput(abiValidators, "affiliate", group.Address)
+	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	getResult(conn, txHash, true)
+
+	//--------------------- addFirstMember --------------------------
+	password = passwordGroup
+	loadPrivateKey(pathGroup)
+	log.Info("addMember validator to group")
+	input = packInput(abiValidators, "addFirstMember", validator.Address, params.ZeroAddress, params.ZeroAddress)
+	txHash = sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
+	getResult(conn, txHash, true)
+
+	return nil
+}
+
 func addValidatorToGroup(ctx *cli.Context) error {
-	addMemberFunc := func(pathValidator string) {
+	//--------- pre set ------------
+	passwordGroup := ""
+	passwordValidator := "111111"
+	//------------------------------
+
+	addMemberFunc := func(path string, _password string) {
 		conn, _ := dialConn(ctx)
 
-		passwordValidator := "111111"
-		passwordGroup := ""
-		path := pathValidator
-		validator := loadAccount(path, passwordValidator)
+		validator := loadAccount(path, _password)
 		group := loadAccount(pathGroup, passwordGroup)
-		password = passwordValidator
+		password = _password
 		loadPrivateKey(path)
 		log.Info("Add validator to group", "validator", validator.Address, "groupAddress", group.Address)
 
 		//--------------------- affiliate --------------------------
-		log.Info("Validator affiliate to group")
+		log.Info("=== Validator affiliate to group ===")
 		input := packInput(abiValidators, "affiliate", group.Address)
 		txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
 		getResult(conn, txHash, true)
@@ -55,37 +104,42 @@ func addValidatorToGroup(ctx *cli.Context) error {
 		//--------------------- addMember --------------------------
 		password = passwordGroup
 		loadPrivateKey(pathGroup)
-		log.Info("addMember validator to group")
+		log.Info("=== addMember validator to group ===")
 		input = packInput(abiValidators, "addMember", validator.Address)
 		txHash = sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 		getResult(conn, txHash, true)
 	}
-	var Validatorlist = []string{
-		pathValidator1,
-		pathValidator2,
-		pathValidator3,
-		pathValidator4,
+	var Validatorlist = []struct {
+		a string
+		b string
+	}{
+		{pathValidator1, passwordValidator},
+		{pathValidator2, passwordValidator},
+		{pathValidator3, passwordValidator},
+		{pathValidator4, passwordValidator},
 	}
 	for _, v := range Validatorlist {
-		addMemberFunc(v)
+		addMemberFunc(v.a, v.b)
 	}
 
 	return nil
 }
 
 func removeMember(ctx *cli.Context) error {
-	removeMemberFunc := func(pathValidator string) {
+	//-------------- pre set ------------------------
+	passwordValidator := "111111"
+	passwordGroup := ""
+	//----------------------------------------------
+
+	removeMemberFunc := func(pathValidator string, _password string) {
 		conn, _ := dialConn(ctx)
 
-		passwordValidator := "111111"
-		passwordGroup := ""
 		path := pathValidator
-		validator := loadAccount(path, passwordValidator)
+		validator := loadAccount(path, _password)
 		group := loadAccount(pathGroup, passwordGroup)
-		password = passwordValidator
+		password = _password
 		loadPrivateKey(path)
 		log.Info("remove Member", "validator", validator.Address, "groupAddress", group.Address)
-
 		//--------------------- removeMember --------------------------
 		password = passwordGroup
 		loadPrivateKey(pathGroup)
@@ -94,19 +148,43 @@ func removeMember(ctx *cli.Context) error {
 		txHash := sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 		getResult(conn, txHash, true)
 	}
-	var Validatorlist = []string{
-		//pathValidator01,
-		//pathValidator02,
-		//pathValidator03,
-		//pathValidator04,
-		//pathValidator1,
-		//pathValidator2,
-		//pathValidator3,
-		pathValidator4,
+	var Validatorlist = []struct {
+		a string
+		b string
+	}{
+		{pathValidator01, passwordValidator},
+		{pathValidator02, passwordValidator},
+		{pathValidator03, passwordValidator},
+		{pathValidator04, passwordValidator},
+		{pathValidator1, passwordValidator},
+		{pathValidator2, passwordValidator},
+		{pathValidator3, passwordValidator},
+		{pathValidator4, passwordValidator},
 	}
 	for _, v := range Validatorlist {
-		removeMemberFunc(v)
+		removeMemberFunc(v.a, v.b)
 	}
 
+	return nil
+}
+
+func deregisterValidatorGroup(ctx *cli.Context) error {
+	//------------------------pre set ------------------------------------------------
+	path := ""
+	password = "111111"
+	n := int64(1) // index in group
+	//--------------------------------------------------------------------------------
+
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	validator := loadAccount(path, password)
+	loadPrivateKey(path)
+	conn, _ := dialConn(ctx)
+	//----------------------------- deregisterValidatorGroup --------------------------------
+	log.Info("====== deregisterValidator ======")
+	input := packInput(abiValidators, "deregisterValidatorGroup", big.NewInt(n))
+	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	getResult(conn, txHash, true)
 	return nil
 }

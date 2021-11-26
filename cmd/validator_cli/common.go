@@ -46,14 +46,14 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		log.Error("SuggestGasPrice", "err", err)
+		log.Error("SuggestGasPrice", "error", err)
 	}
 	gasLimit := uint64(3100000) // in units
 	//If the contract surely has code (or code is not needed), estimate the transaction
 	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
 	gasLimit, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
-		logger.Error("Contract exec failed", "err", err)
+		logger.Error("Contract exec failed", "error", err)
 	}
 	if gasLimit < 1 {
 		//gasLimit = 866328
@@ -68,12 +68,12 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)
 	if err != nil {
-		log.Error("SignTx", "err", err)
+		log.Error("SignTx", "error", err)
 	}
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		log.Error("SendTransaction", "err", err)
+		log.Error("SendTransaction", "error", err)
 	}
 
 	return signedTx.Hash()
@@ -97,11 +97,11 @@ func loadAccount(path string, password string) env.Account {
 	logger := log.New("func", "getResult")
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
-		logger.Crit("loadPrivate ReadFile", "err", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+		logger.Crit("loadPrivate ReadFile", "error", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		logger.Crit("loadPrivate DecryptKey", "err", fmt.Errorf("error decrypting key: %v", err))
+		logger.Crit("loadPrivate DecryptKey", "error", fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey1 := key.PrivateKey
 	publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
@@ -154,7 +154,7 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 		time.Sleep(time.Millisecond * 200)
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
 		if err != nil {
-			logger.Info("TransactionByHash", "err", err)
+			logger.Info("TransactionByHash", "error", err)
 		}
 		if !isPending {
 			break
@@ -169,7 +169,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 	if pending {
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
 		if err != nil {
-			logger.Error("TransactionByHash", "err", err)
+			logger.Error("TransactionByHash", "error", err)
 		}
 		if isPending {
 			println("In tx_pool no validator  process this, please query later")
@@ -186,7 +186,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 				break
 			}
 		}
-		logger.Error("TransactionReceipt", "err", err)
+		logger.Error("TransactionReceipt", "error", err)
 	}
 
 	if receipt.Status == types.ReceiptStatusSuccessful {
@@ -213,7 +213,7 @@ func PrintBalance(conn *ethclient.Client, from common.Address) {
 	logger := log.New("func", "PrintBalance")
 	balance, err := conn.BalanceAt(context.Background(), from, nil)
 	if err != nil {
-		logger.Error("BalanceAt", "err", err)
+		logger.Error("BalanceAt", "error", err)
 	}
 	balance2 := new(big.Float)
 	balance2.SetString(balance.String())
@@ -254,7 +254,7 @@ func printBaseInfo(conn *ethclient.Client, url string) *types.Header {
 	logger := log.New("func", "printBaseInfo")
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		logger.Error("HeaderByNumber", "err", err)
+		logger.Error("HeaderByNumber", "error", err)
 	}
 
 	if common.IsHexAddress(from.Hex()) {

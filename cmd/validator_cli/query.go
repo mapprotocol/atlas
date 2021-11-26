@@ -14,13 +14,27 @@ import (
 var queryGroupsCommand = cli.Command{
 	Name:   "queryGroups",
 	Usage:  "query Groups",
+	Action: MigrateFlags(queryGroups),
+	Flags:  ValidatorFlags,
+}
+var queryRegisteredValidatorSignersCommand = cli.Command{
+	Name:   "getRegisteredValidatorSigners",
+	Usage:  "Registered Validator Signers",
+	Action: MigrateFlags(getRegisteredValidatorSigners),
+	Flags:  ValidatorFlags,
+}
+var queryTopGroupValidatorsCommand = cli.Command{
+	Name:   "getTopGroupValidators",
+	Usage:  "get Top Group Validators",
 	Action: MigrateFlags(getTopGroupValidators),
 	Flags:  ValidatorFlags,
 }
 
 func queryGroups(ctx *cli.Context) error {
+	//---------------- pre set ---------------------------------------
 	path := ""
 	password = ""
+	//----------------------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
@@ -31,23 +45,26 @@ func queryGroups(ctx *cli.Context) error {
 	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		log.Error("method CallContract error", "err", err)
+		log.Error("method CallContract error", "error", err)
 	}
 	groups := new([]common.Address)
 	err = abiValidators.UnpackIntoInterface(&groups, "getRegisteredValidatorGroups", output)
 	if err != nil {
-		log.Error("method UnpackIntoInterface error", "err", err)
+		log.Error("method UnpackIntoInterface error", "error", err)
 	}
 	for _, v := range *groups {
-		fmt.Println("getRegisteredValidatorGroups:", v.String())
+		log.Info("getRegisteredValidatorGroups:", "obj", v.String())
 	}
 	return nil
 }
 
 func getRegisteredValidatorSigners(ctx *cli.Context) error {
-	methodName := "getRegisteredValidatorSigners"
+	//---------------------------- pre set ----------------------
 	path := ""
 	password = ""
+	//-----------------------------------------------------------
+	log.Info("==== getRegisteredValidatorSigners ===")
+	methodName := "getRegisteredValidatorSigners"
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
@@ -58,7 +75,7 @@ func getRegisteredValidatorSigners(ctx *cli.Context) error {
 	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		log.Error("method CallContract error", "err", err)
+		log.Error("method CallContract error", "error", err)
 	}
 	ValidatorSigners := new([]common.Address)
 	err = abiValidators.UnpackIntoInterface(&ValidatorSigners, methodName, output)
@@ -72,26 +89,30 @@ func getRegisteredValidatorSigners(ctx *cli.Context) error {
 }
 
 func getTopGroupValidators(ctx *cli.Context) error {
-	methodName := "getTopGroupValidators"
+	//--------------------------- pre set -------------------------------------------
 	path := pathGroup
+	n := big.NewInt(5) // top number
+	//-------------------------------------------------------------------------------
+
+	methodName := "getTopGroupValidators"
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
 	header, err := conn.HeaderByNumber(context.Background(), nil)
-	n := big.NewInt(1) // top 5
-	log.Info("getTopGroupValidators Group", "address", from)
+
+	log.Info("getTopGroupValidators Group", "obj", from)
 	input := packInput(abiValidators, methodName, from, n)
 	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
-		log.Error("method CallContract error", "err", err)
+		log.Error("method CallContract error", "error", err)
 	}
 	TopValidators := new([]common.Address)
 	err = abiValidators.UnpackIntoInterface(&TopValidators, methodName, output)
 	if err != nil {
-		log.Error("method UnpackIntoInterface", " error", err)
+		log.Error("method UnpackIntoInterface", "error", err)
 	}
 	for _, v := range *TopValidators {
-		log.Info("Address:", "address", v.String())
+		log.Info("Address:", "obj", v.String())
 	}
 	return nil
 }
