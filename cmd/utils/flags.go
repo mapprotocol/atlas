@@ -1413,7 +1413,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.NoPrefetch = ctx.GlobalBool(CacheNoPrefetchFlag.Name)
 	}
 	// Read the value from the flag no matter if it's set or not.
-	// todo ibft
 	cfg.Preimages = ctx.GlobalBool(CachePreimagesFlag.Name)
 	if cfg.NoPruning && !cfg.Preimages {
 		cfg.Preimages = true
@@ -1468,17 +1467,16 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.GlobalIsSet(RPCGlobalTxFeeCapFlag.Name) {
 		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCapFlag.Name)
 	}
-	// todo ibft
-	//if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
-	//	cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
-	//} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
-	//	urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
-	//	if urls == "" {
-	//		cfg.EthDiscoveryURLs = []string{}
-	//	} else {
-	//		cfg.EthDiscoveryURLs = SplitAndTrim(urls)
-	//	}
-	//}
+	if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
+		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
+	} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
+		urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
+		if urls == "" {
+			cfg.EthDiscoveryURLs = []string{}
+		} else {
+			cfg.EthDiscoveryURLs = SplitAndTrim(urls)
+		}
+	}
 	// Override any default configs for hard coded networks.
 	switch {
 	case ctx.GlobalBool(MainnetFlag.Name):
