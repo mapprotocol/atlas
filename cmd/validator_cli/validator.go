@@ -93,6 +93,9 @@ func registerValidator(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
 	validator := loadAccount(path, password)
 
 	blsPub, err := validator.BLSPublicKey()
@@ -131,6 +134,12 @@ func registerGroup(ctx *cli.Context) error {
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(CommissionFlag.Name) {
+		commission = ctx.GlobalInt64(CommissionFlag.Name)
 	}
 	groupAccount := loadAccount(path, password)
 
@@ -185,6 +194,12 @@ func setMaxGroupSize(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(maxSizeFlag.Name) {
+		maxSize = ctx.GlobalInt64(maxSizeFlag.Name)
+	}
 	validator := loadAccount(path, password)
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
@@ -205,6 +220,9 @@ func deregisterValidator(ctx *cli.Context) error {
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
 	}
 	validator := loadAccount(path, password)
 	loadPrivateKey(path)

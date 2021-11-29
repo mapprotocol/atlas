@@ -22,6 +22,26 @@ var (
 		Name:  "keystore",
 		Usage: "Keystore file path",
 	}
+	PasswordFlag = cli.StringFlag{
+		Name:  "password",
+		Usage: "Keystore file`s password",
+	}
+	CommissionFlag = cli.Int64Flag{
+		Name:  "commission",
+		Usage: "register group param",
+	}
+	maxSizeFlag = cli.Int64Flag{
+		Name:  "maxSize",
+		Usage: "set the max group size",
+	}
+	TopNumFlag = cli.Int64Flag{
+		Name:  "topNum",
+		Usage: "topNum of group`s member",
+	}
+	ReadConfigFlag = cli.BoolFlag{
+		Name:  "readConfig",
+		Usage: "read Config to get validators",
+	}
 	RPCListenAddrFlag = cli.StringFlag{
 		Name:  "rpcaddr",
 		Usage: "HTTP-RPC server listening interface",
@@ -61,6 +81,11 @@ var (
 		ValueFlag,
 		FeeFlag,
 		BFTKeyKeyFlag,
+		PasswordFlag,
+		CommissionFlag,
+		ReadConfigFlag,
+		TopNumFlag,
+		maxSizeFlag,
 	}
 )
 

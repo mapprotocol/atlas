@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -32,4 +33,27 @@ func TestJsonTransferKey(t *testing.T) {
 	fmt.Println("public key:", pkHash)
 	from = crypto.PubkeyToAddress(priKey.PublicKey)
 	fmt.Println("address:", from)
+}
+
+func TestJsonTransfer(t *testing.T) {
+	type AccoutInfo struct {
+		Account  string
+		Password string
+	}
+	type ValidatorsInfo struct {
+		Validators []AccoutInfo
+	}
+	keyDir := fmt.Sprintf("./config/validatorCfg.json")
+	data, err := ioutil.ReadFile(keyDir)
+	if err != nil {
+		log.Crit(" readFile Err:", "err:", err.Error())
+	}
+
+	ValidatorsInfoCfg := &ValidatorsInfo{}
+	_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+	for _, v := range ValidatorsInfoCfg.Validators {
+		fmt.Println(v.Account, v.Password)
+	}
+
 }

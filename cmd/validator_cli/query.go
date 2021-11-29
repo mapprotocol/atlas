@@ -14,7 +14,7 @@ import (
 var queryGroupsCommand = cli.Command{
 	Name:   "queryGroups",
 	Usage:  "query Groups",
-	Action: MigrateFlags(queryGroups),
+	Action: MigrateFlags(getTopGroupValidators),
 	Flags:  ValidatorFlags,
 }
 var queryRegisteredValidatorSignersCommand = cli.Command{
@@ -37,6 +37,9 @@ func queryGroups(ctx *cli.Context) error {
 	//----------------------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
 	}
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
@@ -68,6 +71,9 @@ func getRegisteredValidatorSigners(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
 	header, err := conn.HeaderByNumber(context.Background(), nil)
@@ -92,8 +98,14 @@ func getTopGroupValidators(ctx *cli.Context) error {
 	//--------------------------- pre set -------------------------------------------
 	path := pathGroup
 	n := big.NewInt(5) // top number
+	password = ""
 	//-------------------------------------------------------------------------------
-
+	if ctx.IsSet(TopNumFlag.Name) {
+		n = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
 	methodName := "getTopGroupValidators"
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)

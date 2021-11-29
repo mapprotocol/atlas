@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
+	"io/ioutil"
 	"math/big"
 )
 
@@ -55,6 +58,33 @@ func addFirstMemberToGroup(ctx *cli.Context) error {
 	passwordValidator := "111111"
 	passwordGroup := ""
 	//----------------------------------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+
+	if ctx.IsSet(ReadConfigFlag.Name) {
+		type AccoutInfo struct {
+			Account  string
+			Password string
+		}
+		type ValidatorsInfo struct {
+			Validators []AccoutInfo
+		}
+		keyDir := fmt.Sprintf("./config/validatorCfg.json")
+		data, err := ioutil.ReadFile(keyDir)
+		if err != nil {
+			log.Crit(" readFile Err:", "err:", err.Error())
+		}
+
+		ValidatorsInfoCfg := &ValidatorsInfo{}
+		_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+		passwordValidator = ValidatorsInfoCfg.Validators[0].Password
+		path = ValidatorsInfoCfg.Validators[0].Account
+	}
 
 	conn, _ := dialConn(ctx)
 	validator := loadAccount(path, passwordValidator)
@@ -85,6 +115,12 @@ func addValidatorToGroup(ctx *cli.Context) error {
 	passwordGroup := ""
 	passwordValidator := "111111"
 	//------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
+	}
 
 	addMemberFunc := func(path string, _password string) {
 		conn, _ := dialConn(ctx)
@@ -118,6 +154,28 @@ func addValidatorToGroup(ctx *cli.Context) error {
 		{pathValidator3, passwordValidator},
 		{pathValidator4, passwordValidator},
 	}
+	if ctx.IsSet(ReadConfigFlag.Name) {
+		type AccoutInfo struct {
+			Account  string
+			Password string
+		}
+		type ValidatorsInfo struct {
+			Validators []AccoutInfo
+		}
+		keyDir := fmt.Sprintf("./config/validatorCfg.json")
+		data, err := ioutil.ReadFile(keyDir)
+		if err != nil {
+			log.Crit(" readFile Err:", "err:", err.Error())
+		}
+
+		ValidatorsInfoCfg := &ValidatorsInfo{}
+		_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+		for _, v := range ValidatorsInfoCfg.Validators {
+			addMemberFunc(v.Account, v.Password)
+		}
+		return nil
+	}
 	for _, v := range Validatorlist {
 		addMemberFunc(v.a, v.b)
 	}
@@ -130,6 +188,12 @@ func removeMember(ctx *cli.Context) error {
 	passwordValidator := "111111"
 	passwordGroup := ""
 	//----------------------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
+	}
 
 	removeMemberFunc := func(pathValidator string, _password string) {
 		conn, _ := dialConn(ctx)
@@ -161,6 +225,30 @@ func removeMember(ctx *cli.Context) error {
 		{pathValidator3, passwordValidator},
 		{pathValidator4, passwordValidator},
 	}
+
+	if ctx.IsSet(ReadConfigFlag.Name) {
+		type AccoutInfo struct {
+			Account  string
+			Password string
+		}
+		type ValidatorsInfo struct {
+			Validators []AccoutInfo
+		}
+		keyDir := fmt.Sprintf("./config/validatorCfg.json")
+		data, err := ioutil.ReadFile(keyDir)
+		if err != nil {
+			log.Crit(" readFile Err:", "err:", err.Error())
+		}
+
+		ValidatorsInfoCfg := &ValidatorsInfo{}
+		_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+		for _, v := range ValidatorsInfoCfg.Validators {
+			removeMemberFunc(v.Account, v.Password)
+		}
+		return nil
+	}
+
 	for _, v := range Validatorlist {
 		removeMemberFunc(v.a, v.b)
 	}
@@ -177,6 +265,9 @@ func deregisterValidatorGroup(ctx *cli.Context) error {
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
 	}
 	validator := loadAccount(path, password)
 	loadPrivateKey(path)
