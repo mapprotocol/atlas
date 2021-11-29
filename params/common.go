@@ -18,6 +18,7 @@ var (
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
 	TxVerifyAddress    = common.BytesToAddress([]byte("txVerifyAddress"))
+	FoundationAddress  = common.HexToAddress("0x0000000000000000000000000000000000000000")
 )
 
 var RelayerGas = map[string]uint64{
