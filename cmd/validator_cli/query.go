@@ -14,7 +14,7 @@ import (
 var queryGroupsCommand = cli.Command{
 	Name:   "queryGroups",
 	Usage:  "query Groups",
-	Action: MigrateFlags(getTopGroupValidators),
+	Action: MigrateFlags(queryGroups),
 	Flags:  ValidatorFlags,
 }
 var queryRegisteredValidatorSignersCommand = cli.Command{
