@@ -17,7 +17,9 @@
 package chain
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/trie"
 	params2 "github.com/mapprotocol/atlas/params"
 	//"math/big"
@@ -31,11 +33,12 @@ import (
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {
+	fmt.Println("address:",common.Address{}.String())
 	EmptyRootHash0 := types.DeriveSha(types.Transactions{},trie.NewStackTrie(nil))
 	fmt.Println(EmptyRootHash0)
 	block := DefaultGenesisBlock().ToBlock(nil)
 	if block.Hash() != params2.MainnetGenesisHash {
-		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash(), params.MainnetGenesisHash)
+		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash(), params2.MainnetGenesisHash)
 	}
 	block = DefaultTestnetGenesisBlock().ToBlock(nil)
 	if block.Hash() != params2.TestnetGenesisHash {
@@ -180,7 +183,7 @@ func TestGenesisHashes(t *testing.T) {
 			hash:    params2.TestnetGenesisHash,
 		},
 		{
-			genesis: DevnetGenesisBlock(),
+			genesis: DevnetGenesisBlock(common.Address{}),
 			hash:    params2.DevnetGenesisHash,
 		},
 	}
@@ -190,4 +193,17 @@ func TestGenesisHashes(t *testing.T) {
 			t.Errorf("case: %d, want: %s, got: %s", i, c.hash.Hex(), got.Hex())
 		}
 	}
+}
+func generateAddr() common.Address {
+	priv, _ := crypto.GenerateKey()
+	privHex := hex.EncodeToString(crypto.FromECDSA(priv))
+	fmt.Println(privHex)
+	addr := crypto.PubkeyToAddress(priv.PublicKey)
+	fmt.Println(addr.String())
+	fmt.Println("finish")
+	return addr
+}
+
+func Test01(t *testing.T) {
+	generateAddr()
 }

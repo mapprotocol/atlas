@@ -16,7 +16,7 @@ const (
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash = common.HexToHash("0xf6285fd285d6c15aae581220e9b13f4d0ac75428ee90076e737f4e6125d31723")
+	MainnetGenesisHash = common.HexToHash("0xa63129ab544ca1f31cf72b3b7bb841eea9fd04194be27b63118e0432434fcf49")
 	TestnetGenesisHash = common.HexToHash("0x63f425f4a8362103c2be5089223d8823cad0baf5827eeecd20ee4adbe7dec063")
 	DevnetGenesisHash  = common.HexToHash("0x1c00a47a70d32300cf336207d290ccc2838d3ea03b2ba73c07bafdd6070ff23a")
 )
