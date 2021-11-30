@@ -295,6 +295,17 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(g.Number))
 	register := vm.NewRegisterImpl()
+	hh := g.Number
+	relayer := defaultRelayer2()
+	for _, member := range relayer {
+		var err error
+		err = register.InsertAccount2(hh, member.Coinbase, params.ElectionMinLimitForRegister)
+		if err != nil {
+			log.Error("ToBlock InsertAccount", "error", err)
+		} else {
+			vm.GenesisAddLockedBalance(statedb, member.Coinbase, params.ElectionMinLimitForRegister)
+		}
+	}
 	_, err = register.DoElections(statedb, 1, 0)
 	if err != nil {
 		log.Error("ToBlock DoElections", "error", err)
