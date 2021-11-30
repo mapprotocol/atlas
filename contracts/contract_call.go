@@ -48,8 +48,10 @@ func (am Method) decodeResult(result interface{}, output []byte) error {
 
 	// adapter new pattern
 	results, err := am.abi.Unpack(am.method, output)
-	// fetch first data
-	result = results[0]
+	if results != nil {
+		// fetch first data
+		result = results[0]
+	}
 	return err
 }
 

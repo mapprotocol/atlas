@@ -160,21 +160,21 @@ func (miner *Miner) update() {
 			case downloader.FailedEvent:
 				canStart = true
 				if shouldStart {
-					miner.SetEtherbase(miner.coinbase)
+					miner.SetValidator(miner.coinbase)
 					miner.worker.start()
 				}
 			case downloader.DoneEvent:
 				miner.recoverRandomness()
 				canStart = true
 				if shouldStart {
-					miner.SetEtherbase(miner.coinbase)
+					miner.SetValidator(miner.coinbase)
 					miner.worker.start()
 				}
 				// Stop reacting to downloader events
 				events.Unsubscribe()
 			}
 		case addr := <-miner.startCh:
-			miner.SetEtherbase(addr)
+			miner.SetValidator(addr)
 			if canStart {
 				miner.worker.start()
 			}
@@ -190,7 +190,7 @@ func (miner *Miner) update() {
 }
 
 func (miner *Miner) Start(validator common.Address, txFeeRecipient common.Address) {
-	miner.SetEtherbase(validator)
+	miner.SetValidator(validator)
 	miner.SetTxFeeRecipient(txFeeRecipient)
 	miner.startCh <- validator
 }
@@ -241,9 +241,9 @@ func (miner *Miner) PendingBlock() *types.Block {
 	return miner.worker.pendingBlock()
 }
 
-func (miner *Miner) SetEtherbase(addr common.Address) {
+func (miner *Miner) SetValidator(addr common.Address) {
 	miner.coinbase = addr
-	miner.worker.setEtherbase(addr)
+	miner.worker.setValidator(addr)
 }
 
 // EnablePreseal turns on the preseal mining feature. It's enabled by default.

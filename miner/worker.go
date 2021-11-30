@@ -105,8 +105,8 @@ type worker struct {
 	startCh chan struct{}
 	exitCh  chan struct{}
 
-	mu             sync.RWMutex // The lock used to protect the coinbase and extra fields
-	coinbase       common.Address
+	mu             sync.RWMutex // The lock used to protect the validator and extra fields
+	validator      common.Address
 	txFeeRecipient common.Address
 	extra          []byte
 
@@ -153,11 +153,11 @@ func newWorker(config *Config, chainConfig *params2.ChainConfig, engine consensu
 	return worker
 }
 
-// setEtherbase sets the etherbase used to initialize the block coinbase field.
-func (w *worker) setEtherbase(addr common.Address) {
+// setValidator sets the etherbase used to initialize the block validator field.
+func (w *worker) setValidator(addr common.Address) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.coinbase = addr
+	w.validator = addr
 }
 
 // setTxFeeRecipient sets the address to receive tx fees, stored in header.Coinbase
@@ -396,9 +396,9 @@ func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core
 
 	w.mu.RLock()
 	txFeeRecipient := w.txFeeRecipient
-	if w.txFeeRecipient != w.coinbase {
-		txFeeRecipient = w.coinbase
-		log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the coinbase.")
+	if w.txFeeRecipient != w.validator {
+		txFeeRecipient = w.validator
+		log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the validator.")
 	}
 	w.mu.RUnlock()
 
