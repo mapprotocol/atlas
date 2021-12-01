@@ -26,6 +26,14 @@ var (
 		Name:  "password",
 		Usage: "Keystore file`s password",
 	}
+	GroupAddressFlag = cli.StringFlag{
+		Name:  "groupAddress",
+		Usage: "group hex address",
+	}
+	NamePrefixFlag = cli.StringFlag{
+		Name:  "namePrefix",
+		Usage: "Keystore file`s password",
+	}
 	CommissionFlag = cli.Int64Flag{
 		Name:  "commission",
 		Usage: "register group param",
@@ -82,6 +90,7 @@ var (
 		FeeFlag,
 		BFTKeyKeyFlag,
 		PasswordFlag,
+		GroupAddressFlag,
 		CommissionFlag,
 		ReadConfigFlag,
 		TopNumFlag,
@@ -124,6 +133,9 @@ func init() {
 		removeMemberCommand,
 		deregisterValidatorGroupCommand,
 		deregisterValidatorCommand,
+		createAccountCommand,
+		lockedMAPCommand,
+		affiliateCommand,
 
 		setMaxGroupSizeCommand,
 	}
