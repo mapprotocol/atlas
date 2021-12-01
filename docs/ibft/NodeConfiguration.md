@@ -142,7 +142,7 @@ admin.addPeer("enode://40d2dc2a51298f3d9e2eabea17ae20781cb65ceb351681db6ab45e808
   To start a `atlas` instance for mining, run it with all your usual flags, extended by:
 
 ```shell
-$ atlas <usual-flags> --datadir ./data1 --ipcpath data1 --port 20201 --unlock 0x6c5938b49bacde73a8db7c3a7da208846898bff5 --mine --miner.etherbase 0x6c5938b49bacde73a8db7c3a7da208846898bff5 console
+$ atlas <usual-flags> --datadir ./data1 --ipcpath data1 --port 20201 --unlock 0x6c5938b49bacde73a8db7c3a7da208846898bff5 --mine --miner.validator 0x6c5938b49bacde73a8db7c3a7da208846898bff5 console
 ```
 
 Repeat four times to start up four different nodes, `miner.etherbase` params is just address we defined, `unlock` params is the same as `miner.etherbase`,
@@ -230,7 +230,6 @@ also need to configure a miner to process transactions and create new blocks for
 #### Running a private miner
 
 First, it needs to become a validator.
-See https://github.com/mapprotocol/atlas/blob/main/docs/ibft/NodeConfiguration.md
 
 Mining on the public Atlas network is a complex task as it's only feasible using GPUs,
 requiring an OpenCL or CUDA enabled `ethminer` instance. For information on such a setup, please consult the EtherMining subreddit and the ethminer repository.
@@ -242,8 +241,8 @@ ones either). To start a `atlas` instance for mining, run it with all your usual
 by:
 
 ```shell
-$ atlas <usual-flags> --miner.etherbase=0x0000000000000000000000000000000000000000
+$ atlas <usual-flags> --miner.validator=0x0000000000000000000000000000000000000000
 ```
 
 Which will start mining blocks and transactions on a single CPU thread, crediting all
-proceedings to the account specified by `--miner.etherbase`. You can further tune the mining by changing the default gas price transactions converge to (`--miner.gasprice`).
+proceedings to the account specified by `--miner.validator`. You can further tune the mining by changing the default gas price transactions converge to (`--miner.gasprice`).

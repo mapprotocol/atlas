@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -318,7 +319,11 @@ func (tx *Transaction) GasTipCapCmp(other *Transaction) int {
 
 // GasTipCapIntCmp compares the gasTipCap of the transaction against the given gasTipCap.
 func (tx *Transaction) GasTipCapIntCmp(other *big.Int) int {
-	return tx.inner.gasTipCap().Cmp(other)
+	r := tx.inner.gasTipCap().Cmp(other)
+	if r < 0 {
+		log.Error("gas tip cap is too low", "gasTipCap", tx.inner.gasTipCap(), "gasPrice", other)
+	}
+	return r
 }
 
 // EffectiveGasTip returns the effective miner gasTipCap for the given base fee.

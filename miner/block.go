@@ -66,12 +66,12 @@ func prepareBlock(w *worker) (*blockState, error) {
 	}
 
 	txFeeRecipient := w.txFeeRecipient
-	if w.txFeeRecipient != w.coinbase {
-		txFeeRecipient = w.coinbase
-		log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the coinbase.")
+	if w.txFeeRecipient != w.validator {
+		txFeeRecipient = w.validator
+		log.Warn("TxFeeRecipient and Validator flags set before split etherbase fork is active. Defaulting to the given validator address for the validator.")
 	}
 
-	// Only set the coinbase if our consensus engine is running (avoid spurious block rewards)
+	// Only set the validator if our consensus engine is running (avoid spurious block rewards)
 	if w.isRunning() {
 		if txFeeRecipient == (common.Address{}) {
 			return nil, errors.New("refusing to mine without etherbase")
@@ -108,7 +108,7 @@ func prepareBlock(w *worker) (*blockState, error) {
 			log.Crit("Istanbul consensus engine must be in use for the randomness beacon")
 		}
 
-		lastCommitment, err := random.GetLastCommitment(vmRunner, w.coinbase)
+		lastCommitment, err := random.GetLastCommitment(vmRunner, w.validator)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get last commitment: %w", err)
 		}
@@ -132,7 +132,7 @@ func prepareBlock(w *worker) (*blockState, error) {
 			return nil, fmt.Errorf("failed to generate new randomness: %w", err)
 		}
 
-		err = random.RevealAndCommit(vmRunner, lastRandomness, newCommitment, w.coinbase)
+		err = random.RevealAndCommit(vmRunner, lastRandomness, newCommitment, w.validator)
 		if err != nil {
 			return nil, fmt.Errorf("failed to reveal and commit randomness: %w", err)
 		}

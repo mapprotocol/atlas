@@ -19,7 +19,6 @@ package fetcher
 import (
 	"bytes"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	mrand "math/rand"
 	"sort"
 	"time"
@@ -29,6 +28,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 )
 

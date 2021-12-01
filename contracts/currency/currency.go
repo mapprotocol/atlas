@@ -224,7 +224,7 @@ func CurrencyWhitelist(vmRunner vm.EVMRunner) ([]common.Address, error) {
 	if err == contracts.ErrSmartContractNotDeployed {
 		log.Warn("Registry address lookup failed", "err", err)
 	} else if err != nil {
-		log.Error("getWhitelist invocation failed", "err", err)
+		//log.Error("getWhitelist invocation failed", "err", err)
 	} else {
 		log.Trace("getWhitelist invocation success")
 	}

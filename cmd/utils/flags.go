@@ -389,9 +389,9 @@ var (
 		Usage: "Minimum gas price for mining a transaction",
 		Value: ethconfig.Defaults.Miner.GasPrice,
 	}
-	MinerEtherbaseFlag = cli.StringFlag{
-		Name:  "miner.etherbase",
-		Usage: "Public address for block mining rewards (default = first account)",
+	MinerValidatorFlag = cli.StringFlag{
+		Name:  "miner.validator",
+		Usage: "Public address for participation in consensus",
 		Value: "0",
 	}
 	MinerExtraDataFlag = cli.StringFlag{
@@ -774,7 +774,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(TestnetFlag.Name):
 		urls = params.TestnetBootnodes
-	case cfg.BootstrapNodes != nil || ctx.GlobalBool(SingleFlag.Name):
+	case cfg.BootstrapNodes != nil:
 		return // already set, don't apply defaults.
 	}
 
@@ -1000,24 +1000,24 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	return accs[index], nil
 }
 
-// setEtherbase retrieves the etherbase either from the directly specified
+// setValidator retrieves the etherbase either from the directly specified
 // command line flags or from the keystore if CLI indexed.
-func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
-	// Extract the current etherbase
-	var etherbase string
-	if ctx.GlobalIsSet(MinerEtherbaseFlag.Name) {
-		etherbase = ctx.GlobalString(MinerEtherbaseFlag.Name)
+func setValidator(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
+	// Extract the current validator
+	var validator string
+	if ctx.GlobalIsSet(MinerValidatorFlag.Name) {
+		validator = ctx.GlobalString(MinerValidatorFlag.Name)
 	}
-	// Convert the etherbase into an address and configure it
-	if etherbase != "" {
+	// Convert the validator into an address and configure it
+	if validator != "" {
 		if ks != nil {
-			account, err := MakeAddress(ks, etherbase)
+			account, err := MakeAddress(ks, validator)
 			if err != nil {
-				Fatalf("Invalid miner etherbase: %v", err)
+				Fatalf("Invalid miner validator: %v", err)
 			}
 			cfg.Miner.Etherbase = account.Address
 		} else {
-			Fatalf("No etherbase configured")
+			Fatalf("No validator configured")
 		}
 	}
 }
@@ -1106,7 +1106,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.NetRestrict = list
 	}
 
-	if ctx.GlobalBool(DeveloperFlag.Name) || ctx.GlobalBool(CatalystFlag.Name) || ctx.GlobalBool(SingleFlag.Name) {
+	if ctx.GlobalBool(DeveloperFlag.Name) || ctx.GlobalBool(CatalystFlag.Name) {
 		// --dev mode can't use p2p networking.
 		cfg.MaxPeers = 0
 		cfg.ListenAddr = ""
@@ -1360,7 +1360,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if keystores := stack.AccountManager().Backends(keystore.KeyStoreType); len(keystores) > 0 {
 		ks = keystores[0].(*keystore.KeyStore)
 	}
-	setEtherbase(ctx, ks, cfg)
+	setValidator(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO, ctx.GlobalString(SyncModeFlag.Name) == "light")
 	setTxPool(ctx, &cfg.TxPool)
 	setTxFeeRecipient(ctx, ks, cfg)
@@ -1413,7 +1413,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.NoPrefetch = ctx.GlobalBool(CacheNoPrefetchFlag.Name)
 	}
 	// Read the value from the flag no matter if it's set or not.
-	// todo ibft
 	cfg.Preimages = ctx.GlobalBool(CachePreimagesFlag.Name)
 	if cfg.NoPruning && !cfg.Preimages {
 		cfg.Preimages = true
@@ -1468,17 +1467,16 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.GlobalIsSet(RPCGlobalTxFeeCapFlag.Name) {
 		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCapFlag.Name)
 	}
-	// todo ibft
-	//if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
-	//	cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
-	//} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
-	//	urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
-	//	if urls == "" {
-	//		cfg.EthDiscoveryURLs = []string{}
-	//	} else {
-	//		cfg.EthDiscoveryURLs = SplitAndTrim(urls)
-	//	}
-	//}
+	if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
+		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
+	} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
+		urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
+		if urls == "" {
+			cfg.EthDiscoveryURLs = []string{}
+		} else {
+			cfg.EthDiscoveryURLs = SplitAndTrim(urls)
+		}
+	}
 	// Override any default configs for hard coded networks.
 	switch {
 	case ctx.GlobalBool(MainnetFlag.Name):
@@ -1510,7 +1508,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			// when we're definitely concerned with only one account.
 			passphrase = list[0]
 		}
-		// setEtherbase has been called above, configuring the miner address from command line flags.
+		// setValidator has been called above, configuring the miner address from command line flags.
 		if cfg.Miner.Etherbase != (common.Address{}) {
 			developer = accounts.Account{Address: cfg.Miner.Etherbase}
 		} else if accs := ks.Accounts(); len(accs) > 0 {
@@ -1537,55 +1535,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			}
 			chaindb.Close()
 		}
-		//if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-		//	cfg.Miner.GasPrice = big.NewInt(1)
-		//}
-	case ctx.GlobalBool(SingleFlag.Name):
-		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = params.SingleWorkID
+		if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
+			cfg.Miner.GasPrice = big.NewInt(1)
 		}
-		// Create new developer account or reuse existing one
-		var (
-			singler    accounts.Account
-			passphrase string
-			err        error
-		)
-		if list := MakePasswordList(ctx); len(list) > 0 {
-			// Just take the first value. Although the function returns a possible multiple values and
-			// some usages iterate through them as attempts, that doesn't make sense in this setting,
-			// when we're definitely concerned with only one account.
-			passphrase = list[0]
-		}
-		// setEtherbase has been called above, configuring the miner address from command line flags.
-		if cfg.Miner.Etherbase != (common.Address{}) {
-			singler = accounts.Account{Address: cfg.Miner.Etherbase}
-		} else if accs := ks.Accounts(); len(accs) > 0 {
-			singler = ks.Accounts()[0]
-		} else {
-			singler, err = ks.NewAccount(passphrase)
-			if err != nil {
-				Fatalf("Failed to create developer account: %v", err)
-			}
-		}
-		if err := ks.Unlock(singler, passphrase); err != nil {
-			Fatalf("Failed to unlock developer account: %v", err)
-		}
-		log.Info("Using singler account", "address", singler.Address)
 
-		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = atlaschain.SingleGenesisBlock(singler.Address)
-		if ctx.GlobalIsSet(DataDirFlag.Name) {
-			// Check if we have an already initialized chain and fall back to
-			// that if so. Otherwise we need to generate a new genesis spec.
-			chaindb := MakeChainDatabase(ctx, stack, false)
-			if rawdb.ReadCanonicalHash(chaindb, 0) != (common.Hash{}) {
-				cfg.Genesis = nil // fallback to db content
-			}
-			chaindb.Close()
-		}
-		//if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-		//	cfg.Miner.GasPrice = big.NewInt(1)
-		//}
 	default:
 		if cfg.NetworkId == params.MainnetNetWorkID {
 			SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
@@ -1844,7 +1797,7 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 // `TxFeeRecipient` is the address earned block transaction fees are sent to.
 func setTxFeeRecipient(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
 	if ctx.GlobalIsSet(TxFeeRecipientFlag.Name) {
-		if !ctx.GlobalIsSet(MinerEtherbaseFlag.Name) {
+		if !ctx.GlobalIsSet(MinerValidatorFlag.Name) {
 			Fatalf("`etherbase` and `tx-fee-recipient` flag should not be used together. `miner.validator` and `tx-fee-recipient` constitute both of `etherbase`' functions")
 		}
 		txFeeRecipient := ctx.GlobalString(TxFeeRecipientFlag.Name)

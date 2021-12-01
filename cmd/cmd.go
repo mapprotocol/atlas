@@ -113,7 +113,7 @@ var (
 		//utils.MinerNotifyFlag,
 		//utils.MinerGasLimitFlag,
 		//utils.MinerGasPriceFlag,
-		//utils.MinerEtherbaseFlag,
+		//utils.MinerValidatorFlag,
 		//utils.MinerExtraDataFlag,
 		//utils.MinerRecommitIntervalFlag,
 		//utils.MinerNoVerifyFlag,
@@ -126,7 +126,6 @@ var (
 		utils.DNSDiscoveryFlag,
 		utils.MainnetFlag,
 		utils.DeveloperFlag,
-		utils.SingleFlag,
 		utils.TestnetFlag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
@@ -140,7 +139,7 @@ var (
 		configFileFlag,
 		utils.CatalystFlag,
 		utils.MiningEnabledFlag,
-		utils.MinerEtherbaseFlag,
+		utils.MinerValidatorFlag,
 		utils.MinerExtraDataFlag,
 		utils.MinerThreadsFlag,
 		utils.MinerGasPriceFlag,
@@ -256,9 +255,6 @@ func prepare(ctx *cli.Context) {
 		log.Info("Starting Atlas on Ropsten testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Atlas in ephemeral dev mode...")
-
-	case ctx.GlobalIsSet(utils.SingleFlag.Name):
 		log.Info("Starting Atlas in ephemeral dev mode...")
 
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
@@ -384,7 +380,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend atlasapi.Backend) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.SingleFlag.Name) {
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
@@ -394,8 +390,8 @@ func startNode(ctx *cli.Context, stack *node.Node, backend atlasapi.Backend) {
 			utils.Fatalf("Ethereum service not running: %v", err)
 		}
 		// Set the gas price to the limits from the CLI and start mining
-		gasprice := utils.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)
-		ethBackend.TxPool().SetGasPrice(gasprice)
+		//gasprice := utils.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)
+		//ethBackend.TxPool().SetGasPrice(gasprice)
 		// start mining
 		threads := ctx.GlobalInt(utils.MinerThreadsFlag.Name)
 		if err := ethBackend.StartMining(threads); err != nil {

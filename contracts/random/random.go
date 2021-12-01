@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"
@@ -26,9 +25,9 @@ func IsRunning(vmRunner vm.EVMRunner) bool {
 	randomAddress, err := contracts.GetRegisteredAddress(vmRunner, params.RandomRegistryId)
 
 	if err == contracts.ErrSmartContractNotDeployed || err == contracts.ErrRegistryContractNotDeployed {
-		log.Debug("Registry address lookup failed", "err", err, "contract", hexutil.Encode(params.RandomRegistryId[:]))
+		//log.Debug("Registry address lookup failed", "err", err, "contract", hexutil.Encode(params.RandomRegistryId[:]))
 	} else if err != nil {
-		log.Error(err.Error())
+		//log.Error(err.Error())
 	}
 
 	return err == nil && randomAddress != params.ZeroAddress

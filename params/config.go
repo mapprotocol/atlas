@@ -7,17 +7,18 @@ import (
 )
 
 const (
-	MainNetChainID    uint64 = 177
+	MainNetChainID    uint64 = 22776
 	TestNetChainID    uint64 = 212
 	DevNetChainID     uint64 = 213
 	SingleNodeChainID uint64 = 214
+	Epoch             uint64 = 20000
 )
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash = common.HexToHash("0xf6285fd285d6c15aae581220e9b13f4d0ac75428ee90076e737f4e6125d31723")
-	TestnetGenesisHash = common.HexToHash("0x63f425f4a8362103c2be5089223d8823cad0baf5827eeecd20ee4adbe7dec063")
-	DevnetGenesisHash  = common.HexToHash("0x1c00a47a70d32300cf336207d290ccc2838d3ea03b2ba73c07bafdd6070ff23a")
+	MainnetGenesisHash = common.HexToHash("0xa6c12a7509006b29863f201aab1cc0f21f5abf2c81c63d716f2e6957cdb765da")
+	TestnetGenesisHash = common.HexToHash("0x28ce321590b3f59bef95e5b59f423f33238401fbd1962844cd275ce38f2c4ed0")
+	DevnetGenesisHash  = common.HexToHash("0x0161e9569a5ca784969f1c28218a22ff8ac7672a5d32fc8f493d3f5208a14f73")
 )
 
 var (
@@ -38,7 +39,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		Istanbul: &IstanbulConfig{
-			Epoch:          17280,
+			Epoch:          Epoch,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -63,7 +64,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		Istanbul: &IstanbulConfig{
-			Epoch:          17280,
+			Epoch:          80,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -95,7 +96,7 @@ var (
 			LookbackWindow: 12,
 		},
 	}
-	MainnetNetWorkID uint64 = 177
+	MainnetNetWorkID uint64 = 22776
 	TestnetWorkID    uint64 = 212
 	DevnetWorkID     uint64 = 213
 	SingleWorkID     uint64 = 214

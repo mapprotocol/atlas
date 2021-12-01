@@ -3,23 +3,23 @@ package params
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
-	ethparams "github.com/ethereum/go-ethereum/params"
-
-	"math/big"
 )
 
 var (
 	baseUnit           = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	FbaseUnit          = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	Base               = new(big.Int).SetUint64(ethparams.InitialBaseFee)
+	Base               = big.NewInt(1e8)
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
 	TxVerifyAddress    = common.BytesToAddress([]byte("txVerifyAddress"))
+	FoundationAddress  = common.HexToAddress("0x0000000000000000000000000000000000000000")
 )
 
 var RelayerGas = map[string]uint64{
@@ -33,13 +33,13 @@ var RelayerGas = map[string]uint64{
 
 var (
 	CountInEpoch                       = 100
-	MaxRedeemHeight             uint64 = 200
-	NewEpochLength              uint64 = 200
+	MaxRedeemHeight                    = Epoch
+	NewEpochLength                     = Epoch
 	ElectionPoint               uint64 = 20
 	FirstNewEpochID             uint64 = 1
 	PowForkPoint                uint64 = 0
 	ElectionMinLimitForRegister        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	MinWorkEfficiency           uint64 = 1 //every relayer sync 1000 block at least
+	MinWorkEfficiency           uint64 = 1 //every relayer sync 1 block at least
 )
 
 var (

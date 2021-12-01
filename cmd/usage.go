@@ -75,12 +75,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		},
 	},
 	{
-		Name: "SINGLE CHAIN",
-		Flags: []cli.Flag{
-			utils.SingleFlag,
-		},
-	},
-	{
 		Name: "TRANSACTION POOL",
 		Flags: []cli.Flag{
 			utils.TxPoolLocalsFlag,
@@ -173,7 +167,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			//utils.MinerNotifyFullFlag,
 			utils.MinerGasPriceFlag,
 			//utils.MinerGasLimitFlag,
-			utils.MinerEtherbaseFlag,
+			utils.MinerValidatorFlag,
 			utils.MinerExtraDataFlag,
 			//utils.MinerRecommitIntervalFlag,
 			//utils.MinerNoVerifyFlag,
