@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
+	"io/ioutil"
 	"math/big"
 )
 
@@ -49,12 +53,46 @@ var deregisterValidatorGroupCommand = cli.Command{
 	Flags:  ValidatorFlags,
 }
 
+var affiliateCommand = cli.Command{
+	Name:   "affiliate",
+	Usage:  "affiliate validator group",
+	Action: MigrateFlags(affiliate),
+	Flags:  ValidatorFlags,
+}
+
 func addFirstMemberToGroup(ctx *cli.Context) error {
 	//--------------- pre set ----------------------------------
 	path := pathValidator1
 	passwordValidator := "111111"
 	passwordGroup := ""
 	//----------------------------------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+
+	if ctx.IsSet(ReadConfigFlag.Name) {
+		type AccoutInfo struct {
+			Account  string
+			Password string
+		}
+		type ValidatorsInfo struct {
+			Accounts []AccoutInfo
+		}
+		keyDir := fmt.Sprintf("./config/validatorCfg.json")
+		data, err := ioutil.ReadFile(keyDir)
+		if err != nil {
+			log.Crit(" readFile Err:", "err:", err.Error())
+		}
+
+		ValidatorsInfoCfg := &ValidatorsInfo{}
+		_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+		passwordValidator = ValidatorsInfoCfg.Accounts[0].Password
+		path = ValidatorsInfoCfg.Accounts[0].Account
+	}
 
 	conn, _ := dialConn(ctx)
 	validator := loadAccount(path, passwordValidator)
@@ -64,17 +102,17 @@ func addFirstMemberToGroup(ctx *cli.Context) error {
 	log.Info("Add validator to group", "validator", validator.Address, "groupAddress", group.Address)
 
 	//--------------------- affiliate -------------------------------
-	log.Info("Validator affiliate to group")
-	input := packInput(abiValidators, "affiliate", group.Address)
-	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
+	//log.Info("Validator affiliate to group")
+	//input := packInput(abiValidators, "affiliate", group.Address)
+	//txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	//getResult(conn, txHash, true)
 
 	//--------------------- addFirstMember --------------------------
 	password = passwordGroup
 	loadPrivateKey(pathGroup)
 	log.Info("addMember validator to group")
-	input = packInput(abiValidators, "addFirstMember", validator.Address, params.ZeroAddress, params.ZeroAddress)
-	txHash = sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
+	input := packInput(abiValidators, "addFirstMember", validator.Address, params.ZeroAddress, params.ZeroAddress)
+	txHash := sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 
 	return nil
@@ -85,6 +123,12 @@ func addValidatorToGroup(ctx *cli.Context) error {
 	passwordGroup := ""
 	passwordValidator := "111111"
 	//------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
+	}
 
 	addMemberFunc := func(path string, _password string) {
 		conn, _ := dialConn(ctx)
@@ -96,17 +140,17 @@ func addValidatorToGroup(ctx *cli.Context) error {
 		log.Info("Add validator to group", "validator", validator.Address, "groupAddress", group.Address)
 
 		//--------------------- affiliate --------------------------
-		log.Info("=== Validator affiliate to group ===")
-		input := packInput(abiValidators, "affiliate", group.Address)
-		txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-		getResult(conn, txHash, true)
+		//log.Info("=== Validator affiliate to group ===")
+		//input := packInput(abiValidators, "affiliate", group.Address)
+		//txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+		//getResult(conn, txHash, true)
 
 		//--------------------- addMember --------------------------
 		password = passwordGroup
 		loadPrivateKey(pathGroup)
 		log.Info("=== addMember validator to group ===")
-		input = packInput(abiValidators, "addMember", validator.Address)
-		txHash = sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
+		input := packInput(abiValidators, "addMember", validator.Address)
+		txHash := sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 		getResult(conn, txHash, true)
 	}
 	var Validatorlist = []struct {
@@ -117,6 +161,28 @@ func addValidatorToGroup(ctx *cli.Context) error {
 		{pathValidator2, passwordValidator},
 		{pathValidator3, passwordValidator},
 		{pathValidator4, passwordValidator},
+	}
+	if ctx.IsSet(ReadConfigFlag.Name) {
+		type AccoutInfo struct {
+			Account  string
+			Password string
+		}
+		type ValidatorsInfo struct {
+			Validators []AccoutInfo
+		}
+		keyDir := fmt.Sprintf("./config/validatorCfg.json")
+		data, err := ioutil.ReadFile(keyDir)
+		if err != nil {
+			log.Crit(" readFile Err:", "err:", err.Error())
+		}
+
+		ValidatorsInfoCfg := &ValidatorsInfo{}
+		_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+		for _, v := range ValidatorsInfoCfg.Validators {
+			addMemberFunc(v.Account, v.Password)
+		}
+		return nil
 	}
 	for _, v := range Validatorlist {
 		addMemberFunc(v.a, v.b)
@@ -130,6 +196,12 @@ func removeMember(ctx *cli.Context) error {
 	passwordValidator := "111111"
 	passwordGroup := ""
 	//----------------------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
+	}
 
 	removeMemberFunc := func(pathValidator string, _password string) {
 		conn, _ := dialConn(ctx)
@@ -161,6 +233,30 @@ func removeMember(ctx *cli.Context) error {
 		{pathValidator3, passwordValidator},
 		{pathValidator4, passwordValidator},
 	}
+
+	if ctx.IsSet(ReadConfigFlag.Name) {
+		type AccoutInfo struct {
+			Account  string
+			Password string
+		}
+		type ValidatorsInfo struct {
+			Accounts []AccoutInfo
+		}
+		keyDir := fmt.Sprintf("./config/validatorCfg.json")
+		data, err := ioutil.ReadFile(keyDir)
+		if err != nil {
+			log.Crit(" readFile Err:", "err:", err.Error())
+		}
+
+		ValidatorsInfoCfg := &ValidatorsInfo{}
+		_ = json.Unmarshal(data, ValidatorsInfoCfg)
+
+		for _, v := range ValidatorsInfoCfg.Accounts {
+			removeMemberFunc(v.Account, v.Password)
+		}
+		return nil
+	}
+
 	for _, v := range Validatorlist {
 		removeMemberFunc(v.a, v.b)
 	}
@@ -178,6 +274,9 @@ func deregisterValidatorGroup(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
 	validator := loadAccount(path, password)
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
@@ -185,6 +284,31 @@ func deregisterValidatorGroup(ctx *cli.Context) error {
 	log.Info("====== deregisterValidator ======")
 	input := packInput(abiValidators, "deregisterValidatorGroup", big.NewInt(n))
 	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	getResult(conn, txHash, true)
+	return nil
+}
+
+func affiliate(ctx *cli.Context) error {
+	//--------------- pre set ----------------------------------
+	path := pathValidator1
+	password := ""
+	groupAddress := ""
+	//----------------------------------------------------------
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(GroupAddressFlag.Name) {
+		groupAddress = ctx.GlobalString(GroupAddressFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	loadPrivateKey(path)
+	account := loadAccount(path, password)
+	conn, _ := dialConn(ctx)
+	log.Info("=== Validator affiliate to group ===")
+	input := packInput(abiValidators, "affiliate", common.HexToAddress(groupAddress))
+	txHash := sendContractTransaction(conn, account.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 	return nil
 }

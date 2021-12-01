@@ -41,7 +41,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	logger := log.New("func", "sendContractTransaction")
 	nonce, err := client.PendingNonceAt(context.Background(), from)
 	if err != nil {
-		logger.Error("PendingNonceAt", err)
+		logger.Error("PendingNonceAt", "error", err)
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
