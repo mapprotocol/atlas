@@ -144,7 +144,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		log.Error("store state error", "error", err)
 		return nil, err
 	}
-	log.Info("save contract execution complete")
+	log.Info("save contract execution complete, first number", "first number", hs[0].Number, "last number", hs[len(hs)-1].Number)
 	return nil, nil
 }
 
