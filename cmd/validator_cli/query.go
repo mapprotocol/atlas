@@ -55,6 +55,10 @@ func queryGroups(ctx *cli.Context) error {
 	if err != nil {
 		log.Error("method UnpackIntoInterface error", "error", err)
 	}
+	if len(*groups) == 0 {
+		log.Info("groups:", "obj", "[]")
+		return nil
+	}
 	for _, v := range *groups {
 		log.Info("getRegisteredValidatorGroups:", "obj", v.String())
 	}
@@ -88,6 +92,10 @@ func getRegisteredValidatorSigners(ctx *cli.Context) error {
 	if err != nil {
 		log.Error("method UnpackIntoInterface error", err)
 	}
+	if len(*ValidatorSigners) == 0 {
+		log.Info("ValidatorSigners:", "obj", "[]")
+		return nil
+	}
 	for _, v := range *ValidatorSigners {
 		fmt.Println("getRegisteredValidatorSigners:", v.String())
 	}
@@ -111,7 +119,7 @@ func getTopGroupValidators(ctx *cli.Context) error {
 	conn, _ := dialConn(ctx)
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 
-	log.Info("getTopGroupValidators Group", "obj", from)
+	log.Info("=== getTopGroupValidators Group", "obj", from, " ===")
 	input := packInput(abiValidators, methodName, from, n)
 	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
@@ -122,6 +130,10 @@ func getTopGroupValidators(ctx *cli.Context) error {
 	err = abiValidators.UnpackIntoInterface(&TopValidators, methodName, output)
 	if err != nil {
 		log.Error("method UnpackIntoInterface", "error", err)
+	}
+	if len(*TopValidators) == 0 {
+		log.Info("TopValidators:", "obj", "[]")
+		return nil
 	}
 	for _, v := range *TopValidators {
 		log.Info("Address:", "obj", v.String())

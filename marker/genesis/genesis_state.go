@@ -1040,6 +1040,12 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Println(out)
 
+	getTopGroupValidators := new([]common.Address)
+	if _, err := ctx.contract("Validators").Query(getTopGroupValidators, "getTopGroupValidators", common.HexToHash("0xce90710a4673b87a6881b0907358119baf0304a5"), big.NewInt(4)); err != nil {
+		return err
+	}
+	fmt.Println("getTopGroupValidators", getTopGroupValidators)
+
 	//var (
 	//	min   = new(*big.Int)
 	//	max = new(*big.Int)
