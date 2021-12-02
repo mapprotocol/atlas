@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
-	"io/ioutil"
 	"math/big"
 )
 
@@ -62,8 +59,6 @@ var affiliateCommand = cli.Command{
 
 func addFirstMemberToGroup(ctx *cli.Context) error {
 	//--------------- pre set ----------------------------------
-	path := pathValidator1
-	passwordValidator := "111111"
 	passwordGroup := ""
 	//----------------------------------------------------------
 	if ctx.IsSet(PasswordFlag.Name) {
@@ -72,46 +67,26 @@ func addFirstMemberToGroup(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
 	}
-
-	if ctx.IsSet(ReadConfigFlag.Name) {
-		type AccoutInfo struct {
-			Account  string
-			Password string
-		}
-		type ValidatorsInfo struct {
-			Accounts []AccoutInfo
-		}
-		keyDir := fmt.Sprintf("./config/validatorCfg.json")
-		data, err := ioutil.ReadFile(keyDir)
-		if err != nil {
-			log.Crit(" readFile Err:", "err:", err.Error())
-		}
-
-		ValidatorsInfoCfg := &ValidatorsInfo{}
-		_ = json.Unmarshal(data, ValidatorsInfoCfg)
-
-		passwordValidator = ValidatorsInfoCfg.Accounts[0].Password
-		path = ValidatorsInfoCfg.Accounts[0].Account
+	validator := "0x81f02fd21657df80783755874a92c996749777bf"
+	if ctx.IsSet(AddressFlag.Name) {
+		validator = ctx.GlobalString(AddressFlag.Name)
 	}
 
 	conn, _ := dialConn(ctx)
-	validator := loadAccount(path, passwordValidator)
 	group := loadAccount(pathGroup, passwordGroup)
-	password = passwordValidator
-	loadPrivateKey(path)
-	log.Info("Add validator to group", "validator", validator.Address, "groupAddress", group.Address)
+	password = passwordGroup
+	loadPrivateKey(pathGroup)
+	log.Info("Add validator to group", "validator", validator, "groupAddress", group.Address)
 
 	//--------------------- affiliate -------------------------------
 	//log.Info("Validator affiliate to group")
 	//input := packInput(abiValidators, "affiliate", group.Address)
-	//txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
+	//txHash := sendContractTransaction(conn,validator, ValidatorAddress, nil, priKey, input)
 	//getResult(conn, txHash, true)
 
 	//--------------------- addFirstMember --------------------------
-	password = passwordGroup
-	loadPrivateKey(pathGroup)
 	log.Info("addMember validator to group")
-	input := packInput(abiValidators, "addFirstMember", validator.Address, params.ZeroAddress, params.ZeroAddress)
+	input := packInput(abiValidators, "addFirstMember", common.HexToAddress(validator), params.ZeroAddress, params.ZeroAddress)
 	txHash := sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 
@@ -121,7 +96,6 @@ func addFirstMemberToGroup(ctx *cli.Context) error {
 func addValidatorToGroup(ctx *cli.Context) error {
 	//--------- pre set ------------
 	passwordGroup := ""
-	passwordValidator := "111111"
 	//------------------------------
 	if ctx.IsSet(PasswordFlag.Name) {
 		passwordGroup = ctx.GlobalString(PasswordFlag.Name)
@@ -129,63 +103,34 @@ func addValidatorToGroup(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
 	}
-
-	addMemberFunc := func(path string, _password string) {
+	addMemberFunc := func(validatorAccount string) {
 		conn, _ := dialConn(ctx)
-
-		validator := loadAccount(path, _password)
 		group := loadAccount(pathGroup, passwordGroup)
-		password = _password
-		loadPrivateKey(path)
-		log.Info("Add validator to group", "validator", validator.Address, "groupAddress", group.Address)
-
-		//--------------------- affiliate --------------------------
-		//log.Info("=== Validator affiliate to group ===")
-		//input := packInput(abiValidators, "affiliate", group.Address)
-		//txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-		//getResult(conn, txHash, true)
+		log.Info("Add validator to group", "validator", validatorAccount, "groupAddress", group.Address)
 
 		//--------------------- addMember --------------------------
 		password = passwordGroup
 		loadPrivateKey(pathGroup)
 		log.Info("=== addMember validator to group ===")
-		input := packInput(abiValidators, "addMember", validator.Address)
+		input := packInput(abiValidators, "addMember", common.HexToAddress(validatorAccount))
 		txHash := sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 		getResult(conn, txHash, true)
 	}
-	var Validatorlist = []struct {
-		a string
-		b string
-	}{
-		{pathValidator1, passwordValidator},
-		{pathValidator2, passwordValidator},
-		{pathValidator3, passwordValidator},
-		{pathValidator4, passwordValidator},
+	var Validatorlist = []string{
+		"0x81f02fd21657df80783755874a92c996749777bf",
+		"0xdf945e6ffd840ed5787d367708307bd1fa3d40f4",
+		"0x32cd75ca677e9c37fd989272afa8504cb8f6eb52",
+		"0x3e3429f72450a39ce227026e8ddef331e9973e4d",
 	}
-	if ctx.IsSet(ReadConfigFlag.Name) {
-		type AccoutInfo struct {
-			Account  string
-			Password string
-		}
-		type ValidatorsInfo struct {
-			Accounts []AccoutInfo
-		}
-		keyDir := fmt.Sprintf("./config/validatorCfg.json")
-		data, err := ioutil.ReadFile(keyDir)
-		if err != nil {
-			log.Crit(" readFile Err:", "err:", err.Error())
-		}
 
-		ValidatorsInfoCfg := &ValidatorsInfo{}
-		_ = json.Unmarshal(data, ValidatorsInfoCfg)
-
-		for _, v := range ValidatorsInfoCfg.Accounts {
-			addMemberFunc(v.Account, v.Password)
-		}
+	if ctx.IsSet(AddressFlag.Name) {
+		address := ctx.GlobalString(AddressFlag.Name)
+		addMemberFunc(address)
 		return nil
 	}
+
 	for _, v := range Validatorlist {
-		addMemberFunc(v.a, v.b)
+		addMemberFunc(v)
 	}
 
 	return nil
@@ -193,7 +138,6 @@ func addValidatorToGroup(ctx *cli.Context) error {
 
 func removeMember(ctx *cli.Context) error {
 	//-------------- pre set ------------------------
-	passwordValidator := "111111"
 	passwordGroup := ""
 	//----------------------------------------------
 	if ctx.IsSet(PasswordFlag.Name) {
@@ -203,62 +147,38 @@ func removeMember(ctx *cli.Context) error {
 		pathGroup = ctx.GlobalString(KeyStoreFlag.Name)
 	}
 
-	removeMemberFunc := func(pathValidator string, _password string) {
+	removeMemberFunc := func(validatorAccount string) {
 		conn, _ := dialConn(ctx)
-
-		path := pathValidator
-		validator := loadAccount(path, _password)
 		group := loadAccount(pathGroup, passwordGroup)
-		password = _password
-		loadPrivateKey(path)
-		log.Info("remove Member", "validator", validator.Address, "groupAddress", group.Address)
+		log.Info("remove Member", "validator", validatorAccount, "groupAddress", group.Address)
 		//--------------------- removeMember --------------------------
 		password = passwordGroup
 		loadPrivateKey(pathGroup)
 		log.Info("=== removeMember ===")
-		input := packInput(abiValidators, "removeMember", validator.Address)
+		input := packInput(abiValidators, "removeMember", common.HexToAddress(validatorAccount))
 		txHash := sendContractTransaction(conn, group.Address, ValidatorAddress, nil, priKey, input)
 		getResult(conn, txHash, true)
 	}
-	var Validatorlist = []struct {
-		a string
-		b string
-	}{
-		{pathValidator01, passwordValidator},
-		{pathValidator02, passwordValidator},
-		{pathValidator03, passwordValidator},
-		{pathValidator04, passwordValidator},
-		{pathValidator1, passwordValidator},
-		{pathValidator2, passwordValidator},
-		{pathValidator3, passwordValidator},
-		{pathValidator4, passwordValidator},
+	var Validatorlist = []string{
+		"0x1c0edab88dbb72b119039c4d14b1663525b3ac15",
+		"0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af",
+		"0x2dc45799000ab08e60b7441c36fcc74060ccbe11",
+		"0x6c5938b49bacde73a8db7c3a7da208846898bff5",
+
+		"0x81f02fd21657df80783755874a92c996749777bf",
+		"0xdf945e6ffd840ed5787d367708307bd1fa3d40f4",
+		"0x32cd75ca677e9c37fd989272afa8504cb8f6eb52",
+		"0x3e3429f72450a39ce227026e8ddef331e9973e4d",
 	}
 
-	if ctx.IsSet(ReadConfigFlag.Name) {
-		type AccoutInfo struct {
-			Account  string
-			Password string
-		}
-		type ValidatorsInfo struct {
-			Accounts []AccoutInfo
-		}
-		keyDir := fmt.Sprintf("./config/validatorCfg.json")
-		data, err := ioutil.ReadFile(keyDir)
-		if err != nil {
-			log.Crit(" readFile Err:", "err:", err.Error())
-		}
-
-		ValidatorsInfoCfg := &ValidatorsInfo{}
-		_ = json.Unmarshal(data, ValidatorsInfoCfg)
-
-		for _, v := range ValidatorsInfoCfg.Accounts {
-			removeMemberFunc(v.Account, v.Password)
-		}
+	if ctx.IsSet(AddressFlag.Name) {
+		address := ctx.GlobalString(AddressFlag.Name)
+		removeMemberFunc(address)
 		return nil
 	}
 
 	for _, v := range Validatorlist {
-		removeMemberFunc(v.a, v.b)
+		removeMemberFunc(v)
 	}
 
 	return nil
