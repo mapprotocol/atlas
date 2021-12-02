@@ -218,6 +218,7 @@ func createAccount1(ctx *cli.Context) error {
 	if ctx.IsSet(NamePrefixFlag.Name) {
 		namePrefix = ctx.GlobalString(NamePrefixFlag.Name)
 	}
+	loadPrivateKey(path)
 	validator := loadAccount(path, password)
 	conn, _ := dialConn(ctx)
 	createAccount(conn, validator, namePrefix)

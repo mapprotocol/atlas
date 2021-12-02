@@ -95,6 +95,7 @@ var (
 		ReadConfigFlag,
 		TopNumFlag,
 		maxSizeFlag,
+		AddressFlag,
 	}
 )
 
@@ -111,8 +112,14 @@ func init() {
 		RPCPortFlag,
 		ValueFlag,
 		FeeFlag,
-		AddressFlag,
 		BFTKeyKeyFlag,
+		PasswordFlag,
+		GroupAddressFlag,
+		CommissionFlag,
+		ReadConfigFlag,
+		TopNumFlag,
+		maxSizeFlag,
+		AddressFlag,
 	}
 	app.Action = MigrateFlags(registerValidator)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {

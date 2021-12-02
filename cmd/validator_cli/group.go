@@ -168,7 +168,7 @@ func addValidatorToGroup(ctx *cli.Context) error {
 			Password string
 		}
 		type ValidatorsInfo struct {
-			Validators []AccoutInfo
+			Accounts []AccoutInfo
 		}
 		keyDir := fmt.Sprintf("./config/validatorCfg.json")
 		data, err := ioutil.ReadFile(keyDir)
@@ -179,7 +179,7 @@ func addValidatorToGroup(ctx *cli.Context) error {
 		ValidatorsInfoCfg := &ValidatorsInfo{}
 		_ = json.Unmarshal(data, ValidatorsInfoCfg)
 
-		for _, v := range ValidatorsInfoCfg.Validators {
+		for _, v := range ValidatorsInfoCfg.Accounts {
 			addMemberFunc(v.Account, v.Password)
 		}
 		return nil
@@ -291,7 +291,7 @@ func deregisterValidatorGroup(ctx *cli.Context) error {
 func affiliate(ctx *cli.Context) error {
 	//--------------- pre set ----------------------------------
 	path := pathValidator1
-	password := ""
+	password = ""
 	groupAddress := ""
 	//----------------------------------------------------------
 	if ctx.IsSet(PasswordFlag.Name) {
