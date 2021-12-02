@@ -13,7 +13,12 @@ var MainnetBootnodes = []string{
 
 // TestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
 // test network.
-var TestnetBootnodes = []string{}
+var TestnetBootnodes = []string{
+	"enode://478dace9ed069fdeb2170ca1bbc34314b13dbf2e7273fa15b7e40e63be036a684011bd627486e2d009771ed7e2ad435bb62b9026b87e339d470a1ffe5bd83034@20.205.187.105:36201",
+	"enode://530d20cdf6552d9dc65c5abf7c40727254719a42d5e033d391b8c9f77d15ee35e4a43de40804b4649ffca95bf75b6902c65d418fab7c08b07b192ead0cda893d@20.205.189.217:36201",
+	"enode://a5cbde4cd043a59dff200882f2663b35cabe753211ee372a1681a9159bdbccac5b08ede298d8681540d1cfaf9e79e1046608e3b61600479e49cb61c95dc842e0@13.67.79.15:25201",
+	"enode://1ff54f4b794eba4081bf24da657621051d74edc4fb071c021f44dceb4e7628c030e3bbe6722ccc7902e93d40c018f9a03a99b14c7d7f2d6bfd8955193db46acd@13.67.118.60:25201",
+}
 
 const dnsPrefix = "enrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@"
 
