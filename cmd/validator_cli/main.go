@@ -46,10 +46,7 @@ var (
 		Name:  "topNum",
 		Usage: "topNum of group`s member",
 	}
-	ReadConfigFlag = cli.BoolFlag{
-		Name:  "readConfig",
-		Usage: "read Config to get validators",
-	}
+
 	RPCListenAddrFlag = cli.StringFlag{
 		Name:  "rpcaddr",
 		Usage: "HTTP-RPC server listening interface",
@@ -92,7 +89,6 @@ var (
 		PasswordFlag,
 		GroupAddressFlag,
 		CommissionFlag,
-		ReadConfigFlag,
 		TopNumFlag,
 		maxSizeFlag,
 		AddressFlag,
@@ -116,7 +112,6 @@ func init() {
 		PasswordFlag,
 		GroupAddressFlag,
 		CommissionFlag,
-		ReadConfigFlag,
 		TopNumFlag,
 		maxSizeFlag,
 		AddressFlag,
