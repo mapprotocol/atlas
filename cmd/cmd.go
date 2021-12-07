@@ -143,7 +143,6 @@ var (
 		utils.MinerExtraDataFlag,
 		utils.MinerThreadsFlag,
 		utils.MinerGasPriceFlag,
-		utils.TxFeeRecipientFlag,
 	}
 
 	rpcFlags = []cli.Flag{

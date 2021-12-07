@@ -224,15 +224,7 @@ var (
 		Usage: "Megabytes of memory allocated to bloom-filter for pruning",
 		Value: 2048,
 	}
-	TxFeeRecipientFlag = cli.StringFlag{
-		Name:  "tx-fee-recipient",
-		Usage: "Public address for block transaction fees and gateway fees",
-		Value: "0",
-	}
-	//OverrideLondonFlag = cli.Uint64Flag{
-	//	Name:  "override.london",
-	//	Usage: "Manually specify London fork-block, overriding the bundled setting",
-	//}
+
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
 		Name:  "light.serve",
@@ -1796,22 +1788,5 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 // command line flags or from the keystore if CLI indexed.
 // `TxFeeRecipient` is the address earned block transaction fees are sent to.
 func setTxFeeRecipient(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
-	if ctx.GlobalIsSet(TxFeeRecipientFlag.Name) {
-		if !ctx.GlobalIsSet(MinerValidatorFlag.Name) {
-			Fatalf("`etherbase` and `tx-fee-recipient` flag should not be used together. `miner.validator` and `tx-fee-recipient` constitute both of `etherbase`' functions")
-		}
-		txFeeRecipient := ctx.GlobalString(TxFeeRecipientFlag.Name)
-
-		// Convert the txFeeRecipient into an address and configure it
-		if txFeeRecipient != "" {
-			account, err := MakeAddress(ks, txFeeRecipient)
-			if err != nil {
-				Fatalf("Invalid txFeeRecipient: %v", err)
-			}
-			cfg.TxFeeRecipient = account.Address
-		}
-	} else {
-		// Backwards compatibility. If the miner was set by the "etherbase" flag, both should have the same info
-		cfg.TxFeeRecipient = cfg.Miner.Etherbase
-	}
+	cfg.TxFeeRecipient = cfg.Miner.Etherbase
 }
