@@ -19,6 +19,7 @@ import (
 	"gopkg.in/urfave/cli.v1"
 
 	ethchain "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
@@ -245,5 +246,13 @@ func call(client *ethclient.Client, from, toAddress common.Address, input []byte
 
 func TestAddr(t *testing.T) {
 	fmt.Println("============================== addr: ", params.TxVerifyAddress)
+
+}
+
+func TestEventHash(t *testing.T) {
+	// LogSwapOut(bytes32 hash, address indexed token, address indexed from, address indexed to, uint amount, uint fromChainID, uint toChainID)
+	event := "LogSwapOut(bytes32,address,address,address,uint256,uint256,uint256)"
+	eventHash := crypto.Keccak256Hash([]byte(event))
+	t.Log("event hash: ", eventHash) // 0xcfdd266a10c21b3f2a2da4a807706d3f3825d37ca51d341eef4dce804212a8a3
 
 }
