@@ -25,7 +25,7 @@ func getChains(startNum, endNum int64) []*types.Header {
 
 func dialEthConn() (*Client, string) {
 	ip := "127.0.0.1" //utils.RPCListenAddrFlag.Name)
-	port := 7415      //utils.RPCPortFlag.Name)
+	port := 7445      //utils.RPCPortFlag.Name)
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	conn, err := Dial(url)
 	if err != nil {
