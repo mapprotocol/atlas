@@ -9,6 +9,8 @@ import (
 
 const (
 	ChainTypeMAP     rawdb.ChainType = rawdb.ChainType(params2.MainNetChainID)
+	ChainTypeMAPTest rawdb.ChainType = rawdb.ChainType(params2.TestNetChainID)
+	ChainTypeMAPDev  rawdb.ChainType = rawdb.ChainType(params2.DevNetChainID)
 	ChainTypeETH     rawdb.ChainType = 1
 	ChainTypeETHTest rawdb.ChainType = 3 // start 800
 	ChainTypeETHDev  rawdb.ChainType = 10
@@ -21,6 +23,8 @@ const (
 
 var ChainTypeList = []rawdb.ChainType{
 	ChainTypeMAP,
+	ChainTypeMAPTest,
+	ChainTypeMAPDev,
 	ChainTypeETH,
 	ChainTypeETHTest,
 	ChainTypeETHDev,
@@ -28,6 +32,8 @@ var ChainTypeList = []rawdb.ChainType{
 
 var chainType2ChainGroup = map[rawdb.ChainType]ChainGroup{
 	ChainTypeMAP:     ChainGroupMAP,
+	ChainTypeMAPTest: ChainGroupMAP,
+	ChainTypeMAPDev:  ChainGroupMAP,
 	ChainTypeETH:     ChainGroupETH,
 	ChainTypeETHDev:  ChainGroupETH,
 	ChainTypeETHTest: ChainGroupETH,
