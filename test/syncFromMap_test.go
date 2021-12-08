@@ -31,12 +31,12 @@ func TestFromMap(t *testing.T) {
 		apks = append(apks, pk1)
 	}
 
-	if err := ValidateHeaderChain(hs, apks); err != nil {
+	if err := ValidateHeaderExtra(hs, apks); err != nil {
 		fmt.Println("verify fail: ", err)
 	}
 }
 
-func ValidateHeaderChain(headers []*types.Header, pubKey []blscrypto.SerializedPublicKey) error {
+func ValidateHeaderExtra(headers []*types.Header, pubKey []blscrypto.SerializedPublicKey) error {
 	chainLength := len(headers)
 
 	ps, err := types.ExtractIstanbulExtra(headers[0])
