@@ -20,7 +20,8 @@ import (
 
 var (
 	// EventHash cross-chain transaction event hash
-	EventHash = common.HexToHash("0x155e433be3576195943c515e1096620bc754e11b3a4b60fda7c4628caf373635")
+	// LogSwapOut(bytes32,address,address,address,uint256,uint256,uint256)
+	EventHash = common.HexToHash("0xcfdd266a10c21b3f2a2da4a807706d3f3825d37ca51d341eef4dce804212a8a3")
 )
 
 type TxParams struct {
