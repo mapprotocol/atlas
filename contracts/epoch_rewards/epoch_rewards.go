@@ -33,8 +33,6 @@ var (
 )
 
 func UpdateTargetVotingYield(vmRunner vm.EVMRunner) error {
-	return nil
-	//TODO Replace with the following in the future
 	err := updateTargetVotingYieldMethod.Execute(vmRunner, nil, common.Big0)
 	return err
 }
@@ -46,8 +44,6 @@ func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, *bi
 	var totalVoterRewards *big.Int
 	var totalCommunityReward *big.Int
 	var totalCarbonOffsettingPartnerReward *big.Int
-	return big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil
-	//TODO Replace with the following in the future
 	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorEpochReward, &totalVoterRewards, &totalCommunityReward, &totalCarbonOffsettingPartnerReward})
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -69,8 +65,6 @@ func IsReserveLow(vmRunner vm.EVMRunner) (bool, error) {
 
 // Returns the address of the carbon offsetting partner
 func GetCarbonOffsettingPartnerAddress(vmRunner vm.EVMRunner) (common.Address, error) {
-	return params.ZeroAddress, nil
-	//TODO Replace with the following in the future
 	var carbonOffsettingPartner common.Address
 	err := carbonOffsettingPartnerMethod.Query(vmRunner, &carbonOffsettingPartner)
 	if err != nil {

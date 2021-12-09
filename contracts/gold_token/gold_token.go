@@ -32,8 +32,6 @@ func IncreaseSupply(vmRunner vm.EVMRunner, value *big.Int) error {
 }
 
 func Mint(vmRunner vm.EVMRunner, beneficiary common.Address, value *big.Int) error {
-	return nil
-	//TODO Replace with the following in the future
 	if value.Cmp(new(big.Int)) <= 0 {
 		return nil
 	}
