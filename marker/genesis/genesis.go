@@ -76,9 +76,6 @@ func FundAccounts(genesisConfig *Config, accounts []env.Account) {
 
 // GenerateGenesis will create a new genesis block with full atlas blockchain already configured
 func GenerateGenesis(ctx *cli.Context, accounts *env.AccountsConfig, cfg *Config, contractsBuildPath string) (*chain.Genesis, error) {
-	////////////////////////////////////////////////////////////////////////
-	UnmarshalMarkerConfig()
-	////////////////////////////////////////////////////////////////////////
 	ValidatorsAT := getValidators(GroupsAT[0].Address)
 	extraData, err := generateGenesisExtraData(ValidatorsAT[:4])
 	//fmt.Println("extraData: ", hexutil.Encode(extraData))

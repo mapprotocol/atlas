@@ -49,7 +49,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 
 func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
 
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, env.Accounts().AdminAccount().Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
 		Epoch:          10,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,

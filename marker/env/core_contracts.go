@@ -82,7 +82,7 @@ var genesisAddresses = map[string]common.Address{
 
 var libraries = []string{
 	"FixidityLib",
-	//"Proposals",
+	"Proposals",
 	"LinkedList",
 	"SortedLinkedList",
 	"SortedLinkedListWithMedian",
