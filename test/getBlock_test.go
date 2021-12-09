@@ -24,9 +24,10 @@ func getChains(startNum, endNum int64) []*types.Header {
 }
 
 func dialEthConn() (*Client, string) {
-	ip := "127.0.0.1" //utils.RPCListenAddrFlag.Name)
-	port := 7445      //utils.RPCPortFlag.Name)
-	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
+	ip := "poc2-rpc.maplabs.io" //utils.RPCListenAddrFlag.Name)
+	port := 7445                //utils.RPCPortFlag.Name)
+	url := fmt.Sprintf("https://%s", fmt.Sprintf("%s:%d", ip, port))
+	url = fmt.Sprintf("https://poc2-rpc.maplabs.io")
 	conn, err := Dial(url)
 	if err != nil {
 		log.Fatalf("Failed to connect to the Atlaschain client: %v", err)

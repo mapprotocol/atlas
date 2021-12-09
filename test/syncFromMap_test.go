@@ -16,12 +16,11 @@ import (
 	"testing"
 )
 
-var epoch = int64(20000)
+var epoch = int64(1000)
 var cache = make(map[int64][]blscrypto.SerializedPublicKey)
 
 func TestFromMap(t *testing.T) {
-	cache[0] = defaultPubkey()
-	hs := getChains(0, 5)
+	hs := getChains(998, 1004)
 	if err := ValidateHeaderExtra(hs); err != nil {
 		fmt.Println("verify fail: ", err)
 	}
@@ -49,7 +48,10 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 			return errors.New("verify fail: Coinbase != SignatureAddress")
 		}
 
-		pubKey := getBLSPublickKey(headers[i].Number.Int64())
+		pubKey, err := getBLSPublickKey(headers[i].Number.Int64())
+		if err != nil {
+			return err
+		}
 
 		//verify AggregatedSeal
 		err = verifyAggregatedSeal(headers[i].Hash(), pubKey, extra.AggregatedSeal)
@@ -103,36 +105,33 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 	return nil
 }
 
-func getBLSPublickKey(blockNum int64) []blscrypto.SerializedPublicKey {
+func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
 	num := blockNum / epoch
 	//get data quickly
 	if cache[num] == nil {
-		conn, _ := dialEthConn()
-		header, _ := conn.HeaderByNumber(context.Background(), big.NewInt(num*epoch))
-		extra, _ := types.ExtractIstanbulExtra(header)
-		if extra != nil {
-			cache[num] = extra.AddedValidatorsPublicKeys
-			return cache[num]
-		} else {
-			cache[num] = cache[num-1]
-			return cache[num]
+		for num != -1 {
+			conn, _ := dialEthConn()
+
+			header, err := conn.HeaderByNumber(context.Background(), big.NewInt(num*epoch))
+			if err != nil {
+				return nil, err
+			}
+
+			extra, err := types.ExtractIstanbulExtra(header)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(extra.AddedValidatorsPublicKeys) != 0 {
+				cache[num] = extra.AddedValidatorsPublicKeys
+				return cache[num], nil
+			} else if cache[num-1] != nil {
+				cache[num] = cache[num-1]
+				return cache[num], nil
+			}
+
+			num = num - 1
 		}
 	}
-	return cache[num]
-}
-
-func defaultPubkey() []blscrypto.SerializedPublicKey {
-	apks := make([]blscrypto.SerializedPublicKey, 0)
-	sliceOfBlsPubKeyHexStr := []string{
-		"0x41df7be08167a3c7635716418eb42508bee7d97165e6f3482fb55c0a32d2cdc07c8170b97e427c667a87fb8e6f041700b2b1dce0d01a8adadc5816c2c28762ad28730faa9464e65ae7e8031f45fdd7205c499fd92a41ccec5bc97f2dd15da700",
-		"0x051fe96e2b46e5708d4081be01ecebadba33a9ec37c9c4219a509b1ff7f1a5f3a3866e4a67050df207cc6546ced94c006f67908ad64656566bb58ebce7ec6bb1a2534c40bf94f6ad205c686ff1ccad1be221c1c82a00cdf989ff98b418810200",
-		"0x38030897213e9b7837e600785e3376214948c9bafda2551315fe969206d0be434661c8b4dd6a6298b7f9896efcf3dc002bfd7c2b4d1c7224b0516c76e5ac7fd58a6e72e22b58debcbcaa2b9c72837d6faa6e8e64e02ca222e3ebfd07f25a0580",
-		"0xd8b24d419755d8d82b878993d58e7ddd19a19988e00ba55adff574dd9e3df3b45451fe2e56c5793048b0a2c617b11601c451c63e1ce5730f3877a77c026dfdb40349543dfef722dde6f4e06aaf3070ed740d26ae9193d893f5e9d87b67c46080",
-	}
-	for _, s := range sliceOfBlsPubKeyHexStr {
-		pk1 := blscrypto.SerializedPublicKey{}
-		_ = pk1.UnmarshalText([]byte(s))
-		apks = append(apks, pk1)
-	}
-	return apks
+	return cache[num], nil
 }
