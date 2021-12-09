@@ -11,7 +11,7 @@ const (
 	TestNetChainID    uint64 = 212
 	DevNetChainID     uint64 = 213
 	SingleNodeChainID uint64 = 214
-	Epoch             uint64 = 20000
+	Epoch             uint64 = 2000
 )
 
 // Genesis hashes to enforce below configs on.

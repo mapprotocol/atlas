@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/prometheus/tsdb/fileutil"
 )
 
@@ -123,7 +122,7 @@ func newFreezer(datadir string, namespace string, readonly bool, maxTableSize ui
 	// Open all the supported data tables
 	freezer := &freezer{
 		readonly:     readonly,
-		threshold:    params.FullImmutabilityThreshold,
+		threshold:    1000,
 		tables:       make(map[string]*freezerTable),
 		instanceLock: lock,
 		trigger:      make(chan chan struct{}),
