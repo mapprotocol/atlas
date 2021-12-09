@@ -131,6 +131,9 @@ func envFromTemplate(ctx *cli.Context, workdir string) (*env.Environment, *genes
 }
 
 func createGenesis(ctx *cli.Context) error {
+	////////////////////////////////////////////////////////////////////////
+	genesis.UnmarshalMarkerConfig()
+	////////////////////////////////////////////////////////////////////////
 	var workdir string
 	var err error
 	if ctx.IsSet(newEnvFlag.Name) {

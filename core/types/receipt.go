@@ -411,10 +411,12 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 	signer := MakeSigner(config, new(big.Int).SetUint64(number))
 
 	logIndex := uint(0)
-	if len(txs) != len(rs) {
+	// The receipts may include an additional "block finalization" receipt (only IBFT)
+	if !(len(txs) == len(rs) || len(txs)+1 == len(rs)) {
 		return errors.New("transaction and receipt count mismatch")
 	}
-	for i := 0; i < len(rs); i++ {
+
+	for i := 0; i < len(txs); i++ {
 		// The transaction type and hash can be retrieved from the transaction itself
 		rs[i].Type = txs[i].Type()
 		rs[i].TxHash = txs[i].Hash()
@@ -443,6 +445,19 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 			rs[i].Logs[j].TxHash = rs[i].TxHash
 			rs[i].Logs[j].TxIndex = uint(i)
 			rs[i].Logs[j].Index = logIndex
+			logIndex++
+		}
+	}
+
+	// Handle block finalization receipt (only IBFT)
+	if len(txs)+1 == len(rs) {
+		j := len(txs)
+		for k := 0; k < len(rs[j].Logs); k++ {
+			rs[j].Logs[k].BlockNumber = number
+			rs[j].Logs[k].BlockHash = hash
+			rs[j].Logs[k].TxHash = hash
+			rs[j].Logs[k].TxIndex = uint(j)
+			rs[j].Logs[k].Index = logIndex
 			logIndex++
 		}
 	}

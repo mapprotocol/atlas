@@ -41,8 +41,6 @@ import (
 )
 
 func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB) error {
-	return nil
-	//TODO Replace with the following in the future
 	start := time.Now()
 	defer sb.rewardDistributionTimer.UpdateSince(start)
 	logger := sb.logger.New("func", "Backend.distributeEpochPaymentsAndRewards", "blocknum", header.Number.Uint64())
@@ -71,10 +69,10 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	err = epoch_rewards.UpdateTargetVotingYield(vmRunner)
-	if err != nil {
-		return err
-	}
+	//err = epoch_rewards.UpdateTargetVotingYield(vmRunner)
+	//if err != nil {
+	//	return err
+	//}
 
 	validatorReward, totalVoterRewards, communityReward, carbonOffsettingPartnerReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
 	if err != nil {

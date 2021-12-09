@@ -84,8 +84,8 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		ctx.deployLibraries,
 		// 01 Registry
 		ctx.deployRegistry,
-		//// 02 Freezer
-		//ctx.deployFreezer,
+		// 02 Freezer
+		ctx.deployFreezer,
 		//
 		//// 03 TransferWhitelist
 		//ctx.deployTransferWhitelist,
@@ -93,23 +93,23 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		//// 03.bis FeeCurrencyWhitelist
 		//ctx.deployFeeCurrencyWhitelist,
 		//
-		//// 04 GoldToken
-		//ctx.deployGoldToken,
+		// 04 GoldToken
+		ctx.deployGoldToken,
 		//
-		//// 05 SortedOracles
-		//ctx.deploySortedOracles,
-		//
+		// 05 SortedOracles
+		ctx.deploySortedOracles,
+
 		//// 06 GasPriceMinimum
 		//ctx.deployGasPriceMinimum,
 		//
-		//// 07 Reserve
-		//ctx.deployReserve,
+		// 07 Reserve
+		ctx.deployReserve,
 		//
 		//// 08 ReserveSpenderMultisig (requires reserve to work)
 		//ctx.deployReserveSpenderMultisig,
 		//
-		//// 09 StableToken and StableTokenEUR
-		//ctx.deployStableTokens,
+		// 09 StableToken and StableTokenEUR
+		ctx.deployStableTokens,
 		//
 		//// 10 Exchange and ExchangeEUR
 		//ctx.deployExchanges,
@@ -126,8 +126,8 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		// 14 Election
 		ctx.deployElection,
 		//
-		//// 15 EpochRewards
-		//ctx.deployEpochRewards,
+		// 15 EpochRewards
+		ctx.deployEpochRewards,
 		//
 		//// 16 Random
 		//ctx.deployRandom,
@@ -150,11 +150,11 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		//// 22 DowntimeSlasher
 		//ctx.deployDowntimeSlasher,
 		//
-		//// 23 GovernanceApproverMultiSig
-		//ctx.deployGovernanceApproverMultiSig,
+		// 23 GovernanceApproverMultiSig
+		ctx.deployGovernanceApproverMultiSig,
 		//
-		//// 24 Governance
-		//ctx.deployGovernance,
+		// 24 Governance
+		ctx.deployGovernance,
 
 		// 25 Elect Validators
 		ctx.electValidators,
@@ -738,15 +738,15 @@ func (ctx *deployContext) deployStableTokens() error {
 			// first check if the admin is an authorized oracle
 			authorized := false
 			for _, oracleAddress := range token.cfg.Oracles {
-				if oracleAddress == ctx.accounts.AdminAccount().Address {
+				if oracleAddress == AdminAT.Address {
 					authorized = true
 					break
 				}
 			}
 
 			if !authorized {
-				ctx.logger.Warn("Fixing StableToken goldprice requires setting admin as oracle", "admin", ctx.accounts.AdminAccount().Address)
-				err = ctx.contract("SortedOracles").SimpleCall("addOracle", stableTokenAddress, ctx.accounts.AdminAccount().Address)
+				ctx.logger.Warn("Fixing StableToken goldprice requires setting admin as oracle", "admin", AdminAT.Address)
+				err = ctx.contract("SortedOracles").SimpleCall("addOracle", stableTokenAddress, AdminAT.Address)
 				if err != nil {
 					return err
 				}
@@ -1040,32 +1040,63 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Println(out)
 
-	getTopGroupValidators := new([]common.Address)
-	if _, err := ctx.contract("Validators").Query(getTopGroupValidators, "getTopGroupValidators", common.HexToHash("0xce90710a4673b87a6881b0907358119baf0304a5"), big.NewInt(4)); err != nil {
-		return err
-	}
-	fmt.Println("getTopGroupValidators", getTopGroupValidators)
-
-	//var (
-	//	min   = new(*big.Int)
-	//	max = new(*big.Int)
-	//)
-	//out := &[]interface{}{
-	//	min,
-	//	max,
-	//}
-	//if _, err := ctx.contract("Election").Query(out, "getElectableValidators"); err != nil {
+	//getTopGroupValidators := new([]common.Address)
+	//if _, err := ctx.contract("Validators").Query(getTopGroupValidators, "getTopGroupValidators", common.HexToHash("0xce90710a4673b87a6881b0907358119baf0304a5"), big.NewInt(4)); err != nil {
 	//	return err
 	//}
-	//fmt.Println(*min,*max)
+	//fmt.Println("getTopGroupValidators", getTopGroupValidators)
 
-	//a:= common.HexToHash("0x49dc7107d41d3c01a9f941a7d9a9f9177349b5521aeb56861470e42cf05da2ee") //Validators common.hash
-	//a:= common.HexToHash("0x235a6f54090e9b94aa4e585a699c4375a2ff8f572c68114d138f0ed121527849") //Election  common.hash
-	//var ret common.Address
-	//if _, err := ctx.contract("Registry").Query(&ret, "getAddressFor",a); err != nil {
+	/*
+		var (
+			min   = new(*big.Int)
+			max = new(*big.Int)
+		)
+		out := &[]interface{}{
+			min,
+			max,
+		}
+		if _, err := ctx.contract("Election").Query(out, "getElectableValidators"); err != nil {
+			return err
+		}
+		fmt.Println(*min,*max)
+	*/
+	/*
+		//a:= common.HexToHash("0x49dc7107d41d3c01a9f941a7d9a9f9177349b5521aeb56861470e42cf05da2ee") //Validators common.hash
+		//a:= common.HexToHash("0x235a6f54090e9b94aa4e585a699c4375a2ff8f572c68114d138f0ed121527849") //Election  common.hash
+		a := common.HexToHash("0xb33c3d77234979a288baf651b42d19d8483d5af3e328f9f1fae2bef7b11acd25") //EpochRewards  common.hash
+
+		var ret common.Address
+		if _, err := ctx.contract("Registry").Query(&ret, "getAddressFor", a); err != nil {
+			return err
+		}
+		fmt.Println(ret)
+	*/
+	/*
+		// isFrozen
+		var ret bool
+		if _, err := ctx.contract("Freezer").Query(&ret, "isFrozen",params.EpochRewardsRegistryId); err != nil {
+			return err
+		}
+		fmt.Println(ret)
+	*/
+
+	/*
+		// EpochRewards calculateTargetEpochRewards 计算奖励
+			var validatorEpochReward *big.Int
+			var totalVoterRewards *big.Int
+			var totalCommunityReward *big.Int
+			var totalCarbonOffsettingPartnerReward *big.Int
+			out := &[]interface{}{&validatorEpochReward, &totalVoterRewards, &totalCommunityReward, &totalCarbonOffsettingPartnerReward}
+			_, err := ctx.contract("EpochRewards").Query(out, "calculateTargetEpochRewards")
+			if err != nil {
+				return err
+			}
+			fmt.Println(validatorEpochReward.String(),totalVoterRewards.String(),totalCommunityReward.String(),totalCarbonOffsettingPartnerReward.String())
+	*/
+	//if err := ctx.contract("EpochRewards").SimpleCallFrom(params.ZeroAddress, "updateTargetVotingYield"); err != nil {
+	//	fmt.Println("err:",err)
 	//	return err
 	//}
-	//fmt.Println(ret)
 	return nil
 }
 

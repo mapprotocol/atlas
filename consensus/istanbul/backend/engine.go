@@ -20,16 +20,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	lru "github.com/hashicorp/golang-lru"
-	"golang.org/x/crypto/sha3"
-
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	istanbulCore "github.com/mapprotocol/atlas/consensus/istanbul/core"
@@ -42,6 +37,9 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	"golang.org/x/crypto/sha3"
+	"math/big"
+	"time"
 )
 
 const (
@@ -466,6 +464,13 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 	logger := sb.logger.New("func", "Finalize", "block", header.Number.Uint64(), "epochSize", sb.config.Epoch)
 	logger.Trace("Finalizing")
 
+	// The contract calls in Finalize() may emit logs, which we later add to an extra "block" receipt
+	// (in FinalizeAndAssemble() during construction or in `StateProcessor.process()` during verification).
+	// They are looked up using the zero hash instead of a transaction hash, and so we need to first call
+	// `state.Prepare()` so that they get filed under the zero hash. Otherwise, they would get filed under
+	// the hash of the last transaction in the block (if there were any).
+	state.Prepare(common.Hash{}, len(txs))
+
 	snapshot := state.Snapshot()
 	vmRunner := sb.chain.NewEVMRunner(header, state)
 	err := sb.setInitialGoldTokenTotalSupplyIfUnset(vmRunner)
@@ -485,13 +490,13 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 		snapshot = state.Snapshot()
 		err = sb.distributeEpochRewards(header, state)
 		if err != nil {
-			//sb.logger.Error("Failed to distribute epoch rewards", "blockNumber", header.Number, "err", err)
+			sb.logger.Error("Failed to distribute epoch rewards", "blockNumber", header.Number, "err", err)
 			state.RevertToSnapshot(snapshot)
 		}
 	}
 
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
-	logger.Debug("Finalized", "duration", now().Sub(start), "lastInEpoch", lastBlockOfEpoch)
+	logger.Info("Finalized", "duration", now().Sub(start), "lastInEpoch", lastBlockOfEpoch)
 }
 
 // FinalizeAndAssemble runs any post-transaction state modifications (e.g. block
@@ -504,13 +509,7 @@ func (sb *Backend) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	sb.Finalize(chain, header, state, txs)
 
 	// Add extra receipt for Block's Internal Transaction Logs
-	if len(state.GetLogs(common.Hash{})) > 0 {
-		receipt := types.NewReceipt(nil, false, 0)
-		receipt.Logs = state.GetLogs(common.Hash{})
-		receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
-		receipts = append(receipts, receipt)
-	}
-
+	receipts = ethChain.AddBlockReceipt(receipts, state, header.Hash())
 	// Assemble and return the final block for sealing
 	block := types.NewBlock(header, txs, receipts, randomness)
 	return block, nil
