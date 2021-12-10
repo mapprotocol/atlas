@@ -48,7 +48,7 @@ func (am Method) decodeResult(result interface{}, output []byte) error {
 
 	// adapter new pattern
 	results, err := am.abi.Unpack(am.method, output)
-	if results != nil {
+	if len(results) > 0 {
 		// fetch first data
 		result = results[0]
 	}
