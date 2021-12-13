@@ -385,7 +385,8 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 func DefaultGenesisBlock() *Genesis {
 	ga := genesisRegisterProxyContract()
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
-	ga[tempAddr] = GenesisAccount{Balance: balance0}
+	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
+	ga[preAddr] = GenesisAccount{Balance: balance0}
 
 	return &Genesis{
 		Config:    params.MainnetChainConfig,

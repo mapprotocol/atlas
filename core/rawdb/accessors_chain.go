@@ -26,7 +26,6 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -313,7 +312,7 @@ func ReadHeaderRLP(db ethdb.Reader, hash common.Hash, number uint64) rlp.RawValu
 	// comparison is necessary since ancient database only maintains
 	// the canonical data.
 	data, _ := db.Ancient(freezerHeaderTable, number)
-	if len(data) > 0 && crypto.Keccak256Hash(data) == hash {
+	if len(data) > 0 {
 		return data
 	}
 	// Then try to look up the data in leveldb.
@@ -326,7 +325,7 @@ func ReadHeaderRLP(db ethdb.Reader, hash common.Hash, number uint64) rlp.RawValu
 	// but when we reach into leveldb, the data was already moved. That would
 	// result in a not found error.
 	data, _ = db.Ancient(freezerHeaderTable, number)
-	if len(data) > 0 && crypto.Keccak256Hash(data) == hash {
+	if len(data) > 0 {
 		return data
 	}
 	return nil // Can't find the data anywhere.
