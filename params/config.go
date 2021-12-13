@@ -7,11 +7,17 @@ import (
 )
 
 const (
-	MainNetChainID    uint64 = 22776
-	TestNetChainID    uint64 = 212
-	DevNetChainID     uint64 = 213
-	SingleNodeChainID uint64 = 214
-	Epoch             uint64 = 20000
+	MainNetChainID uint64 = 214
+	TestNetChainID uint64 = 212
+	DevNetChainID  uint64 = 213
+	Epoch          uint64 = 20000
+)
+
+// network id
+const (
+	MainnetNetWorkID = MainNetChainID
+	TestnetWorkID    = TestNetChainID
+	DevnetWorkID     = DevNetChainID
 )
 
 // Genesis hashes to enforce below configs on.
@@ -77,39 +83,6 @@ var (
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.Hash{},
-		EIP155Block:         big.NewInt(0),
-		EIP158Block:         big.NewInt(0),
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(0),
-		IstanbulBlock:       big.NewInt(0),
-		MuirGlacierBlock:    big.NewInt(0),
-		BerlinBlock:         big.NewInt(0),
-		LondonBlock:         big.NewInt(0),
-		Istanbul: &IstanbulConfig{
-			Epoch:          17280,
-			ProposerPolicy: 2,
-			BlockPeriod:    5,
-			RequestTimeout: 3000,
-			LookbackWindow: 12,
-		},
-	}
-	MainnetNetWorkID uint64 = 22776
-	TestnetWorkID    uint64 = 212
-	DevnetWorkID     uint64 = 213
-	SingleWorkID     uint64 = 214
-	//under params in cmd/node/defaults.go
-	//DefaultHTTPPort    = 7445
-	//DefaultWSPort      = 7446
-	//ListenAddr         = 20201
-	SingleChainID   = big.NewInt(214)
-	SingleNetConfig = &ChainConfig{
-		ChainID:             SingleChainID,
-		HomesteadBlock:      big.NewInt(0),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      false,
 		EIP150Block:         big.NewInt(0),
 		EIP150Hash:          common.Hash{},
 		EIP155Block:         big.NewInt(0),
