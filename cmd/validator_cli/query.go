@@ -115,6 +115,9 @@ func getTopGroupValidators(ctx *cli.Context) error {
 	if ctx.IsSet(PasswordFlag.Name) {
 		password = ctx.GlobalString(PasswordFlag.Name)
 	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
 	methodName := "getTopGroupValidators"
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
