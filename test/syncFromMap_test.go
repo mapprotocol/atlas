@@ -11,30 +11,42 @@ import (
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"golang.org/x/crypto/sha3"
+	"log"
 	"math"
 	"math/big"
 	"testing"
 )
 
-var epoch = int64(1000)
+var epoch = int64(17280)
 var cache = make(map[int64][]blscrypto.SerializedPublicKey)
 
 func TestFromMap(t *testing.T) {
-	hs := getChains(998, 1004)
+	hs := getChains(172798, 172802)
 	if err := ValidateHeaderExtra(hs); err != nil {
 		fmt.Println("verify fail: ", err)
 	}
 }
 
 func ValidateHeaderExtra(headers []*types.Header) error {
-	chainLength := len(headers)
-	extra, err := types.ExtractIstanbulExtra(headers[0])
+	// init cache for storing epoch
+	err := getChangeEpoch(headers[0].Number.Int64())
 	if err != nil {
+		log.Println("failed to init epoch cache")
 		return err
 	}
-	tmp := extra.AggregatedSeal
-	for i := 1; i < chainLength; i++ {
-		extra, err = types.ExtractIstanbulExtra(headers[i])
+
+	//first header not verify but get AggregatedSeal
+	//because there has no ParentAggregatedSeal
+	chainLength := len(headers)
+	//extra, err := types.ExtractIstanbulExtra(headers[0])
+	//if err != nil {
+	//	return err
+	//}
+	//tmp := extra.AggregatedSeal
+
+	//verify header from second header to last header
+	for i := 2; i < chainLength; i++ {
+		extra, err := types.ExtractIstanbulExtra(headers[i])
 		if err != nil {
 			return err
 		}
@@ -48,24 +60,44 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 			return errors.New("verify fail: Coinbase != SignatureAddress")
 		}
 
-		pubKey, err := getBLSPublickKey(headers[i].Number.Int64())
-		if err != nil {
-			return err
+		var pubKey []blscrypto.SerializedPublicKey
+		if headers[i].Number.Int64()%epoch != 0 {
+			//log.Println("point1",headers[i].Number,headers[i].Number.Int64()%epoch)
+			pubKey, err = getBLSPublickKey(headers[i].Number.Int64())
+			if err != nil {
+				return err
+			}
+		} else {
+			pubKey, err = getBLSPublickKey(headers[i-2].Number.Int64())
+			if err != nil {
+				return err
+			}
 		}
 
 		//verify AggregatedSeal
 		err = verifyAggregatedSeal(headers[i].Hash(), pubKey, extra.AggregatedSeal)
 		if err != nil {
+			log.Println("failed to verify AggregatedSeal, block num", headers[i].Number)
 			return err
 		}
-		//verify ParentAggregatedSeal
+
+		//verify ParentAggregatedSeal except for block 1,
+		//because block 1 has no ParentAggregatedSeal.
 		if headers[i].Number.Int64() > 1 {
-			err = verifyAggregatedSeal(headers[i-1].Hash(), pubKey, tmp)
+			if headers[i-1].Number.Int64()%epoch == 0 {
+				pubKey, err = getBLSPublickKey(headers[i-2].Number.Int64())
+				if err != nil {
+					return err
+				}
+			}
+
+			err = verifyAggregatedSeal(headers[i-1].Hash(), pubKey, extra.ParentAggregatedSeal)
 			if err != nil {
+				log.Println("failed to verify ParentAggregatedSeal in epoch point, block num", headers[i].Number)
 				return err
 			}
 		}
-		tmp = extra.AggregatedSeal
+		//tmp = extra.AggregatedSeal
 	}
 	return nil
 }
@@ -93,8 +125,9 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 		}
 	}
 	pknum := int(math.Ceil(float64(2*len(pubKey)) / 3))
-	// The length of a valid seal should be greater than the minimum quorum size
+	//// The length of a valid seal should be greater than the minimum quorum size
 	if len(publicKeys) < pknum {
+		log.Println("now", len(publicKeys), ",need", pknum)
 		return errors.New("no enough publicKey")
 	}
 	err := blscrypto.VerifyAggregatedSignature(publicKeys, proposalSeal, []byte{}, aggregatedSeal.Signature, false, false)
@@ -103,6 +136,14 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 	}
 
 	return nil
+}
+
+func TestBLSPublickKey(t *testing.T) {
+	_, _ = getBLSPublickKey(345600)
+	fmt.Println("result ", len(cache))
+	for i, v := range cache {
+		fmt.Println(i, len(v))
+	}
 }
 
 func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
@@ -123,7 +164,8 @@ func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
 			}
 
 			if len(extra.AddedValidatorsPublicKeys) != 0 {
-				cache[num] = extra.AddedValidatorsPublicKeys
+				//log.Println("new validator in",num)
+				cache[num] = updateValidatorList(extra, num)
 				return cache[num], nil
 			} else if cache[num-1] != nil {
 				cache[num] = cache[num-1]
@@ -134,4 +176,130 @@ func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
 		}
 	}
 	return cache[num], nil
+}
+
+func TestChangeEpoch(t *testing.T) {
+	_ = getChangeEpoch(518400)
+	fmt.Println("result ", len(cache))
+	for i := 0; i < len(cache); i++ {
+		fmt.Println(i, len(cache[int64(i)]))
+	}
+}
+
+func getChangeEpoch(blockNum int64) error {
+	num := blockNum / epoch
+
+	for i := int64(0); i <= num; i++ {
+		conn, _ := dialEthConn()
+
+		header, err := conn.HeaderByNumber(context.Background(), big.NewInt(i*epoch))
+		if err != nil {
+			log.Println("failed to get header,num", i*epoch)
+			return err
+		}
+		//log.Println("gat block",i*epoch)
+
+		extra, err := types.ExtractIstanbulExtra(header)
+		if err != nil {
+			return err
+		}
+		//log.Println(i,"extra",extra.RemovedValidators.BitLen(),extra.AggregatedSeal.Bitmap.BitLen())
+
+		if len(extra.AddedValidatorsPublicKeys) != 0 {
+			//log.Println("new validator in",i)
+			cache[i] = updateValidatorList(extra, i)
+			//log.Println("1.new validator in",i,", add ",len(extra.AddedValidatorsPublicKeys))
+			//log.Println("2.new validator in",i,", update ",len(cache[i]))
+			//log.Println("3.add validator in",i-1,", in fact",extra.AggregatedSeal.Bitmap.BitLen())
+		} else if cache[i-1] != nil {
+			cache[i] = cache[i-1]
+			//log.Println(i,"epoch,no change, member ",len(cache[i]))
+		}
+	}
+
+	return nil
+}
+
+func updateValidatorList(extra *types.IstanbulExtra, num int64) []blscrypto.SerializedPublicKey {
+	if num == 0 {
+		return extra.AddedValidatorsPublicKeys
+	}
+
+	var valData = make(map[blscrypto.SerializedPublicKey]bool)
+	var tempList []blscrypto.SerializedPublicKey
+	var tempList2 []blscrypto.SerializedPublicKey
+	var oldVal []blscrypto.SerializedPublicKey
+	addVal := extra.AddedValidatorsPublicKeys
+	list := extra.RemovedValidators
+	//log.Println("addVal num",len(addVal),"in epoch",num)
+
+	//
+	ok := num
+	for ok > 0 {
+		if cache[ok] != nil {
+			oldVal = cache[ok]
+			break
+		}
+		ok--
+	}
+	//log.Println("before updated, old num",len(oldVal),",in epoch",ok)
+
+	//
+	for _, v := range extra.AddedValidatorsPublicKeys {
+		valData[v] = true
+	}
+
+	//
+	for i, v := range oldVal {
+		if list.Bit(i) == 0 {
+			tempList = append(tempList, v)
+		}
+	}
+	//log.Println("after updated1, old num",len(tempList),",in epoch",ok)
+	for _, v := range tempList {
+		_, ok := valData[v]
+		if !ok {
+			tempList2 = append(tempList2, v)
+		}
+	}
+	//log.Println("after updated2, old num",len(tempList2),",in epoch",ok)
+
+	//
+	tempList2 = append(tempList2, addVal...)
+	//log.Println("return num",len(tempList2),"in epoch",num)
+
+	return tempList2
+}
+
+func TestGetChangeEpoch(t *testing.T) {
+	//the output is [20,17,15,14,13,11,10,0]
+
+	num := int64(10)
+	//get data quickly
+	if cache[num] == nil {
+		for num != -1 {
+			conn, _ := dialEthConn()
+
+			header, err := conn.HeaderByNumber(context.Background(), big.NewInt(num*epoch))
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			extra, err := types.ExtractIstanbulExtra(header)
+			if err != nil {
+				fmt.Println(err)
+			}
+			//17 , 15,
+			if len(extra.AddedValidatorsPublicKeys) != 0 {
+				cache[num] = extra.AddedValidatorsPublicKeys //
+				tmp := updateValidatorList(extra, num)
+				fmt.Println("1.new validator in", num, ",", len(cache[num]), "members are", cache[num])
+				fmt.Println("2.new validator in", num, ",", len(tmp), "members are", tmp)
+			} else if cache[num-1] != nil {
+				cache[num] = cache[num-1]
+			}
+
+			num = num - 1
+		}
+	}
 }
