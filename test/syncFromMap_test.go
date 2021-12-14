@@ -38,14 +38,9 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 	//first header not verify but get AggregatedSeal
 	//because there has no ParentAggregatedSeal
 	chainLength := len(headers)
-	//extra, err := types.ExtractIstanbulExtra(headers[0])
-	//if err != nil {
-	//	return err
-	//}
-	//tmp := extra.AggregatedSeal
 
 	//verify header from second header to last header
-	for i := 2; i < chainLength; i++ {
+	for i := 1; i < chainLength; i++ {
 		extra, err := types.ExtractIstanbulExtra(headers[i])
 		if err != nil {
 			return err
@@ -85,7 +80,7 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 		//because block 1 has no ParentAggregatedSeal.
 		if headers[i].Number.Int64() > 1 {
 			if headers[i-1].Number.Int64()%epoch == 0 {
-				pubKey, err = getBLSPublickKey(headers[i-2].Number.Int64())
+				pubKey, err = getBLSPublickKey(headers[i-1].Number.Int64() - 1)
 				if err != nil {
 					return err
 				}
@@ -97,7 +92,6 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 				return err
 			}
 		}
-		//tmp = extra.AggregatedSeal
 	}
 	return nil
 }
