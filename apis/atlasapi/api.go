@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"strings"
@@ -2219,28 +2218,6 @@ func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (ui
 		return 0, err
 	}
 	return hs.LoadSyncTimes(epochID, relayer), nil
-}
-
-type PublicIstanbulAPI struct {
-	b        Backend
-	istanbul consensus.Engine
-}
-
-func NewPublicIstanbulAPI(b Backend, istanbul consensus.Engine) *PublicIstanbulAPI {
-	return &PublicIstanbulAPI{
-		b:        b,
-		istanbul: istanbul,
-	}
-}
-
-func (s *PublicIstanbulAPI) GetValidatorList(ctx context.Context, number rpc.BlockNumber) []common.Address {
-	block, _ := s.b.BlockByNumber(ctx, number)
-	list := s.istanbul.GetValidators(block.Number(), block.Header().Hash())
-	var validators []common.Address
-	for _, v := range list {
-		validators = append(validators, v.Address())
-	}
-	return validators
 }
 
 type PublicHeaderStoreAPI struct {

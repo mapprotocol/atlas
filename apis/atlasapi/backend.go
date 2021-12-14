@@ -149,11 +149,6 @@ func GetAPIs(apiBackend Backend, engine consensus.Engine) []rpc.API {
 			Version:   "1.0",
 			Service:   NewPublicHeaderStoreAPI(apiBackend),
 			Public:    true,
-		}, {
-			Namespace: "istanbul",
-			Version:   "1.0",
-			Service:   NewPublicIstanbulAPI(apiBackend, engine),
-			Public:    true,
 		},
 	}
 }
