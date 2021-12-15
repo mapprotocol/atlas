@@ -21,7 +21,7 @@ var epoch = int64(200)
 var cache = make(map[int64][]blscrypto.SerializedPublicKey)
 
 func TestFromMap(t *testing.T) {
-	hs := getChains(598, 602)
+	hs := getChains(598, 604)
 	if err := ValidateHeaderExtra(hs); err != nil {
 		fmt.Println("verify fail: ", err)
 	}
@@ -173,7 +173,7 @@ func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
 }
 
 func TestChangeEpoch(t *testing.T) {
-	_ = getChangeEpoch(2000)
+	_ = getChangeEpoch(600)
 	fmt.Println("result ", len(cache))
 	for i := 0; i < len(cache); i++ {
 		fmt.Println(i, len(cache[int64(i)]))
@@ -191,7 +191,7 @@ func getChangeEpoch(blockNum int64) error {
 			log.Println("failed to get header,num", i*epoch)
 			return err
 		}
-		//log.Println("gat block",i*epoch)
+		//log.Println("get block",i*epoch)
 
 		extra, err := types.ExtractIstanbulExtra(header)
 		if err != nil {
@@ -209,6 +209,7 @@ func getChangeEpoch(blockNum int64) error {
 			cache[i] = cache[i-1]
 			//log.Println(i,"epoch,no change, member ",len(cache[i]))
 		}
+		//log.Println("get pk",len(cache[i]),"in epoch",i)
 	}
 
 	return nil
@@ -216,12 +217,12 @@ func getChangeEpoch(blockNum int64) error {
 
 func updateValidatorList(extra *types.IstanbulExtra, num int64) []blscrypto.SerializedPublicKey {
 	if num == 0 {
+		//log.Println(len(extra.AddedValidatorsPublicKeys),"pk in block 0")
 		return extra.AddedValidatorsPublicKeys
 	}
 
 	var valData = make(map[blscrypto.SerializedPublicKey]bool)
 	var tempList []blscrypto.SerializedPublicKey
-	//var tempList2 []blscrypto.SerializedPublicKey
 	var oldVal []blscrypto.SerializedPublicKey
 	addVal := extra.AddedValidatorsPublicKeys
 	list := extra.RemovedValidators
@@ -229,7 +230,7 @@ func updateValidatorList(extra *types.IstanbulExtra, num int64) []blscrypto.Seri
 
 	//
 	ok := num
-	for ok > 0 {
+	for ok > -1 {
 		if cache[ok] != nil {
 			oldVal = cache[ok]
 			break
@@ -250,10 +251,10 @@ func updateValidatorList(extra *types.IstanbulExtra, num int64) []blscrypto.Seri
 			tempList = append(tempList, v)
 		}
 	}
-	//log.Println("after updated1, old num",len(tempList),",in epoch",ok)
+	//log.Println("after updated, old num",len(tempList),",in epoch",ok)
 
 	tempList = append(tempList, addVal...)
-	//log.Println("return num",len(tempList2),"in epoch",num)
+	//log.Println("return num",len(tempList),"in epoch",num)
 
 	return tempList
 }
