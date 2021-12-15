@@ -64,7 +64,7 @@ const (
 	// freezerTableSize defines the maximum size of freezer data files.
 	freezerTableSize = 2 * 1000 * 1000 * 1000
 
-	FullImmutabilityThreshold = 300000
+	FullImmutabilityThreshold = 10000
 )
 
 // freezer is an memory mapped append-only database to store immutable chain data
