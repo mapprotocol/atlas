@@ -17,11 +17,11 @@ import (
 	"testing"
 )
 
-var epoch = int64(17280)
+var epoch = int64(200)
 var cache = make(map[int64][]blscrypto.SerializedPublicKey)
 
 func TestFromMap(t *testing.T) {
-	hs := getChains(172798, 172802)
+	hs := getChains(598, 602)
 	if err := ValidateHeaderExtra(hs); err != nil {
 		fmt.Println("verify fail: ", err)
 	}
@@ -57,13 +57,13 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 
 		var pubKey []blscrypto.SerializedPublicKey
 		if headers[i].Number.Int64()%epoch != 0 {
-			//log.Println("point1",headers[i].Number,headers[i].Number.Int64()%epoch)
 			pubKey, err = getBLSPublickKey(headers[i].Number.Int64())
 			if err != nil {
 				return err
 			}
+			//log.Println("point",headers[i].Number,headers[i].Number.Int64()%epoch,len(pubKey))
 		} else {
-			pubKey, err = getBLSPublickKey(headers[i-2].Number.Int64())
+			pubKey, err = getBLSPublickKey(headers[i].Number.Int64() - 2)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 		//because block 1 has no ParentAggregatedSeal.
 		if headers[i].Number.Int64() > 1 {
 			if headers[i-1].Number.Int64()%epoch == 0 {
-				pubKey, err = getBLSPublickKey(headers[i-1].Number.Int64() - 1)
+				pubKey, err = getBLSPublickKey(headers[i].Number.Int64() - 2)
 				if err != nil {
 					return err
 				}
@@ -121,7 +121,7 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 	pknum := int(math.Ceil(float64(2*len(pubKey)) / 3))
 	//// The length of a valid seal should be greater than the minimum quorum size
 	if len(publicKeys) < pknum {
-		log.Println("now", len(publicKeys), ",need", pknum)
+		log.Println("now", len(publicKeys), ",need", pknum, ",all", len(pubKey))
 		return errors.New("no enough publicKey")
 	}
 	err := blscrypto.VerifyAggregatedSignature(publicKeys, proposalSeal, []byte{}, aggregatedSeal.Signature, false, false)
@@ -173,7 +173,7 @@ func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
 }
 
 func TestChangeEpoch(t *testing.T) {
-	_ = getChangeEpoch(518400)
+	_ = getChangeEpoch(2000)
 	fmt.Println("result ", len(cache))
 	for i := 0; i < len(cache); i++ {
 		fmt.Println(i, len(cache[int64(i)]))
@@ -221,7 +221,7 @@ func updateValidatorList(extra *types.IstanbulExtra, num int64) []blscrypto.Seri
 
 	var valData = make(map[blscrypto.SerializedPublicKey]bool)
 	var tempList []blscrypto.SerializedPublicKey
-	var tempList2 []blscrypto.SerializedPublicKey
+	//var tempList2 []blscrypto.SerializedPublicKey
 	var oldVal []blscrypto.SerializedPublicKey
 	addVal := extra.AddedValidatorsPublicKeys
 	list := extra.RemovedValidators
@@ -245,55 +245,15 @@ func updateValidatorList(extra *types.IstanbulExtra, num int64) []blscrypto.Seri
 
 	//
 	for i, v := range oldVal {
-		if list.Bit(i) == 0 {
+		_, ok := valData[v]
+		if list.Bit(i) == 0 && !ok {
 			tempList = append(tempList, v)
 		}
 	}
 	//log.Println("after updated1, old num",len(tempList),",in epoch",ok)
-	for _, v := range tempList {
-		_, ok := valData[v]
-		if !ok {
-			tempList2 = append(tempList2, v)
-		}
-	}
-	//log.Println("after updated2, old num",len(tempList2),",in epoch",ok)
 
-	//
-	tempList2 = append(tempList2, addVal...)
+	tempList = append(tempList, addVal...)
 	//log.Println("return num",len(tempList2),"in epoch",num)
 
-	return tempList2
-}
-
-func TestGetChangeEpoch(t *testing.T) {
-	//the output is [20,17,15,14,13,11,10,0]
-
-	num := int64(10)
-	//get data quickly
-	if cache[num] == nil {
-		for num != -1 {
-			conn, _ := dialEthConn()
-
-			header, err := conn.HeaderByNumber(context.Background(), big.NewInt(num*epoch))
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			extra, err := types.ExtractIstanbulExtra(header)
-			if err != nil {
-				fmt.Println(err)
-			}
-			//17 , 15,
-			if len(extra.AddedValidatorsPublicKeys) != 0 {
-				cache[num] = extra.AddedValidatorsPublicKeys //
-				tmp := updateValidatorList(extra, num)
-				fmt.Println("1.new validator in", num, ",", len(cache[num]), "members are", cache[num])
-				fmt.Println("2.new validator in", num, ",", len(tmp), "members are", tmp)
-			} else if cache[num-1] != nil {
-				cache[num] = cache[num-1]
-			}
-
-			num = num - 1
-		}
-	}
+	return tempList
 }
