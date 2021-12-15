@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/mclock"
@@ -268,6 +269,8 @@ func (p *Peer) readLoop(errc chan<- error) {
 	}
 }
 
+var counter = 0
+
 func (p *Peer) handle(msg Msg) error {
 	switch {
 	case msg.Code == pingMsg:
@@ -288,6 +291,15 @@ func (p *Peer) handle(msg Msg) error {
 		if err != nil {
 			return fmt.Errorf("msg code out of range: %v", msg.Code)
 		}
+
+		if counter%100 == 0 {
+			log.Info("peer info in handle", "mgs.code", msg.Code, "id", p.Info().ID, "enode", p.Info().Enode, "remoteAddr", p.Info().Network.RemoteAddress, "enr", p.Info().ENR, "name", p.Info().Name)
+			peerInfo, _ := json.Marshal(p.Info())
+			log.Info("peer detail info in handle", "peerInfo", peerInfo)
+
+		}
+		counter++
+
 		if metrics.Enabled {
 			m := fmt.Sprintf("%s/%s/%d/%#02x", ingressMeterName, proto.Name, proto.Version, msg.Code-proto.offset)
 			metrics.GetOrRegisterMeter(m, nil).Mark(int64(msg.meterSize))
