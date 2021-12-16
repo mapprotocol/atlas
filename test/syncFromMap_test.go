@@ -133,7 +133,7 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 }
 
 func TestBLSPublickKey(t *testing.T) {
-	_, _ = getBLSPublickKey(345600)
+	_, _ = getBLSPublickKey(801)
 	fmt.Println("result ", len(cache))
 	for i, v := range cache {
 		fmt.Println(i, len(v))
@@ -173,7 +173,7 @@ func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
 }
 
 func TestChangeEpoch(t *testing.T) {
-	_ = getChangeEpoch(600)
+	_ = getChangeEpoch(801)
 	fmt.Println("result ", len(cache))
 	for i := 0; i < len(cache); i++ {
 		fmt.Println(i, len(cache[int64(i)]))
@@ -199,7 +199,7 @@ func getChangeEpoch(blockNum int64) error {
 		}
 		//log.Println(i,"extra",extra.RemovedValidators.BitLen(),extra.AggregatedSeal.Bitmap.BitLen())
 
-		if len(extra.AddedValidatorsPublicKeys) != 0 {
+		if len(extra.AddedValidatorsPublicKeys) != 0 || extra.RemovedValidators.Int64() != 0 {
 			//log.Println("new validator in",i)
 			cache[i] = updateValidatorList(extra, i)
 			//log.Println("1.new validator in",i,", add ",len(extra.AddedValidatorsPublicKeys))
