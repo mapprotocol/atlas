@@ -431,13 +431,13 @@ func DefaultTestnetGenesisBlock() *Genesis {
 }
 
 // DevnetGenesisBlock returns the 'geth --dev' genesis block.
-func DevnetGenesisBlock(faucet common.Address) *Genesis {
+func DevnetGenesisBlock(faucet common.Address, pk blscrypto.SerializedPublicKey) *Genesis {
 	dc := defaultRelayer()
 	defaultBalance, _ := new(big.Int).SetString("100000000000000000000000000", 10)
 	dc[faucet] = GenesisAccount{Balance: defaultBalance}
 	return &Genesis{
 		Config:    params.DevnetConfig,
-		ExtraData: []byte{1, 2, 3},
+		ExtraData: createDevAlloc(pk, faucet),
 		GasLimit:  11500000,
 		Alloc:     dc,
 	}
@@ -514,4 +514,22 @@ func defaultRelayerMembers() []*RelayerMember {
 		{Coinbase: relayer[9], Publickey: key10},
 	}
 	return cm
+}
+
+func createDevAlloc(pk blscrypto.SerializedPublicKey, addr common.Address) []byte {
+	ads := make([]common.Address, 0)
+	apks := make([]blscrypto.SerializedPublicKey, 0)
+	ads = append(ads, addr)
+	apks = append(apks, pk)
+	ist := types.IstanbulExtra{
+		AddedValidators:           ads,
+		AddedValidatorsPublicKeys: apks,
+		RemovedValidators:         big.NewInt(0),
+		Seal:                      []byte(""),
+		AggregatedSeal:            types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+	}
+	payload, _ := rlp.EncodeToBytes(&ist)
+	finalExtra := append(bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity), payload...)
+	return finalExtra
 }

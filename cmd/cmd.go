@@ -140,6 +140,7 @@ var (
 		utils.CatalystFlag,
 		utils.MiningEnabledFlag,
 		utils.MinerValidatorFlag,
+		utils.MinerBLSPublicKeyFlag,
 		utils.MinerExtraDataFlag,
 		utils.MinerThreadsFlag,
 		utils.MinerGasPriceFlag,
