@@ -3,66 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/log"
-	"math/big"
-
 	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 	"gopkg.in/urfave/cli.v1"
+	"math/big"
 )
 
-var queryGroupsCommand = cli.Command{
-	Name:   "queryGroups",
-	Usage:  "query Validators",
-	Action: MigrateFlags(queryGroups),
-	Flags:  ValidatorFlags,
-}
 var queryRegisteredValidatorSignersCommand = cli.Command{
 	Name:   "getRegisteredValidatorSigners",
 	Usage:  "Registered Validator Signers",
 	Action: MigrateFlags(getRegisteredValidatorSigners),
 	Flags:  ValidatorFlags,
 }
-var queryTopGroupValidatorsCommand = cli.Command{
-	Name:   "getTopGroupValidators",
+var queryTopValidatorsCommand = cli.Command{
+	Name:   "getTopValidators",
 	Usage:  "get Top Group Validators",
-	Action: MigrateFlags(getTopGroupValidators),
+	Action: MigrateFlags(getTopValidators),
 	Flags:  ValidatorFlags,
-}
-
-func queryGroups(ctx *cli.Context) error {
-	//---------------- pre set ---------------------------------------
-	path := ""
-	password = ""
-	//----------------------------------------------------------------
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-	input := packInput(abiValidators, "getRegisteredValidatorGroups")
-	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
-	if err != nil {
-		log.Error("method CallContract error", "error", err)
-	}
-	groups := new([]common.Address)
-	err = abiValidators.UnpackIntoInterface(&groups, "getRegisteredValidatorGroups", output)
-	if err != nil {
-		log.Error("method UnpackIntoInterface error", "error", err)
-	}
-	if len(*groups) == 0 {
-		log.Info("groups:", "obj", "[]")
-		return nil
-	}
-	for _, v := range *groups {
-		log.Info("getRegisteredValidatorGroups:", "obj", v.String())
-	}
-	return nil
 }
 
 func getRegisteredValidatorSigners(ctx *cli.Context) error {
@@ -97,15 +55,14 @@ func getRegisteredValidatorSigners(ctx *cli.Context) error {
 		log.Info("ValidatorSigners:", "obj", "[]")
 		return nil
 	}
-	for _, v := range *ValidatorSigners {
-		fmt.Println("getRegisteredValidatorSigners:", v.String())
+	for i, v := range *ValidatorSigners {
+		fmt.Println("getRegisteredValidatorSigners:", v.String(), "  index:", i)
 	}
 	return nil
 }
-
-func getTopGroupValidators(ctx *cli.Context) error {
+func getTopValidators(ctx *cli.Context) error {
 	//--------------------------- pre set -------------------------------------------
-	path := pathGroup
+	path := ""
 	n := big.NewInt(5) // top number
 	password = ""
 	//-------------------------------------------------------------------------------
@@ -118,20 +75,62 @@ func getTopGroupValidators(ctx *cli.Context) error {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
 	}
-	methodName := "getTopGroupValidators"
+	methodName := "getTopValidators"
 	loadPrivateKey(path)
 	conn, _ := dialConn(ctx)
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 
-	log.Info("=== getTopGroupValidators Group", "obj", from)
-	input := packInput(abiValidators, methodName, from, n)
-	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
+	log.Info("=== getTopValidators admin", "obj", from)
+	input := packInput(abiElection, methodName, n)
+	msg := ethchain.CallMsg{From: from, To: &ElectionAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
 	}
 	TopValidators := new([]common.Address)
-	err = abiValidators.UnpackIntoInterface(&TopValidators, methodName, output)
+	err = abiElection.UnpackIntoInterface(&TopValidators, methodName, output)
+	if err != nil {
+		log.Error("method UnpackIntoInterface", "error", err)
+		return nil
+	}
+	if len(*TopValidators) == 0 {
+		log.Info("TopValidators:", "obj", "[]")
+		return nil
+	}
+	for _, v := range *TopValidators {
+		log.Info("Address:", "obj", v.String())
+	}
+	return nil
+}
+func getNumberValidators(ctx *cli.Context) error {
+	//--------------------------- pre set -------------------------------------------
+	path := ""
+	n := big.NewInt(5) // top number
+	password = ""
+	//-------------------------------------------------------------------------------
+	if ctx.IsSet(TopNumFlag.Name) {
+		n = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	methodName := "getTopValidators"
+	loadPrivateKey(path)
+	conn, _ := dialConn(ctx)
+	header, err := conn.HeaderByNumber(context.Background(), nil)
+
+	log.Info("=== getTopValidators admin", "obj", from)
+	input := packInput(abiElection, methodName, n)
+	msg := ethchain.CallMsg{From: from, To: &ElectionAddress, Data: input}
+	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		log.Error("method CallContract error", "error", err)
+	}
+	TopValidators := new([]common.Address)
+	err = abiElection.UnpackIntoInterface(&TopValidators, methodName, output)
 	if err != nil {
 		log.Error("method UnpackIntoInterface", "error", err)
 		return nil
