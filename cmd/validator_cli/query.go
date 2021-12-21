@@ -13,7 +13,7 @@ import (
 
 var queryGroupsCommand = cli.Command{
 	Name:   "queryGroups",
-	Usage:  "query Groups",
+	Usage:  "query Validators",
 	Action: MigrateFlags(queryGroups),
 	Flags:  ValidatorFlags,
 }

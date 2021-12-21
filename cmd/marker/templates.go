@@ -34,7 +34,6 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
 			NumValidators:        4,
-			ValidatorsPerGroup:   10, //max group size is 10
 			NumDeveloperAccounts: 10,
 		},
 		ChainID: big.NewInt(211),
@@ -70,7 +69,6 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             "miss fire behind decide egg buyer honey seven advance uniform profit renew",
 			NumValidators:        1,
-			ValidatorsPerGroup:   1,
 			NumDeveloperAccounts: 10000,
 		},
 		ChainID: big.NewInt(9099000),
@@ -115,7 +113,6 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
 			NumValidators:        3,
-			ValidatorsPerGroup:   5, // monorepo uses a single validator group, max group size is 5
 			NumDeveloperAccounts: 0,
 			UseValidatorAsAdmin:  true, // monorepo doesn't use the admin account type, uses first validator instead
 		},

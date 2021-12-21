@@ -26,7 +26,7 @@ var genesisMsgHash = bytes.Repeat([]byte{0x00}, 32)
 
 //var genesisMsgHash = common.HexToHash("ecc833a7747eaa8327335e8e0c6b6d8aa3a38d0063591e43ce116ccf5c89753e")
 
-var GroupsAT []env.Account
+var ValidatorsAT []env.Account
 var AdminAT env.Account
 
 // CreateCommonGenesisConfig generates a config starting point which templates can then customize further
@@ -76,8 +76,7 @@ func FundAccounts(genesisConfig *Config, accounts []env.Account) {
 
 // GenerateGenesis will create a new genesis block with full atlas blockchain already configured
 func GenerateGenesis(ctx *cli.Context, accounts *env.AccountsConfig, cfg *Config, contractsBuildPath string) (*chain.Genesis, error) {
-	ValidatorsAT := getValidators(GroupsAT[0].Address)
-	extraData, err := generateGenesisExtraData(ValidatorsAT[:4])
+	extraData, err := generateGenesisExtraData(ValidatorsAT)
 	//fmt.Println("extraData: ", hexutil.Encode(extraData))
 	if err != nil {
 		return nil, err
@@ -137,16 +136,11 @@ type AccoutInfo struct {
 	Account  string
 	Password string
 }
-type Groups []struct {
-	Group      AccoutInfo
+
+type MarkerInfo struct {
+	AdminInfo  AccoutInfo
 	Validators []AccoutInfo
 }
-type MarkerInfo struct {
-	AdminInfo AccoutInfo
-	Groups    Groups
-}
-
-var Validators map[common.Address][]env.Account
 
 func UnmarshalMarkerConfig() {
 	keyDir := fmt.Sprintf("../atlas/marker/config/markerConfig.json")
@@ -159,16 +153,10 @@ func UnmarshalMarkerConfig() {
 	_ = json.Unmarshal(data, markerCfg)
 
 	var tt []AccoutInfo
-	var ttt [][]AccoutInfo
-	for _, v := range (*markerCfg).Groups {
-		tt = append(tt, v.Group)
-		ttt = append(ttt, v.Validators)
+	for _, v := range (*markerCfg).Validators {
+		tt = append(tt, v)
 	}
-	GroupsAT = loadPrivate(tt)
-	Validators = make(map[common.Address][]env.Account)
-	for i, v := range GroupsAT {
-		Validators[v.Address] = loadPrivate(ttt[i])
-	}
+	ValidatorsAT = loadPrivate(tt)
 	AdminAT = loadPrivate([]AccoutInfo{markerCfg.AdminInfo})[0]
 }
 func loadPrivate(paths []AccoutInfo) []env.Account {
@@ -194,8 +182,4 @@ func loadPrivate(paths []AccoutInfo) []env.Account {
 		}
 	}
 	return accounts
-}
-
-func getValidators(address common.Address) []env.Account {
-	return Validators[address]
 }

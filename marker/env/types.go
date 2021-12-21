@@ -14,23 +14,8 @@ type Config struct {
 type AccountsConfig struct {
 	Mnemonic             string `json:"mnemonic"`            // Accounts mnemonic
 	NumValidators        int    `json:"validators"`          // Number of initial validators
-	ValidatorsPerGroup   int    `json:"validatorsPerGroup"`  // Number of validators per group in the initial set
 	NumDeveloperAccounts int    `json:"developerAccounts"`   // Number of developers accounts
 	UseValidatorAsAdmin  bool   `json:"useValidatorAsAdmin"` // Whether to use the first validator as the admin (for compatibility with monorepo)
-}
-
-// ValidatorGroup represents a group plus its validators members
-type ValidatorGroup struct {
-	Account
-	Validators []Account
-}
-
-// NumValidatorGroups retrieves the number of validator groups for the genesis
-func (ac *AccountsConfig) NumValidatorGroups() int {
-	if (ac.NumValidators % ac.ValidatorsPerGroup) > 0 {
-		return (ac.NumValidators / ac.ValidatorsPerGroup) + 1
-	}
-	return ac.NumValidators / ac.ValidatorsPerGroup
 }
 
 // AdminAccount returns the environment's admin account
@@ -76,37 +61,4 @@ func (ac *AccountsConfig) TxFeeRecipientAccounts() []Account {
 		panic(err)
 	}
 	return accounts
-}
-
-// ValidatorGroupAccounts returns the environment's validators group accounts
-func (ac *AccountsConfig) ValidatorGroupAccounts() []Account {
-	accounts, err := DeriveAccountList(ac.Mnemonic, ValidatorGroupAT, ac.NumValidatorGroups())
-	if err != nil {
-		panic(err)
-	}
-	return accounts
-}
-
-// ValidatorGroups return the list of validator groups on genesis
-func (ac *AccountsConfig) ValidatorGroups() []ValidatorGroup {
-	groups := make([]ValidatorGroup, ac.NumValidatorGroups())
-
-	groupAccounts := ac.ValidatorGroupAccounts()
-	validatorAccounts := ac.ValidatorAccounts()
-
-	for i := 0; i < (len(groups) - 1); i++ {
-		groups[i] = ValidatorGroup{
-			Account:    groupAccounts[i],
-			Validators: validatorAccounts[ac.ValidatorsPerGroup*i : ac.ValidatorsPerGroup*(i+1)],
-		}
-	}
-
-	// last group might not be full, use an open slice for validators
-	i := len(groups) - 1
-	groups[i] = ValidatorGroup{
-		Account:    groupAccounts[i],
-		Validators: validatorAccounts[ac.ValidatorsPerGroup*i:],
-	}
-
-	return groups
 }

@@ -196,35 +196,33 @@ type GovernanceParametersMarshaling struct {
 
 // ValidatorsParameters are the initial configuration parameters for Validators
 type ValidatorsParameters struct {
-	GroupLockedGoldRequirements     LockedGoldRequirements `json:"groupLockedGoldRequirements"`
 	ValidatorLockedGoldRequirements LockedGoldRequirements `json:"validatorLockedGoldRequirements"`
 	ValidatorScoreExponent          uint64                 `json:"validatorScoreExponent"`
 	ValidatorScoreAdjustmentSpeed   *fixed.Fixed           `json:"validatorScoreAdjustmentSpeed"`
 	MembershipHistoryLength         uint64                 `json:"membershipHistoryLength"`
 	SlashingPenaltyResetPeriod      uint64                 `json:"slashingPenaltyResetPeriod"`
-	MaxGroupSize                    uint64                 `json:"maxGroupSize"`
 	CommissionUpdateDelay           uint64                 `json:"commissionUpdateDelay"`
 	DowntimeGracePeriod             uint64                 `json:"downtimeGracePeriod"`
 
-	Commission *fixed.Fixed `json:"commission"` // commission for genesis registered validator groups
+	Commission *fixed.Fixed `json:"commission"` // commission for genesis registered validator
 }
 
 //go:generate gencodec -type EpochRewardsParameters -field-override EpochRewardsParametersMarshaling -out gen_epoch_rewards_parameters_json.go
 
 // EpochRewardsParameters are the initial configuration parameters for EpochRewards
 type EpochRewardsParameters struct {
-	TargetVotingYieldInitial                     *fixed.Fixed   `json:"targetVotingYieldInitial"`
-	TargetVotingYieldMax                         *fixed.Fixed   `json:"targetVotingYieldMax"`
-	TargetVotingYieldAdjustmentFactor            *fixed.Fixed   `json:"targetVotingYieldAdjustmentFactor"`
-	RewardsMultiplierMax                         *fixed.Fixed   `json:"rewardsMultiplierMax"`
-	RewardsMultiplierAdjustmentFactorsUnderspend *fixed.Fixed   `json:"rewardsMultiplierAdjustmentFactorsUnderspend"`
-	RewardsMultiplierAdjustmentFactorsOverspend  *fixed.Fixed   `json:"rewardsMultiplierAdjustmentFactorsOverspend"`
-	TargetVotingGoldFraction                     *fixed.Fixed   `json:"targetVotingGoldFraction"`
-	MaxValidatorEpochPayment                     *big.Int       `json:"maxValidatorEpochPayment"`
-	CommunityRewardFraction                      *fixed.Fixed   `json:"communityRewardFraction"`
-	CarbonOffsettingPartner                      common.Address `json:"carbonOffsettingPartner"`
-	CarbonOffsettingFraction                     *fixed.Fixed   `json:"carbonOffsettingFraction"`
-	Frozen                                       bool           `json:"frozen"`
+	TargetVotingYieldInitial                     *fixed.Fixed `json:"targetVotingYieldInitial"`
+	TargetVotingYieldMax                         *fixed.Fixed `json:"targetVotingYieldMax"`
+	TargetVotingYieldAdjustmentFactor            *fixed.Fixed `json:"targetVotingYieldAdjustmentFactor"`
+	RewardsMultiplierMax                         *fixed.Fixed `json:"rewardsMultiplierMax"`
+	RewardsMultiplierAdjustmentFactorsUnderspend *fixed.Fixed `json:"rewardsMultiplierAdjustmentFactorsUnderspend"`
+	RewardsMultiplierAdjustmentFactorsOverspend  *fixed.Fixed `json:"rewardsMultiplierAdjustmentFactorsOverspend"`
+	TargetVotingGoldFraction                     *fixed.Fixed `json:"targetVotingGoldFraction"`
+	MaxValidatorEpochPayment                     *big.Int     `json:"maxValidatorEpochPayment"`
+	CommunityRewardFraction                      *fixed.Fixed `json:"communityRewardFraction"`
+	//CarbonOffsettingPartner                      common.Address `json:"carbonOffsettingPartner"`
+	//CarbonOffsettingFraction                     *fixed.Fixed   `json:"carbonOffsettingFraction"`
+	Frozen bool `json:"frozen"`
 }
 
 type EpochRewardsParametersMarshaling struct {
