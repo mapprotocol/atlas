@@ -39,8 +39,8 @@ func (e EpochRewardsParameters) MarshalJSON() ([]byte, error) {
 	enc.TargetVotingGoldFraction = e.TargetVotingGoldFraction
 	enc.MaxValidatorEpochPayment = (*bigintstr.BigIntStr)(e.MaxValidatorEpochPayment)
 	enc.CommunityRewardFraction = e.CommunityRewardFraction
-	enc.CarbonOffsettingPartner = e.CarbonOffsettingPartner
-	enc.CarbonOffsettingFraction = e.CarbonOffsettingFraction
+	//enc.CarbonOffsettingPartner = e.CarbonOffsettingPartner
+	//enc.CarbonOffsettingFraction = e.CarbonOffsettingFraction
 	enc.Frozen = e.Frozen
 	return json.Marshal(&enc)
 }
@@ -57,9 +57,9 @@ func (e *EpochRewardsParameters) UnmarshalJSON(input []byte) error {
 		TargetVotingGoldFraction                     *fixed.Fixed         `json:"targetVotingGoldFraction"`
 		MaxValidatorEpochPayment                     *bigintstr.BigIntStr `json:"maxValidatorEpochPayment"`
 		CommunityRewardFraction                      *fixed.Fixed         `json:"communityRewardFraction"`
-		CarbonOffsettingPartner                      *common.Address      `json:"carbonOffsettingPartner"`
-		CarbonOffsettingFraction                     *fixed.Fixed         `json:"carbonOffsettingFraction"`
-		Frozen                                       *bool                `json:"frozen"`
+		//CarbonOffsettingPartner                      *common.Address      `json:"carbonOffsettingPartner"`
+		//CarbonOffsettingFraction                     *fixed.Fixed         `json:"carbonOffsettingFraction"`
+		Frozen *bool `json:"frozen"`
 	}
 	var dec EpochRewardsParameters
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -92,12 +92,12 @@ func (e *EpochRewardsParameters) UnmarshalJSON(input []byte) error {
 	if dec.CommunityRewardFraction != nil {
 		e.CommunityRewardFraction = dec.CommunityRewardFraction
 	}
-	if dec.CarbonOffsettingPartner != nil {
-		e.CarbonOffsettingPartner = *dec.CarbonOffsettingPartner
-	}
-	if dec.CarbonOffsettingFraction != nil {
-		e.CarbonOffsettingFraction = dec.CarbonOffsettingFraction
-	}
+	//if dec.CarbonOffsettingPartner != nil {
+	//	e.CarbonOffsettingPartner = *dec.CarbonOffsettingPartner
+	//}
+	//if dec.CarbonOffsettingFraction != nil {
+	//	e.CarbonOffsettingFraction = dec.CarbonOffsettingFraction
+	//}
 	if dec.Frozen != nil {
 		e.Frozen = *dec.Frozen
 	}

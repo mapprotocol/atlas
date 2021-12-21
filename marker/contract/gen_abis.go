@@ -4966,6 +4966,18 @@ func init() {
   ]`) // Election ABI
 	abis["Election"] = mustParseABI(`[
     {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "test",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
       "anonymous": false,
       "inputs": [
         {
@@ -5003,7 +5015,26 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "EpochRewardRemainsDistributedToValidators",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "voterAddress",
           "type": "address"
         },
         {
@@ -5022,11 +5053,11 @@ func init() {
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "maxNumGroupsVotedFor",
+          "name": "maxNumValidatorsVotedFor",
           "type": "uint256"
         }
       ],
-      "name": "MaxNumGroupsVotedForSet",
+      "name": "MaxNumValidatorsVotedForSet",
       "type": "event"
     },
     {
@@ -5073,7 +5104,7 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -5089,7 +5120,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupActiveVoteRevoked",
+      "name": "ValidatorActiveVoteRevoked",
       "type": "event"
     },
     {
@@ -5098,11 +5129,11 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
-      "name": "ValidatorGroupMarkedEligible",
+      "name": "ValidatorMarkedEligible",
       "type": "event"
     },
     {
@@ -5111,11 +5142,11 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
-      "name": "ValidatorGroupMarkedIneligible",
+      "name": "ValidatorMarkedIneligible",
       "type": "event"
     },
     {
@@ -5130,7 +5161,7 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -5140,7 +5171,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupPendingVoteRevoked",
+      "name": "ValidatorPendingVoteRevoked",
       "type": "event"
     },
     {
@@ -5155,7 +5186,7 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -5171,7 +5202,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupVoteActivated",
+      "name": "ValidatorVoteActivated",
       "type": "event"
     },
     {
@@ -5186,7 +5217,7 @@ func init() {
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -5196,7 +5227,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupVoteCast",
+      "name": "ValidatorVoteCast",
       "type": "event"
     },
     {
@@ -5484,7 +5515,7 @@ func init() {
     {
       "constant": true,
       "inputs": [],
-      "name": "maxNumGroupsVotedFor",
+      "name": "maxNumValidatorsVotedFor",
       "outputs": [
         {
           "internalType": "uint256",
@@ -5734,7 +5765,7 @@ func init() {
         },
         {
           "internalType": "uint256",
-          "name": "_maxNumGroupsVotedFor",
+          "name": "_maxNumValidatorsVotedFor",
           "type": "uint256"
         },
         {
@@ -5800,11 +5831,11 @@ func init() {
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_maxNumGroupsVotedFor",
+          "name": "_maxNumValidatorsVotedFor",
           "type": "uint256"
         }
       ],
-      "name": "setMaxNumGroupsVotedFor",
+      "name": "setMaxNumValidatorsVotedFor",
       "outputs": [
         {
           "internalType": "bool",
@@ -5857,7 +5888,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -5893,11 +5924,37 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
       "name": "activate",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "activateForAccount",
       "outputs": [
         {
           "internalType": "bool",
@@ -5919,7 +5976,7 @@ func init() {
         },
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
@@ -5940,7 +5997,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -5981,7 +6038,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6017,7 +6074,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6079,7 +6136,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6088,7 +6145,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getPendingVotesForGroupByAccount",
+      "name": "getPendingVotesForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -6105,7 +6162,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6114,7 +6171,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVotesForGroupByAccount",
+      "name": "getActiveVotesForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -6131,7 +6188,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6140,7 +6197,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getTotalVotesForGroupByAccount",
+      "name": "getTotalVotesForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -6157,7 +6214,7 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6166,7 +6223,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVoteUnitsForGroupByAccount",
+      "name": "getActiveVoteUnitsForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -6183,217 +6240,79 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVoteUnitsForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getTotalVotesForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVotesForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getPendingVotesForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getGroupEligibility",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
-        {
-          "internalType": "uint256",
-          "name": "totalEpochRewards",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "uptimes",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "getGroupEpochRewards",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "lesser",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greater",
-          "type": "address"
-        }
-      ],
-      "name": "distributeEpochRewards",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "markGroupIneligible",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "lesser",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greater",
-          "type": "address"
-        }
-      ],
-      "name": "markGroupEligible",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
         {
           "internalType": "address",
           "name": "account",
           "type": "address"
         }
       ],
-      "name": "getGroupsVotedForByAccount",
+      "name": "getActiveVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getActiveVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getTotalVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getActiveVotersForValidator",
       "outputs": [
         {
           "internalType": "address[]",
@@ -6410,7 +6329,151 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getPendingVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getValidatorEligibility",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "n",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTopValidators",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "distributeEpochVotersRewards",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "markValidatorIneligible",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "lesser",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "greater",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "markValidatorEligible",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "getValidatorsVotedForByAccount",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -6433,13 +6496,7 @@ func init() {
     },
     {
       "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
+      "inputs": [],
       "name": "getNumVotesReceivable",
       "outputs": [
         {
@@ -6485,7 +6542,7 @@ func init() {
     {
       "constant": true,
       "inputs": [],
-      "name": "getEligibleValidatorGroups",
+      "name": "getEligibleValidators",
       "outputs": [
         {
           "internalType": "address[]",
@@ -6500,11 +6557,11 @@ func init() {
     {
       "constant": true,
       "inputs": [],
-      "name": "getTotalVotesForEligibleValidatorGroups",
+      "name": "getTotalVotesForEligibleValidators",
       "outputs": [
         {
           "internalType": "address[]",
-          "name": "groups",
+          "name": "validators",
           "type": "address[]"
         },
         {
@@ -6616,6 +6673,18 @@ func init() {
     }
   ]`) // EpochRewards ABI
 	abis["EpochRewards"] = mustParseABI(`[
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "test",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -7338,16 +7407,6 @@ func init() {
           "internalType": "uint256",
           "name": "_communityRewardFraction",
           "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "_carbonOffsettingPartner",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_carbonOffsettingFraction",
-          "type": "uint256"
         }
       ],
       "name": "initialize",
@@ -7431,47 +7490,6 @@ func init() {
       "constant": true,
       "inputs": [],
       "name": "getCommunityRewardFraction",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "partner",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "setCarbonOffsettingFund",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getCarbonOffsettingFraction",
       "outputs": [
         {
           "internalType": "uint256",
@@ -7722,16 +7740,6 @@ func init() {
       "inputs": [],
       "name": "calculateTargetEpochRewards",
       "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
         {
           "internalType": "uint256",
           "name": "",
@@ -14229,6 +14237,18 @@ func init() {
     }
   ]`) // LockedGold ABI
 	abis["LockedGold"] = mustParseABI(`[
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "test",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -21211,8 +21231,20 @@ func init() {
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ]`) // Validators ABI
+  ]`) // Validators ABI `
 	abis["Validators"] = mustParseABI(`[
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "test",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -21224,51 +21256,6 @@ func init() {
         }
       ],
       "name": "CommissionUpdateDelaySet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "duration",
-          "type": "uint256"
-        }
-      ],
-      "name": "GroupLockedGoldRequirementsSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "size",
-          "type": "uint256"
-        }
-      ],
-      "name": "MaxGroupSizeSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "length",
-          "type": "uint256"
-        }
-      ],
-      "name": "MembershipHistoryLengthSet",
       "type": "event"
     },
     {
@@ -21313,25 +21300,6 @@ func init() {
           "type": "address"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorAffiliated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
           "indexed": false,
           "internalType": "bytes",
           "name": "blsPublicKey",
@@ -21351,13 +21319,38 @@ func init() {
           "type": "address"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "activationBlock",
+          "type": "uint256"
         }
       ],
-      "name": "ValidatorDeaffiliated",
+      "name": "ValidatorCommissionUpdateQueued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
+        }
+      ],
+      "name": "ValidatorCommissionUpdated",
       "type": "event"
     },
     {
@@ -21408,152 +21401,13 @@ func init() {
           "type": "uint256"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
           "indexed": false,
           "internalType": "uint256",
-          "name": "groupPayment",
+          "name": "remainPayment",
           "type": "uint256"
         }
       ],
       "name": "ValidatorEpochPaymentDistributed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "activationBlock",
-          "type": "uint256"
-        }
-      ],
-      "name": "ValidatorGroupCommissionUpdateQueued",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        }
-      ],
-      "name": "ValidatorGroupCommissionUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupDeregistered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupMemberAdded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupMemberRemoved",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupMemberReordered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        }
-      ],
-      "name": "ValidatorGroupRegistered",
       "type": "event"
     },
     {
@@ -21583,6 +21437,12 @@ func init() {
           "internalType": "address",
           "name": "validator",
           "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
         }
       ],
       "name": "ValidatorRegistered",
@@ -21860,26 +21720,6 @@ func init() {
     },
     {
       "constant": true,
-      "inputs": [],
-      "name": "groupLockedGoldRequirements",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "duration",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
       "inputs": [
         {
           "internalType": "bytes",
@@ -21923,36 +21763,6 @@ func init() {
           "internalType": "bool",
           "name": "",
           "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "maxGroupSize",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "membershipHistoryLength",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "payable": false,
@@ -22222,16 +22032,6 @@ func init() {
         },
         {
           "internalType": "uint256",
-          "name": "groupRequirementValue",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "groupRequirementDuration",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "validatorRequirementValue",
           "type": "uint256"
         },
@@ -22252,17 +22052,7 @@ func init() {
         },
         {
           "internalType": "uint256",
-          "name": "_membershipHistoryLength",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "_slashingMultiplierResetPeriod",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_maxGroupSize",
           "type": "uint256"
         },
         {
@@ -22302,48 +22092,6 @@ func init() {
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "size",
-          "type": "uint256"
-        }
-      ],
-      "name": "setMaxGroupSize",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "length",
-          "type": "uint256"
-        }
-      ],
-      "name": "setMembershipHistoryLength",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
           "name": "exponent",
           "type": "uint256"
         },
@@ -22363,21 +22111,6 @@ func init() {
       ],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getMaxGroupSize",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -22409,32 +22142,6 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "setGroupLockedGoldRequirements",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "duration",
-          "type": "uint256"
-        }
-      ],
       "name": "setValidatorLockedGoldRequirements",
       "outputs": [
         {
@@ -22450,6 +22157,21 @@ func init() {
     {
       "constant": false,
       "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lesser",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "greater",
+          "type": "address"
+        },
         {
           "internalType": "bytes",
           "name": "ecdsaPublicKey",
@@ -22502,69 +22224,12 @@ func init() {
       "constant": true,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getMembershipHistory",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        },
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
           "internalType": "uint256",
           "name": "uptime",
           "type": "uint256"
         }
       ],
       "name": "calculateEpochScore",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "uptimes",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "calculateGroupEpochScore",
       "outputs": [
         {
           "internalType": "uint256",
@@ -22632,42 +22297,6 @@ func init() {
         }
       ],
       "name": "deregisterValidator",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "affiliate",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "deaffiliate",
       "outputs": [
         {
           "internalType": "bool",
@@ -22766,152 +22395,6 @@ func init() {
         }
       ],
       "name": "updatePublicKeys",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        }
-      ],
-      "name": "registerValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
-      "name": "deregisterValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "addMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "lesser",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greater",
-          "type": "address"
-        }
-      ],
-      "name": "addFirstMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "removeMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "lesserMember",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greaterMember",
-          "type": "address"
-        }
-      ],
-      "name": "reorderMember",
       "outputs": [
         {
           "internalType": "bool",
@@ -23032,11 +22515,6 @@ func init() {
           "type": "bytes"
         },
         {
-          "internalType": "address",
-          "name": "affiliation",
-          "type": "address"
-        },
-        {
           "internalType": "uint256",
           "name": "score",
           "type": "uint256"
@@ -23045,56 +22523,30 @@ func init() {
           "internalType": "address",
           "name": "signer",
           "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "commission",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "nextCommission",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
+          "name": "nextCommissionBlock",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "slashMultiplier",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lastSlashed",
           "type": "uint256"
         }
       ],
@@ -23105,65 +22557,18 @@ func init() {
     {
       "constant": true,
       "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getGroupNumMembers",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        },
         {
           "internalType": "uint256",
           "name": "n",
           "type": "uint256"
         }
       ],
-      "name": "getTopGroupValidators",
+      "name": "getTopValidators",
       "outputs": [
         {
           "internalType": "address[]",
           "name": "",
           "type": "address[]"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address[]",
-          "name": "accounts",
-          "type": "address[]"
-        }
-      ],
-      "name": "getGroupsNumMembers",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
         }
       ],
       "payable": false,
@@ -23189,26 +22594,6 @@ func init() {
       "constant": true,
       "inputs": [],
       "name": "getValidatorLockedGoldRequirements",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getGroupLockedGoldRequirements",
       "outputs": [
         {
           "internalType": "uint256",
@@ -23257,42 +22642,6 @@ func init() {
     },
     {
       "constant": true,
-      "inputs": [],
-      "name": "getRegisteredValidatorGroups",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "isValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
       "inputs": [
         {
           "internalType": "address",
@@ -23310,63 +22659,6 @@ func init() {
       ],
       "payable": false,
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "signer",
-          "type": "address"
-        }
-      ],
-      "name": "getMembershipInLastEpochFromSigner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getMembershipInLastEpoch",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validatorAccount",
-          "type": "address"
-        }
-      ],
-      "name": "forceDeaffiliateIfValidator",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -23432,43 +22724,12 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getValidatorGroupSlashingMultiplier",
+      "name": "getValidatorSlashingMultiplier",
       "outputs": [
         {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "epochNumber",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
-      "name": "groupMembershipInEpoch",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
         }
       ],
       "payable": false,

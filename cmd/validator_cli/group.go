@@ -24,21 +24,21 @@ var (
 )
 var addFirstMemberCommand = cli.Command{
 	Name:   "addFirstMember",
-	Usage:  "add first member validator to Groups ",
+	Usage:  "add first member validator to Validators ",
 	Action: MigrateFlags(addFirstMemberToGroup),
 	Flags:  ValidatorFlags,
 }
 
 var addToGroupCommand = cli.Command{
 	Name:   "addToGroup",
-	Usage:  "add Validator to Groups ",
+	Usage:  "add Validator to Validators ",
 	Action: MigrateFlags(addValidatorToGroup),
 	Flags:  ValidatorFlags,
 }
 
 var removeMemberCommand = cli.Command{
 	Name:   "removeMember",
-	Usage:  "add Validator to Groups ",
+	Usage:  "add Validator to Validators ",
 	Action: MigrateFlags(removeMember),
 	Flags:  ValidatorFlags,
 }

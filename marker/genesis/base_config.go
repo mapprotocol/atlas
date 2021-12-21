@@ -5,7 +5,6 @@ import (
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 )
 
@@ -57,10 +56,7 @@ func BaseConfig() *Config {
 			ExchangeIdentifier:          "ExchangeEUR",
 		},
 		Validators: ValidatorsParameters{
-			GroupLockedGoldRequirements: LockedGoldRequirements{
-				Value:    bigIntStr("10000000000000000000000"), // 10k Atlas per validator
-				Duration: 180 * Day,
-			},
+
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
 				Value: bigIntStr("10000000000000000000000"), // 10k Atlas
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
@@ -69,11 +65,7 @@ func BaseConfig() *Config {
 			ValidatorScoreExponent:        10,
 			ValidatorScoreAdjustmentSpeed: fixed("0.1"),
 
-			// MUST BE KEPT IN SYNC WITH VALIDATOR LOCKED GOLD DURATION
-			MembershipHistoryLength: 60,
-
 			CommissionUpdateDelay: (3 * Day) / 5, // Approximately 3 days with 5s block times
-			MaxGroupSize:          5,
 
 			SlashingPenaltyResetPeriod: 30 * Day,
 
@@ -114,8 +106,8 @@ func BaseConfig() *Config {
 			TargetVotingGoldFraction: fixed("0.5"),
 			MaxValidatorEpochPayment: bigIntStr("205479452054794520547"), // (75,000 / 365) * 10 ^ 18
 			CommunityRewardFraction:  fixed("0.25"),
-			CarbonOffsettingPartner:  common.Address{},
-			CarbonOffsettingFraction: fixed("0.001"),
+			//CarbonOffsettingPartner:  common.Address{},
+			//CarbonOffsettingFraction: fixed("0.001"),
 
 			Frozen: false,
 		},
