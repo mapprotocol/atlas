@@ -3,20 +3,20 @@ package ethereum
 import (
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/chains/chainsdb"
+	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 	"runtime"
 	"time"
 
-	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/chains/headers/ethereum"
-	"github.com/mapprotocol/atlas/consensus/misc"
-	"github.com/mapprotocol/atlas/core/rawdb"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	ethparams "github.com/ethereum/go-ethereum/params"
+
+	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
 const (
@@ -35,6 +35,12 @@ func (v *Validate) GetCurrentHeaderNumber(chainType rawdb.ChainType) (uint64, er
 		return 0, err
 	}
 	return store.CurrentHeaderNumber(), nil
+
+	//hs := NewHeaderStore()
+	//if err := hs.Load(db); err != nil {
+	//	return 0, err
+	//}
+	//return hs.CurrentNumber(), nil
 }
 
 func (v *Validate) GetHashByNumber(chainType rawdb.ChainType, number uint64) (common.Hash, error) {
@@ -47,9 +53,15 @@ func (v *Validate) GetHashByNumber(chainType rawdb.ChainType, number uint64) (co
 		return common.Hash{}, err
 	}
 	return store.ReadCanonicalHash(number), nil
+
+	//hs := NewHeaderStore()
+	//if err := hs.Load(db); err != nil {
+	//	return common.Hash{}, err
+	//}
+	//return hs.ReadCanonicalHash(number), nil
 }
 
-func (v *Validate) ValidateHeaderChain(chainType rawdb.ChainType, chain []*ethereum.Header) (int, error) {
+func (v *Validate) ValidateHeaderChain(db vm.StateDB, chainType rawdb.ChainType, chain []*Header) (int, error) {
 	chainLength := len(chain)
 	if chainLength == 1 {
 		if chain[0].Number == nil || chain[0].Difficulty == nil {
@@ -82,7 +94,7 @@ func (v *Validate) ValidateHeaderChain(chainType rawdb.ChainType, chain []*ether
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	abort, results := v.VerifyHeaders(chain, chainType)
+	abort, results := v.VerifyHeaders(db, chain, chainType)
 	defer close(abort)
 
 	for i := range chain {
@@ -94,7 +106,7 @@ func (v *Validate) ValidateHeaderChain(chainType rawdb.ChainType, chain []*ether
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(headers []*ethereum.Header, chainType rawdb.ChainType) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(db vm.StateDB, headers []*Header, chainType rawdb.ChainType) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -112,7 +124,7 @@ func (v *Validate) VerifyHeaders(headers []*ethereum.Header, chainType rawdb.Cha
 	for i := 0; i < workers; i++ {
 		go func() {
 			for index := range inputs {
-				errors[index] = v.verifyHeaderWorker(headers, index, unixNow, chainType)
+				errors[index] = v.verifyHeaderWorker(db, headers, index, unixNow, chainType)
 				done <- index
 			}
 		}()
@@ -148,15 +160,16 @@ func (v *Validate) VerifyHeaders(headers []*ethereum.Header, chainType rawdb.Cha
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, unixNow int64, chainType rawdb.ChainType) error {
-	var parent *ethereum.Header
+func (v *Validate) verifyHeaderWorker(db vm.StateDB, headers []*Header, index int, unixNow int64, chainType rawdb.ChainType) error {
+	var parent *Header
 	if index == 0 {
-		s, err := chainsdb.GetStoreMgr(chainType)
-		if err != nil {
-			return err
-		}
-		fmt.Println(headers[0].ParentHash)
-		parent = s.ReadHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+		//s, err := chainsdb.GetStoreMgr(chainType)
+		//if err != nil {
+		//	return err
+		//}
+		//parent = s.ReadHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+		// todo
+
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
 	}
@@ -166,10 +179,10 @@ func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, uni
 	return v.verifyHeader(headers[index], parent, false, unixNow, chainType)
 }
 
-func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, unixNow int64, chainType rawdb.ChainType) error {
+func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int64, chainType rawdb.ChainType) error {
 	// Ensure that the header's extra-data section is of a reasonable size
-	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
-		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
+	if uint64(len(header.Extra)) > ethparams.MaximumExtraDataSize {
+		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), ethparams.MaximumExtraDataSize)
 	}
 	// Verify the header's timestamp
 	if !uncle {
@@ -180,6 +193,7 @@ func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, uni
 	if header.Time <= parent.Time {
 		return errOlderBlockTime
 	}
+	// todo
 	// Verify the block's difficulty based on its timestamp and parent's difficulty
 	//expected := v.CalcDifficulty(chain, header.Time, parent)
 	//if expected.Cmp(header.Difficulty) != 0 {
@@ -198,7 +212,7 @@ func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, uni
 
 	// Verify the block's gas usage and (if applicable) verify the base fee.
 	lb, _ := chains.ChainType2LondonBlock(chainType)
-	cfg := &params.ChainConfig{LondonBlock: lb}
+	cfg := &ethparams.ChainConfig{LondonBlock: lb}
 	if !cfg.IsLondon(header.Number) {
 		// Verify BaseFee not present before EIP-1559 fork.
 		if header.BaseFee != nil {
@@ -219,11 +233,11 @@ func (v *Validate) verifyHeader(header, parent *ethereum.Header, uncle bool, uni
 	return nil
 }
 
-func VerifyEip1559Header(config *params.ChainConfig, parent, header *ethereum.Header) error {
+func VerifyEip1559Header(config *ethparams.ChainConfig, parent, header *Header) error {
 	// Verify that the gas limit remains within allowed bounds
 	parentGasLimit := parent.GasLimit
 	if !config.IsLondon(parent.Number) {
-		parentGasLimit = parent.GasLimit * params.ElasticityMultiplier
+		parentGasLimit = parent.GasLimit * ethparams.ElasticityMultiplier
 	}
 	if err := misc.VerifyGaslimit(parentGasLimit, header.GasLimit); err != nil {
 		return err
@@ -242,16 +256,16 @@ func VerifyEip1559Header(config *params.ChainConfig, parent, header *ethereum.He
 }
 
 // CalcBaseFee calculates the basefee of the header.
-func CalcBaseFee(config *params.ChainConfig, parent *ethereum.Header) *big.Int {
+func CalcBaseFee(config *ethparams.ChainConfig, parent *Header) *big.Int {
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
 	if !config.IsLondon(parent.Number) {
-		return new(big.Int).SetUint64(params.InitialBaseFee)
+		return new(big.Int).SetUint64(ethparams.InitialBaseFee)
 	}
 
 	var (
-		parentGasTarget          = parent.GasLimit / params.ElasticityMultiplier
+		parentGasTarget          = parent.GasLimit / ethparams.ElasticityMultiplier
 		parentGasTargetBig       = new(big.Int).SetUint64(parentGasTarget)
-		baseFeeChangeDenominator = new(big.Int).SetUint64(params.BaseFeeChangeDenominator)
+		baseFeeChangeDenominator = new(big.Int).SetUint64(ethparams.BaseFeeChangeDenominator)
 	)
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {

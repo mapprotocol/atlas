@@ -1,6 +1,7 @@
 package chains
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/mapprotocol/atlas/core/rawdb"
@@ -31,9 +32,6 @@ var ChainTypeList = []rawdb.ChainType{
 }
 
 var chainType2ChainGroup = map[rawdb.ChainType]ChainGroup{
-	ChainTypeMAP:     ChainGroupMAP,
-	ChainTypeMAPTest: ChainGroupMAP,
-	ChainTypeMAPDev:  ChainGroupMAP,
 	ChainTypeETH:     ChainGroupETH,
 	ChainTypeETHDev:  ChainGroupETH,
 	ChainTypeETHTest: ChainGroupETH,
@@ -43,6 +41,12 @@ var chainType2LondonBlock = map[rawdb.ChainType]*big.Int{
 	ChainTypeETH:     big.NewInt(12_965_000),
 	ChainTypeETHTest: big.NewInt(10_499_401),
 }
+
+
+var (
+	EthereumHeaderStoreAddress    = common.BytesToAddress([]byte("EthereumHeaderStoreAddress"))
+	EthereumHeaderSyncInfoAddress = common.BytesToAddress([]byte("EthereumHeaderSyncInfoAddress"))
+)
 
 type ChainGroup uint64
 

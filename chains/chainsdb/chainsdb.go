@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/node"
 	"gopkg.in/urfave/cli.v1"
 
-	"github.com/mapprotocol/atlas/chains/headers/ethereum"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/core/rawdb"
 )
 

@@ -23,7 +23,6 @@ import (
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/chains/txverify"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	atlastypes "github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
@@ -206,7 +205,7 @@ func TestReceiptsRootAndProof(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
 
-	v, err := txverify.Factory(group)
+	v, err := chains.VerifyFactory(group)
 	if err != nil {
 		t.Fatal(err)
 	}
