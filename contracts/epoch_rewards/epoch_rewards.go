@@ -39,16 +39,14 @@ func UpdateTargetVotingYield(vmRunner vm.EVMRunner) error {
 
 // Returns the per validator epoch reward, the total voter reward, the total community reward, and
 // the total carbon offsetting partner award, for the epoch.
-func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
-	var validatorEpochReward *big.Int
-	var totalVoterRewards *big.Int
+func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, error) {
+	var validatorVoterEpochReward *big.Int
 	var totalCommunityReward *big.Int
-	var totalCarbonOffsettingPartnerReward *big.Int
-	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorEpochReward, &totalVoterRewards, &totalCommunityReward, &totalCarbonOffsettingPartnerReward})
+	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorVoterEpochReward, &totalCommunityReward})
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, err
 	}
-	return validatorEpochReward, totalVoterRewards, totalCommunityReward, totalCarbonOffsettingPartnerReward, nil
+	return validatorVoterEpochReward, totalCommunityReward, nil
 }
 
 // Determines if the reserve is below it's critical threshold
