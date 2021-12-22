@@ -75,33 +75,32 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	//	return err
 	//}
 
-	validatorReward, totalVoterRewards, communityReward, carbonOffsettingPartnerReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
+	validatorVoterReward, communityReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
 	if err != nil {
 		return err
 	}
 
 	if carbonOffsettingPartnerAddress == params.ZeroAddress {
-		carbonOffsettingPartnerReward = big.NewInt(0)
+		communityReward = big.NewInt(0)
 	}
 
-	logger.Debug("Calculated target rewards", "validatorReward", validatorReward, "totalVoterRewards", totalVoterRewards, "communityReward", communityReward)
+	logger.Debug("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward)
 
 	// The validator set that signs off on the last block of the epoch is the one that we need to
 	// iterate over.
 	valSet := sb.GetValidators(big.NewInt(header.Number.Int64()-1), header.ParentHash)
 	if len(valSet) == 0 {
-
 		err := errors.New("Unable to fetch validator set to update scores and distribute rewards")
 		logger.Error(err.Error())
 		return err
 	}
 
-	uptimes, err := sb.updateValidatorScores(header, state, valSet)
+	_, err = sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
 		return err
 	}
 
-	totalValidatorRewards, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorReward)
+	totalValidatorRewards, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward)
 	if err != nil {
 		return err
 	}
@@ -123,17 +122,17 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	if err = gold_token.Mint(vmRunner, reserveAddress, totalValidatorRewardsConvertedToMAP); err != nil {
 		return err
 	}
+	//
+	//if err := sb.distributeCommunityRewards(vmRunner, communityReward); err != nil {
+	//	return err
+	//}
 
-	if err := sb.distributeCommunityRewards(vmRunner, communityReward); err != nil {
-		return err
-	}
+	//if err := sb.distributeVoterRewards(vmRunner, valSet, totalVoterRewards, uptimes); err != nil {
+	//	return err
+	//}
 
-	if err := sb.distributeVoterRewards(vmRunner, valSet, totalVoterRewards, uptimes); err != nil {
-		return err
-	}
-
-	if carbonOffsettingPartnerReward.Cmp(new(big.Int)) != 0 {
-		if err = gold_token.Mint(vmRunner, carbonOffsettingPartnerAddress, carbonOffsettingPartnerReward); err != nil {
+	if communityReward.Cmp(new(big.Int)) != 0 {
+		if err = gold_token.Mint(vmRunner, carbonOffsettingPartnerAddress, communityReward); err != nil {
 			return err
 		}
 	}

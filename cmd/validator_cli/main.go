@@ -149,6 +149,7 @@ func init() {
 		voteValidatorCommand,
 		getValidatorEligibilityCommand,
 		getTotalVotesForVCommand,
+		getBalanceVCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))

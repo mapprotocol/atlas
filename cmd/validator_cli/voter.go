@@ -32,6 +32,13 @@ var getTotalVotesForVCommand = cli.Command{
 	Flags:  ValidatorFlags,
 }
 
+var getBalanceVCommand = cli.Command{
+	Name:   "balanceOf",
+	Usage:  "Gets the balance of the specified address using the presently stored inflation factor.",
+	Action: MigrateFlags(balanceOf),
+	Flags:  ValidatorFlags,
+}
+
 func vote(ctx *cli.Context) error {
 	//------------------ pre set --------------------------
 	path := ""
@@ -145,6 +152,48 @@ func getValidatorEligibility(ctx *cli.Context) error {
 
 	var ret bool
 	err = abiElection.UnpackIntoInterface(&ret, methodName, output)
+	if err != nil {
+		log.Error("method UnpackIntoInterface", "error", err)
+		return nil
+	}
+
+	fmt.Println(ret)
+
+	return nil
+}
+
+//StableToken
+func balanceOf(ctx *cli.Context) error {
+	//--------------------------- pre set -------------------------------------------
+	path := ""
+	validatorAddr := params.ZeroAddress
+	password = "111111"
+	//-------------------------------------------------------------------------------
+
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(AddressFlag.Name) {
+		validatorAddr = common.HexToAddress(ctx.GlobalString(AddressFlag.Name))
+	}
+	methodName := "balanceOf"
+	loadPrivateKey(path)
+	conn, _ := dialConn(ctx)
+	header, err := conn.HeaderByNumber(context.Background(), nil)
+
+	log.Info("=== balanceOf admin", "obj", from)
+	input := packInput(abiStableToken, methodName, validatorAddr)
+	msg := ethchain.CallMsg{From: from, To: &StableTokenAddress, Data: input}
+	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		log.Error("method CallContract error", "error", err)
+	}
+
+	var ret *big.Int
+	err = abiStableToken.UnpackIntoInterface(&ret, methodName, output)
 	if err != nil {
 		log.Error("method UnpackIntoInterface", "error", err)
 		return nil
