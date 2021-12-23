@@ -3,7 +3,6 @@ package ethereum
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 	mrand "math/rand"
 	"sort"
@@ -14,6 +13,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/tools"
 )
 
@@ -89,7 +89,7 @@ func CloneHeaderStore(src *HeaderStore) (dst *HeaderStore, err error) {
 	return dst, nil
 }
 
-func (hs *HeaderStore) Store(state vm.StateDB) error {
+func (hs *HeaderStore) Store(state types.StateDB) error {
 	var (
 		address = chains.EthereumHeaderStoreAddress
 		key     = common.BytesToHash(address[:])
@@ -112,7 +112,7 @@ func (hs *HeaderStore) Store(state vm.StateDB) error {
 	return nil
 }
 
-func (hs *HeaderStore) Load(state vm.StateDB) (err error) {
+func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	var (
 		h       HeaderStore
 		address = chains.EthereumHeaderStoreAddress

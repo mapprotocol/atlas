@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"errors"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	"math/big"
 	"strings"
 
@@ -123,7 +124,7 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 		return nil, err
 	}
 
-	v, err := chains.VerifyFactory(group)
+	v, err := interfaces.VerifyFactory(group)
 	if err != nil {
 		return nil, err
 	}

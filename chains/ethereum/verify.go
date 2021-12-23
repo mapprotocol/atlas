@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 
-	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
@@ -120,15 +119,16 @@ func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *
 }
 
 func (v *Verify) getReceiptsRoot(chain rawdb.ChainType, blockNumber uint64) (common.Hash, error) {
-	store, err := chainsdb.GetStoreMgr(chain)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	header := store.GetHeaderByNumber(blockNumber)
-	if header == nil {
-		return common.Hash{}, fmt.Errorf("get header by number failed, number: %d", blockNumber)
-	}
-	return header.ReceiptHash, nil
+	//store, err := chainsdb.GetStoreMgr(chain)
+	//if err != nil {
+	//	return common.Hash{}, err
+	//}
+	//header := store.GetHeaderByNumber(blockNumber)
+	//if header == nil {
+	//	return common.Hash{}, fmt.Errorf("get header by number failed, number: %d", blockNumber)
+	//}
+	//return header.ReceiptHash, nil
+	return common.Hash{}, nil
 }
 
 func (v *Verify) verifyProof(receiptsRoot common.Hash, txProve *TxProve) error {

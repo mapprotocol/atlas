@@ -97,7 +97,7 @@ func (bc *testBlockChain) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent)
 	return bc.chainHeadFeed.Subscribe(ch)
 }
 
-func (bc *testBlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner {
+func (bc *testBlockChain) NewEVMRunner(header *types.Header, state types.StateDB) vm.EVMRunner {
 	return nil
 }
 

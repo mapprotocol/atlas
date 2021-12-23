@@ -1451,7 +1451,7 @@ func (bc *BlockChain) writeKnownBlock(block *types.Block) error {
 }
 
 // NewEVMRunner creates the System's EVMRunner for given header & sttate
-func (bc *BlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner {
+func (bc *BlockChain) NewEVMRunner(header *types.Header, state types.StateDB) vm.EVMRunner {
 	return vmcontext.NewEVMRunner(bc, header, state)
 }
 

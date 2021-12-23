@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/contracts/abis"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 )
 
@@ -69,7 +70,7 @@ func (ev *MockEVMRunner) StartGasMetering() {
 }
 
 // GetStateDB implements Backend.GetStateDB
-func (ev *MockEVMRunner) GetStateDB() vm.StateDB {
+func (ev *MockEVMRunner) GetStateDB() types.StateDB {
 	return &mockStateDB{
 		isContract: func(a common.Address) bool {
 			_, ok := ev.contracts[a]

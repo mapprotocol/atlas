@@ -60,9 +60,9 @@ type StateTransition struct {
 	gasTipCap  *big.Int
 	initialGas uint64
 	value      *big.Int
-	data       []byte
-	state      vm.StateDB
-	evm        *vm.EVM
+	data  []byte
+	state types.StateDB
+	evm   *vm.EVM
 }
 
 // Message represents a message sent to a contract.

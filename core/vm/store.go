@@ -7,12 +7,13 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/mapprotocol/atlas/params"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -88,7 +89,7 @@ func DeepCopy(src, dst interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (h *HeaderStore) Store(state StateDB, address common.Address) error {
+func (h *HeaderStore) Store(state types.StateDB, address common.Address) error {
 	key := common.BytesToHash(address[:])
 	data, err := rlp.EncodeToBytes(h)
 	if err != nil {
@@ -107,7 +108,7 @@ func (h *HeaderStore) Store(state StateDB, address common.Address) error {
 	return nil
 }
 
-func (h *HeaderStore) Load(state StateDB, address common.Address) (err error) {
+func (h *HeaderStore) Load(state types.StateDB, address common.Address) (err error) {
 	key := common.BytesToHash(address[:])
 	data := state.GetPOWState(address, key)
 	var hs HeaderStore
@@ -245,7 +246,7 @@ func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.
 	return rewards
 }
 
-func HistoryWorkEfficiency(state StateDB, epochId uint64, relayer common.Address) (uint64, error) {
+func HistoryWorkEfficiency(state types.StateDB, epochId uint64, relayer common.Address) (uint64, error) {
 	headerStore := NewHeaderStore()
 	err := headerStore.Load(state, params.HeaderStoreAddress)
 	if err != nil {

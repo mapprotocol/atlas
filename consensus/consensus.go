@@ -208,7 +208,7 @@ type ChainContext interface {
 	NewEVMRunnerForCurrentBlock() (vm.EVMRunner, error)
 
 	// NewEVMRunner creates the System's EVMRunner for given header & sttate
-	NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner
+	NewEVMRunner(header *types.Header, state types.StateDB) vm.EVMRunner
 }
 
 // Handler should be implemented if the consensus needs to handle and send peer messages

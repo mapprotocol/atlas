@@ -12,9 +12,9 @@ type StoreLoad interface {
 
 type IHeaderStore interface {
 	StoreLoad
-	CurrentNumber() uint64
-	Push(v interface{}) error
-	GetHeaderByNumber(number uint64) interface{}
+	//CurrentNumber() uint64
+	//Push(v interface{}) error
+	//GetHeaderByNumber(number uint64) interface{}
 }
 
 func HeaderStoreFactory(group chains.ChainGroup) (IHeaderStore, error) {

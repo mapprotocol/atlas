@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 	"io"
 	"math/big"
@@ -678,7 +679,7 @@ func (i *RegisterImpl) move(prev, next, effectHeight uint64) error {
 ////////////// external function //////////////////////////////////////////
 
 // DoElections called by consensus while it closer the end of epoch
-func (i *RegisterImpl) DoElections(state StateDB, epochid, height uint64) ([]*RegisterAccount, error) {
+func (i *RegisterImpl) DoElections(state types.StateDB, epochid, height uint64) ([]*RegisterAccount, error) {
 
 	cur := GetEpochFromID(i.curEpochID)
 	if i.curEpochID == params.FirstNewEpochID && height == 0 {
@@ -979,7 +980,7 @@ func (i *RegisterImpl) MakeModifyStateByTip10() {
 /////////////////////////////////////////////////////////////////////////////////
 // storage layer
 
-func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
+func (i *RegisterImpl) Save(state types.StateDB, preAddress common.Address) error {
 	key := common.BytesToHash(preAddress[:])
 	data, err := rlp.EncodeToBytes(i)
 	if err != nil {
@@ -993,7 +994,7 @@ func (i *RegisterImpl) Save(state StateDB, preAddress common.Address) error {
 	}
 	return err
 }
-func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
+func (i *RegisterImpl) Load(state types.StateDB, preAddress common.Address) error {
 	var temp RegisterImpl
 	key := common.BytesToHash(preAddress[:])
 	data := state.GetPOWState(preAddress, key)
@@ -1015,7 +1016,7 @@ func (i *RegisterImpl) Load(state StateDB, preAddress common.Address) error {
 	return nil
 }
 
-func GetCurrentRelayer(state StateDB) []*params.RelayerMember {
+func GetCurrentRelayer(state types.StateDB) []*params.RelayerMember {
 	i := NewRegisterImpl()
 	i.Load(state, params.RelayerAddress)
 	eid := i.getCurrentEpoch()
@@ -1033,7 +1034,7 @@ func GetCurrentRelayer(state StateDB) []*params.RelayerMember {
 	return vv
 }
 
-func IsInCurrentEpoch(state StateDB, relayer common.Address) bool {
+func IsInCurrentEpoch(state types.StateDB, relayer common.Address) bool {
 	relayers := GetCurrentRelayer(state)
 	for _, r := range relayers {
 		if bytes.Equal(r.Coinbase.Bytes(), relayer.Bytes()) {
@@ -1043,7 +1044,7 @@ func IsInCurrentEpoch(state StateDB, relayer common.Address) bool {
 	return false
 }
 
-func GetRelayersByEpoch(state StateDB, eid, hh uint64) []*params.RelayerMember {
+func GetRelayersByEpoch(state types.StateDB, eid, hh uint64) []*params.RelayerMember {
 	i := NewRegisterImpl()
 	err := i.Load(state, params.RelayerAddress)
 	accs := i.getElections2(eid)

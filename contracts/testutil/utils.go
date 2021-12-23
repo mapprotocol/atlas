@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts/abi"
-	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // decapitalise makes a camel-case string which starts with a lower case character.
@@ -19,7 +19,7 @@ func decapitalise(input string) string {
 }
 
 type mockStateDB struct {
-	vm.StateDB
+	types.StateDB
 	isContract func(common.Address) bool
 }
 

@@ -3,8 +3,6 @@ package ethereum
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 	"runtime"
 	"time"
@@ -17,6 +15,7 @@ import (
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 const (
@@ -26,42 +25,44 @@ const (
 type Validate struct{}
 
 func (v *Validate) GetCurrentHeaderNumber(chainType rawdb.ChainType) (uint64, error) {
-	if !chains.IsSupportedChain(chainType) {
-		return 0, errNotSupportChain
-	}
-
-	store, err := chainsdb.GetStoreMgr(chainType)
-	if err != nil {
-		return 0, err
-	}
-	return store.CurrentHeaderNumber(), nil
+	//if !chains.IsSupportedChain(chainType) {
+	//	return 0, errNotSupportChain
+	//}
+	//
+	//store, err := chainsdb.GetStoreMgr(chainType)
+	//if err != nil {
+	//	return 0, err
+	//}
+	//return store.CurrentHeaderNumber(), nil
 
 	//hs := NewHeaderStore()
 	//if err := hs.Load(db); err != nil {
 	//	return 0, err
 	//}
 	//return hs.CurrentNumber(), nil
+	return 0, nil
 }
 
 func (v *Validate) GetHashByNumber(chainType rawdb.ChainType, number uint64) (common.Hash, error) {
-	if !chains.IsSupportedChain(chainType) {
-		return common.Hash{}, errNotSupportChain
-	}
-
-	store, err := chainsdb.GetStoreMgr(chainType)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return store.ReadCanonicalHash(number), nil
+	//if !chains.IsSupportedChain(chainType) {
+	//	return common.Hash{}, errNotSupportChain
+	//}
+	//
+	//store, err := chainsdb.GetStoreMgr(chainType)
+	//if err != nil {
+	//	return common.Hash{}, err
+	//}
+	//return store.ReadCanonicalHash(number), nil
 
 	//hs := NewHeaderStore()
 	//if err := hs.Load(db); err != nil {
 	//	return common.Hash{}, err
 	//}
 	//return hs.ReadCanonicalHash(number), nil
+	return common.Hash{}, nil
 }
 
-func (v *Validate) ValidateHeaderChain(db vm.StateDB, chainType rawdb.ChainType, chain []*Header) (int, error) {
+func (v *Validate) ValidateHeaderChain(db types.StateDB, chainType rawdb.ChainType, chain []*Header) (int, error) {
 	chainLength := len(chain)
 	if chainLength == 1 {
 		if chain[0].Number == nil || chain[0].Difficulty == nil {
@@ -106,7 +107,7 @@ func (v *Validate) ValidateHeaderChain(db vm.StateDB, chainType rawdb.ChainType,
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(db vm.StateDB, headers []*Header, chainType rawdb.ChainType) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header, chainType rawdb.ChainType) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -160,7 +161,7 @@ func (v *Validate) VerifyHeaders(db vm.StateDB, headers []*Header, chainType raw
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(db vm.StateDB, headers []*Header, index int, unixNow int64, chainType rawdb.ChainType) error {
+func (v *Validate) verifyHeaderWorker(db types.StateDB, headers []*Header, index int, unixNow int64, chainType rawdb.ChainType) error {
 	var parent *Header
 	if index == 0 {
 		//s, err := chainsdb.GetStoreMgr(chainType)

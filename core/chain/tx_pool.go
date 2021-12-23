@@ -151,7 +151,7 @@ type blockChain interface {
 	GetBlock(hash common.Hash, number uint64) *types.Block
 	StateAt(root common.Hash) (*state.StateDB, error)
 
-	NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner
+	NewEVMRunner(header *types.Header, state types.StateDB) vm.EVMRunner
 	SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
 }
 

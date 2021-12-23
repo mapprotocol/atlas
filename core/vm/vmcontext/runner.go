@@ -26,7 +26,7 @@ type evmRunnerContext interface {
 	State() (*state.StateDB, error)
 }
 
-func NewEVMRunner(chain evmRunnerContext, header *types.Header, state vm.StateDB) vm.EVMRunner {
+func NewEVMRunner(chain evmRunnerContext, header *types.Header, state types.StateDB) vm.EVMRunner {
 
 	return &evmRunner{
 		state: state,
@@ -41,7 +41,7 @@ func NewEVMRunner(chain evmRunnerContext, header *types.Header, state vm.StateDB
 
 type evmRunner struct {
 	newEVM func(from common.Address) *vm.EVM
-	state  vm.StateDB
+	state  types.StateDB
 
 	dontMeterGas bool
 }
@@ -82,7 +82,7 @@ func (ev *evmRunner) StartGasMetering() {
 }
 
 // GetStateDB implements Backend.GetStateDB
-func (ev *evmRunner) GetStateDB() vm.StateDB {
+func (ev *evmRunner) GetStateDB() types.StateDB {
 	return ev.state
 }
 

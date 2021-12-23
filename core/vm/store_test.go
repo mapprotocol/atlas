@@ -3,6 +3,7 @@ package vm
 import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
@@ -615,7 +616,7 @@ func getStateDB() *state.StateDB {
 
 func TestHeaderStore_Store(t *testing.T) {
 	type args struct {
-		state   StateDB
+		state   types.StateDB
 		address common.Address
 	}
 	tests := []struct {
@@ -656,14 +657,14 @@ func TestHeaderStore_Store(t *testing.T) {
 
 func TestHeaderStore_Load(t *testing.T) {
 	type args struct {
-		state   StateDB
+		state   types.StateDB
 		address common.Address
 	}
 	tests := []struct {
 		name    string
 		hs      *HeaderStore
 		args    args
-		before  func(hs *HeaderStore, state StateDB)
+		before  func(hs *HeaderStore, state types.StateDB)
 		after   func(hs *HeaderStore)
 		wantErr bool
 	}{
@@ -685,7 +686,7 @@ func TestHeaderStore_Load(t *testing.T) {
 				state:   getStateDB(),
 				address: params.HeaderStoreAddress,
 			},
-			before: func(hs *HeaderStore, state StateDB) {
+			before: func(hs *HeaderStore, state types.StateDB) {
 				_ = hs.Store(state, params.HeaderStoreAddress)
 			},
 			after: func(hs *HeaderStore) {
@@ -713,7 +714,7 @@ func TestHeaderStore_Load(t *testing.T) {
 				state:   getStateDB(),
 				address: params.HeaderStoreAddress,
 			},
-			before: func(hs *HeaderStore, state StateDB) {
+			before: func(hs *HeaderStore, state types.StateDB) {
 				_ = hs.Store(state, params.HeaderStoreAddress)
 				// remove cache
 				key := common.BytesToHash(params.HeaderStoreAddress[:])
@@ -743,7 +744,7 @@ func TestHeaderStore_Load(t *testing.T) {
 
 func TestHistoryWorkEfficiency(t *testing.T) {
 	type args struct {
-		state   StateDB
+		state   types.StateDB
 		epochId uint64
 		relayer common.Address
 	}
