@@ -422,7 +422,10 @@ func DefaultTestnetGenesisBlock() *Genesis {
 	}
 	// faucet
 	dr[faucetAddr] = GenesisAccount{Balance: faucetBalance}
-
+	ga := genesisRegisterProxyContract()
+	for k, v := range ga {
+		dr[k] = v
+	}
 	return &Genesis{
 		Config:    params.TestnetConfig,
 		Nonce:     66,
