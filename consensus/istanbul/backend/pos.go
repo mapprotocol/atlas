@@ -27,11 +27,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
-	"github.com/mapprotocol/atlas/contracts"
-	"github.com/mapprotocol/atlas/contracts/currency"
-	"github.com/mapprotocol/atlas/contracts/election"
 	"github.com/mapprotocol/atlas/contracts/epoch_rewards"
-	"github.com/mapprotocol/atlas/contracts/freezer"
 	"github.com/mapprotocol/atlas/contracts/gold_token"
 	"github.com/mapprotocol/atlas/contracts/validators"
 	"github.com/mapprotocol/atlas/core/state"
@@ -46,40 +42,18 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	logger := sb.logger.New("func", "Backend.distributeEpochPaymentsAndRewards", "blocknum", header.Number.Uint64())
 
 	vmRunner := sb.chain.NewEVMRunner(header, state)
-	// Check if reward distribution has been frozen and return early without error if it is.
-	if frozen, err := freezer.IsFrozen(vmRunner, params.EpochRewardsRegistryId); err != nil {
-		logger.Warn("Failed to determine if epoch rewards are frozen", "err", err)
-	} else if frozen {
-		logger.Debug("Epoch rewards are frozen, skipping distribution")
-		return nil
-	}
 
-	// Get necessary Addresses First
-	reserveAddress, err := contracts.GetRegisteredAddress(vmRunner, params.ReserveRegistryId)
+	communityPartnerAddress, err := epoch_rewards.GetCommunityPartnerAddress(vmRunner)
 	if err != nil {
 		return err
 	}
-	stableTokenAddress, err := contracts.GetRegisteredAddress(vmRunner, params.StableTokenRegistryId)
-	if err != nil {
-		return err
-	}
-
-	carbonOffsettingPartnerAddress, err := epoch_rewards.GetCarbonOffsettingPartnerAddress(vmRunner)
-	if err != nil {
-		return err
-	}
-
-	//err = epoch_rewards.UpdateTargetVotingYield(vmRunner)
-	//if err != nil {
-	//	return err
-	//}
 
 	validatorVoterReward, communityReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
 	if err != nil {
 		return err
 	}
 
-	if carbonOffsettingPartnerAddress == params.ZeroAddress {
+	if communityPartnerAddress == params.ZeroAddress {
 		communityReward = big.NewInt(0)
 	}
 
@@ -99,39 +73,15 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
+	// Reward Validators And voters
 	totalValidatorRewards, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward)
 	if err != nil {
 		return err
 	}
-
-	// TODO(HF) Use vmRunner instead of current block's one
-	currentBlockVMRunner, err := sb.chain.NewEVMRunnerForCurrentBlock()
-	if err != nil {
-		return err
-	}
-	currencyManager := currency.NewManager(currentBlockVMRunner)
-
-	// Validator rewards were paid in cUSD, convert that amount to MAP and add it to the Reserve
-	stableTokenCurrency, err := currencyManager.GetCurrency(&stableTokenAddress)
-	if err != nil {
-		return err
-	}
-	totalValidatorRewardsConvertedToMAP := stableTokenCurrency.ToMAP(totalValidatorRewards)
-
-	if err = gold_token.Mint(vmRunner, reserveAddress, totalValidatorRewardsConvertedToMAP); err != nil {
-		return err
-	}
-	//
-	//if err := sb.distributeCommunityRewards(vmRunner, communityReward); err != nil {
-	//	return err
-	//}
-
-	//if err := sb.distributeVoterRewards(vmRunner, valSet, totalVoterRewards, uptimes); err != nil {
-	//	return err
-	//}
+	log.Info("totalValidatorRewards", "maxReward", totalValidatorRewards.String())
 
 	if communityReward.Cmp(new(big.Int)) != 0 {
-		if err = gold_token.Mint(vmRunner, carbonOffsettingPartnerAddress, communityReward); err != nil {
+		if err = gold_token.Mint(vmRunner, communityPartnerAddress, communityReward); err != nil {
 			return err
 		}
 	}
@@ -181,63 +131,6 @@ func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, valSet []is
 		totalValidatorRewards.Add(totalValidatorRewards, validatorReward)
 	}
 	return totalValidatorRewards, nil
-}
-
-func (sb *Backend) distributeCommunityRewards(vmRunner vm.EVMRunner, communityReward *big.Int) error {
-	governanceAddress, err := contracts.GetRegisteredAddress(vmRunner, params.GovernanceRegistryId)
-	if err != nil {
-		return err
-	}
-	reserveAddress, err := contracts.GetRegisteredAddress(vmRunner, params.ReserveRegistryId)
-	if err != nil {
-		return err
-	}
-	lowReserve, err := epoch_rewards.IsReserveLow(vmRunner)
-	if err != nil {
-		return err
-	}
-
-	if lowReserve && reserveAddress != params.ZeroAddress {
-		return gold_token.Mint(vmRunner, reserveAddress, communityReward)
-	} else if governanceAddress != params.ZeroAddress {
-		// TODO: How to split eco fund here
-		return gold_token.Mint(vmRunner, governanceAddress, communityReward)
-	}
-	return nil
-}
-
-func (sb *Backend) distributeVoterRewards(vmRunner vm.EVMRunner, valSet []istanbul.Validator, maxTotalRewards *big.Int, uptimes []*big.Int) error {
-
-	lockedGoldAddress, err := contracts.GetRegisteredAddress(vmRunner, params.LockedGoldRegistryId)
-	if err != nil {
-		return err
-	} else if lockedGoldAddress == params.ZeroAddress {
-		return errors.New("Unable to fetch locked gold address for epoch rewards distribution")
-	}
-
-	// Select groups that elected at least one validator aggregate their uptimes.
-	var groups []common.Address
-	groupUptimes := make(map[common.Address][]*big.Int)
-	groupElectedValidator := make(map[common.Address]bool)
-	for i, val := range valSet {
-		group, err := validators.GetMembershipInLastEpoch(vmRunner, val.Address())
-		if err != nil {
-			return err
-		}
-		if _, ok := groupElectedValidator[group]; !ok {
-			groups = append(groups, group)
-			sb.logger.Debug("Group elected validator", "group", group.String())
-		}
-		groupElectedValidator[group] = true
-		groupUptimes[group] = append(groupUptimes[group], uptimes[i])
-	}
-
-	electionRewards, err := election.DistributeEpochRewards(vmRunner, groups, maxTotalRewards, groupUptimes)
-	if err != nil {
-		return err
-	}
-
-	return gold_token.Mint(vmRunner, lockedGoldAddress, electionRewards)
 }
 
 func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) error {

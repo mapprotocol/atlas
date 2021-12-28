@@ -210,6 +210,10 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt, randomnes
 	if len(receipts) == 0 {
 		b.header.ReceiptHash = EmptyRootHash
 	} else {
+		for _, v := range Receipts(receipts) {
+			fmt.Println("=== Receipts Logs ===", v.Logs)
+		}
+
 		b.header.ReceiptHash = DeriveSha(Receipts(receipts), trie.NewStackTrie(nil))
 		b.header.Bloom = CreateBloom(receipts)
 	}
