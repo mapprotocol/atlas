@@ -15,7 +15,6 @@ import (
 	"github.com/mapprotocol/atlas/marker/contract"
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/shopspring/decimal"
 )
 
 var (
@@ -84,9 +83,7 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		ctx.deployLibraries,
 		// 01 Registry
 		ctx.deployRegistry,
-		// 02 Freezer
-		ctx.deployFreezer,
-		//
+
 		//// 03 TransferWhitelist
 		//ctx.deployTransferWhitelist,
 		//
@@ -95,21 +92,14 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		//
 		// 04 GoldToken
 		ctx.deployGoldToken,
-		//
-		// 05 SortedOracles
-		ctx.deploySortedOracles,
 
 		//// 06 GasPriceMinimum
 		//ctx.deployGasPriceMinimum,
-		//
-		// 07 Reserve
-		ctx.deployReserve,
+
 		//
 		//// 08 ReserveSpenderMultisig (requires reserve to work)
 		//ctx.deployReserveSpenderMultisig,
-		//
-		// 09 StableToken and StableTokenEUR
-		ctx.deployStableTokens,
+
 		//
 		//// 10 Exchange and ExchangeEUR
 		//ctx.deployExchanges,
@@ -151,10 +141,10 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		//ctx.deployDowntimeSlasher,
 		//
 		// 23 GovernanceApproverMultiSig
-		ctx.deployGovernanceApproverMultiSig,
+		//ctx.deployGovernanceApproverMultiSig,
 		//
 		// 24 Governance
-		ctx.deployGovernance,
+		//ctx.deployGovernance,
 
 		// 25 Elect Validators
 		ctx.electValidators,
@@ -214,6 +204,12 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 // Initialize AdminAT
 func (ctx *deployContext) fundAdminAccount() {
 	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
+	// validators
+	ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -243,7 +239,8 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 
 	logger.Info("Set proxy implementation")
 	proxyContract := ctx.proxyContract(name)
-
+	fmt.Println("name:", name)
+	fmt.Println("implAddress:", implAddress)
 	if err := proxyContract.SimpleCall("_setImplementation", implAddress); err != nil {
 		return err
 	}
@@ -389,12 +386,6 @@ func (ctx *deployContext) deployBlockchainParameters() error {
 	})
 }
 
-func (ctx *deployContext) deployFreezer() error {
-	return ctx.deployCoreContract("Freezer", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize")
-	})
-}
-
 func (ctx *deployContext) deployGovernanceSlasher() error {
 	err := ctx.deployCoreContract("GovernanceSlasher", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
@@ -444,21 +435,6 @@ func (ctx *deployContext) deployDowntimeSlasher() error {
 	return ctx.addSlasher("DowntimeSlasher")
 }
 
-func (ctx *deployContext) deployAttestations() error {
-	return ctx.deployCoreContract("Attestations", func(contract *contract.EVMBackend) error {
-		dollar := decimal.NewFromBigInt(common.Big1, int32(ctx.genesisConfig.StableToken.Decimals))
-		fee := dollar.Mul(ctx.genesisConfig.Attestations.AttestationRequestFeeInDollars)
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			newBigInt(ctx.genesisConfig.Attestations.AttestationExpiryBlocks),
-			newBigInt(ctx.genesisConfig.Attestations.SelectIssuersWaitBlocks),
-			newBigInt(ctx.genesisConfig.Attestations.MaxAttestations),
-			[]common.Address{env.MustProxyAddressFor("StableToken")},
-			[]*big.Int{fee.BigInt()},
-		)
-	})
-}
-
 func (ctx *deployContext) deployEscrow() error {
 	return ctx.deployCoreContract("Escrow", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize", env.MustProxyAddressFor("Registry"))
@@ -494,60 +470,13 @@ func (ctx *deployContext) deployGoldToken() error {
 	return nil
 }
 
-func (ctx *deployContext) deployExchanges() error {
-	type ExchangeConfig struct {
-		contract            string
-		stableTokenContract string
-		cfg                 ExchangeParameters
-	}
-	exchanges := []ExchangeConfig{
-		{"Exchange", "StableToken", ctx.genesisConfig.Exchange},
-		{"ExchangeEUR", "StableTokenEUR", ctx.genesisConfig.ExchangeEUR},
-	}
-	for _, exchange := range exchanges {
-		err := ctx.deployCoreContract(exchange.contract, func(contract *contract.EVMBackend) error {
-			return contract.SimpleCall("initialize",
-				env.MustProxyAddressFor("Registry"),
-				env.MustProxyAddressFor(exchange.stableTokenContract),
-				exchange.cfg.Spread.BigInt(),
-				exchange.cfg.ReserveFraction.BigInt(),
-				newBigInt(exchange.cfg.UpdateFrequency),
-				newBigInt(exchange.cfg.MinimumReports),
-			)
-		})
-		if err != nil {
-			return err
-		}
-
-		if exchange.cfg.Frozen {
-			ctx.logger.Info("Freezing Exchange", "contract", exchange.contract)
-			err = ctx.contract("Freezer").SimpleCall("freeze", env.MustProxyAddressFor("Exchange"))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-//address registryAddress,
-
 func (ctx *deployContext) deployEpochRewards() error {
 	err := ctx.deployCoreContract("EpochRewards", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
 			env.MustProxyAddressFor("Registry"),
-
-			ctx.genesisConfig.EpochRewards.TargetVotingYieldInitial.BigInt(),
-			ctx.genesisConfig.EpochRewards.TargetVotingYieldMax.BigInt(),
-			ctx.genesisConfig.EpochRewards.TargetVotingYieldAdjustmentFactor.BigInt(),
-
-			ctx.genesisConfig.EpochRewards.RewardsMultiplierMax.BigInt(),
-			ctx.genesisConfig.EpochRewards.RewardsMultiplierAdjustmentFactorsUnderspend.BigInt(),
-			ctx.genesisConfig.EpochRewards.RewardsMultiplierAdjustmentFactorsOverspend.BigInt(),
-
-			ctx.genesisConfig.EpochRewards.TargetVotingGoldFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.MaxValidatorEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
+			ctx.genesisConfig.EpochRewards.CommunityPartnerPartner,
 		)
 	})
 	if err != nil {
@@ -614,14 +543,6 @@ func (ctx *deployContext) deployElection() error {
 	})
 }
 
-func (ctx *deployContext) deploySortedOracles() error {
-	return ctx.deployCoreContract("SortedOracles", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			newBigInt(ctx.genesisConfig.SortedOracles.ReportExpirySeconds),
-		)
-	})
-}
-
 func (ctx *deployContext) deployGasPriceMinimum() error {
 	return ctx.deployCoreContract("GasPriceMinimum", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
@@ -631,151 +552,6 @@ func (ctx *deployContext) deployGasPriceMinimum() error {
 			ctx.genesisConfig.GasPriceMinimum.AdjustmentSpeed.BigInt(),
 		)
 	})
-}
-
-func (ctx *deployContext) deployReserve() error {
-	err := ctx.deployCoreContract("Reserve", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			newBigInt(ctx.genesisConfig.Reserve.TobinTaxStalenessThreshold),
-			ctx.genesisConfig.Reserve.DailySpendingRatio.BigInt(),
-			big.NewInt(0),
-			big.NewInt(0),
-			ctx.genesisConfig.Reserve.AssetAllocations.SymbolsABI(),
-			ctx.genesisConfig.Reserve.AssetAllocations.Weights(),
-			ctx.genesisConfig.Reserve.TobinTax.BigInt(),
-			ctx.genesisConfig.Reserve.TobinTaxReserveRatio.BigInt(),
-		)
-	})
-	if err != nil {
-		return err
-	}
-
-	logger := ctx.logger.New("contract", "Reserve")
-	contract := ctx.contract("Reserve")
-
-	if ctx.genesisConfig.Reserve.InitialBalance != nil && ctx.genesisConfig.Reserve.InitialBalance.Cmp(big.NewInt(0)) > 0 {
-		logger.Info("Setting Initial Balance")
-		ctx.statedb.SetBalance(contract.Address, ctx.genesisConfig.Reserve.InitialBalance)
-
-		if ctx.genesisConfig.Reserve.FrozenAssetsDays > 0 && ctx.genesisConfig.Reserve.FrozenAssetsStartBalance.Cmp(big.NewInt(0)) > 0 {
-			err := contract.SimpleCall("setFrozenGold",
-				ctx.genesisConfig.Reserve.FrozenAssetsStartBalance,
-				newBigInt(ctx.genesisConfig.Reserve.FrozenAssetsDays),
-			)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, spender := range ctx.genesisConfig.Reserve.Spenders {
-		if err := contract.SimpleCall("addSpender", spender); err != nil {
-			return err
-		}
-	}
-
-	for _, otherAddress := range ctx.genesisConfig.Reserve.OtherAddresses {
-		if err := contract.SimpleCall("addOtherReserveAddress", otherAddress); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ctx *deployContext) deployStableTokens() error {
-	type StableTokenConfig struct {
-		contract string
-		cfg      StableTokenParameters
-	}
-	tokens := []StableTokenConfig{
-		{"StableToken", ctx.genesisConfig.StableToken},
-		{"StableTokenEUR", ctx.genesisConfig.StableTokenEUR},
-	}
-	for _, token := range tokens {
-		err := ctx.deployCoreContract(token.contract, func(contract *contract.EVMBackend) error {
-			return contract.SimpleCall("initialize",
-				token.cfg.Name,
-				token.cfg.Symbol,
-				token.cfg.Decimals,
-				env.MustProxyAddressFor("Registry"),
-				token.cfg.Rate.BigInt(),
-				newBigInt(token.cfg.InflationFactorUpdatePeriod),
-				token.cfg.InitialBalances.Accounts(),
-				token.cfg.InitialBalances.Amounts(),
-				token.cfg.ExchangeIdentifier,
-			)
-		})
-		if err != nil {
-			return err
-		}
-
-		stableTokenAddress := env.MustProxyAddressFor(token.contract)
-
-		if token.cfg.Frozen {
-			ctx.logger.Info("Freezing StableToken", "contract", token.contract)
-			err = ctx.contract("Freezer").SimpleCall("freeze", stableTokenAddress)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Configure StableToken Oracles
-		for _, oracleAddress := range token.cfg.Oracles {
-			ctx.logger.Info("Adding oracle for StableToken", "contract", token.contract, "oracle", oracleAddress)
-			err = ctx.contract("SortedOracles").SimpleCall("addOracle", stableTokenAddress, oracleAddress)
-			if err != nil {
-				return err
-			}
-		}
-
-		// If requested, fix goldPrice of stable token
-		if token.cfg.GoldPrice != nil {
-			ctx.logger.Info("Fixing StableToken goldPrice", "contract", token.contract)
-
-			// first check if the admin is an authorized oracle
-			authorized := false
-			for _, oracleAddress := range token.cfg.Oracles {
-				if oracleAddress == AdminAT.Address {
-					authorized = true
-					break
-				}
-			}
-
-			if !authorized {
-				ctx.logger.Warn("Fixing StableToken goldprice requires setting admin as oracle", "admin", AdminAT.Address)
-				err = ctx.contract("SortedOracles").SimpleCall("addOracle", stableTokenAddress, AdminAT.Address)
-				if err != nil {
-					return err
-				}
-			}
-
-			ctx.logger.Info("Reporting price of StableToken to oracle", "contract", token.contract)
-			err = ctx.contract("SortedOracles").SimpleCall("report",
-				stableTokenAddress,
-				token.cfg.GoldPrice.BigInt(),
-				params.ZeroAddress,
-				params.ZeroAddress,
-			)
-			if err != nil {
-				return err
-			}
-
-			ctx.logger.Info("Add StableToken to the reserve", "contract", token.contract)
-			err = ctx.contract("Reserve").SimpleCall("addToken", stableTokenAddress)
-			if err != nil {
-				return err
-			}
-		}
-
-		ctx.logger.Info("Whitelisting StableToken as a fee currency", "contract", token.contract)
-		err = ctx.contract("FeeCurrencyWhitelist").SimpleCall("addToken", stableTokenAddress)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (ctx *deployContext) createAccounts(accs []env.Account, namePrefix string) error {
@@ -1001,5 +777,26 @@ func (ctx *deployContext) verifyState() error {
 	//	fmt.Println("err:",err)
 	//	return err
 	//}
+
+	var (
+		validator = new(*big.Int)
+		community = new(*big.Int)
+	)
+	out := &[]interface{}{
+		validator,
+		community,
+	}
+	if _, err := ctx.contract("EpochRewards").Query(out, "calculateTargetEpochRewards"); err != nil {
+		return err
+	}
+	fmt.Println(*validator, *community)
+
+	validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	totalPayment := new(*big.Int)
+	if _, err := ctx.contract("Validators").Query(totalPayment, "distributeEpochPaymentsFromSigner", validatorAddr, validator); err != nil {
+		fmt.Println("err:", err)
+		return err
+	}
+	fmt.Println(*totalPayment)
 	return nil
 }
