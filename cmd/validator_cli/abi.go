@@ -13,6 +13,7 @@ var addr = common.HexToAddress
 
 func init() {
 	abis = make(map[string]*abi.ABI)
+
 	// Accounts ABI
 	abis["Accounts"] = mustParseABI(`[
     {
@@ -5116,12 +5117,6 @@ func init() {
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "units",
-          "type": "uint256"
         }
       ],
       "name": "ValidatorActiveVoteRevoked",
@@ -5197,12 +5192,6 @@ func init() {
           "indexed": false,
           "internalType": "uint256",
           "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "units",
           "type": "uint256"
         }
       ],
@@ -6227,7 +6216,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVoteUnitsForValidatorByAccount",
+      "name": "getActiveVoteForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -6375,7 +6364,7 @@ func init() {
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "n",
+          "name": "topNum",
           "type": "uint256"
         }
       ],
@@ -6705,20 +6694,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "CarbonOffsettingFundSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fraction",
-          "type": "uint256"
-        }
-      ],
-      "name": "CommunityRewardFractionSet",
+      "name": "CommunityRewardFundSet",
       "type": "event"
     },
     {
@@ -6851,21 +6827,6 @@ func init() {
     },
     {
       "constant": true,
-      "inputs": [],
-      "name": "carbonOffsettingPartner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
       "inputs": [
         {
           "internalType": "address",
@@ -6889,6 +6850,21 @@ func init() {
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "communityPartner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
         }
       ],
       "payable": false,
@@ -7369,41 +7345,6 @@ func init() {
         },
         {
           "internalType": "uint256",
-          "name": "targetVotingYieldInitial",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "targetVotingYieldMax",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "targetVotingYieldAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rewardsMultiplierMax",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rewardsMultiplierUnderspendAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rewardsMultiplierOverspendAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_targetVotingGoldFraction",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "_targetValidatorEpochPayment",
           "type": "uint256"
         },
@@ -7411,6 +7352,11 @@ func init() {
           "internalType": "uint256",
           "name": "_communityRewardFraction",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_communityPartner",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -7420,58 +7366,13 @@ func init() {
       "type": "function"
     },
     {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetVotingYieldParameters",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getRewardsMultiplierParameters",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "constant": false,
       "inputs": [
+        {
+          "internalType": "address",
+          "name": "partner",
+          "type": "address"
+        },
         {
           "internalType": "uint256",
           "name": "value",
@@ -7514,42 +7415,6 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "setTargetVotingGoldFraction",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetVotingGoldFraction",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
       "name": "setTargetValidatorEpochPayment",
       "outputs": [
         {
@@ -7560,114 +7425,6 @@ func init() {
       ],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "max",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "underspendAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "overspendAdjustmentFactor",
-          "type": "uint256"
-        }
-      ],
-      "name": "setRewardsMultiplierParameters",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "max",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "adjustmentFactor",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetVotingYieldParameters",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "targetVotingYield",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetVotingYield",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetGoldTotalSupply",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetVoterRewards",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -7688,51 +7445,12 @@ func init() {
     {
       "constant": true,
       "inputs": [],
-      "name": "getRewardsMultiplier",
+      "name": "getCommunityPartner",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "address",
           "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getVotingGoldFraction",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "updateTargetVotingYield",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "isReserveLow",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
+          "type": "address"
         }
       ],
       "payable": false,
@@ -21402,12 +21120,6 @@ func init() {
           "indexed": false,
           "internalType": "uint256",
           "name": "validatorPayment",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "remainPayment",
           "type": "uint256"
         }
       ],
