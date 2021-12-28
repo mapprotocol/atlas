@@ -2,17 +2,13 @@ package vm
 
 import (
 	"errors"
-	"fmt"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-
 	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/ethereum"
-	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -83,28 +79,39 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	// check if it is a supported chain
-	fromChain := rawdb.ChainType(args.From.Uint64())
-	toChain := rawdb.ChainType(args.To.Uint64())
+	fromChain := chains.ChainType(args.From.Uint64())
+	toChain := chains.ChainType(args.To.Uint64())
 	if !(chains.IsSupportedChain(fromChain) || chains.IsSupportedChain(toChain)) {
 		return nil, ErrNotSupportChain
 	}
 
-	//group, err := chains.ChainType2ChainGroup(rawdb.ChainType(args.From.Uint64()))
-	//if err != nil {
+	//var hs []*ethereum.Header
+	//if err := rlp.DecodeBytes(args.Headers, &hs); err != nil {
+	//	log.Error("rlp decode failed.", "err", err)
+	//	return nil, ErrRLPDecode
+	//}
+	// validate header
+	//header := new(ethereum.Validate)
+	////start := time.Now()
+	//if _, err := header.ValidateHeaderChain(evm.StateDB, args.Headers); err != nil {
+	//	log.Error("ValidateHeaderChain failed.", "err", err)
 	//	return nil, err
 	//}
 
-	var hs []*ethereum.Header
-	if err := rlp.DecodeBytes(args.Headers, &hs); err != nil {
-		log.Error("rlp decode failed.", "err", err)
-		return nil, ErrRLPDecode
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.From.Uint64()))
+	if err != nil {
+		return nil, err
 	}
 
-	// validate header
-	header := new(ethereum.Validate)
-	//start := time.Now()
-	if _, err := header.ValidateHeaderChain(evm.StateDB, fromChain, hs); err != nil {
-		log.Error("ValidateHeaderChain failed.", "err", err)
+	chain, err := interfaces.ChainFactory(group)
+	if _, err := chain.ValidateHeaderChain(evm.StateDB, args.Headers); err != nil {
+		log.Error("failed to validate header chain", "error", err)
+		return nil, err
+	}
+
+	inserted, err := chain.WriteHeaders(evm.StateDB, args.Headers)
+	if err != nil {
+		log.Error("failed to write headers", "error", err)
 		return nil, err
 	}
 
@@ -116,21 +123,21 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	var total uint64
-	for _, h := range hs {
-		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
-			return nil, fmt.Errorf("the number of synchronizations has reached the limit(%d)", TimesLimit)
-		}
-		total++
-		headerStore.IncrReceiveTimes(h.Number.Uint64())
-	}
+	//
+	//var total uint64
+	//for _, h := range hs {
+	//	if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
+	//		return nil, fmt.Errorf("the number of synchronizations has reached the limit(%d)", TimesLimit)
+	//	}
+	//	total++
+	//	headerStore.IncrReceiveTimes(h.Number.Uint64())
+	//}
 	epochID, err := GetCurrentEpochID(evm)
 	if err != nil {
 		return nil, err
 	}
-	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
+	headerStore.AddSyncTimes(epochID, uint64(inserted), contract.CallerAddress)
 
-	// todo
 	// store block header
 	//store, err := chainsdb.GetStoreMgr(fromChain)
 	//if err != nil {
@@ -170,7 +177,7 @@ func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byt
 	}
 
 	//v := new(ethereum.Validate)
-	//c := rawdb.ChainType(args.ChainID.Uint64())
+	//c := chains.ChainType(args.ChainID.Uint64())
 	//number, err := v.GetCurrentHeaderNumber(evm.StateDB, c)
 	//if err != nil {
 	//	return nil, err

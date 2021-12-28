@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"flag"
-
 	"log"
 	"math/big"
 	"testing"
@@ -18,9 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"gopkg.in/urfave/cli.v1"
-
-	"github.com/mapprotocol/atlas/chains/chainsdb"
 )
 
 var ReceiptsJSON = `[
@@ -203,8 +198,8 @@ func TestVerify_Verify(t *testing.T) {
 			//})
 			//defer patch.Unpatch()
 
-			set := flag.NewFlagSet("test", 0)
-			chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
+			//set := flag.NewFlagSet("test", 0)
+			//chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
 			txProve := getTxProve(tt.args.blockNumber, tt.args.txIndex, tt.args.receiptsJSON, tt.args.txParams)
 			if err := new(Verify).Verify(tt.args.router, tt.args.srcChain, tt.args.dstChain, txProve); (err != nil) != tt.wantErr {
 				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)

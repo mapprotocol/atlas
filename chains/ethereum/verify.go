@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/chains"
 	"log"
 	"math/big"
 
@@ -13,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-
-	"github.com/mapprotocol/atlas/core/rawdb"
 )
 
 var (
@@ -60,7 +59,7 @@ func (v *Verify) Verify(routerContractAddr common.Address, srcChain, dstChain *b
 		return err
 	}
 
-	receiptsRoot, err := v.getReceiptsRoot(rawdb.ChainType(srcChain.Uint64()), txProve.BlockNumber)
+	receiptsRoot, err := v.getReceiptsRoot(chains.ChainType(srcChain.Uint64()), txProve.BlockNumber)
 	if err != nil {
 		return err
 	}
@@ -118,7 +117,7 @@ func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *
 	return nil
 }
 
-func (v *Verify) getReceiptsRoot(chain rawdb.ChainType, blockNumber uint64) (common.Hash, error) {
+func (v *Verify) getReceiptsRoot(chain chains.ChainType, blockNumber uint64) (common.Hash, error) {
 	//store, err := chainsdb.GetStoreMgr(chain)
 	//if err != nil {
 	//	return common.Hash{}, err

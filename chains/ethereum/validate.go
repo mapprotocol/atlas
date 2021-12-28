@@ -3,6 +3,7 @@ package ethereum
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"runtime"
 	"time"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/consensus/misc"
-	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 )
 
@@ -24,7 +24,7 @@ const (
 
 type Validate struct{}
 
-func (v *Validate) GetCurrentHeaderNumber(chainType rawdb.ChainType) (uint64, error) {
+func (v *Validate) GetCurrentHeaderNumber(chainType chains.ChainType) (uint64, error) {
 	//if !chains.IsSupportedChain(chainType) {
 	//	return 0, errNotSupportChain
 	//}
@@ -43,7 +43,7 @@ func (v *Validate) GetCurrentHeaderNumber(chainType rawdb.ChainType) (uint64, er
 	return 0, nil
 }
 
-func (v *Validate) GetHashByNumber(chainType rawdb.ChainType, number uint64) (common.Hash, error) {
+func (v *Validate) GetHashByNumber(chainType chains.ChainType, number uint64) (common.Hash, error) {
 	//if !chains.IsSupportedChain(chainType) {
 	//	return common.Hash{}, errNotSupportChain
 	//}
@@ -62,7 +62,17 @@ func (v *Validate) GetHashByNumber(chainType rawdb.ChainType, number uint64) (co
 	return common.Hash{}, nil
 }
 
-func (v *Validate) ValidateHeaderChain(db types.StateDB, chainType rawdb.ChainType, chain []*Header) (int, error) {
+func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, error) {
+	if len(headers) == 0 {
+		return 0, nil
+	}
+
+	var chain []*Header
+	if err := rlp.DecodeBytes(headers, &chain); err != nil {
+		log.Error("rlp decode failed.", "err", err)
+		return 0, chains.ErrRLPDecode
+	}
+
 	chainLength := len(chain)
 	if chainLength == 1 {
 		if chain[0].Number == nil || chain[0].Difficulty == nil {
@@ -86,16 +96,18 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, chainType rawdb.ChainTy
 		}
 	}
 
-	firstNumber := chain[0].Number
-	currentNumber, err := v.GetCurrentHeaderNumber(chainType)
-	if err != nil {
+	hs := NewHeaderStore()
+	if err := hs.Load(db); err != nil {
 		return 0, err
 	}
+	currentNumber := hs.CurrentNumber()
+	firstNumber := chain[0].Number
+
 	if firstNumber.Uint64() > currentNumber+1 {
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	abort, results := v.VerifyHeaders(db, chain, chainType)
+	abort, results := v.VerifyHeaders(db, chain)
 	defer close(abort)
 
 	for i := range chain {
@@ -107,7 +119,7 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, chainType rawdb.ChainTy
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header, chainType rawdb.ChainType) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -125,7 +137,7 @@ func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header, chainType 
 	for i := 0; i < workers; i++ {
 		go func() {
 			for index := range inputs {
-				errors[index] = v.verifyHeaderWorker(db, headers, index, unixNow, chainType)
+				errors[index] = v.verifyHeaderWorker(db, headers, index, unixNow)
 				done <- index
 			}
 		}()
@@ -161,7 +173,7 @@ func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header, chainType 
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(db types.StateDB, headers []*Header, index int, unixNow int64, chainType rawdb.ChainType) error {
+func (v *Validate) verifyHeaderWorker(db types.StateDB, headers []*Header, index int, unixNow int64) error {
 	var parent *Header
 	if index == 0 {
 		//s, err := chainsdb.GetStoreMgr(chainType)
@@ -177,10 +189,10 @@ func (v *Validate) verifyHeaderWorker(db types.StateDB, headers []*Header, index
 	if parent == nil {
 		return errUnknownAncestor
 	}
-	return v.verifyHeader(headers[index], parent, false, unixNow, chainType)
+	return v.verifyHeader(headers[index], parent, false, unixNow)
 }
 
-func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int64, chainType rawdb.ChainType) error {
+func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int64) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 	if uint64(len(header.Extra)) > ethparams.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), ethparams.MaximumExtraDataSize)
@@ -212,7 +224,7 @@ func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int6
 	}
 
 	// Verify the block's gas usage and (if applicable) verify the base fee.
-	lb, _ := chains.ChainType2LondonBlock(chainType)
+	lb, _ := chains.ChainType2LondonBlock(chains.ChainTypeETH)
 	cfg := &ethparams.ChainConfig{LondonBlock: lb}
 	if !cfg.IsLondon(header.Number) {
 		// Verify BaseFee not present before EIP-1559 fork.

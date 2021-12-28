@@ -40,11 +40,11 @@ import (
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/accounts/scwallet"
+	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -2229,16 +2229,16 @@ func NewPublicHeaderStoreAPI(b Backend) *PublicHeaderStoreAPI {
 }
 
 func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chainID uint64) (uint64, error) {
-	return new(ethereum.Validate).GetCurrentHeaderNumber(rawdb.ChainType(chainID))
+	return new(ethereum.Validate).GetCurrentHeaderNumber(chains.ChainType(chainID))
 }
 
 func (p *PublicHeaderStoreAPI) GetHashByNumber(chainID uint64, number uint64) (common.Hash, error) {
-	return new(ethereum.Validate).GetHashByNumber(rawdb.ChainType(chainID), number)
+	return new(ethereum.Validate).GetHashByNumber(chains.ChainType(chainID), number)
 }
 
 func (p *PublicHeaderStoreAPI) CurrentNumberAndHash(chainID uint64) (map[string]interface{}, error) {
 	v := new(ethereum.Validate)
-	c := rawdb.ChainType(chainID)
+	c := chains.ChainType(chainID)
 	number, err := v.GetCurrentHeaderNumber(c)
 	if err != nil {
 		return nil, err
