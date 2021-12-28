@@ -52,9 +52,6 @@ func CreateCommonGenesisConfig(chainID *big.Int, adminAccountAddress common.Addr
 
 	// Ensure nothing is frozen
 	genesisConfig.GoldToken.Frozen = false
-	genesisConfig.StableToken.Frozen = false
-	genesisConfig.Exchange.Frozen = false
-	genesisConfig.Reserve.FrozenAssetsDays = 0
 	genesisConfig.EpochRewards.Frozen = false
 
 	return genesisConfig
@@ -69,8 +66,6 @@ func FundAccounts(genesisConfig *Config, accounts []env.Account) {
 		ceurBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k cEUR
 		goldBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k Atlas
 	}
-	genesisConfig.StableTokenEUR.InitialBalances = ceurBalances
-	genesisConfig.StableToken.InitialBalances = cusdBalances
 	genesisConfig.GoldToken.InitialBalances = goldBalances
 }
 

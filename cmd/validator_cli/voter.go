@@ -185,15 +185,15 @@ func balanceOf(ctx *cli.Context) error {
 	header, err := conn.HeaderByNumber(context.Background(), nil)
 
 	log.Info("=== balanceOf admin", "obj", from)
-	input := packInput(abiStableToken, methodName, validatorAddr)
-	msg := ethchain.CallMsg{From: from, To: &StableTokenAddress, Data: input}
+	input := packInput(abiGoldToken, methodName, validatorAddr)
+	msg := ethchain.CallMsg{From: from, To: &GoldTokenAddress, Data: input}
 	output, err := conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
 	}
 
 	var ret *big.Int
-	err = abiStableToken.UnpackIntoInterface(&ret, methodName, output)
+	err = abiGoldToken.UnpackIntoInterface(&ret, methodName, output)
 	if err != nil {
 		log.Error("method UnpackIntoInterface", "error", err)
 		return nil

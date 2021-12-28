@@ -344,32 +344,6 @@ const BlockchainParametersStr = `[
 	}
 ]`
 
-const SortedOraclesStr = `[
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "medianRate",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint128"
-			},
-			{
-				"name": "",
-				"type": "uint128"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	}
-]`
-
 const ERC20Str = `[
 	{
 		"constant": true,
@@ -556,12 +530,6 @@ const ElectionsStr string = `[
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "units",
-          "type": "uint256"
         }
       ],
       "name": "ValidatorActiveVoteRevoked",
@@ -637,12 +605,6 @@ const ElectionsStr string = `[
           "indexed": false,
           "internalType": "uint256",
           "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "units",
           "type": "uint256"
         }
       ],
@@ -1667,7 +1629,7 @@ const ElectionsStr string = `[
           "type": "address"
         }
       ],
-      "name": "getActiveVoteUnitsForValidatorByAccount",
+      "name": "getActiveVoteForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1815,7 +1777,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "n",
+          "name": "topNum",
           "type": "uint256"
         }
       ],
@@ -2146,20 +2108,7 @@ const EpochRewardsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "CarbonOffsettingFundSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fraction",
-          "type": "uint256"
-        }
-      ],
-      "name": "CommunityRewardFractionSet",
+      "name": "CommunityRewardFundSet",
       "type": "event"
     },
     {
@@ -2292,21 +2241,6 @@ const EpochRewardsStr string = `[
     },
     {
       "constant": true,
-      "inputs": [],
-      "name": "carbonOffsettingPartner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
       "inputs": [
         {
           "internalType": "address",
@@ -2330,6 +2264,21 @@ const EpochRewardsStr string = `[
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "communityPartner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
         }
       ],
       "payable": false,
@@ -2810,41 +2759,6 @@ const EpochRewardsStr string = `[
         },
         {
           "internalType": "uint256",
-          "name": "targetVotingYieldInitial",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "targetVotingYieldMax",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "targetVotingYieldAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rewardsMultiplierMax",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rewardsMultiplierUnderspendAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "rewardsMultiplierOverspendAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_targetVotingGoldFraction",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "_targetValidatorEpochPayment",
           "type": "uint256"
         },
@@ -2852,6 +2766,11 @@ const EpochRewardsStr string = `[
           "internalType": "uint256",
           "name": "_communityRewardFraction",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_communityPartner",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -2861,58 +2780,13 @@ const EpochRewardsStr string = `[
       "type": "function"
     },
     {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetVotingYieldParameters",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getRewardsMultiplierParameters",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "constant": false,
       "inputs": [
+        {
+          "internalType": "address",
+          "name": "partner",
+          "type": "address"
+        },
         {
           "internalType": "uint256",
           "name": "value",
@@ -2955,42 +2829,6 @@ const EpochRewardsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "setTargetVotingGoldFraction",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetVotingGoldFraction",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
       "name": "setTargetValidatorEpochPayment",
       "outputs": [
         {
@@ -3001,114 +2839,6 @@ const EpochRewardsStr string = `[
       ],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "max",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "underspendAdjustmentFactor",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "overspendAdjustmentFactor",
-          "type": "uint256"
-        }
-      ],
-      "name": "setRewardsMultiplierParameters",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "max",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "adjustmentFactor",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetVotingYieldParameters",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "targetVotingYield",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetVotingYield",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetGoldTotalSupply",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getTargetVoterRewards",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -3129,51 +2859,12 @@ const EpochRewardsStr string = `[
     {
       "constant": true,
       "inputs": [],
-      "name": "getRewardsMultiplier",
+      "name": "getCommunityPartner",
       "outputs": [
         {
-          "internalType": "uint256",
+          "internalType": "address",
           "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getVotingGoldFraction",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "updateTargetVotingYield",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "isReserveLow",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
+          "type": "address"
         }
       ],
       "payable": false,
@@ -3201,28 +2892,6 @@ const EpochRewardsStr string = `[
       "type": "function"
     }
   ]`
-
-const FreezerStr = `[
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "isFrozen",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	}
-]`
 
 const GasPriceMinimumStr = `[
 	{
@@ -3586,12 +3255,6 @@ const ValidatorsStr = `[
           "indexed": false,
           "internalType": "uint256",
           "name": "validatorPayment",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "remainPayment",
           "type": "uint256"
         }
       ],

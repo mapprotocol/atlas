@@ -53,13 +53,13 @@ var (
 	abiLocaledGold *abi.ABI
 	abiAccounts    *abi.ABI
 	abiElection    *abi.ABI
-	abiStableToken *abi.ABI
+	abiGoldToken   *abi.ABI
 
-	ValidatorAddress   = MustProxyAddressFor("Validators")
-	LockedGoldAddress  = MustProxyAddressFor("LockedGold")
-	AccountsAddress    = MustProxyAddressFor("Accounts")
-	ElectionAddress    = MustProxyAddressFor("Election")
-	StableTokenAddress = MustProxyAddressFor("StableToken")
+	ValidatorAddress  = MustProxyAddressFor("Validators")
+	LockedGoldAddress = MustProxyAddressFor("LockedGold")
+	AccountsAddress   = MustProxyAddressFor("Accounts")
+	ElectionAddress   = MustProxyAddressFor("Election")
+	GoldTokenAddress  = MustProxyAddressFor("StableToken")
 
 	priKey   *ecdsa.PrivateKey
 	from     common.Address
@@ -75,13 +75,13 @@ func init() {
 	abiLocaledGold = AbiFor("LockedGold")
 	abiAccounts = AbiFor("Accounts")
 	abiElection = AbiFor("Election")
-	abiStableToken = AbiFor("StableToken")
+	abiGoldToken = AbiFor("GoldToken")
 
 	ValidatorAddress = MustProxyAddressFor("Validators")
 	LockedGoldAddress = MustProxyAddressFor("LockedGold")
 	AccountsAddress = MustProxyAddressFor("Accounts")
 	ElectionAddress = MustProxyAddressFor("Election")
-	StableTokenAddress = MustProxyAddressFor("StableToken")
+	GoldTokenAddress = MustProxyAddressFor("GoldToken")
 
 	Base = new(big.Int).SetUint64(10000)
 	password = ""

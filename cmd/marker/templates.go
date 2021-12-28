@@ -97,8 +97,6 @@ func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config,
 	// Add balances to developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())
 
-	genesisConfig.StableToken.InflationFactorUpdatePeriod = 1 * genesis.Year
-
 	// Disable gas price min being updated
 	genesisConfig.GasPriceMinimum.TargetDensity = fixed.MustNew("0.9999")
 	genesisConfig.GasPriceMinimum.AdjustmentSpeed = fixed.MustNew("0")
@@ -138,8 +136,6 @@ func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config,
 	genesisConfig.EpochRewards.TargetVotingYieldInitial = fixed.MustNew("0.00016")
 	genesisConfig.EpochRewards.TargetVotingYieldMax = fixed.MustNew("0.0005")
 	genesisConfig.EpochRewards.TargetVotingYieldAdjustmentFactor = fixed.MustNew("0.1")
-	genesisConfig.Reserve.InitialBalance = params.MustBigInt("100000000000000000000000000") // 100M ATLAS
-
 	// Add balances to validator accounts instead of developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().ValidatorAccounts())
 
