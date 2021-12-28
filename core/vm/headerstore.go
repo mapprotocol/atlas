@@ -116,8 +116,8 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	// calc synchronization information
-	headerStore := NewHeaderStore()
-	err = headerStore.Load(evm.StateDB, params.HeaderStoreAddress)
+	headerSync := NewHeaderSync()
+	err = headerSync.Load(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)
 		return nil, err
@@ -136,7 +136,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	headerStore.AddSyncTimes(epochID, uint64(inserted), contract.CallerAddress)
+	headerSync.AddSyncTimes(epochID, uint64(inserted), contract.CallerAddress)
 
 	// store block header
 	//store, err := chainsdb.GetStoreMgr(fromChain)
@@ -154,7 +154,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	//}
 
 	// store synchronization information
-	err = headerStore.Store(evm.StateDB, params.HeaderStoreAddress)
+	err = headerSync.Store(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("store state error", "error", err)
 		return nil, err

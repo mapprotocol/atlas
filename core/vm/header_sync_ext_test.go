@@ -10,12 +10,12 @@ import (
 func TestHeaderStore_Decode(t *testing.T) {
 	var tests = []struct {
 		name    string
-		hs      *HeaderStore
+		hs      *HeaderSync
 		wantErr bool
 	}{
 		{
 			name: "",
-			hs: &HeaderStore{
+			hs: &HeaderSync{
 				epoch2reward: map[uint64]*big.Int{
 					1: big.NewInt(100),
 					2: big.NewInt(200),
@@ -63,7 +63,7 @@ func TestHeaderStore_Decode(t *testing.T) {
 					t.Error(err)
 				}
 
-				hs2 := HeaderStore{}
+				hs2 := HeaderSync{}
 				if err := rlp.DecodeBytes(bs, &hs2); err != nil {
 					t.Error(err)
 				}

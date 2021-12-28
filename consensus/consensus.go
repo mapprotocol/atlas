@@ -241,7 +241,7 @@ func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 		key := common.BytesToHash(params.HeaderStoreAddress[:])
 		getState := state.GetPOWState(params.HeaderStoreAddress, key)
 		if len(getState) == 0 {
-			hs := vm.NewHeaderStore()
+			hs := vm.NewHeaderSync()
 			if err := hs.Store(state, params.HeaderStoreAddress); err != nil {
 				log.Crit("store failed, ", "err", err)
 			}

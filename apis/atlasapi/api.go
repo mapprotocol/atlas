@@ -2188,7 +2188,7 @@ func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.
 		epochID = register.GetCurrentEpochID()
 	}
 
-	hs := new(vm.HeaderStore)
+	hs := new(vm.HeaderSync)
 	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return nil, err
 	}
@@ -2213,7 +2213,7 @@ func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (ui
 		epochID = register.GetCurrentEpochID()
 	}
 
-	hs := new(vm.HeaderStore)
+	hs := new(vm.HeaderSync)
 	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return 0, err
 	}
@@ -2265,7 +2265,7 @@ func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) 
 		return nil, errors.New("failed to get state by number")
 	}
 
-	hs := new(vm.HeaderStore)
+	hs := new(vm.HeaderSync)
 	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return nil, err
 	}

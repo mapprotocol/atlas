@@ -37,7 +37,7 @@ type HeaderStoreCache struct {
 	size  int
 }
 
-//type HeaderStore struct {
+//type HeaderSync struct {
 //	height2receiveTimes map[uint64]uint8
 //	// the first layer key is the epoch id
 //	// the second layer key is the relayer address
@@ -55,21 +55,21 @@ type RelayerSyncInfo struct {
 	Reward  *big.Int
 }
 
-type HeaderStore struct {
+type HeaderSync struct {
 	epoch2reward        map[uint64]*big.Int
 	height2receiveTimes map[uint64]uint64
 	epoch2syncInfo      map[uint64][]*RelayerSyncInfo
 }
 
-func NewHeaderStore() *HeaderStore {
-	return &HeaderStore{
+func NewHeaderSync() *HeaderSync {
+	return &HeaderSync{
 		height2receiveTimes: make(map[uint64]uint64),
 		epoch2syncInfo:      make(map[uint64][]*RelayerSyncInfo),
 	}
 }
 
-func CloneHeaderStore(src *HeaderStore) (dst *HeaderStore, err error) {
-	dst = NewHeaderStore()
+func CloneHeaderStore(src *HeaderSync) (dst *HeaderSync, err error) {
+	dst = NewHeaderSync()
 	err = DeepCopy(src.height2receiveTimes, &dst.height2receiveTimes)
 	if err != nil {
 		return nil, err
@@ -89,11 +89,11 @@ func DeepCopy(src, dst interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (h *HeaderStore) Store(state types.StateDB, address common.Address) error {
+func (h *HeaderSync) Store(state types.StateDB, address common.Address) error {
 	key := common.BytesToHash(address[:])
 	data, err := rlp.EncodeToBytes(h)
 	if err != nil {
-		log.Error("Failed to RLP encode HeaderStore", "err", err, "HeaderStore", h)
+		log.Error("Failed to RLP encode HeaderSync", "err", err, "HeaderSync", h)
 		return err
 	}
 
@@ -108,13 +108,13 @@ func (h *HeaderStore) Store(state types.StateDB, address common.Address) error {
 	return nil
 }
 
-func (h *HeaderStore) Load(state types.StateDB, address common.Address) (err error) {
+func (h *HeaderSync) Load(state types.StateDB, address common.Address) (err error) {
 	key := common.BytesToHash(address[:])
 	data := state.GetPOWState(address, key)
-	var hs HeaderStore
+	var hs HeaderSync
 	hash := RlpHash(data)
 	if cc, ok := hsCache.Cache.Get(hash); ok {
-		cp, err := CloneHeaderStore(cc.(*HeaderStore))
+		cp, err := CloneHeaderStore(cc.(*HeaderSync))
 		if err != nil {
 			return err
 		}
@@ -124,8 +124,8 @@ func (h *HeaderStore) Load(state types.StateDB, address common.Address) (err err
 	}
 
 	if err := rlp.DecodeBytes(data, &hs); err != nil {
-		log.Error("HeaderStore RLP decode failed", "err", err, "HeaderStore", data)
-		return fmt.Errorf("HeaderStore RLP decode failed, error: %s", err.Error())
+		log.Error("HeaderSync RLP decode failed", "err", err, "HeaderSync", data)
+		return fmt.Errorf("HeaderSync RLP decode failed, error: %s", err.Error())
 	}
 
 	clone, err := CloneHeaderStore(&hs)
@@ -137,15 +137,15 @@ func (h *HeaderStore) Load(state types.StateDB, address common.Address) (err err
 	return nil
 }
 
-func (h *HeaderStore) GetReceiveTimes(height uint64) uint64 {
+func (h *HeaderSync) GetReceiveTimes(height uint64) uint64 {
 	return h.height2receiveTimes[height]
 }
 
-func (h *HeaderStore) IncrReceiveTimes(height uint64) {
+func (h *HeaderSync) IncrReceiveTimes(height uint64) {
 	h.height2receiveTimes[height]++
 }
 
-func (h *HeaderStore) StoreReward(epochID uint64, relayer common.Address, reward *big.Int) {
+func (h *HeaderSync) StoreReward(epochID uint64, relayer common.Address, reward *big.Int) {
 	for _, rsi := range h.epoch2syncInfo[epochID] {
 		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
 			if rsi.Reward == nil {
@@ -156,7 +156,7 @@ func (h *HeaderStore) StoreReward(epochID uint64, relayer common.Address, reward
 	}
 }
 
-func (h *HeaderStore) LoadReward(epochID uint64, relayer common.Address) *big.Int {
+func (h *HeaderSync) LoadReward(epochID uint64, relayer common.Address) *big.Int {
 	for _, rsi := range h.epoch2syncInfo[epochID] {
 		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
 			return rsi.Reward
@@ -165,7 +165,7 @@ func (h *HeaderStore) LoadReward(epochID uint64, relayer common.Address) *big.In
 	return big.NewInt(0)
 }
 
-func (h *HeaderStore) AddSyncTimes(epochID, amount uint64, relayer common.Address) {
+func (h *HeaderSync) AddSyncTimes(epochID, amount uint64, relayer common.Address) {
 	// epoch does not exist
 	if _, ok := h.epoch2syncInfo[epochID]; !ok {
 		h.epoch2syncInfo[epochID] = append(h.epoch2syncInfo[epochID], &RelayerSyncInfo{
@@ -194,7 +194,7 @@ func (h *HeaderStore) AddSyncTimes(epochID, amount uint64, relayer common.Addres
 	}
 }
 
-func (h *HeaderStore) LoadSyncTimes(epochID uint64, relayer common.Address) uint64 {
+func (h *HeaderSync) LoadSyncTimes(epochID uint64, relayer common.Address) uint64 {
 	for i, rsi := range h.epoch2syncInfo[epochID] {
 		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
 			return h.epoch2syncInfo[epochID][i].Times
@@ -203,7 +203,7 @@ func (h *HeaderStore) LoadSyncTimes(epochID uint64, relayer common.Address) uint
 	return 0
 }
 
-func (h *HeaderStore) GetSortedRelayers(epochID uint64) []common.Address {
+func (h *HeaderSync) GetSortedRelayers(epochID uint64) []common.Address {
 	rsis := h.epoch2syncInfo[epochID]
 	rss := make([]string, 0, len(rsis))
 	rs := make([]common.Address, 0, len(rsis))
@@ -218,7 +218,7 @@ func (h *HeaderStore) GetSortedRelayers(epochID uint64) []common.Address {
 	return rs
 }
 
-func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.Address]*big.Int {
+func (h *HeaderSync) CalcReward(epochID uint64, allAmount *big.Int) map[common.Address]*big.Int {
 	residualReward := allAmount
 	relayers := h.GetSortedRelayers(epochID)
 	rewards := make(map[common.Address]*big.Int, len(relayers))
@@ -247,7 +247,7 @@ func (h *HeaderStore) CalcReward(epochID uint64, allAmount *big.Int) map[common.
 }
 
 func HistoryWorkEfficiency(state types.StateDB, epochId uint64, relayer common.Address) (uint64, error) {
-	headerStore := NewHeaderStore()
+	headerStore := NewHeaderSync()
 	err := headerStore.Load(state, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)

@@ -14,7 +14,7 @@ type extHeaderStore struct {
 	SyncInfo     [][]*RelayerSyncInfo
 }
 
-func (h *HeaderStore) EncodeRLP(w io.Writer) error {
+func (h *HeaderSync) EncodeRLP(w io.Writer) error {
 	var (
 		heights      []uint64
 		receiveTimes []uint64
@@ -50,7 +50,7 @@ func (h *HeaderStore) EncodeRLP(w io.Writer) error {
 	})
 }
 
-func (h *HeaderStore) DecodeRLP(s *rlp.Stream) error {
+func (h *HeaderSync) DecodeRLP(s *rlp.Stream) error {
 	var eh extHeaderStore
 	if err := s.Decode(&eh); err != nil {
 		return err
