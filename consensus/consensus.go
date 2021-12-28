@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -241,7 +242,7 @@ func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 		key := common.BytesToHash(params.HeaderStoreAddress[:])
 		getState := state.GetPOWState(params.HeaderStoreAddress, key)
 		if len(getState) == 0 {
-			hs := vm.NewHeaderSync()
+			hs := ethereum.NewHeaderSync()
 			if err := hs.Store(state, params.HeaderStoreAddress); err != nil {
 				log.Crit("store failed, ", "err", err)
 			}

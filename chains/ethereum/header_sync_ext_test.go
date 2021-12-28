@@ -1,4 +1,4 @@
-package vm
+package ethereum
 
 import (
 	"github.com/ethereum/go-ethereum/common"

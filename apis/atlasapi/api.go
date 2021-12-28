@@ -2166,7 +2166,7 @@ func (s *PublicRelayerAPI) GetSyncNumber(ctx context.Context, address common.Add
 		return 0, err
 	}
 	_, h := register.GetCurrentEpochInfo()
-	num, _ := vm.HistoryWorkEfficiency(state, h, address)
+	num, _ := ethereum.HistoryWorkEfficiency(state, h, address)
 	return num, nil
 }
 
@@ -2188,7 +2188,7 @@ func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.
 		epochID = register.GetCurrentEpochID()
 	}
 
-	hs := new(vm.HeaderSync)
+	hs := new(ethereum.HeaderSync)
 	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return nil, err
 	}
@@ -2213,7 +2213,7 @@ func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (ui
 		epochID = register.GetCurrentEpochID()
 	}
 
-	hs := new(vm.HeaderSync)
+	hs := new(ethereum.HeaderSync)
 	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return 0, err
 	}
@@ -2265,7 +2265,7 @@ func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) 
 		return nil, errors.New("failed to get state by number")
 	}
 
-	hs := new(vm.HeaderSync)
+	hs := new(ethereum.HeaderSync)
 	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
 		return nil, err
 	}

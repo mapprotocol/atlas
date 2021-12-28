@@ -2,13 +2,15 @@ package vm
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/chains/interfaces"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/chains/ethereum"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -116,7 +118,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 
 	// calc synchronization information
-	headerSync := NewHeaderSync()
+	headerSync := ethereum.NewHeaderSync()
 	err = headerSync.Load(evm.StateDB, params.HeaderStoreAddress)
 	if err != nil {
 		log.Error("header store load error", "error", err)

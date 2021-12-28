@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 	"io"
@@ -707,7 +708,7 @@ func (i *RegisterImpl) DoElections(state types.StateDB, epochid, height uint64) 
 		var ee []*RegisterAccount
 		for _, v := range val {
 			validRegister := v.getValidRegisterOnly(height)
-			num, _ := HistoryWorkEfficiency(state, epochid, v.Unit.Address)
+			num, _ := ethereum.HistoryWorkEfficiency(state, epochid, v.Unit.Address)
 			if v.Relayer == true && num < params.MinWorkEfficiency {
 				v.Relayer = false
 				continue

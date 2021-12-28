@@ -1,4 +1,4 @@
-package vm
+package ethereum
 
 import (
 	"bytes"
@@ -14,40 +14,28 @@ import (
 
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/tools"
 )
 
 const (
-	CacheSize = 20
+	SyncCacheSize = 20
 )
 
 var (
-	//hsLock  sync.Mutex
-	hsCache *HeaderStoreCache
+	syncCache *HeaderSyncCache
 )
 
 func init() {
-	hsCache = &HeaderStoreCache{
-		size: CacheSize,
+	syncCache = &HeaderSyncCache{
+		size: SyncCacheSize,
 	}
-	hsCache.Cache, _ = lru.New(hsCache.size)
+	syncCache.Cache, _ = lru.New(syncCache.size)
 }
 
-type HeaderStoreCache struct {
+type HeaderSyncCache struct {
 	Cache *lru.Cache
 	size  int
 }
-
-//type HeaderSync struct {
-//	height2receiveTimes map[uint64]uint8
-//	// the first layer key is the epoch id
-//	// the second layer key is the relayer address
-//	// the value is the number of times the repeater has been synchronized
-//	relayerSyncTimes map[uint64]map[common.Address]uint64
-//	// the first layer key is the relayer address
-//	// the second layer key is the height of the block
-//	// the value is abnormal msg
-//	abnormalMsg map[common.Address]map[uint64]string
-//}
 
 type RelayerSyncInfo struct {
 	Relayer common.Address
@@ -103,8 +91,8 @@ func (h *HeaderSync) Store(state types.StateDB, address common.Address) error {
 	if err != nil {
 		return err
 	}
-	hash := RlpHash(data)
-	hsCache.Cache.Add(hash, clone)
+	hash := tools.RlpHash(data)
+	syncCache.Cache.Add(hash, clone)
 	return nil
 }
 
@@ -112,8 +100,8 @@ func (h *HeaderSync) Load(state types.StateDB, address common.Address) (err erro
 	key := common.BytesToHash(address[:])
 	data := state.GetPOWState(address, key)
 	var hs HeaderSync
-	hash := RlpHash(data)
-	if cc, ok := hsCache.Cache.Get(hash); ok {
+	hash := tools.RlpHash(data)
+	if cc, ok := syncCache.Cache.Get(hash); ok {
 		cp, err := CloneHeaderStore(cc.(*HeaderSync))
 		if err != nil {
 			return err
@@ -132,7 +120,7 @@ func (h *HeaderSync) Load(state types.StateDB, address common.Address) (err erro
 	if err != nil {
 		return err
 	}
-	hsCache.Cache.Add(hash, clone)
+	syncCache.Cache.Add(hash, clone)
 	h.height2receiveTimes, h.epoch2syncInfo = hs.height2receiveTimes, hs.epoch2syncInfo
 	return nil
 }

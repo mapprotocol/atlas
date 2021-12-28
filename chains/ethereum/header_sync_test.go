@@ -1,9 +1,10 @@
-package vm
+package ethereum
 
 import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
@@ -719,7 +720,7 @@ func TestHeaderStore_Load(t *testing.T) {
 				// remove cache
 				key := common.BytesToHash(params.HeaderStoreAddress[:])
 				data := state.GetPOWState(params.HeaderStoreAddress, key)
-				hash := RlpHash(data)
+				hash := vm.RlpHash(data)
 				hsCache.Cache.Remove(hash)
 
 			},

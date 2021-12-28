@@ -20,20 +20,20 @@ import (
 )
 
 const (
-	CacheSize      = 20
+	StoreCacheSize      = 20
 	MaxHeaderLimit = 5
 	SplicingSymbol = "-"
 )
 
 var (
-	hsCache *Cache
+	storeCache *Cache
 )
 
 func init() {
-	hsCache = &Cache{
-		size: CacheSize,
+	storeCache = &Cache{
+		size: StoreCacheSize,
 	}
-	hsCache.Cache, _ = lru.New(hsCache.size)
+	storeCache.Cache, _ = lru.New(storeCache.size)
 }
 
 type Cache struct {
@@ -135,7 +135,7 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 	hash := tools.RlpHash(data)
-	hsCache.Cache.Add(hash, clone)
+	storeCache.Cache.Add(hash, clone)
 	return nil
 }
 
@@ -148,7 +148,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 
 	data := state.GetPOWState(address, key)
 	hash := tools.RlpHash(data)
-	if cc, ok := hsCache.Cache.Get(hash); ok {
+	if cc, ok := storeCache.Cache.Get(hash); ok {
 		cp, err := cloneHeaderStore(cc.(*HeaderStore))
 		if err != nil {
 			return err
@@ -167,7 +167,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	if err != nil {
 		return err
 	}
-	hsCache.Cache.Add(hash, clone)
+	storeCache.Cache.Add(hash, clone)
 	hs.canonicalNumberToHash, hs.headers, hs.tds, hs.curHash, hs.curNumber = h.canonicalNumberToHash, h.headers, h.tds, h.curHash, h.curNumber
 	return nil
 }
