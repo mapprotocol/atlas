@@ -42,6 +42,7 @@ import (
 	"github.com/mapprotocol/atlas/accounts/scwallet"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/ethereum"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/chain"
@@ -2170,41 +2171,57 @@ func (s *PublicRelayerAPI) GetSyncNumber(ctx context.Context, address common.Add
 	return num, nil
 }
 
-func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.Int, error) {
+//func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.Int, error) {
+//	bn := rpc.LatestBlockNumber
+//	statedb, _, err := s.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
+//	if err != nil {
+//		return nil, err
+//	}
+//	if statedb == nil {
+//		return nil, errors.New("failed to get state by number")
+//	}
+//
+//	if epochID == 0 {
+//		register := vm.NewRegisterImpl()
+//		if err := register.Load(statedb, params.RelayerAddress); err != nil {
+//			return nil, err
+//		}
+//		epochID = register.GetCurrentEpochID()
+//	}
+//
+//	hs := new(ethereum.HeaderSync)
+//	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
+//		return nil, err
+//	}
+//	return hs.LoadReward(epochID, relayer), nil
+//}
+
+func (s *PublicRelayerAPI) LatestState() (*state.StateDB, error) {
 	bn := rpc.LatestBlockNumber
 	statedb, _, err := s.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
 	if err != nil {
 		return nil, err
 	}
 	if statedb == nil {
-		return nil, errors.New("failed to get state by number")
+		return nil, errors.New("failed to get state by latest number")
 	}
-
-	if epochID == 0 {
-		register := vm.NewRegisterImpl()
-		if err := register.Load(statedb, params.RelayerAddress); err != nil {
-			return nil, err
-		}
-		epochID = register.GetCurrentEpochID()
-	}
-
-	hs := new(ethereum.HeaderSync)
-	if err := hs.Load(statedb); err != nil {
-		return nil, err
-	}
-	return hs.LoadReward(epochID, relayer), nil
+	return statedb, nil
 }
 
-func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (uint64, error) {
-	bn := rpc.LatestBlockNumber
-	statedb, _, err := s.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
+func (s *PublicRelayerAPI) SyncTimes(chainID uint64, epochID uint64, relayer common.Address) (uint64, error) {
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(chainID))
 	if err != nil {
 		return 0, err
 	}
-	if statedb == nil {
-		return 0, errors.New("failed to get state by number")
+	hs, err := interfaces.HeaderSyncFactory(group)
+	if err != nil {
+		return 0, err
 	}
 
+	statedb, err := s.LatestState()
+	if err != nil {
+		return 0, err
+	}
 	if epochID == 0 {
 		register := vm.NewRegisterImpl()
 		if err := register.Load(statedb, params.RelayerAddress); err != nil {
@@ -2213,10 +2230,6 @@ func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (ui
 		epochID = register.GetCurrentEpochID()
 	}
 
-	hs := new(ethereum.HeaderSync)
-	if err := hs.Load(statedb); err != nil {
-		return 0, err
-	}
 	return hs.LoadRelayerSyncTimes(statedb, epochID, relayer)
 }
 
@@ -2228,22 +2241,73 @@ func NewPublicHeaderStoreAPI(b Backend) *PublicHeaderStoreAPI {
 	return &PublicHeaderStoreAPI{b: b}
 }
 
-func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chainID uint64) (uint64, error) {
-	return new(ethereum.Validate).GetCurrentHeaderNumber(chains.ChainType(chainID))
-}
-
-func (p *PublicHeaderStoreAPI) GetHashByNumber(chainID uint64, number uint64) (common.Hash, error) {
-	return new(ethereum.Validate).GetHashByNumber(chains.ChainType(chainID), number)
-}
-
-func (p *PublicHeaderStoreAPI) CurrentNumberAndHash(chainID uint64) (map[string]interface{}, error) {
-	v := new(ethereum.Validate)
-	c := chains.ChainType(chainID)
-	number, err := v.GetCurrentHeaderNumber(c)
+func (p *PublicHeaderStoreAPI) LatestState() (*state.StateDB, error) {
+	bn := rpc.LatestBlockNumber
+	statedb, _, err := p.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
 	if err != nil {
 		return nil, err
 	}
-	hash, err := v.GetHashByNumber(c, number)
+	if statedb == nil {
+		return nil, errors.New("failed to get state by latest number")
+	}
+	return statedb, nil
+}
+
+func (p *PublicHeaderStoreAPI) CurrentHeaderNumber(chainID uint64) (uint64, error) {
+	//return new(ethereum.Validate).GetCurrentHeaderNumber(chains.ChainType(chainID))
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(chainID))
+	if err != nil {
+		return 0, err
+	}
+	hs, err := interfaces.HeaderStoreFactory(group)
+	if err != nil {
+		return 0, err
+	}
+
+	statedb, err := p.LatestState()
+	if err != nil {
+		return 0, err
+	}
+	number, _, err := hs.GetCurrentNumberAndHash(statedb)
+	if err != nil {
+		return 0, err
+	}
+	return number, nil
+}
+
+func (p *PublicHeaderStoreAPI) GetHashByNumber(chainID uint64, number uint64) (common.Hash, error) {
+	//return new(ethereum.Validate).GetHashByNumber(chains.ChainType(chainID), number)
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(chainID))
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hs, err := interfaces.HeaderStoreFactory(group)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	statedb, err := p.LatestState()
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return hs.GetHashByNumber(statedb, number)
+}
+
+func (p *PublicHeaderStoreAPI) CurrentNumberAndHash(chainID uint64) (map[string]interface{}, error) {
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(chainID))
+	if err != nil {
+		return nil, err
+	}
+	hs, err := interfaces.HeaderStoreFactory(group)
+	if err != nil {
+		return nil, err
+	}
+
+	statedb, err := p.LatestState()
+	if err != nil {
+		return nil, err
+	}
+	number, hash, err := hs.GetCurrentNumberAndHash(statedb)
 	if err != nil {
 		return nil, err
 	}
@@ -2255,19 +2319,19 @@ func (p *PublicHeaderStoreAPI) CurrentNumberAndHash(chainID uint64) (map[string]
 	return nh, nil
 }
 
-func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) (*big.Int, error) {
-	bn := rpc.LatestBlockNumber
-	statedb, _, err := p.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
-	if err != nil {
-		return nil, err
-	}
-	if statedb == nil {
-		return nil, errors.New("failed to get state by number")
-	}
-
-	hs := new(ethereum.HeaderSync)
-	if err := hs.Load(statedb); err != nil {
-		return nil, err
-	}
-	return hs.LoadReward(epochID, common.HexToAddress(relayer)), nil
-}
+//func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) (*big.Int, error) {
+//	bn := rpc.LatestBlockNumber
+//	statedb, _, err := p.b.StateAndHeaderByNumberOrHash(context.Background(), rpc.BlockNumberOrHash{BlockNumber: &bn})
+//	if err != nil {
+//		return nil, err
+//	}
+//	if statedb == nil {
+//		return nil, errors.New("failed to get state by number")
+//	}
+//
+//	hs := new(ethereum.HeaderSync)
+//	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
+//		return nil, err
+//	}
+//	return hs.LoadReward(epochID, common.HexToAddress(relayer)), nil
+//}
