@@ -36,7 +36,7 @@ import (
 	ethChain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"time"

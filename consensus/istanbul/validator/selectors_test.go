@@ -24,7 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/mapprotocol/atlas/consensus/istanbul"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 )
 
 var testAddresses = []string{

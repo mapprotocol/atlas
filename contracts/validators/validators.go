@@ -17,7 +17,7 @@ package validators
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
 	blscrypto "github.com/celo-org/celo-bls-go/bls"

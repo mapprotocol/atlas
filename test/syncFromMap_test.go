@@ -9,7 +9,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	istanbulCore "github.com/mapprotocol/atlas/consensus/istanbul/core"
 	"github.com/mapprotocol/atlas/core/types"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"golang.org/x/crypto/sha3"
 	"log"
 	"math"

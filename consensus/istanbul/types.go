@@ -29,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/core/types"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 )
 
 // Decrypt is a decrypt callback function to request an ECIES ciphertext to be

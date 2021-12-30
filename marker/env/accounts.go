@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/accounts"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/marker/hdwallet"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"github.com/tyler-smith/go-bip39"
 )
 

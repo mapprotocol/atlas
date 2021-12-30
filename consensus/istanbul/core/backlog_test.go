@@ -18,7 +18,7 @@ package core
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 	"reflect"
 	"testing"

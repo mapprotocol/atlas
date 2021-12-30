@@ -27,8 +27,8 @@ import (
 	ed25519 "github.com/hdevalence/ed25519consensus"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	params2 "github.com/mapprotocol/atlas/params"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"

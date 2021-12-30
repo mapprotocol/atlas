@@ -39,8 +39,8 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/mapprotocol/atlas/params/bls"
 )
 
 // ErrorReporter is the intersection of the testing.B and testing.T interfaces.
