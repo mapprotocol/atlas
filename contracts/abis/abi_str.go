@@ -344,32 +344,6 @@ const BlockchainParametersStr = `[
 	}
 ]`
 
-const SortedOraclesStr = `[
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "medianRate",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint128"
-			},
-			{
-				"name": "",
-				"type": "uint128"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	}
-]`
-
 const ERC20Str = `[
 	{
 		"constant": true,
@@ -459,7 +433,26 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "EpochRewardRemainsDistributedToValidators",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "voterAddress",
           "type": "address"
         },
         {
@@ -478,11 +471,11 @@ const ElectionsStr string = `[
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "maxNumGroupsVotedFor",
+          "name": "maxNumValidatorsVotedFor",
           "type": "uint256"
         }
       ],
-      "name": "MaxNumGroupsVotedForSet",
+      "name": "MaxNumValidatorsVotedForSet",
       "type": "event"
     },
     {
@@ -529,7 +522,7 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -537,15 +530,9 @@ const ElectionsStr string = `[
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "units",
-          "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupActiveVoteRevoked",
+      "name": "ValidatorActiveVoteRevoked",
       "type": "event"
     },
     {
@@ -554,11 +541,11 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
-      "name": "ValidatorGroupMarkedEligible",
+      "name": "ValidatorMarkedEligible",
       "type": "event"
     },
     {
@@ -567,11 +554,11 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
-      "name": "ValidatorGroupMarkedIneligible",
+      "name": "ValidatorMarkedIneligible",
       "type": "event"
     },
     {
@@ -586,7 +573,7 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -596,7 +583,7 @@ const ElectionsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupPendingVoteRevoked",
+      "name": "ValidatorPendingVoteRevoked",
       "type": "event"
     },
     {
@@ -611,7 +598,7 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -619,15 +606,9 @@ const ElectionsStr string = `[
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "units",
-          "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupVoteActivated",
+      "name": "ValidatorVoteActivated",
       "type": "event"
     },
     {
@@ -642,7 +623,7 @@ const ElectionsStr string = `[
         {
           "indexed": true,
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -652,7 +633,7 @@ const ElectionsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "ValidatorGroupVoteCast",
+      "name": "ValidatorVoteCast",
       "type": "event"
     },
     {
@@ -940,7 +921,7 @@ const ElectionsStr string = `[
     {
       "constant": true,
       "inputs": [],
-      "name": "maxNumGroupsVotedFor",
+      "name": "maxNumValidatorsVotedFor",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1190,7 +1171,7 @@ const ElectionsStr string = `[
         },
         {
           "internalType": "uint256",
-          "name": "_maxNumGroupsVotedFor",
+          "name": "_maxNumValidatorsVotedFor",
           "type": "uint256"
         },
         {
@@ -1256,11 +1237,11 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_maxNumGroupsVotedFor",
+          "name": "_maxNumValidatorsVotedFor",
           "type": "uint256"
         }
       ],
-      "name": "setMaxNumGroupsVotedFor",
+      "name": "setMaxNumValidatorsVotedFor",
       "outputs": [
         {
           "internalType": "bool",
@@ -1313,7 +1294,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1349,7 +1330,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
@@ -1370,7 +1351,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1401,7 +1382,7 @@ const ElectionsStr string = `[
         },
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         }
       ],
@@ -1422,7 +1403,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1463,7 +1444,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1499,7 +1480,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1561,7 +1542,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1570,7 +1551,7 @@ const ElectionsStr string = `[
           "type": "address"
         }
       ],
-      "name": "getPendingVotesForGroupByAccount",
+      "name": "getPendingVotesForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1587,7 +1568,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1596,7 +1577,7 @@ const ElectionsStr string = `[
           "type": "address"
         }
       ],
-      "name": "getActiveVotesForGroupByAccount",
+      "name": "getActiveVotesForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1613,7 +1594,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1622,7 +1603,7 @@ const ElectionsStr string = `[
           "type": "address"
         }
       ],
-      "name": "getTotalVotesForGroupByAccount",
+      "name": "getTotalVotesForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1639,7 +1620,7 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1648,7 +1629,7 @@ const ElectionsStr string = `[
           "type": "address"
         }
       ],
-      "name": "getActiveVoteUnitsForGroupByAccount",
+      "name": "getActiveVoteForValidatorByAccount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1665,217 +1646,79 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVoteUnitsForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getTotalVotesForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVotesForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getPendingVotesForGroup",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "getGroupEligibility",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
+          "name": "validator",
           "type": "address"
         },
-        {
-          "internalType": "uint256",
-          "name": "totalEpochRewards",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "uptimes",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "getGroupEpochRewards",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "lesser",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greater",
-          "type": "address"
-        }
-      ],
-      "name": "distributeEpochRewards",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "markGroupIneligible",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "lesser",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greater",
-          "type": "address"
-        }
-      ],
-      "name": "markGroupEligible",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
         {
           "internalType": "address",
           "name": "account",
           "type": "address"
         }
       ],
-      "name": "getGroupsVotedForByAccount",
+      "name": "getActiveVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getActiveVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getTotalVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getActiveVotersForValidator",
       "outputs": [
         {
           "internalType": "address[]",
@@ -1892,7 +1735,151 @@ const ElectionsStr string = `[
       "inputs": [
         {
           "internalType": "address",
-          "name": "group",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getPendingVotesForValidator",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "getValidatorEligibility",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "topNum",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTopValidators",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "distributeEpochVotersRewards",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "markValidatorIneligible",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "lesser",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "greater",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "markValidatorEligible",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "getValidatorsVotedForByAccount",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
           "type": "address"
         },
         {
@@ -1915,13 +1902,7 @@ const ElectionsStr string = `[
     },
     {
       "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
+      "inputs": [],
       "name": "getNumVotesReceivable",
       "outputs": [
         {
@@ -1967,7 +1948,7 @@ const ElectionsStr string = `[
     {
       "constant": true,
       "inputs": [],
-      "name": "getEligibleValidatorGroups",
+      "name": "getEligibleValidators",
       "outputs": [
         {
           "internalType": "address[]",
@@ -1982,11 +1963,11 @@ const ElectionsStr string = `[
     {
       "constant": true,
       "inputs": [],
-      "name": "getTotalVotesForEligibleValidatorGroups",
+      "name": "getTotalVotesForEligibleValidators",
       "outputs": [
         {
           "internalType": "address[]",
-          "name": "groups",
+          "name": "validators",
           "type": "address[]"
         },
         {
@@ -2099,107 +2080,818 @@ const ElectionsStr string = `[
   ]`
 
 const EpochRewardsStr string = `[
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "calculateTargetEpochRewards",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{ 
-		"constant": true,
-		"inputs": [],
-		"name": "carbonOffsettingPartner",
-		"outputs": [
-			{ 
-				"name": "",
-				"type": "address"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "updateTargetVotingYield",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "isReserveLow",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "frozen",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	}
-]
-`
-
-const FreezerStr = `[
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "isFrozen",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	}
-]`
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "test",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "partner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fraction",
+          "type": "uint256"
+        }
+      ],
+      "name": "CommunityRewardFundSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "registryAddress",
+          "type": "address"
+        }
+      ],
+      "name": "RegistrySet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "max",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "underspendAdjustmentFactor",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "overspendAdjustmentFactor",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardsMultiplierParametersSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "payment",
+          "type": "uint256"
+        }
+      ],
+      "name": "TargetValidatorEpochPaymentSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fraction",
+          "type": "uint256"
+        }
+      ],
+      "name": "TargetVotingGoldFractionSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "max",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "adjustmentFactor",
+          "type": "uint256"
+        }
+      ],
+      "name": "TargetVotingYieldParametersSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "target",
+          "type": "uint256"
+        }
+      ],
+      "name": "TargetVotingYieldSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fraction",
+          "type": "uint256"
+        }
+      ],
+      "name": "TargetVotingYieldUpdated",
+      "type": "event"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "blsKey",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "blsPop",
+          "type": "bytes"
+        }
+      ],
+      "name": "checkProofOfPossession",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "communityPartner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "aNumerator",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "aDenominator",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "bNumerator",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "bDenominator",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "exponent",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_decimals",
+          "type": "uint256"
+        }
+      ],
+      "name": "fractionMulExp",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "header",
+          "type": "bytes"
+        }
+      ],
+      "name": "getBlockNumberFromHeader",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getEpochNumber",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "getEpochNumberOfBlock",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getEpochSize",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "getParentSealBitmap",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "header",
+          "type": "bytes"
+        }
+      ],
+      "name": "getVerifiedSealBitmapFromHeader",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "header",
+          "type": "bytes"
+        }
+      ],
+      "name": "hashHeader",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "initialized",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "isOwner",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "minQuorumSize",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "minQuorumSizeInCurrentSet",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "numberValidatorsInCurrentSet",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "numberValidatorsInSet",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "registry",
+      "outputs": [
+        {
+          "internalType": "contract IRegistry",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "registryAddress",
+          "type": "address"
+        }
+      ],
+      "name": "setRegistry",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "startTime",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "targetValidatorEpochPayment",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "validatorSignerAddressFromCurrentSet",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "blockNumber",
+          "type": "uint256"
+        }
+      ],
+      "name": "validatorSignerAddressFromSet",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getVersionNumber",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "registryAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_targetValidatorEpochPayment",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_communityRewardFraction",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_communityPartner",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "partner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCommunityRewardFraction",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getCommunityRewardFraction",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTargetValidatorEpochPayment",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getTargetTotalEpochPaymentsInGold",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getCommunityPartner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "calculateTargetEpochRewards",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]`
 
 const GasPriceMinimumStr = `[
 	{
@@ -2427,51 +3119,6 @@ const ValidatorsStr = `[
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "duration",
-          "type": "uint256"
-        }
-      ],
-      "name": "GroupLockedGoldRequirementsSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "size",
-          "type": "uint256"
-        }
-      ],
-      "name": "MaxGroupSizeSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "length",
-          "type": "uint256"
-        }
-      ],
-      "name": "MembershipHistoryLengthSet",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": true,
           "internalType": "address",
           "name": "previousOwner",
@@ -2510,25 +3157,6 @@ const ValidatorsStr = `[
           "type": "address"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorAffiliated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
           "indexed": false,
           "internalType": "bytes",
           "name": "blsPublicKey",
@@ -2548,13 +3176,38 @@ const ValidatorsStr = `[
           "type": "address"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "activationBlock",
+          "type": "uint256"
         }
       ],
-      "name": "ValidatorDeaffiliated",
+      "name": "ValidatorCommissionUpdateQueued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
+        }
+      ],
+      "name": "ValidatorCommissionUpdated",
       "type": "event"
     },
     {
@@ -2603,154 +3256,9 @@ const ValidatorsStr = `[
           "internalType": "uint256",
           "name": "validatorPayment",
           "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "groupPayment",
-          "type": "uint256"
         }
       ],
       "name": "ValidatorEpochPaymentDistributed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "activationBlock",
-          "type": "uint256"
-        }
-      ],
-      "name": "ValidatorGroupCommissionUpdateQueued",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        }
-      ],
-      "name": "ValidatorGroupCommissionUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupDeregistered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupMemberAdded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupMemberRemoved",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "ValidatorGroupMemberReordered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        }
-      ],
-      "name": "ValidatorGroupRegistered",
       "type": "event"
     },
     {
@@ -2780,6 +3288,12 @@ const ValidatorsStr = `[
           "internalType": "address",
           "name": "validator",
           "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
         }
       ],
       "name": "ValidatorRegistered",
@@ -3057,26 +3571,6 @@ const ValidatorsStr = `[
     },
     {
       "constant": true,
-      "inputs": [],
-      "name": "groupLockedGoldRequirements",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "duration",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
       "inputs": [
         {
           "internalType": "bytes",
@@ -3120,36 +3614,6 @@ const ValidatorsStr = `[
           "internalType": "bool",
           "name": "",
           "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "maxGroupSize",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "membershipHistoryLength",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "payable": false,
@@ -3419,16 +3883,6 @@ const ValidatorsStr = `[
         },
         {
           "internalType": "uint256",
-          "name": "groupRequirementValue",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "groupRequirementDuration",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "validatorRequirementValue",
           "type": "uint256"
         },
@@ -3449,17 +3903,7 @@ const ValidatorsStr = `[
         },
         {
           "internalType": "uint256",
-          "name": "_membershipHistoryLength",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "_slashingMultiplierResetPeriod",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_maxGroupSize",
           "type": "uint256"
         },
         {
@@ -3499,48 +3943,6 @@ const ValidatorsStr = `[
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "size",
-          "type": "uint256"
-        }
-      ],
-      "name": "setMaxGroupSize",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "length",
-          "type": "uint256"
-        }
-      ],
-      "name": "setMembershipHistoryLength",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
           "name": "exponent",
           "type": "uint256"
         },
@@ -3560,21 +3962,6 @@ const ValidatorsStr = `[
       ],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getMaxGroupSize",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -3606,32 +3993,6 @@ const ValidatorsStr = `[
           "type": "uint256"
         }
       ],
-      "name": "setGroupLockedGoldRequirements",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "duration",
-          "type": "uint256"
-        }
-      ],
       "name": "setValidatorLockedGoldRequirements",
       "outputs": [
         {
@@ -3647,6 +4008,21 @@ const ValidatorsStr = `[
     {
       "constant": false,
       "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "commission",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lesser",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "greater",
+          "type": "address"
+        },
         {
           "internalType": "bytes",
           "name": "ecdsaPublicKey",
@@ -3699,69 +4075,12 @@ const ValidatorsStr = `[
       "constant": true,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getMembershipHistory",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        },
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
           "internalType": "uint256",
           "name": "uptime",
           "type": "uint256"
         }
       ],
       "name": "calculateEpochScore",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "uptimes",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "calculateGroupEpochScore",
       "outputs": [
         {
           "internalType": "uint256",
@@ -3829,42 +4148,6 @@ const ValidatorsStr = `[
         }
       ],
       "name": "deregisterValidator",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "group",
-          "type": "address"
-        }
-      ],
-      "name": "affiliate",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "deaffiliate",
       "outputs": [
         {
           "internalType": "bool",
@@ -3963,152 +4246,6 @@ const ValidatorsStr = `[
         }
       ],
       "name": "updatePublicKeys",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "commission",
-          "type": "uint256"
-        }
-      ],
-      "name": "registerValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
-      "name": "deregisterValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "addMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "lesser",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greater",
-          "type": "address"
-        }
-      ],
-      "name": "addFirstMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        }
-      ],
-      "name": "removeMember",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "lesserMember",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "greaterMember",
-          "type": "address"
-        }
-      ],
-      "name": "reorderMember",
       "outputs": [
         {
           "internalType": "bool",
@@ -4229,11 +4366,6 @@ const ValidatorsStr = `[
           "type": "bytes"
         },
         {
-          "internalType": "address",
-          "name": "affiliation",
-          "type": "address"
-        },
-        {
           "internalType": "uint256",
           "name": "score",
           "type": "uint256"
@@ -4242,56 +4374,30 @@ const ValidatorsStr = `[
           "internalType": "address",
           "name": "signer",
           "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "commission",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "nextCommission",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
+          "name": "nextCommissionBlock",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "slashMultiplier",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lastSlashed",
           "type": "uint256"
         }
       ],
@@ -4302,65 +4408,18 @@ const ValidatorsStr = `[
     {
       "constant": true,
       "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getGroupNumMembers",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        },
         {
           "internalType": "uint256",
           "name": "n",
           "type": "uint256"
         }
       ],
-      "name": "getTopGroupValidators",
+      "name": "getTopValidators",
       "outputs": [
         {
           "internalType": "address[]",
           "name": "",
           "type": "address[]"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address[]",
-          "name": "accounts",
-          "type": "address[]"
-        }
-      ],
-      "name": "getGroupsNumMembers",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
         }
       ],
       "payable": false,
@@ -4386,26 +4445,6 @@ const ValidatorsStr = `[
       "constant": true,
       "inputs": [],
       "name": "getValidatorLockedGoldRequirements",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getGroupLockedGoldRequirements",
       "outputs": [
         {
           "internalType": "uint256",
@@ -4454,42 +4493,6 @@ const ValidatorsStr = `[
     },
     {
       "constant": true,
-      "inputs": [],
-      "name": "getRegisteredValidatorGroups",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "isValidatorGroup",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
       "inputs": [
         {
           "internalType": "address",
@@ -4507,63 +4510,6 @@ const ValidatorsStr = `[
       ],
       "payable": false,
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "signer",
-          "type": "address"
-        }
-      ],
-      "name": "getMembershipInLastEpochFromSigner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getMembershipInLastEpoch",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validatorAccount",
-          "type": "address"
-        }
-      ],
-      "name": "forceDeaffiliateIfValidator",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -4629,43 +4575,12 @@ const ValidatorsStr = `[
           "type": "address"
         }
       ],
-      "name": "getValidatorGroupSlashingMultiplier",
+      "name": "getValidatorSlashingMultiplier",
       "outputs": [
         {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "epochNumber",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
-      "name": "groupMembershipInEpoch",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
         }
       ],
       "payable": false,

@@ -4,9 +4,6 @@ import (
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/shopspring/decimal"
 )
 
 // BaseConfig creates base parameters for atlas
@@ -15,52 +12,17 @@ func BaseConfig() *Config {
 	bigInt := big.NewInt
 	bigIntStr := params.MustBigInt
 	fixed := fixed.MustNew
-	decimal := decimal.RequireFromString
 
 	return &Config{
-		SortedOracles: SortedOraclesParameters{
-			ReportExpirySeconds: 5 * Minute,
-		},
+
 		GasPriceMinimum: GasPriceMinimumParameters{
 			MinimumFloor:    bigInt(100000000),
 			AdjustmentSpeed: fixed("0.5"),
 			TargetDensity:   fixed("0.5"),
 		},
-		Reserve: ReserveParameters{
-			TobinTaxStalenessThreshold: 3153600000,
-			TobinTax:                   fixed("0"),
-			TobinTaxReserveRatio:       fixed("0"),
-			DailySpendingRatio:         fixed("0.05"),
-			AssetAllocations: AssetAllocationList{
-				{"cGLD", fixed("0.5")},
-				{"BTC", fixed("0.3")},
-				{"ETH", fixed("0.15")},
-				{"DAI", fixed("0.05")},
-			},
-		},
-		StableToken: StableTokenParameters{
-			Name:                        "Atlas Dollar",
-			Symbol:                      "cUSD",
-			Decimals:                    18,
-			Rate:                        fixed("1"),
-			InflationFactorUpdatePeriod: 2 * Year,
-			GoldPrice:                   fixed("1"),
-			ExchangeIdentifier:          "Exchange",
-		},
-		StableTokenEUR: StableTokenParameters{
-			Name:                        "Atlas Euro",
-			Symbol:                      "cEUR",
-			Decimals:                    18,
-			Rate:                        fixed("1"),
-			InflationFactorUpdatePeriod: 2 * Year,
-			GoldPrice:                   fixed("1"),
-			ExchangeIdentifier:          "ExchangeEUR",
-		},
+
 		Validators: ValidatorsParameters{
-			GroupLockedGoldRequirements: LockedGoldRequirements{
-				Value:    bigIntStr("10000000000000000000000"), // 10k Atlas per validator
-				Duration: 180 * Day,
-			},
+
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
 				Value: bigIntStr("10000000000000000000000"), // 10k Atlas
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
@@ -69,11 +31,7 @@ func BaseConfig() *Config {
 			ValidatorScoreExponent:        10,
 			ValidatorScoreAdjustmentSpeed: fixed("0.1"),
 
-			// MUST BE KEPT IN SYNC WITH VALIDATOR LOCKED GOLD DURATION
-			MembershipHistoryLength: 60,
-
 			CommissionUpdateDelay: (3 * Day) / 5, // Approximately 3 days with 5s block times
-			MaxGroupSize:          5,
 
 			SlashingPenaltyResetPeriod: 30 * Day,
 
@@ -87,20 +45,7 @@ func BaseConfig() *Config {
 			MaxVotesPerAccount:     bigInt(10),
 			ElectabilityThreshold:  fixed("0.001"),
 		},
-		Exchange: ExchangeParameters{
-			Spread:          fixed("0.005"),
-			ReserveFraction: fixed("0.01"),
-			UpdateFrequency: 5 * Minute,
-			MinimumReports:  1,
-			Frozen:          false,
-		},
-		ExchangeEUR: ExchangeParameters{
-			Spread:          fixed("0.005"),
-			ReserveFraction: fixed("0.01"),
-			UpdateFrequency: 5 * Minute,
-			MinimumReports:  1,
-			Frozen:          false,
-		},
+
 		EpochRewards: EpochRewardsParameters{
 			TargetVotingYieldInitial:                     fixed("0"),      // Change to (x + 1) ^ 365 = 1.06 once Mainnet activated.
 			TargetVotingYieldAdjustmentFactor:            fixed("0"),      // Change to 1 / 3650 once Mainnet activated.,
@@ -114,8 +59,8 @@ func BaseConfig() *Config {
 			TargetVotingGoldFraction: fixed("0.5"),
 			MaxValidatorEpochPayment: bigIntStr("205479452054794520547"), // (75,000 / 365) * 10 ^ 18
 			CommunityRewardFraction:  fixed("0.25"),
-			CarbonOffsettingPartner:  common.Address{},
-			CarbonOffsettingFraction: fixed("0.001"),
+			//CarbonOffsettingPartner:  common.Address{},
+			//CarbonOffsettingFraction: fixed("0.001"),
 
 			Frozen: false,
 		},
@@ -124,12 +69,6 @@ func BaseConfig() *Config {
 		},
 		Random: RandomParameters{
 			RandomnessBlockRetentionWindow: 720,
-		},
-		Attestations: AttestationsParameters{
-			AttestationExpiryBlocks:        Hour / 5, // 1 hour assuming 5 second blocks, but ok anyway
-			SelectIssuersWaitBlocks:        4,
-			MaxAttestations:                100,
-			AttestationRequestFeeInDollars: decimal("0.05"), // use decimal rather than fixed, since we use this to multiply by
 		},
 		TransferWhitelist: TransferWhitelistParameters{},
 		GoldToken: GoldTokenParameters{

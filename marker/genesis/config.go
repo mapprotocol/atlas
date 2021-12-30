@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/marker/internal/utils"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/shopspring/decimal"
 )
 
 // durations in seconds
@@ -28,13 +27,7 @@ type Config struct {
 	Hardforks        HardforkConfig        `json:"hardforks"`
 	GenesisTimestamp uint64                `json:"genesisTimestamp"`
 
-	SortedOracles              SortedOraclesParameters
 	GasPriceMinimum            GasPriceMinimumParameters
-	Reserve                    ReserveParameters
-	StableToken                StableTokenParameters
-	StableTokenEUR             StableTokenParameters
-	Exchange                   ExchangeParameters
-	ExchangeEUR                ExchangeParameters
 	LockedGold                 LockedGoldParameters
 	GoldToken                  GoldTokenParameters
 	Validators                 ValidatorsParameters
@@ -42,7 +35,6 @@ type Config struct {
 	EpochRewards               EpochRewardsParameters
 	Blockchain                 BlockchainParameters
 	Random                     RandomParameters
-	Attestations               AttestationsParameters
 	TransferWhitelist          TransferWhitelistParameters
 	ReserveSpenderMultiSig     MultiSigParameters
 	GovernanceApproverMultiSig MultiSigParameters
@@ -196,17 +188,15 @@ type GovernanceParametersMarshaling struct {
 
 // ValidatorsParameters are the initial configuration parameters for Validators
 type ValidatorsParameters struct {
-	GroupLockedGoldRequirements     LockedGoldRequirements `json:"groupLockedGoldRequirements"`
 	ValidatorLockedGoldRequirements LockedGoldRequirements `json:"validatorLockedGoldRequirements"`
 	ValidatorScoreExponent          uint64                 `json:"validatorScoreExponent"`
 	ValidatorScoreAdjustmentSpeed   *fixed.Fixed           `json:"validatorScoreAdjustmentSpeed"`
 	MembershipHistoryLength         uint64                 `json:"membershipHistoryLength"`
 	SlashingPenaltyResetPeriod      uint64                 `json:"slashingPenaltyResetPeriod"`
-	MaxGroupSize                    uint64                 `json:"maxGroupSize"`
 	CommissionUpdateDelay           uint64                 `json:"commissionUpdateDelay"`
 	DowntimeGracePeriod             uint64                 `json:"downtimeGracePeriod"`
 
-	Commission *fixed.Fixed `json:"commission"` // commission for genesis registered validator groups
+	Commission *fixed.Fixed `json:"commission"` // commission for genesis registered validator
 }
 
 //go:generate gencodec -type EpochRewardsParameters -field-override EpochRewardsParametersMarshaling -out gen_epoch_rewards_parameters_json.go
@@ -222,9 +212,9 @@ type EpochRewardsParameters struct {
 	TargetVotingGoldFraction                     *fixed.Fixed   `json:"targetVotingGoldFraction"`
 	MaxValidatorEpochPayment                     *big.Int       `json:"maxValidatorEpochPayment"`
 	CommunityRewardFraction                      *fixed.Fixed   `json:"communityRewardFraction"`
-	CarbonOffsettingPartner                      common.Address `json:"carbonOffsettingPartner"`
-	CarbonOffsettingFraction                     *fixed.Fixed   `json:"carbonOffsettingFraction"`
-	Frozen                                       bool           `json:"frozen"`
+	CommunityPartnerPartner                      common.Address `json:"carbonOffsettingPartner"`
+	//CarbonOffsettingFraction                     *fixed.Fixed   `json:"carbonOffsettingFraction"`
+	Frozen bool `json:"frozen"`
 }
 
 type EpochRewardsParametersMarshaling struct {
@@ -248,19 +238,6 @@ type RandomParameters struct {
 	RandomnessBlockRetentionWindow uint64 `json:"randomnessBlockRetentionWindow"`
 }
 
-// AttestationsParameters are the initial configuration parameters for Attestations
-type AttestationsParameters struct {
-	AttestationExpiryBlocks        uint64          `json:"attestationExpiryBlocks"`
-	SelectIssuersWaitBlocks        uint64          `json:"selectIssuersWaitBlocks"`
-	MaxAttestations                uint64          `json:"maxAttestations"`
-	AttestationRequestFeeInDollars decimal.Decimal `json:"AttestationRequestFeeInDollars"`
-}
-
-// SortedOraclesParameters are the initial configuration parameters for SortedOracles
-type SortedOraclesParameters struct {
-	ReportExpirySeconds uint64 `json:"reportExpirySeconds"`
-}
-
 //go:generate gencodec -type GasPriceMinimumParameters -field-override GasPriceMinimumParametersMarshaling -out gen_gas_price_minimum_parameters_json.go
 
 // GasPriceMinimumParameters are the initial configuration parameters for GasPriceMinimum
@@ -272,52 +249,6 @@ type GasPriceMinimumParameters struct {
 
 type GasPriceMinimumParametersMarshaling struct {
 	MinimumFloor *bigintstr.BigIntStr `json:"minimumFloor"`
-}
-
-//go:generate gencodec -type ReserveParameters -field-override ReserveParametersMarshaling -out gen_reserve_parameters_json.go
-
-// ReserveParameters are the initial configuration parameters for Reserve
-type ReserveParameters struct {
-	TobinTaxStalenessThreshold uint64              `json:"tobinTaxStalenessThreshold"`
-	DailySpendingRatio         *fixed.Fixed        `json:"dailySpendingRatio"`
-	AssetAllocations           AssetAllocationList `json:"assetAllocations"`
-	TobinTax                   *fixed.Fixed        `json:"tobinTax"`
-	TobinTaxReserveRatio       *fixed.Fixed        `json:"tobinTaxReserveRatio"`
-
-	// Other parameters
-	Spenders                 []common.Address `json:"spenders"`
-	OtherAddresses           []common.Address `json:"otherAddresses"`
-	InitialBalance           *big.Int         `json:"initialBalance"`
-	FrozenAssetsStartBalance *big.Int         `json:"frozenAssetsStartBalance"`
-	FrozenAssetsDays         uint64           `json:"frozenAssetsDays"`
-}
-
-type ReserveParametersMarshaling struct {
-	InitialBalance           *bigintstr.BigIntStr `json:"initialBalance"`
-	FrozenAssetsStartBalance *bigintstr.BigIntStr `json:"frozenAssetsStartBalance"`
-}
-
-// StableTokenParameters are the initial configuration parameters for StableToken
-type StableTokenParameters struct {
-	Name                        string           `json:"name"`
-	Symbol                      string           `json:"symbol"`
-	Decimals                    uint8            `json:"decimals"`
-	Rate                        *fixed.Fixed     `json:"rate"`
-	InflationFactorUpdatePeriod uint64           `json:"inflationFactorUpdatePeriod"` // How often the inflation factor is updated.
-	InitialBalances             BalanceList      `json:"initialBalances"`
-	Frozen                      bool             `json:"frozen"`
-	Oracles                     []common.Address `json:"oracles"`
-	GoldPrice                   *fixed.Fixed     `json:"goldPrice"`
-	ExchangeIdentifier          string           `json:"exchangeIdentifier"`
-}
-
-// ExchangeParameters are the initial configuration parameters for Exchange
-type ExchangeParameters struct {
-	Frozen          bool         `json:"frozen"`
-	Spread          *fixed.Fixed `json:"spread"`
-	ReserveFraction *fixed.Fixed `json:"reserveFraction"`
-	UpdateFrequency uint64       `json:"updateFrequency"`
-	MinimumReports  uint64       `json:"minimumReports"`
 }
 
 // LockedGoldParameters are the initial configuration parameters for LockedGold
@@ -354,34 +285,6 @@ func (bl BalanceList) Amounts() []*big.Int {
 	res := make([]*big.Int, len(bl))
 	for i, x := range bl {
 		res[i] = x.Amount
-	}
-	return res
-}
-
-// AssetAllocation config for Reserve
-type AssetAllocation struct {
-	Symbol string       `json:"symbol"`
-	Weight *fixed.Fixed `json:"weight"`
-}
-
-// AssetAllocationList list of AssetAllocation
-type AssetAllocationList []AssetAllocation
-
-// SymbolsABI returns symbols in ABI format for assets in list
-func (aa AssetAllocationList) SymbolsABI() []common.Hash {
-	res := make([]common.Hash, len(aa))
-	for i, x := range aa {
-
-		res[i] = common.BytesToHash(common.RightPadBytes([]byte(x.Symbol), 32))
-	}
-	return res
-}
-
-// Weights returns weights for assets in list
-func (aa AssetAllocationList) Weights() []*big.Int {
-	res := make([]*big.Int, len(aa))
-	for i, x := range aa {
-		res[i] = x.Weight.BigInt()
 	}
 	return res
 }

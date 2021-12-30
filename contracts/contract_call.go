@@ -45,8 +45,6 @@ func (am Method) decodeResult(result interface{}, output []byte) error {
 	if result == nil {
 		return nil
 	}
-
-	// adapter new pattern
 	err := am.abi.UnpackIntoInterface(result, am.method, output)
 	return err
 }

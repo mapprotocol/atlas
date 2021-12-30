@@ -17,23 +17,17 @@ var (
 )
 
 func GetTotalSupply(vmRunner vm.EVMRunner) (*big.Int, error) {
-	return big.NewInt(0), nil
-	//TODO Replace with the following in the future
 	var totalSupply *big.Int
 	err := totalSupplyMethod.Query(vmRunner, &totalSupply)
 	return totalSupply, err
 }
 
 func IncreaseSupply(vmRunner vm.EVMRunner, value *big.Int) error {
-	return nil
-	//TODO Replace with the following in the future
 	err := increaseSupplyMethod.Execute(vmRunner, nil, common.Big0, value)
 	return err
 }
 
 func Mint(vmRunner vm.EVMRunner, beneficiary common.Address, value *big.Int) error {
-	return nil
-	//TODO Replace with the following in the future
 	if value.Cmp(new(big.Int)) <= 0 {
 		return nil
 	}

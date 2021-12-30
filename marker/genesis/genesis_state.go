@@ -15,7 +15,6 @@ import (
 	"github.com/mapprotocol/atlas/marker/contract"
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/shopspring/decimal"
 )
 
 var (
@@ -84,32 +83,23 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		ctx.deployLibraries,
 		// 01 Registry
 		ctx.deployRegistry,
-		//// 02 Freezer
-		//ctx.deployFreezer,
-		//
+
 		//// 03 TransferWhitelist
 		//ctx.deployTransferWhitelist,
 		//
 		//// 03.bis FeeCurrencyWhitelist
 		//ctx.deployFeeCurrencyWhitelist,
 		//
-		//// 04 GoldToken
-		//ctx.deployGoldToken,
-		//
-		//// 05 SortedOracles
-		//ctx.deploySortedOracles,
-		//
+		// 04 GoldToken
+		ctx.deployGoldToken,
+
 		//// 06 GasPriceMinimum
 		//ctx.deployGasPriceMinimum,
-		//
-		//// 07 Reserve
-		//ctx.deployReserve,
+
 		//
 		//// 08 ReserveSpenderMultisig (requires reserve to work)
 		//ctx.deployReserveSpenderMultisig,
-		//
-		//// 09 StableToken and StableTokenEUR
-		//ctx.deployStableTokens,
+
 		//
 		//// 10 Exchange and ExchangeEUR
 		//ctx.deployExchanges,
@@ -126,8 +116,8 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		// 14 Election
 		ctx.deployElection,
 		//
-		//// 15 EpochRewards
-		//ctx.deployEpochRewards,
+		// 15 EpochRewards
+		ctx.deployEpochRewards,
 		//
 		//// 16 Random
 		//ctx.deployRandom,
@@ -150,10 +140,10 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		//// 22 DowntimeSlasher
 		//ctx.deployDowntimeSlasher,
 		//
-		//// 23 GovernanceApproverMultiSig
+		// 23 GovernanceApproverMultiSig
 		//ctx.deployGovernanceApproverMultiSig,
 		//
-		//// 24 Governance
+		// 24 Governance
 		//ctx.deployGovernance,
 
 		// 25 Elect Validators
@@ -214,6 +204,12 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 // Initialize AdminAT
 func (ctx *deployContext) fundAdminAccount() {
 	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
+	// validators
+	ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -243,7 +239,8 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 
 	logger.Info("Set proxy implementation")
 	proxyContract := ctx.proxyContract(name)
-
+	fmt.Println("name:", name)
+	fmt.Println("implAddress:", implAddress)
 	if err := proxyContract.SimpleCall("_setImplementation", implAddress); err != nil {
 		return err
 	}
@@ -389,12 +386,6 @@ func (ctx *deployContext) deployBlockchainParameters() error {
 	})
 }
 
-func (ctx *deployContext) deployFreezer() error {
-	return ctx.deployCoreContract("Freezer", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize")
-	})
-}
-
 func (ctx *deployContext) deployGovernanceSlasher() error {
 	err := ctx.deployCoreContract("GovernanceSlasher", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
@@ -444,21 +435,6 @@ func (ctx *deployContext) deployDowntimeSlasher() error {
 	return ctx.addSlasher("DowntimeSlasher")
 }
 
-func (ctx *deployContext) deployAttestations() error {
-	return ctx.deployCoreContract("Attestations", func(contract *contract.EVMBackend) error {
-		dollar := decimal.NewFromBigInt(common.Big1, int32(ctx.genesisConfig.StableToken.Decimals))
-		fee := dollar.Mul(ctx.genesisConfig.Attestations.AttestationRequestFeeInDollars)
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			newBigInt(ctx.genesisConfig.Attestations.AttestationExpiryBlocks),
-			newBigInt(ctx.genesisConfig.Attestations.SelectIssuersWaitBlocks),
-			newBigInt(ctx.genesisConfig.Attestations.MaxAttestations),
-			[]common.Address{env.MustProxyAddressFor("StableToken")},
-			[]*big.Int{fee.BigInt()},
-		)
-	})
-}
-
 func (ctx *deployContext) deployEscrow() error {
 	return ctx.deployCoreContract("Escrow", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize", env.MustProxyAddressFor("Registry"))
@@ -494,57 +470,13 @@ func (ctx *deployContext) deployGoldToken() error {
 	return nil
 }
 
-func (ctx *deployContext) deployExchanges() error {
-	type ExchangeConfig struct {
-		contract            string
-		stableTokenContract string
-		cfg                 ExchangeParameters
-	}
-	exchanges := []ExchangeConfig{
-		{"Exchange", "StableToken", ctx.genesisConfig.Exchange},
-		{"ExchangeEUR", "StableTokenEUR", ctx.genesisConfig.ExchangeEUR},
-	}
-	for _, exchange := range exchanges {
-		err := ctx.deployCoreContract(exchange.contract, func(contract *contract.EVMBackend) error {
-			return contract.SimpleCall("initialize",
-				env.MustProxyAddressFor("Registry"),
-				env.MustProxyAddressFor(exchange.stableTokenContract),
-				exchange.cfg.Spread.BigInt(),
-				exchange.cfg.ReserveFraction.BigInt(),
-				newBigInt(exchange.cfg.UpdateFrequency),
-				newBigInt(exchange.cfg.MinimumReports),
-			)
-		})
-		if err != nil {
-			return err
-		}
-
-		if exchange.cfg.Frozen {
-			ctx.logger.Info("Freezing Exchange", "contract", exchange.contract)
-			err = ctx.contract("Freezer").SimpleCall("freeze", env.MustProxyAddressFor("Exchange"))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (ctx *deployContext) deployEpochRewards() error {
 	err := ctx.deployCoreContract("EpochRewards", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
 			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.EpochRewards.TargetVotingYieldInitial.BigInt(),
-			ctx.genesisConfig.EpochRewards.TargetVotingYieldMax.BigInt(),
-			ctx.genesisConfig.EpochRewards.TargetVotingYieldAdjustmentFactor.BigInt(),
-			ctx.genesisConfig.EpochRewards.RewardsMultiplierMax.BigInt(),
-			ctx.genesisConfig.EpochRewards.RewardsMultiplierAdjustmentFactorsUnderspend.BigInt(),
-			ctx.genesisConfig.EpochRewards.RewardsMultiplierAdjustmentFactorsOverspend.BigInt(),
-			ctx.genesisConfig.EpochRewards.TargetVotingGoldFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.MaxValidatorEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
-			ctx.genesisConfig.EpochRewards.CarbonOffsettingPartner,
-			ctx.genesisConfig.EpochRewards.CarbonOffsettingFraction.BigInt(),
+			ctx.genesisConfig.EpochRewards.CommunityPartnerPartner,
 		)
 	})
 	if err != nil {
@@ -588,15 +520,11 @@ func (ctx *deployContext) deployValidators() error {
 	return ctx.deployCoreContract("Validators", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
 			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.Validators.GroupLockedGoldRequirements.Value,
-			newBigInt(ctx.genesisConfig.Validators.GroupLockedGoldRequirements.Duration),
 			ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value,
 			newBigInt(ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Duration),
 			newBigInt(ctx.genesisConfig.Validators.ValidatorScoreExponent),
 			ctx.genesisConfig.Validators.ValidatorScoreAdjustmentSpeed.BigInt(),
-			newBigInt(ctx.genesisConfig.Validators.MembershipHistoryLength),
 			newBigInt(ctx.genesisConfig.Validators.SlashingPenaltyResetPeriod),
-			newBigInt(ctx.genesisConfig.Validators.MaxGroupSize),
 			newBigInt(ctx.genesisConfig.Validators.CommissionUpdateDelay),
 			newBigInt(ctx.genesisConfig.Validators.DowntimeGracePeriod),
 		)
@@ -615,14 +543,6 @@ func (ctx *deployContext) deployElection() error {
 	})
 }
 
-func (ctx *deployContext) deploySortedOracles() error {
-	return ctx.deployCoreContract("SortedOracles", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			newBigInt(ctx.genesisConfig.SortedOracles.ReportExpirySeconds),
-		)
-	})
-}
-
 func (ctx *deployContext) deployGasPriceMinimum() error {
 	return ctx.deployCoreContract("GasPriceMinimum", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
@@ -632,151 +552,6 @@ func (ctx *deployContext) deployGasPriceMinimum() error {
 			ctx.genesisConfig.GasPriceMinimum.AdjustmentSpeed.BigInt(),
 		)
 	})
-}
-
-func (ctx *deployContext) deployReserve() error {
-	err := ctx.deployCoreContract("Reserve", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			newBigInt(ctx.genesisConfig.Reserve.TobinTaxStalenessThreshold),
-			ctx.genesisConfig.Reserve.DailySpendingRatio.BigInt(),
-			big.NewInt(0),
-			big.NewInt(0),
-			ctx.genesisConfig.Reserve.AssetAllocations.SymbolsABI(),
-			ctx.genesisConfig.Reserve.AssetAllocations.Weights(),
-			ctx.genesisConfig.Reserve.TobinTax.BigInt(),
-			ctx.genesisConfig.Reserve.TobinTaxReserveRatio.BigInt(),
-		)
-	})
-	if err != nil {
-		return err
-	}
-
-	logger := ctx.logger.New("contract", "Reserve")
-	contract := ctx.contract("Reserve")
-
-	if ctx.genesisConfig.Reserve.InitialBalance != nil && ctx.genesisConfig.Reserve.InitialBalance.Cmp(big.NewInt(0)) > 0 {
-		logger.Info("Setting Initial Balance")
-		ctx.statedb.SetBalance(contract.Address, ctx.genesisConfig.Reserve.InitialBalance)
-
-		if ctx.genesisConfig.Reserve.FrozenAssetsDays > 0 && ctx.genesisConfig.Reserve.FrozenAssetsStartBalance.Cmp(big.NewInt(0)) > 0 {
-			err := contract.SimpleCall("setFrozenGold",
-				ctx.genesisConfig.Reserve.FrozenAssetsStartBalance,
-				newBigInt(ctx.genesisConfig.Reserve.FrozenAssetsDays),
-			)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, spender := range ctx.genesisConfig.Reserve.Spenders {
-		if err := contract.SimpleCall("addSpender", spender); err != nil {
-			return err
-		}
-	}
-
-	for _, otherAddress := range ctx.genesisConfig.Reserve.OtherAddresses {
-		if err := contract.SimpleCall("addOtherReserveAddress", otherAddress); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ctx *deployContext) deployStableTokens() error {
-	type StableTokenConfig struct {
-		contract string
-		cfg      StableTokenParameters
-	}
-	tokens := []StableTokenConfig{
-		{"StableToken", ctx.genesisConfig.StableToken},
-		{"StableTokenEUR", ctx.genesisConfig.StableTokenEUR},
-	}
-	for _, token := range tokens {
-		err := ctx.deployCoreContract(token.contract, func(contract *contract.EVMBackend) error {
-			return contract.SimpleCall("initialize",
-				token.cfg.Name,
-				token.cfg.Symbol,
-				token.cfg.Decimals,
-				env.MustProxyAddressFor("Registry"),
-				token.cfg.Rate.BigInt(),
-				newBigInt(token.cfg.InflationFactorUpdatePeriod),
-				token.cfg.InitialBalances.Accounts(),
-				token.cfg.InitialBalances.Amounts(),
-				token.cfg.ExchangeIdentifier,
-			)
-		})
-		if err != nil {
-			return err
-		}
-
-		stableTokenAddress := env.MustProxyAddressFor(token.contract)
-
-		if token.cfg.Frozen {
-			ctx.logger.Info("Freezing StableToken", "contract", token.contract)
-			err = ctx.contract("Freezer").SimpleCall("freeze", stableTokenAddress)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Configure StableToken Oracles
-		for _, oracleAddress := range token.cfg.Oracles {
-			ctx.logger.Info("Adding oracle for StableToken", "contract", token.contract, "oracle", oracleAddress)
-			err = ctx.contract("SortedOracles").SimpleCall("addOracle", stableTokenAddress, oracleAddress)
-			if err != nil {
-				return err
-			}
-		}
-
-		// If requested, fix goldPrice of stable token
-		if token.cfg.GoldPrice != nil {
-			ctx.logger.Info("Fixing StableToken goldPrice", "contract", token.contract)
-
-			// first check if the admin is an authorized oracle
-			authorized := false
-			for _, oracleAddress := range token.cfg.Oracles {
-				if oracleAddress == ctx.accounts.AdminAccount().Address {
-					authorized = true
-					break
-				}
-			}
-
-			if !authorized {
-				ctx.logger.Warn("Fixing StableToken goldprice requires setting admin as oracle", "admin", ctx.accounts.AdminAccount().Address)
-				err = ctx.contract("SortedOracles").SimpleCall("addOracle", stableTokenAddress, ctx.accounts.AdminAccount().Address)
-				if err != nil {
-					return err
-				}
-			}
-
-			ctx.logger.Info("Reporting price of StableToken to oracle", "contract", token.contract)
-			err = ctx.contract("SortedOracles").SimpleCall("report",
-				stableTokenAddress,
-				token.cfg.GoldPrice.BigInt(),
-				params.ZeroAddress,
-				params.ZeroAddress,
-			)
-			if err != nil {
-				return err
-			}
-
-			ctx.logger.Info("Add StableToken to the reserve", "contract", token.contract)
-			err = ctx.contract("Reserve").SimpleCall("addToken", stableTokenAddress)
-			if err != nil {
-				return err
-			}
-		}
-
-		ctx.logger.Info("Whitelisting StableToken as a fee currency", "contract", token.contract)
-		err = ctx.contract("FeeCurrencyWhitelist").SimpleCall("addToken", stableTokenAddress)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (ctx *deployContext) createAccounts(accs []env.Account, namePrefix string) error {
@@ -804,170 +579,83 @@ func (ctx *deployContext) createAccounts(accs []env.Account, namePrefix string) 
 }
 
 func (ctx *deployContext) registerValidators() error {
-	registerValidatorAT := func(ValidatorsAT []env.Account) error {
-		validatorAccounts := ValidatorsAT
-		requiredAmount := ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value
-
-		if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
-			return err
-		}
-
-		lockedGold := ctx.contract("LockedGold")
-		validators := ctx.contract("Validators")
-
-		for _, validator := range validatorAccounts {
-			address := validator.Address
-			logger := ctx.logger.New("validator", address)
-
-			ctx.statedb.AddBalance(address, requiredAmount)
-
-			logger.Info("Lock validator gold", "amount", requiredAmount)
-			if _, err := lockedGold.Call(contract.CallOpts{Origin: address, Value: requiredAmount}, "lock"); err != nil {
-				return err
-			}
-
-			logger.Info("Register validator")
-			blsPub, err := validator.BLSPublicKey()
-			if err != nil {
-				return err
-			}
-
-			// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
-			pubKey := validator.PublicKey()[1:]
-			err = validators.SimpleCallFrom(address, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	for _, v := range GroupsAT {
-		ValidatorsAT := getValidators(v.Address)
-		if err := registerValidatorAT(ValidatorsAT); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (ctx *deployContext) registerValidatorGroups() error {
-	validatorGroupsAccounts := GroupsAT
-
-	if err := ctx.createAccounts(validatorGroupsAccounts, "group"); err != nil {
+	validatorAccounts := ValidatorsAT
+	requiredAmount := ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value
+	if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
 		return err
 	}
 
 	lockedGold := ctx.contract("LockedGold")
 	validators := ctx.contract("Validators")
+	commission := ctx.genesisConfig.Validators.Commission.BigInt()
+	for validatorIdx, validator := range validatorAccounts {
+		address := validator.Address
+		logger := ctx.logger.New("validator", address)
+		prevValidatorAddress := params.ZeroAddress
+		if validatorIdx > 0 {
+			prevValidatorAddress = validatorAccounts[validatorIdx-1].Address
+		}
+		ctx.statedb.AddBalance(address, requiredAmount)
 
-	groupRequiredGold := new(big.Int).Mul(
-		ctx.genesisConfig.Validators.GroupLockedGoldRequirements.Value,
-		big.NewInt(int64(ctx.accounts.ValidatorsPerGroup)),
-	)
-	groupCommission := ctx.genesisConfig.Validators.Commission.BigInt()
-
-	for _, group := range validatorGroupsAccounts {
-		address := group.Address
-		logger := ctx.logger.New("group", address)
-
-		ctx.statedb.AddBalance(address, groupRequiredGold)
-
-		logger.Info("Lock group gold", "amount", groupRequiredGold)
-		if _, err := lockedGold.Call(contract.CallOpts{Origin: address, Value: groupRequiredGold}, "lock"); err != nil {
+		logger.Info("Lock validator gold", "amount", requiredAmount)
+		if _, err := lockedGold.Call(contract.CallOpts{Origin: address, Value: requiredAmount}, "lock"); err != nil {
 			return err
 		}
 
-		logger.Info("Register group")
-		if err := validators.SimpleCallFrom(address, "registerValidatorGroup", groupCommission); err != nil {
+		logger.Info("Register validator")
+		blsPub, err := validator.BLSPublicKey()
+		if err != nil {
+			return err
+		}
+
+		// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
+		pubKey := validator.PublicKey()[1:]
+		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, pubKey, blsPub[:], validator.MustBLSProofOfPossession())
+		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
-func (ctx *deployContext) addValidatorsToGroups() error {
-	validators := ctx.contract("Validators")
-	ctx.accounts.ValidatorGroups()
-	validatorGroups := getValidatorGroup()
-	for groupIdx, group := range validatorGroups {
-		groupAddress := group.Address
-		prevGroupAddress := params.ZeroAddress
-		if groupIdx > 0 {
-			prevGroupAddress = validatorGroups[groupIdx-1].Address
-		}
-
-		for i, validator := range group.Validators {
-			ctx.logger.Info("Add validator to group", "validator", validator.Address, "group", groupAddress)
-
-			// affiliate validators to group
-			if err := validators.SimpleCallFrom(validator.Address, "affiliate", groupAddress); err != nil {
-				return err
-			}
-
-			// accept validator as group member
-			if i == 0 {
-				// when adding first member, we define group voting order
-				// since every group start with zero votes, we just use the prevGroup Address as the greater address
-				// thus ending group order is:
-				// [ groupZero, groupOne, ..., lastgroup]
-
-				if err := validators.SimpleCallFrom(groupAddress, "addFirstMember", validator.Address, params.ZeroAddress, prevGroupAddress); err != nil {
-					return err
-				}
-			} else {
-				if err := validators.SimpleCallFrom(groupAddress, "addMember", validator.Address); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (ctx *deployContext) voteForGroups() error {
+//each validator votes for themselves.
+func (ctx *deployContext) voteForValidators() error {
 	election := ctx.contract("Election")
 
-	validatorGroups := GroupsAT
-
 	// value previously locked on registerValidatorGroups()
-	lockedGoldOnGroup := new(big.Int).Mul(
-		ctx.genesisConfig.Validators.GroupLockedGoldRequirements.Value,
-		big.NewInt(int64(ctx.accounts.ValidatorsPerGroup)),
-	)
+	lockedGoldOnValidator := ctx.genesisConfig.Validators.ValidatorLockedGoldRequirements.Value
 
-	// current group order (see `addFirstMember` on addValidatorsToGroup) is:
-	// [ groupZero, groupOne, ..., lastgroup]
+	// current validator order (see `addFirstMember` on addValidatorsToGroup) is:
+	// [ validatorZero, validatorOne, ..., lastvalidator]
 
-	// each group votes for themselves.
-	// each group votes the SAME AMOUNT
-	// each group starts with 0 votes
+	// each validator votes for themselves.
+	// each validator votes the SAME AMOUNT
+	// each validator starts with 0 votes
 
-	// so, everytime we vote, that group becomes the one with most votes (most or equal)
+	// so, everytime we vote, that validator becomes the one with most votes (most or equal)
 	// hence, we use:
 	//    greater = zero (we become the one with most votes)
 	//    lesser = currentLeader
 
-	// special case: only one group (no lesser or greater)
-	if len(validatorGroups) == 1 {
-		groupAddress := validatorGroups[0].Address
-		ctx.logger.Info("Vote for group", "group", groupAddress, "amount", lockedGoldOnGroup)
-		return election.SimpleCallFrom(groupAddress, "vote", groupAddress, lockedGoldOnGroup, params.ZeroAddress, params.ZeroAddress)
+	// special case: only one validator (no lesser or greater)
+	if len(ValidatorsAT) == 1 {
+		validatorAddress := ValidatorsAT[0].Address
+		ctx.logger.Info("Vote for validator", "validator", validatorAddress, "amount", lockedGoldOnValidator)
+		return election.SimpleCallFrom(validatorAddress, "vote", validatorAddress, lockedGoldOnValidator, params.ZeroAddress, params.ZeroAddress)
 	}
 
-	// first to vote is group 0, which is already the leader. Hence lesser should go to group 1
-	currentLeader := validatorGroups[1].Address
-	for _, group := range validatorGroups {
-		groupAddress := group.Address
+	// first to vote is validator 0, which is already the leader. Hence lesser should go to validator 1
+	currentLeader := ValidatorsAT[1].Address
+	for _, validator := range ValidatorsAT {
+		validatorAddress := validator.Address
 
-		ctx.logger.Info("Vote for group", "group", groupAddress, "amount", lockedGoldOnGroup)
-		if err := election.SimpleCallFrom(groupAddress, "vote", groupAddress, lockedGoldOnGroup, currentLeader, params.ZeroAddress); err != nil {
+		ctx.logger.Info("Vote for validator", "validator", validatorAddress, "amount", lockedGoldOnValidator)
+		if err := election.SimpleCallFrom(validatorAddress, "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
 			return err
 		}
 
 		// we now become the currentLeader
-		currentLeader = groupAddress
+		currentLeader = validatorAddress
 	}
 
 	return nil
@@ -978,15 +666,7 @@ func (ctx *deployContext) electValidators() error {
 		return err
 	}
 
-	if err := ctx.registerValidatorGroups(); err != nil {
-		return err
-	}
-
-	if err := ctx.addValidatorsToGroups(); err != nil {
-		return err
-	}
-
-	if err := ctx.voteForGroups(); err != nil {
+	if err := ctx.voteForValidators(); err != nil {
 		return err
 	}
 
@@ -1040,52 +720,83 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Println(out)
 
-	getTopGroupValidators := new([]common.Address)
-	if _, err := ctx.contract("Validators").Query(getTopGroupValidators, "getTopGroupValidators", common.HexToHash("0xce90710a4673b87a6881b0907358119baf0304a5"), big.NewInt(4)); err != nil {
+	//getTopGroupValidators := new([]common.Address)
+	//if _, err := ctx.contract("Validators").Query(getTopGroupValidators, "getTopGroupValidators", common.HexToHash("0xce90710a4673b87a6881b0907358119baf0304a5"), big.NewInt(4)); err != nil {
+	//	return err
+	//}
+	//fmt.Println("getTopGroupValidators", getTopGroupValidators)
+
+	/*
+		var (
+			min   = new(*big.Int)
+			max = new(*big.Int)
+		)
+		out := &[]interface{}{
+			min,
+			max,
+		}
+		if _, err := ctx.contract("Election").Query(out, "getElectableValidators"); err != nil {
+			return err
+		}
+		fmt.Println(*min,*max)
+	*/
+	/*
+		//a:= common.HexToHash("0x49dc7107d41d3c01a9f941a7d9a9f9177349b5521aeb56861470e42cf05da2ee") //Validators common.hash
+		//a:= common.HexToHash("0x235a6f54090e9b94aa4e585a699c4375a2ff8f572c68114d138f0ed121527849") //Election  common.hash
+		a := common.HexToHash("0xb33c3d77234979a288baf651b42d19d8483d5af3e328f9f1fae2bef7b11acd25") //EpochRewards  common.hash
+
+		var ret common.Address
+		if _, err := ctx.contract("Registry").Query(&ret, "getAddressFor", a); err != nil {
+			return err
+		}
+		fmt.Println(ret)
+	*/
+	/*
+		// isFrozen
+		var ret bool
+		if _, err := ctx.contract("Freezer").Query(&ret, "isFrozen",params.EpochRewardsRegistryId); err != nil {
+			return err
+		}
+		fmt.Println(ret)
+	*/
+
+	/*
+		// EpochRewards calculateTargetEpochRewards 计算奖励
+			var validatorEpochReward *big.Int
+			var totalVoterRewards *big.Int
+			var totalCommunityReward *big.Int
+			var totalCarbonOffsettingPartnerReward *big.Int
+			out := &[]interface{}{&validatorEpochReward, &totalVoterRewards, &totalCommunityReward, &totalCarbonOffsettingPartnerReward}
+			_, err := ctx.contract("EpochRewards").Query(out, "calculateTargetEpochRewards")
+			if err != nil {
+				return err
+			}
+			fmt.Println(validatorEpochReward.String(),totalVoterRewards.String(),totalCommunityReward.String(),totalCarbonOffsettingPartnerReward.String())
+	*/
+	//if err := ctx.contract("EpochRewards").SimpleCallFrom(params.ZeroAddress, "updateTargetVotingYield"); err != nil {
+	//	fmt.Println("err:",err)
+	//	return err
+	//}
+
+	var (
+		validator = new(*big.Int)
+		community = new(*big.Int)
+	)
+	out := &[]interface{}{
+		validator,
+		community,
+	}
+	if _, err := ctx.contract("EpochRewards").Query(out, "calculateTargetEpochRewards"); err != nil {
 		return err
 	}
-	fmt.Println("getTopGroupValidators", getTopGroupValidators)
+	fmt.Println(*validator, *community)
 
-	//var (
-	//	min   = new(*big.Int)
-	//	max = new(*big.Int)
-	//)
-	//out := &[]interface{}{
-	//	min,
-	//	max,
-	//}
-	//if _, err := ctx.contract("Election").Query(out, "getElectableValidators"); err != nil {
-	//	return err
-	//}
-	//fmt.Println(*min,*max)
-
-	//a:= common.HexToHash("0x49dc7107d41d3c01a9f941a7d9a9f9177349b5521aeb56861470e42cf05da2ee") //Validators common.hash
-	//a:= common.HexToHash("0x235a6f54090e9b94aa4e585a699c4375a2ff8f572c68114d138f0ed121527849") //Election  common.hash
-	//var ret common.Address
-	//if _, err := ctx.contract("Registry").Query(&ret, "getAddressFor",a); err != nil {
-	//	return err
-	//}
-	//fmt.Println(ret)
+	validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	totalPayment := new(*big.Int)
+	if _, err := ctx.contract("Validators").Query(totalPayment, "distributeEpochPaymentsFromSigner", validatorAddr, validator); err != nil {
+		fmt.Println("err:", err)
+		return err
+	}
+	fmt.Println(*totalPayment)
 	return nil
-}
-
-func getValidatorGroup() []env.ValidatorGroup {
-	groupAccounts := GroupsAT
-	groups := make([]env.ValidatorGroup, 1)
-	for i := 0; i < (len(groups) - 1); i++ {
-		tt := getValidators(groupAccounts[i].Address)
-		groups[i] = env.ValidatorGroup{
-			Account:    groupAccounts[i],
-			Validators: tt,
-		}
-	}
-
-	// last group might not be full, use an open slice for ValidatorsAT
-	i := len(groups) - 1
-	tt := getValidators(groupAccounts[i].Address)
-	groups[i] = env.ValidatorGroup{
-		Account:    groupAccounts[i],
-		Validators: tt,
-	}
-	return groups
 }

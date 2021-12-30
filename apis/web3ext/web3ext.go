@@ -23,6 +23,8 @@ var Modules = map[string]string{
 	"ethash":   EthashJs,
 	"debug":    DebugJs,
 	"eth":      EthJs,
+	"istanbul": Istanbul_JS,
+	"relayer":  Relayer_JS,
 	"miner":    MinerJs,
 	"net":      NetJs,
 	"personal": PersonalJs,
@@ -31,6 +33,146 @@ var Modules = map[string]string{
 	"les":      LESJs,
 	"vflux":    VfluxJs,
 }
+
+const Relayer_JS = `
+web3._extend({
+	property: 'relayer',
+	methods:
+	[
+		new web3._extend.Method({
+			name: 'getAllRelayers',
+			call: 'relayer_getAllRelayers',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getRelayerBalance',
+			call: 'relayer_getRelayerBalance',
+			params: 2,
+			inputFormatter: [null,web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getSyncNumber',
+			call: 'relayer_getSyncNumber',
+			params: 2,
+			inputFormatter: [null,web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getAccountInfo',
+			call: 'relayer_getAccountInfo',
+			params: 2,
+			inputFormatter: [null,web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getCurrentEpochInfo',
+			call: 'relayer_getCurrentEpochInfo',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+	],
+	properties: []
+});
+`
+
+const Istanbul_JS = `
+web3._extend({
+	property: 'istanbul',
+	methods:
+	[
+		new web3._extend.Method({
+			name: 'getSnapshot',
+			call: 'istanbul_getSnapshot',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getValidators',
+			call: 'istanbul_getValidators',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getValidatorsBLSPublicKeys',
+			call: 'istanbul_getValidatorsBLSPublicKeys',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getProposer',
+			call: 'istanbul_getProposer',
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, null]
+		}),
+		new web3._extend.Method({
+			name: 'getLookbackWindow',
+			call: 'istanbul_getLookbackWindow',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'addProxy',
+			call: 'istanbul_addProxy',
+			params: 2
+		}),
+		new web3._extend.Method({
+			name: 'removeProxy',
+			call: 'istanbul_removeProxy',
+			params: 1
+		}),
+		new web3._extend.Method({
+			name: 'startAtBlock',
+			call: 'istanbul_startValidatingAtBlock',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'stopAtBlock',
+			call: 'istanbul_stopValidatingAtBlock',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'start',
+			call: 'istanbul_startValidating',
+			params: 0,
+		}),
+		new web3._extend.Method({
+			name: 'stop',
+			call: 'istanbul_stopValidating',
+			params: 0,
+		}),
+		new web3._extend.Property({
+			name: 'valEnodeTableInfo',
+			getter: 'istanbul_getValEnodeTable',
+		}),
+		new web3._extend.Property({
+			name: 'versionCertificateTableInfo',
+			getter: 'istanbul_getVersionCertificateTableInfo',
+		}),
+		new web3._extend.Property({
+			name: 'currentRoundState',
+			getter: 'istanbul_getCurrentRoundState',
+		}),
+		new web3._extend.Property({
+			name: 'proxies',
+			getter: 'istanbul_getProxiesInfo',
+		}),
+		new web3._extend.Property({
+			name: 'proxiedValidators',
+			getter: 'istanbul_getProxiedValidators',
+		}),
+		new web3._extend.Property({
+			name: 'validating',
+			getter: 'istanbul_isValidating',
+		}),
+		new web3._extend.Property({
+			name: 'replicaState',
+			getter: 'istanbul_getCurrentReplicaState',
+		}),
+	],
+	properties: []
+});
+`
 
 const CliqueJs = `
 web3._extend({

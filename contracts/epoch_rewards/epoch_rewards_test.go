@@ -61,7 +61,7 @@ func TestIsReserveLow(t *testing.T) {
 	})
 }
 func TestGetCarbonOffsettingPartnerAddress(t *testing.T) {
-	fn := GetCarbonOffsettingPartnerAddress
+	fn := GetCommunityPartnerAddress
 
 	testutil.TestFailOnFailingRunner(t, fn)
 	testutil.TestFailsWhenContractNotDeployed(t, contracts.ErrSmartContractNotDeployed, fn)
@@ -75,7 +75,7 @@ func TestGetCarbonOffsettingPartnerAddress(t *testing.T) {
 			func() common.Address { return common.HexToAddress("0x00045") },
 		)
 
-		ret, err := GetCarbonOffsettingPartnerAddress(runner)
+		ret, err := GetCommunityPartnerAddress(runner)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(ret).To(Equal(common.HexToAddress("0x00045")))
 	})

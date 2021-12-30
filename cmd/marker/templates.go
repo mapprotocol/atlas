@@ -34,7 +34,6 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
 			NumValidators:        4,
-			ValidatorsPerGroup:   10, //max group size is 10
 			NumDeveloperAccounts: 10,
 		},
 		ChainID: big.NewInt(211),
@@ -49,7 +48,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 
 func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
 
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, env.Accounts().AdminAccount().Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
 		Epoch:          10,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
@@ -70,7 +69,6 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             "miss fire behind decide egg buyer honey seven advance uniform profit renew",
 			NumValidators:        1,
-			ValidatorsPerGroup:   1,
 			NumDeveloperAccounts: 10000,
 		},
 		ChainID: big.NewInt(9099000),
@@ -99,8 +97,6 @@ func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config,
 	// Add balances to developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())
 
-	genesisConfig.StableToken.InflationFactorUpdatePeriod = 1 * genesis.Year
-
 	// Disable gas price min being updated
 	genesisConfig.GasPriceMinimum.TargetDensity = fixed.MustNew("0.9999")
 	genesisConfig.GasPriceMinimum.AdjustmentSpeed = fixed.MustNew("0")
@@ -115,7 +111,6 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 		Accounts: env.AccountsConfig{
 			Mnemonic:             env.MustNewMnemonic(),
 			NumValidators:        3,
-			ValidatorsPerGroup:   5, // monorepo uses a single validator group, max group size is 5
 			NumDeveloperAccounts: 0,
 			UseValidatorAsAdmin:  true, // monorepo doesn't use the admin account type, uses first validator instead
 		},
@@ -141,8 +136,6 @@ func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config,
 	genesisConfig.EpochRewards.TargetVotingYieldInitial = fixed.MustNew("0.00016")
 	genesisConfig.EpochRewards.TargetVotingYieldMax = fixed.MustNew("0.0005")
 	genesisConfig.EpochRewards.TargetVotingYieldAdjustmentFactor = fixed.MustNew("0.1")
-	genesisConfig.Reserve.InitialBalance = params.MustBigInt("100000000000000000000000000") // 100M ATLAS
-
 	// Add balances to validator accounts instead of developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().ValidatorAccounts())
 

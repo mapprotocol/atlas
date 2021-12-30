@@ -15,39 +15,24 @@ import (
 	"os"
 )
 
-var registerGroupCommand = cli.Command{
-	Name:   "registerGroup",
-	Usage:  "register group ",
-	Action: MigrateFlags(registerGroup),
-	Flags:  ValidatorFlags,
-}
 var registerValidatorCommand = cli.Command{
 	Name:   "registerValidator",
 	Usage:  "register validator ",
 	Action: MigrateFlags(registerValidator),
 	Flags:  ValidatorFlags,
 }
-var setMaxGroupSizeCommand = cli.Command{
-	Name:   "setMaxGroupSize",
-	Usage:  "set Max Group Size",
-	Action: MigrateFlags(setMaxGroupSize),
-	Flags:  ValidatorFlags,
-}
-
-var deregisterValidatorCommand = cli.Command{
-	Name:   "deregisterValidator",
-	Usage:  "deregister validator",
-	Action: MigrateFlags(deregisterValidator),
-	Flags:  ValidatorFlags,
-}
-
 var createAccountCommand = cli.Command{
 	Name:   "createAccount",
 	Usage:  "creat validator account",
 	Action: MigrateFlags(createAccount1),
 	Flags:  ValidatorFlags,
 }
-
+var deregisterValidatorCommand = cli.Command{
+	Name:   "deregisterValidator",
+	Usage:  "deregister validator",
+	Action: MigrateFlags(deregisterValidator),
+	Flags:  ValidatorFlags,
+}
 var lockedMAPCommand = cli.Command{
 	Name:   "lockedMAP",
 	Usage:  "locked MAP",
@@ -67,10 +52,14 @@ var (
 	abiValidators  *abi.ABI
 	abiLocaledGold *abi.ABI
 	abiAccounts    *abi.ABI
+	abiElection    *abi.ABI
+	abiGoldToken   *abi.ABI
 
 	ValidatorAddress  = MustProxyAddressFor("Validators")
 	LockedGoldAddress = MustProxyAddressFor("LockedGold")
 	AccountsAddress   = MustProxyAddressFor("Accounts")
+	ElectionAddress   = MustProxyAddressFor("Election")
+	GoldTokenAddress  = MustProxyAddressFor("StableToken")
 
 	priKey   *ecdsa.PrivateKey
 	from     common.Address
@@ -85,10 +74,14 @@ func init() {
 	abiValidators = AbiFor("Validators")
 	abiLocaledGold = AbiFor("LockedGold")
 	abiAccounts = AbiFor("Accounts")
+	abiElection = AbiFor("Election")
+	abiGoldToken = AbiFor("GoldToken")
 
 	ValidatorAddress = MustProxyAddressFor("Validators")
 	LockedGoldAddress = MustProxyAddressFor("LockedGold")
 	AccountsAddress = MustProxyAddressFor("Accounts")
+	ElectionAddress = MustProxyAddressFor("Election")
+	GoldTokenAddress = MustProxyAddressFor("GoldToken")
 
 	Base = new(big.Int).SetUint64(10000)
 	password = ""
@@ -97,11 +90,13 @@ func init() {
 	glogger.Verbosity(log.LvlInfo)
 	log.Root().SetHandler(glogger)
 }
-
 func registerValidator(ctx *cli.Context) error {
 	//------------------ pre set --------------------------
 	path := ""
 	password = "111111"
+	commission := int64(80)
+	lesser := params.ZeroAddress
+	greater := params.ZeroAddress
 	//-----------------------------------------------------
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
@@ -109,6 +104,15 @@ func registerValidator(ctx *cli.Context) error {
 	}
 	if ctx.IsSet(PasswordFlag.Name) {
 		password = ctx.GlobalString(PasswordFlag.Name)
+	}
+	if ctx.IsSet(CommissionFlag.Name) {
+		commission = ctx.GlobalInt64(CommissionFlag.Name)
+	}
+	if ctx.IsSet(lesserFlag.Name) {
+		lesser = common.HexToAddress(ctx.GlobalString(lesserFlag.Name))
+	}
+	if ctx.IsSet(greaterFlag.Name) {
+		greater = common.HexToAddress(ctx.GlobalString(greaterFlag.Name))
 	}
 	validator := loadAccount(path, password)
 
@@ -133,47 +137,8 @@ func registerValidator(ctx *cli.Context) error {
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
 	pubKey := validator.PublicKey()[1:]
-	input = packInput(abiValidators, "registerValidator", pubKey, blsPub[:], validator.MustBLSProofOfPossession())
+	input = packInput(abiValidators, "registerValidator", big.NewInt(commission), lesser, greater, pubKey, blsPub[:], validator.MustBLSProofOfPossession())
 	txHash = sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
-	return nil
-}
-
-func registerGroup(ctx *cli.Context) error {
-	//------------------ pre set --------------------------------------------------
-	path := ""
-	password = "111111"
-	commission := int64(80)
-	//------------------------------------------------------------------------------
-
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	if ctx.IsSet(CommissionFlag.Name) {
-		commission = ctx.GlobalInt64(CommissionFlag.Name)
-	}
-	groupAccount := loadAccount(path, password)
-
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	//---------------------------- create account ----------------------------------
-	createAccount(conn, groupAccount, "group")
-
-	//---------------------------- lock --------------------------------------------
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Atlas per groupAccount,
-	log.Info("=== Lock group gold ===")
-	log.Info("Lock group gold", "amount", groupRequiredGold)
-	input := packInput(abiLocaledGold, "lock")
-	txHash := sendContractTransaction(conn, groupAccount.Address, LockedGoldAddress, groupRequiredGold, priKey, input)
-	getResult(conn, txHash, true)
-
-	//----------------------------- registerValidator -----------------------------
-	log.Info("=== Register group ===")
-	input = packInput(abiValidators, "registerValidatorGroup", big.NewInt(commission))
-	txHash = sendContractTransaction(conn, groupAccount.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 	return nil
 }
@@ -201,7 +166,6 @@ func lockedMAP(ctx *cli.Context) error {
 	return nil
 
 }
-
 func createAccount1(ctx *cli.Context) error {
 	//------------------ pre set --------------------------
 	path := ""
@@ -243,43 +207,18 @@ func createAccount(conn *ethclient.Client, account env.Account, namePrefix strin
 	txHash = sendContractTransaction(conn, account.Address, AccountsAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 }
-
-func setMaxGroupSize(ctx *cli.Context) error {
-	//------------------------pre set ------------------------------------------------
-	path := ""
-	password = ""
-	maxSize := int64(100)
-	//--------------------------------------------------------------------------------
-
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	if ctx.IsSet(maxSizeFlag.Name) {
-		maxSize = ctx.GlobalInt64(maxSizeFlag.Name)
-	}
-	validator := loadAccount(path, password)
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	//----------------------------- registerValidator --------------------------------
-	log.Info("====== set Max Group Size ======")
-	input := packInput(abiValidators, "setMaxGroupSize", big.NewInt(maxSize))
-	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
-	return nil
-}
-
 func deregisterValidator(ctx *cli.Context) error {
 	//------------------------pre set ------------------------------------------------
 	path := ""
 	password = "111111"
-	n := big.NewInt(int64(4)) // index in registeredValidators
+	idx := big.NewInt(int64(4)) // index in registeredValidators
 	//--------------------------------------------------------------------------------
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(IdxFlag.Name) {
+		idx = big.NewInt(ctx.GlobalInt64(IdxFlag.Name))
 	}
 	if ctx.IsSet(PasswordFlag.Name) {
 		password = ctx.GlobalString(PasswordFlag.Name)
@@ -289,7 +228,7 @@ func deregisterValidator(ctx *cli.Context) error {
 	conn, _ := dialConn(ctx)
 	//----------------------------- deregisterValidator --------------------------------
 	log.Info("====== deregisterValidator ======")
-	input := packInput(abiValidators, "deregisterValidator", n)
+	input := packInput(abiValidators, "deregisterValidator", idx)
 	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 	return nil

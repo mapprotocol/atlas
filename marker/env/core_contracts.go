@@ -10,8 +10,8 @@ import (
 var addr = common.HexToAddress
 
 var libraryAddresses = map[string]common.Address{
-	"FixidityLib":                       addr("0xa001"),
-	"Proposals":                         addr("0xa002"),
+	"FixidityLib": addr("0xa001"),
+	//"Proposals":                         addr("0xa002"),
 	"LinkedList":                        addr("0xa003"),
 	"SortedLinkedList":                  addr("0xa004"),
 	"SortedLinkedListWithMedian":        addr("0xa051"),

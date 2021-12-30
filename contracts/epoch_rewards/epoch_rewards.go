@@ -27,54 +27,27 @@ import (
 
 var (
 	calculateTargetEpochRewardsMethod = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "calculateTargetEpochRewards", params.MaxGasForCalculateTargetEpochPaymentAndRewards)
-	isReserveLowMethod                = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "isReserveLow", params.MaxGasForIsReserveLow)
-	carbonOffsettingPartnerMethod     = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "carbonOffsettingPartner", params.MaxGasForGetCarbonOffsettingPartner)
-	updateTargetVotingYieldMethod     = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "updateTargetVotingYield", params.MaxGasForUpdateTargetVotingYield)
+	communityPartnerMethod            = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "communityPartner", params.MaxGasForGetCommunityPartnerSettingPartner)
 )
-
-func UpdateTargetVotingYield(vmRunner vm.EVMRunner) error {
-	return nil
-	//TODO Replace with the following in the future
-	err := updateTargetVotingYieldMethod.Execute(vmRunner, nil, common.Big0)
-	return err
-}
 
 // Returns the per validator epoch reward, the total voter reward, the total community reward, and
 // the total carbon offsetting partner award, for the epoch.
-func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, *big.Int, *big.Int, error) {
-	var validatorEpochReward *big.Int
-	var totalVoterRewards *big.Int
+func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, error) {
+	var validatorVoterEpochReward *big.Int
 	var totalCommunityReward *big.Int
-	var totalCarbonOffsettingPartnerReward *big.Int
-	return big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil
-	//TODO Replace with the following in the future
-	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorEpochReward, &totalVoterRewards, &totalCommunityReward, &totalCarbonOffsettingPartnerReward})
+	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorVoterEpochReward, &totalCommunityReward})
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, err
 	}
-	return validatorEpochReward, totalVoterRewards, totalCommunityReward, totalCarbonOffsettingPartnerReward, nil
-}
-
-// Determines if the reserve is below it's critical threshold
-func IsReserveLow(vmRunner vm.EVMRunner) (bool, error) {
-	return false, nil
-	//TODO Replace with the following in the future
-	var isLow bool
-	err := isReserveLowMethod.Query(vmRunner, &isLow)
-	if err != nil {
-		return false, err
-	}
-	return isLow, nil
+	return validatorVoterEpochReward, totalCommunityReward, nil
 }
 
 // Returns the address of the carbon offsetting partner
-func GetCarbonOffsettingPartnerAddress(vmRunner vm.EVMRunner) (common.Address, error) {
-	return params.ZeroAddress, nil
-	//TODO Replace with the following in the future
-	var carbonOffsettingPartner common.Address
-	err := carbonOffsettingPartnerMethod.Query(vmRunner, &carbonOffsettingPartner)
+func GetCommunityPartnerAddress(vmRunner vm.EVMRunner) (common.Address, error) {
+	var communityPartnerPartner common.Address
+	err := communityPartnerMethod.Query(vmRunner, &communityPartnerPartner)
 	if err != nil {
 		return params.ZeroAddress, err
 	}
-	return carbonOffsettingPartner, nil
+	return communityPartnerPartner, nil
 }

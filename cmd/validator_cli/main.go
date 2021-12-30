@@ -26,25 +26,36 @@ var (
 		Name:  "password",
 		Usage: "Keystore file`s password",
 	}
-	GroupAddressFlag = cli.StringFlag{
-		Name:  "groupAddress",
-		Usage: "group hex address",
-	}
+
 	NamePrefixFlag = cli.StringFlag{
 		Name:  "namePrefix",
 		Usage: "Keystore file`s password",
 	}
 	CommissionFlag = cli.Int64Flag{
 		Name:  "commission",
-		Usage: "register group param",
+		Usage: "register validator param",
 	}
-	maxSizeFlag = cli.Int64Flag{
-		Name:  "maxSize",
-		Usage: "set the max group size",
+	lesserFlag = cli.StringFlag{
+		Name: "lesser",
+		Usage: "The validator receiving fewer votes than the validator for which the vote was revoked," +
+			"or 0 if that validator has the fewest votes of any validator validator",
+	}
+	greaterFlag = cli.StringFlag{
+		Name: "greater",
+		Usage: "greater The validator receiving more votes than the validator for which the vote was revoked," +
+			"or 0 if that validator has the most votes of any validator validator.",
+	}
+	voteNumFlag = cli.Int64Flag{
+		Name:  "voteNum",
+		Usage: "The amount of gold to use to vote",
 	}
 	TopNumFlag = cli.Int64Flag{
 		Name:  "topNum",
 		Usage: "topNum of group`s member",
+	}
+	IdxFlag = cli.Int64Flag{
+		Name:  "idx",
+		Usage: "index of validators singer",
 	}
 
 	RPCListenAddrFlag = cli.StringFlag{
@@ -87,10 +98,12 @@ var (
 		FeeFlag,
 		BFTKeyKeyFlag,
 		PasswordFlag,
-		GroupAddressFlag,
 		CommissionFlag,
+		lesserFlag,
+		greaterFlag,
+		voteNumFlag,
 		TopNumFlag,
-		maxSizeFlag,
+		IdxFlag,
 		AddressFlag,
 	}
 )
@@ -110,10 +123,12 @@ func init() {
 		FeeFlag,
 		BFTKeyKeyFlag,
 		PasswordFlag,
-		GroupAddressFlag,
 		CommissionFlag,
+		lesserFlag,
+		greaterFlag,
 		TopNumFlag,
-		maxSizeFlag,
+		voteNumFlag,
+		IdxFlag,
 		AddressFlag,
 	}
 	app.Action = MigrateFlags(registerValidator)
@@ -123,23 +138,18 @@ func init() {
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		registerGroupCommand,
 		registerValidatorCommand,
 
-		queryGroupsCommand,
 		queryRegisteredValidatorSignersCommand,
-		queryTopGroupValidatorsCommand,
+		queryTopValidatorsCommand,
 
-		addFirstMemberCommand,
-		addToGroupCommand,
-		removeMemberCommand,
-		deregisterValidatorGroupCommand,
 		deregisterValidatorCommand,
 		createAccountCommand,
 		lockedMAPCommand,
-		affiliateCommand,
-
-		setMaxGroupSizeCommand,
+		voteValidatorCommand,
+		getValidatorEligibilityCommand,
+		getTotalVotesForVCommand,
+		getBalanceVCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
