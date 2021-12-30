@@ -1,19 +1,20 @@
 package ethereum
 
 import (
-	"github.com/mapprotocol/atlas/core/rawdb"
-	"github.com/mapprotocol/atlas/core/state"
-	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
-	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/mapprotocol/atlas/chains"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/tools"
 )
 
-func getHeaderStore() *HeaderSync {
+func getHeaderSync() *HeaderSync {
 	var hs = &HeaderSync{
 		//epoch2reward: map[uint64]*big.Int{
 		//	1: big.NewInt(48976200),
@@ -33,7 +34,7 @@ func getHeaderStore() *HeaderSync {
 	return hs
 }
 
-func modifyHeaderStore(hs *HeaderSync) *HeaderSync {
+func modifyHeaderSync(hs *HeaderSync) *HeaderSync {
 	//hs.epoch2reward[1] = big.NewInt(1111111111111)
 	//hs.epoch2reward[2] = big.NewInt(2222222222222)
 	hs.height2receiveTimes[510980] = 1
@@ -46,7 +47,7 @@ func modifyHeaderStore(hs *HeaderSync) *HeaderSync {
 	return hs
 }
 
-func TestCloneHeaderStore(t *testing.T) {
+func TestCloneHeaderSync(t *testing.T) {
 	type args struct {
 		src *HeaderSync
 	}
@@ -59,28 +60,28 @@ func TestCloneHeaderStore(t *testing.T) {
 		{
 			name: "t-1",
 			args: args{
-				src: getHeaderStore(),
+				src: getHeaderSync(),
 			},
-			wantDst: getHeaderStore(),
+			wantDst: getHeaderSync(),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDst, err := CloneHeaderStore(tt.args.src)
-			modifyHeaderStore(tt.args.src)
+			gotDst, err := CloneHeaderSync(tt.args.src)
+			modifyHeaderSync(tt.args.src)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CloneHeaderStore() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CloneHeaderSync() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotDst, tt.wantDst) {
-				t.Errorf("CloneHeaderStore() gotDst = %v, want %v", gotDst, tt.wantDst)
+				t.Errorf("CloneHeaderSync() gotDst = %v, want %v", gotDst, tt.wantDst)
 			}
 		})
 	}
 }
 
-//func TestHeaderStore_AddEpochReward(t *testing.T) {
+//func TestHeaderSync_AddEpochReward(t *testing.T) {
 //
 //	type args struct {
 //		epochID uint64
@@ -95,7 +96,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //	}{
 //		{
 //			name: "don`t-set-epoch2reward",
-//			hs:   NewHeaderStore(),
+//			hs:   NewHeaderSync(),
 //			args: args{
 //				epochID: 0,
 //				reward:  big.NewInt(100),
@@ -105,7 +106,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //		},
 //		{
 //			name: "add-epoch-reward",
-//			hs:   NewHeaderStore(),
+//			hs:   NewHeaderSync(),
 //			args: args{
 //				epochID: 2,
 //				reward:  big.NewInt(100),
@@ -117,7 +118,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //		},
 //		{
 //			name: "set-epoch2reward",
-//			hs:   NewHeaderStore(),
+//			hs:   NewHeaderSync(),
 //			args: args{
 //				epochID: 5,
 //				reward:  big.NewInt(100),
@@ -140,7 +141,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //	}
 //}
 
-//func TestHeaderStore_GetEpochReward(t *testing.T) {
+//func TestHeaderSync_GetEpochReward(t *testing.T) {
 //	type args struct {
 //		epochID uint64
 //	}
@@ -153,7 +154,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //	}{
 //		{
 //			name: "t-1",
-//			hs:   NewHeaderStore(),
+//			hs:   NewHeaderSync(),
 //			args: args{
 //				epochID: 10,
 //			},
@@ -164,7 +165,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //		},
 //		{
 //			name: "t-2",
-//			hs:   NewHeaderStore(),
+//			hs:   NewHeaderSync(),
 //			args: args{
 //				epochID: 10,
 //			},
@@ -182,7 +183,7 @@ func TestCloneHeaderStore(t *testing.T) {
 //	}
 //}
 
-func TestHeaderStore_GetReceiveTimes(t *testing.T) {
+func TestHeaderSync_GetReceiveTimes(t *testing.T) {
 	type args struct {
 		height uint64
 	}
@@ -238,7 +239,7 @@ func TestHeaderStore_GetReceiveTimes(t *testing.T) {
 	}
 }
 
-func TestHeaderStore_IncrReceiveTimes(t *testing.T) {
+func TestHeaderSync_IncrReceiveTimes(t *testing.T) {
 	type args struct {
 		height uint64
 	}
@@ -305,7 +306,7 @@ func TestHeaderStore_IncrReceiveTimes(t *testing.T) {
 	}
 }
 
-func TestHeaderStore_StoreReward(t *testing.T) {
+func TestHeaderSync_StoreReward(t *testing.T) {
 	type args struct {
 		epochID uint64
 		relayer common.Address
@@ -412,7 +413,7 @@ func TestHeaderStore_StoreReward(t *testing.T) {
 	}
 }
 
-func TestHeaderStore_LoadReward(t *testing.T) {
+func TestHeaderSync_LoadReward(t *testing.T) {
 	type args struct {
 		epochID uint64
 		relayer common.Address
@@ -506,67 +507,67 @@ func TestHeaderStore_LoadReward(t *testing.T) {
 	}
 }
 
-func TestHeaderStore_AddSyncTimes(t *testing.T) {
-	type args struct {
-		epochID uint64
-		amount  uint64
-		relayer common.Address
-	}
-	tests := []struct {
-		name      string
-		hs        *HeaderSync
-		args      args
-		before    func(hs *HeaderSync)
-		wantTimes uint64
-	}{
-		{
-			name: "epoch-not-exist",
-			hs:   NewHeaderSync(),
-			args: args{
-				epochID: 1,
-				amount:  200,
-				relayer: common.HexToAddress("0xae90c87d2e80"),
-			},
-			before:    func(hs *HeaderSync) {},
-			wantTimes: 200,
-		},
-		{
-			name: "relayer-not-exist",
-			hs:   NewHeaderSync(),
-			args: args{
-				epochID: 18,
-				amount:  60,
-				relayer: common.HexToAddress("0xae90c87d2e80"),
-			},
-			before: func(hs *HeaderSync) {
-				hs.AddSyncTimes(18, 100, common.HexToAddress("0xae90c87d2e80"))
-			},
-			wantTimes: 160,
-		},
-		{
-			name: "epoch-relayer-exist",
-			hs:   NewHeaderSync(),
-			args: args{
-				epochID: 1,
-				amount:  200,
-				relayer: common.HexToAddress("0xae90c87d2e80"),
-			},
-			before:    func(hs *HeaderSync) {},
-			wantTimes: 200,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.before(tt.hs)
-			tt.hs.AddSyncTimes(tt.args.epochID, tt.args.amount, tt.args.relayer)
-			if gotTimes := tt.hs.LoadSyncTimes(tt.args.epochID, tt.args.relayer); gotTimes != tt.wantTimes {
-				t.Errorf("LoadSyncTimes() = %v, wantTimes %v", gotTimes, tt.wantTimes)
-			}
-		})
-	}
-}
+//func TestHeaderSync_AddSyncTimes(t *testing.T) {
+//	type args struct {
+//		epochID uint64
+//		amount  uint64
+//		relayer common.Address
+//	}
+//	tests := []struct {
+//		name      string
+//		hs        *HeaderSync
+//		args      args
+//		before    func(hs *HeaderSync)
+//		wantTimes uint64
+//	}{
+//		{
+//			name: "epoch-not-exist",
+//			hs:   NewHeaderSync(),
+//			args: args{
+//				epochID: 1,
+//				amount:  200,
+//				relayer: common.HexToAddress("0xae90c87d2e80"),
+//			},
+//			before:    func(hs *HeaderSync) {},
+//			wantTimes: 200,
+//		},
+//		{
+//			name: "relayer-not-exist",
+//			hs:   NewHeaderSync(),
+//			args: args{
+//				epochID: 18,
+//				amount:  60,
+//				relayer: common.HexToAddress("0xae90c87d2e80"),
+//			},
+//			before: func(hs *HeaderSync) {
+//				hs.AddSyncTimes(18, 100, common.HexToAddress("0xae90c87d2e80"))
+//			},
+//			wantTimes: 160,
+//		},
+//		{
+//			name: "epoch-relayer-exist",
+//			hs:   NewHeaderSync(),
+//			args: args{
+//				epochID: 1,
+//				amount:  200,
+//				relayer: common.HexToAddress("0xae90c87d2e80"),
+//			},
+//			before:    func(hs *HeaderSync) {},
+//			wantTimes: 200,
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			tt.before(tt.hs)
+//			tt.hs.AddSyncTimes(tt.args.epochID, tt.args.amount, tt.args.relayer)
+//			if gotTimes := tt.hs.LoadRelayerSyncTimes(tt.args.epochID, tt.args.relayer); gotTimes != tt.wantTimes {
+//				t.Errorf("LoadSyncTimes() = %v, wantTimes %v", gotTimes, tt.wantTimes)
+//			}
+//		})
+//	}
+//}
 
-func TestHeaderStore_GetSortedRelayers(t *testing.T) {
+func TestHeaderSync_GetSortedRelayers(t *testing.T) {
 	type args struct {
 		epochID uint64
 	}
@@ -615,10 +616,9 @@ func getStateDB() *state.StateDB {
 	return finalState
 }
 
-func TestHeaderStore_Store(t *testing.T) {
+func TestHeaderSync_Store(t *testing.T) {
 	type args struct {
-		state   types.StateDB
-		address common.Address
+		state types.StateDB
 	}
 	tests := []struct {
 		name    string
@@ -629,54 +629,85 @@ func TestHeaderStore_Store(t *testing.T) {
 		{
 			name: "t-1",
 			hs: &HeaderSync{
-				//epoch2reward: map[uint64]*big.Int{
-				//	1: big.NewInt(111),
-				//	2: big.NewInt(222),
-				//	3: big.NewInt(333),
-				//},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
 					202: 2,
 					303: 3,
 				},
+				epoch2syncInfo: map[uint64][]*RelayerSyncInfo{
+					1: {
+						{
+							Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+							Times:   1,
+							Reward:  big.NewInt(10000),
+						},
+						{
+							Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"),
+							Times:   3,
+							Reward:  big.NewInt(30000),
+						},
+					},
+					2: {
+						{
+							Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+							Times:   1,
+							Reward:  big.NewInt(20000),
+						},
+					},
+					3: {
+						{
+							Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f4"),
+							Times:   1,
+							Reward:  big.NewInt(30000),
+						},
+						{
+							Relayer: common.HexToAddress("0xDf945e6FFd840Ed5787d367708307BD1Fa3d40f5"),
+							Times:   2,
+							Reward:  big.NewInt(60000),
+						},
+					},
+				},
 			},
 			args: args{
-				state:   getStateDB(),
-				address: params.HeaderStoreAddress,
+				state: getStateDB(),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.hs.Store(tt.args.state, tt.args.address); (err != nil) != tt.wantErr {
+			if err := tt.hs.Store(tt.args.state); (err != nil) != tt.wantErr {
 				t.Errorf("Store() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			h := NewHeaderSync()
+			if err := h.Load(tt.args.state); err != nil {
+				t.Errorf("Load() error = %v", err)
+			}
+			if !reflect.DeepEqual(tt.hs, h) {
+				t.Error("not equal")
+			}
+
+			t.Log("hs: ", tt.hs)
+			t.Log("load hs: ", h)
 		})
 	}
 }
 
-func TestHeaderStore_Load(t *testing.T) {
+func TestHeaderSync_Load(t *testing.T) {
 	type args struct {
-		state   types.StateDB
-		address common.Address
+		state types.StateDB
 	}
 	tests := []struct {
 		name    string
 		hs      *HeaderSync
 		args    args
 		before  func(hs *HeaderSync, state types.StateDB)
-		after   func(hs *HeaderSync)
+		want    map[uint64]uint64
 		wantErr bool
 	}{
 		{
 			name: "cache-exist",
 			hs: &HeaderSync{
-				//epoch2reward: map[uint64]*big.Int{
-				//	1: big.NewInt(1111111111111111),
-				//	2: big.NewInt(2222222222222222),
-				//	3: big.NewInt(3333333333333333),
-				//},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
 					202: 2,
@@ -684,50 +715,44 @@ func TestHeaderStore_Load(t *testing.T) {
 				},
 			},
 			args: args{
-				state:   getStateDB(),
-				address: params.HeaderStoreAddress,
+				state: getStateDB(),
 			},
 			before: func(hs *HeaderSync, state types.StateDB) {
-				_ = hs.Store(state, params.HeaderStoreAddress)
+				_ = hs.Store(state)
 			},
-			after: func(hs *HeaderSync) {
-				//for e, r := range hs.epoch2reward {
-				//	fmt.Printf("epoch: %v, reward: %v\n", e, r)
-				//}
+
+			want: map[uint64]uint64{
+				101: 1,
+				202: 2,
+				303: 3,
 			},
 			wantErr: false,
 		},
 		{
 			name: "cache-not-exist",
 			hs: &HeaderSync{
-				//epoch2reward: map[uint64]*big.Int{
-				//	1: big.NewInt(1111111111111111),
-				//	2: big.NewInt(2222222222222222),
-				//	3: big.NewInt(3333333333333333),
-				//},
 				height2receiveTimes: map[uint64]uint64{
-					101: 1,
-					202: 2,
-					303: 3,
+					101: 11,
+					202: 22,
+					303: 33,
 				},
 			},
 			args: args{
-				state:   getStateDB(),
-				address: params.HeaderStoreAddress,
+				state: getStateDB(),
 			},
 			before: func(hs *HeaderSync, state types.StateDB) {
-				_ = hs.Store(state, params.HeaderStoreAddress)
+				_ = hs.Store(state)
 				// remove cache
-				key := common.BytesToHash(params.HeaderStoreAddress[:])
-				data := state.GetPOWState(params.HeaderStoreAddress, key)
-				hash := vm.RlpHash(data)
-				hsCache.Cache.Remove(hash)
+				key := common.BytesToHash(chains.EthereumHeaderSyncAddress[:])
+				data := state.GetPOWState(chains.EthereumHeaderSyncAddress, key)
+				hash := tools.RlpHash(data)
+				syncCache.Cache.Remove(hash)
 
 			},
-			after: func(hs *HeaderSync) {
-				//for e, r := range hs.epoch2reward {
-				//	fmt.Printf("epoch: %v, reward: %v\n", e, r)
-				//}
+			want: map[uint64]uint64{
+				101: 11,
+				202: 22,
+				303: 33,
 			},
 			wantErr: false,
 		},
@@ -735,10 +760,15 @@ func TestHeaderStore_Load(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.before(tt.hs, tt.args.state)
-			if err := tt.hs.Load(tt.args.state, tt.args.address); (err != nil) != tt.wantErr {
+
+			if err := tt.hs.Load(tt.args.state); (err != nil) != tt.wantErr {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			tt.after(tt.hs)
+			for h, rt := range tt.hs.height2receiveTimes {
+				if tt.want[h] != rt {
+					t.Errorf("Load() error, want times %d, got times: %d", tt.want[h], rt)
+				}
+			}
 		})
 	}
 }
@@ -781,7 +811,7 @@ func TestHistoryWorkEfficiency(t *testing.T) {
 			},
 			before: func(hs *HeaderSync, args args) {
 				hs.AddSyncTimes(args.epochId, 101, args.relayer)
-				_ = hs.Store(args.state, params.HeaderStoreAddress)
+				_ = hs.Store(args.state)
 			},
 			want:    101,
 			wantErr: false,
@@ -933,9 +963,9 @@ func TestHeaderStore_CalcReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.hs.CalcReward(tt.args.epochID, tt.args.allAmount); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CalcReward() = %v, want %v", got, tt.want)
-			}
+			//if got := tt.hs.CalcReward(tt.args.epochID, tt.args.allAmount); !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("CalcReward() = %v, want %v", got, tt.want)
+			//}
 		})
 	}
 }

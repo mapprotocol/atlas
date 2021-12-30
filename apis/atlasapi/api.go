@@ -2189,7 +2189,7 @@ func (s *PublicRelayerAPI) Reward(epochID uint64, relayer common.Address) (*big.
 	}
 
 	hs := new(ethereum.HeaderSync)
-	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
+	if err := hs.Load(statedb); err != nil {
 		return nil, err
 	}
 	return hs.LoadReward(epochID, relayer), nil
@@ -2214,10 +2214,10 @@ func (s *PublicRelayerAPI) SyncTimes(epochID uint64, relayer common.Address) (ui
 	}
 
 	hs := new(ethereum.HeaderSync)
-	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
+	if err := hs.Load(statedb); err != nil {
 		return 0, err
 	}
-	return hs.LoadSyncTimes(epochID, relayer), nil
+	return hs.LoadRelayerSyncTimes(statedb, epochID, relayer)
 }
 
 type PublicHeaderStoreAPI struct {
@@ -2266,7 +2266,7 @@ func (p *PublicHeaderStoreAPI) GetRelayerReward(epochID uint64, relayer string) 
 	}
 
 	hs := new(ethereum.HeaderSync)
-	if err := hs.Load(statedb, params.HeaderStoreAddress); err != nil {
+	if err := hs.Load(statedb); err != nil {
 		return nil, err
 	}
 	return hs.LoadReward(epochID, common.HexToAddress(relayer)), nil

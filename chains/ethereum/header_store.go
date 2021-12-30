@@ -16,12 +16,13 @@ import (
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
 	"github.com/mapprotocol/atlas/tools"
 )
 
 const (
-	StoreCacheSize      = 20
-	MaxHeaderLimit = 5
+	StoreCacheSize = 20
+	MaxHeaderLimit = 2000
 	SplicingSymbol = "-"
 )
 
@@ -42,12 +43,11 @@ type Cache struct {
 }
 
 type HeaderStore struct {
-	canonicalNumberToHash map[uint64]common.Hash
-	headers               map[string][]byte
-	tds                   map[string]*big.Int
-	//hash2number map[common.Hash]uint64
-	curNumber uint64
-	curHash   common.Hash
+	CanonicalNumberToHash map[uint64]common.Hash
+	Headers               map[string][]byte
+	TDs                   map[string]*big.Int
+	CurNumber             uint64
+	CurHash               common.Hash
 }
 
 func headerKey(number uint64, hash common.Hash) string {
@@ -55,14 +55,14 @@ func headerKey(number uint64, hash common.Hash) string {
 }
 
 func (hs *HeaderStore) delOldHeaders() {
-	length := len(hs.headers)
+	length := len(hs.Headers)
 	if length <= MaxHeaderLimit {
 		return
 	}
 
 	numbers := make([]uint64, 0, length)
 	number2key := make(map[uint64][]string)
-	for key := range hs.headers {
+	for key := range hs.Headers {
 		numberStr := strings.Split(key, SplicingSymbol)[0]
 		number, _ := strconv.ParseUint(numberStr, 10, 64)
 		numbers = append(numbers, number)
@@ -77,10 +77,12 @@ func (hs *HeaderStore) delOldHeaders() {
 	for i := 0; i < delTotal; i++ {
 		number := numbers[i]
 		for _, key := range number2key[number] {
-			delete(hs.headers, key)
-			delete(hs.tds, key)
+			delete(hs.Headers, key)
+			delete(hs.TDs, key)
 		}
 	}
+	log.Info("before cleaning up the old headers", "headers length", length)
+	log.Info("after cleaning up the old headers", "headers length", len(hs.Headers))
 }
 
 func encodeHeader(header *Header) []byte {
@@ -102,9 +104,9 @@ func decodeHeader(data []byte, hash common.Hash) *Header {
 
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
-		canonicalNumberToHash: make(map[uint64]common.Hash),
-		headers:               make(map[string][]byte),
-		tds:                   make(map[string]*big.Int),
+		CanonicalNumberToHash: make(map[uint64]common.Hash),
+		Headers:               make(map[string][]byte),
+		TDs:                   make(map[string]*big.Int),
 	}
 }
 
@@ -154,11 +156,12 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 			return err
 		}
 		h = *cp
-		hs.canonicalNumberToHash, hs.headers, hs.tds, hs.curHash, hs.curNumber = h.canonicalNumberToHash, h.headers, h.tds, h.curHash, h.curNumber
+		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
+		hs.CanonicalNumberToHash, hs.Headers, hs.TDs = h.CanonicalNumberToHash, h.Headers, h.TDs
 		return nil
 	}
 
-	if err := rlp.DecodeBytes(data, &hs); err != nil {
+	if err := rlp.DecodeBytes(data, &h); err != nil {
 		log.Error("HeaderStore RLP decode failed", "err", err, "HeaderStore", data)
 		return fmt.Errorf("HeaderStore RLP decode failed, error: %s", err.Error())
 	}
@@ -168,7 +171,8 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		return err
 	}
 	storeCache.Cache.Add(hash, clone)
-	hs.canonicalNumberToHash, hs.headers, hs.tds, hs.curHash, hs.curNumber = h.canonicalNumberToHash, h.headers, h.tds, h.curHash, h.curNumber
+	hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
+	hs.CanonicalNumberToHash, hs.Headers, hs.TDs = h.CanonicalNumberToHash, h.Headers, h.TDs
 	return nil
 }
 
@@ -182,65 +186,57 @@ func (hs *HeaderStore) WriteHeader(header *Header) {
 	//hs.hash2number[hash] = number
 
 	//if !hs.HasHeader(hash, number) {
-	hs.headers[headerKey(number, hash)] = encodeHeader(header)
+	hs.Headers[headerKey(number, hash)] = encodeHeader(header)
 	//}
 }
 
-// numberHash is just a container for a number and a hash, to represent a block
-type numberHash struct {
-	number uint64
-	hash   common.Hash
-}
-
 func (hs *HeaderStore) GetTd(hash common.Hash, number uint64) *big.Int {
-	return hs.tds[headerKey(number, hash)]
+	return hs.TDs[headerKey(number, hash)]
 }
 
 func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64) bool {
-	_, isExist := hs.headers[headerKey(number, hash)]
+	_, isExist := hs.Headers[headerKey(number, hash)]
 	return isExist
 }
 
 func (hs *HeaderStore) WriteTd(hash common.Hash, number uint64, td *big.Int) {
-	hs.tds[headerKey(number, hash)] = td
+	hs.TDs[headerKey(number, hash)] = td
 }
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
-	return hs.canonicalNumberToHash[number]
+	return hs.CanonicalNumberToHash[number]
 }
 
 func (hs *HeaderStore) WriteCanonicalHash(hash common.Hash, number uint64) {
 	// number -> hash mapping
-	hs.canonicalNumberToHash[number] = hash
+	hs.CanonicalNumberToHash[number] = hash
 }
 
 func (hs *HeaderStore) DeleteCanonicalHash(number uint64) {
-	delete(hs.canonicalNumberToHash, number)
+	delete(hs.CanonicalNumberToHash, number)
 }
 
-func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, error) {
-	if len(ethHeaders) == 0 {
-		return 0, nil
-	}
-
+func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*params.NumberHash, error) {
 	var headers []*Header
 	if err := rlp.DecodeBytes(ethHeaders, &hs); err != nil {
 		log.Error("rlp decode failed.", "err", err)
-		return 0, chains.ErrRLPDecode
+		return nil, chains.ErrRLPDecode
 	}
 
+	if err := hs.Load(db); err != nil {
+		return nil, err
+	}
 	ptd := hs.GetTd(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 	if ptd == nil {
-		return 0, errUnknownAncestor
+		return nil, errUnknownAncestor
 	}
 	var (
 		lastNumber = headers[0].Number.Uint64() - 1 // Last successfully imported number
 		lastHash   = headers[0].ParentHash          // Last imported header hash
 		newTD      = new(big.Int).Set(ptd)          // Total difficulty of inserted chain
 
-		//lastHeader    *Header
-		inserted      []numberHash // Ephemeral lookup of number/hash for the chain
-		firstInserted = -1         // Index of the first non-ignored header
+		inserted      []*params.NumberHash // Ephemeral lookup of number/hash for the chain
+		firstInserted = -1                 // Index of the first non-ignored header
 	)
 
 	parentKnown := true // Set to true to force hc.HasHeader check the first iteration
@@ -260,7 +256,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, e
 			hs.WriteTd(hash, number, newTD)
 			hs.WriteHeader(header)
 
-			inserted = append(inserted, numberHash{number, hash})
+			inserted = append(inserted, &params.NumberHash{Number: number, Hash: hash})
 			if firstInserted < 0 {
 				firstInserted = i
 			}
@@ -270,8 +266,8 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, e
 	}
 
 	var (
-		head    = hs.curNumber
-		localTD = hs.GetTd(hs.curHash, head)
+		head    = hs.CurNumber
+		localTD = hs.GetTd(hs.CurHash, head)
 	)
 
 	reorg := newTD.Cmp(localTD) > 0
@@ -286,7 +282,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, e
 	// If the parent of the (first) block is already the canon header,
 	// we don't have to go backwards to delete canon blocks, but
 	// simply pile them onto the existing chain
-	chainAlreadyCanon := headers[0].ParentHash == hs.curHash
+	chainAlreadyCanon := headers[0].ParentHash == hs.CurHash
 	if reorg {
 		if !chainAlreadyCanon {
 			for i := lastNumber + 1; ; i++ {
@@ -303,7 +299,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, e
 			)
 			headHeader := hs.GetHeader(headHash, headNumber)
 			if headHeader == nil {
-				return 0, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
+				return nil, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
 			}
 			for hs.ReadCanonicalHash(headNumber) != headHash {
 				hs.WriteCanonicalHash(headHash, headNumber)
@@ -311,7 +307,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, e
 				headNumber = headHeader.Number.Uint64() - 1
 				headHeader = hs.GetHeader(headHash, headNumber)
 				if headHeader == nil {
-					return 0, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
+					return nil, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
 				}
 			}
 
@@ -327,35 +323,45 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (int, e
 		}
 		// Extend the canonical chain with the new headers
 		for _, hn := range inserted {
-			hs.WriteCanonicalHash(hn.hash, hn.number)
+			hs.WriteCanonicalHash(hn.Hash, hn.Number)
 		}
 
 		hs.delOldHeaders()
 		if err := hs.Store(db); err != nil {
-			return 0, err
+			return nil, err
 		}
-		hs.curHash = lastHash
+		hs.CurHash = lastHash
 	}
 
-	return len(inserted), nil
+	return inserted, nil
 }
 
 func (hs *HeaderStore) CurrentNumber() uint64 {
-	return hs.curNumber
+	return hs.CurNumber
 }
 
 func (hs *HeaderStore) CurrentHash() common.Hash {
-	return hs.curHash
+	return hs.CurHash
 }
 
 func (hs *HeaderStore) GetHeader(hash common.Hash, number uint64) *Header {
-	data := hs.headers[headerKey(number, hash)]
+	data := hs.Headers[headerKey(number, hash)]
 	if len(data) != 0 {
 		return decodeHeader(data, hash)
 	}
 	return nil
 }
 
-func (hs *HeaderStore) GetHashByNumber(number uint64) common.Hash {
-	return hs.ReadCanonicalHash(number)
+func (hs *HeaderStore) GetCurrentNumberAndHash(db types.StateDB) (uint64, common.Hash, error) {
+	if err := hs.Load(db); err != nil {
+		return 0, common.Hash{}, err
+	}
+	return hs.CurNumber, hs.CurHash, nil
+}
+
+func (hs *HeaderStore) GetHashByNumber(db types.StateDB, number uint64) (common.Hash, error) {
+	if err := hs.Load(db); err != nil {
+		return common.Hash{}, err
+	}
+	return hs.ReadCanonicalHash(number), nil
 }

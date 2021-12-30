@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/state"
@@ -239,14 +240,8 @@ type Handler interface {
 
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 	if blockNumber.Cmp(big.NewInt(0)) == 0 {
-		key := common.BytesToHash(params.HeaderStoreAddress[:])
-		getState := state.GetPOWState(params.HeaderStoreAddress, key)
-		if len(getState) == 0 {
-			hs := ethereum.NewHeaderSync()
-			if err := hs.Store(state, params.HeaderStoreAddress); err != nil {
-				log.Crit("store failed, ", "err", err)
-			}
-		}
+		initEthereumStore(state)
+		initEthereumSync(state)
 	}
 }
 
@@ -256,6 +251,32 @@ func InitTxVerify(state *state.StateDB, blockNumber *big.Int) {
 		getState := state.GetPOWState(params.TxVerifyAddress, key)
 		if len(getState) == 0 {
 			state.SetCode(params.TxVerifyAddress, params.TxVerifyAddress[:])
+		}
+	}
+}
+
+func initEthereumStore(state *state.StateDB) {
+	key := common.BytesToHash(chains.EthereumHeaderStoreAddress[:])
+	getState := state.GetPOWState(chains.EthereumHeaderStoreAddress, key)
+	if len(getState) == 0 {
+		hs := &ethereum.HeaderStore{
+			CanonicalNumberToHash: make(map[uint64]common.Hash),
+			Headers:               make(map[string][]byte),
+			TDs:                   make(map[string]*big.Int),
+		}
+		if err := hs.Store(state); err != nil {
+			log.Crit("store header store failed, ", "err", err)
+		}
+	}
+}
+
+func initEthereumSync(state *state.StateDB) {
+	key := common.BytesToHash(chains.EthereumHeaderSyncAddress[:])
+	getState := state.GetPOWState(chains.EthereumHeaderSyncAddress, key)
+	if len(getState) == 0 {
+		hs := ethereum.NewHeaderSync()
+		if err := hs.Store(state); err != nil {
+			log.Crit("store header sync failed, ", "err", err)
 		}
 	}
 }

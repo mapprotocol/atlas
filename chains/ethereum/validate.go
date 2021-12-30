@@ -3,7 +3,6 @@ package ethereum
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"runtime"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
 	ethparams "github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/consensus/misc"
@@ -63,10 +63,6 @@ func (v *Validate) GetHashByNumber(chainType chains.ChainType, number uint64) (c
 }
 
 func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, error) {
-	if len(headers) == 0 {
-		return 0, nil
-	}
-
 	var chain []*Header
 	if err := rlp.DecodeBytes(headers, &chain); err != nil {
 		log.Error("rlp decode failed.", "err", err)
@@ -74,6 +70,9 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, e
 	}
 
 	chainLength := len(chain)
+	if chainLength == 0 {
+		return 0, errors.New("headers cannot be empty")
+	}
 	if chainLength == 1 {
 		if chain[0].Number == nil || chain[0].Difficulty == nil {
 			return 0, errors.New("invalid header number or difficulty is nil")
@@ -107,7 +106,7 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, e
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	abort, results := v.VerifyHeaders(db, chain)
+	abort, results := v.VerifyHeaders(hs, chain)
 	defer close(abort)
 
 	for i := range chain {
@@ -119,7 +118,7 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, e
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -137,7 +136,7 @@ func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header) (chan<- st
 	for i := 0; i < workers; i++ {
 		go func() {
 			for index := range inputs {
-				errors[index] = v.verifyHeaderWorker(db, headers, index, unixNow)
+				errors[index] = v.verifyHeaderWorker(hs, headers, index, unixNow)
 				done <- index
 			}
 		}()
@@ -173,16 +172,10 @@ func (v *Validate) VerifyHeaders(db types.StateDB, headers []*Header) (chan<- st
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(db types.StateDB, headers []*Header, index int, unixNow int64) error {
+func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index int, unixNow int64) error {
 	var parent *Header
 	if index == 0 {
-		//s, err := chainsdb.GetStoreMgr(chainType)
-		//if err != nil {
-		//	return err
-		//}
-		//parent = s.ReadHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
-		// todo
-
+		parent = hs.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
 	}
@@ -206,7 +199,6 @@ func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int6
 	if header.Time <= parent.Time {
 		return errOlderBlockTime
 	}
-	// todo
 	// Verify the block's difficulty based on its timestamp and parent's difficulty
 	//expected := v.CalcDifficulty(chain, header.Time, parent)
 	//if expected.Cmp(header.Difficulty) != 0 {

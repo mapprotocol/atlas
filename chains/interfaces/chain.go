@@ -8,38 +8,44 @@ import (
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/params"
+
 )
 
 type IChain interface {
 	IValidate
 	IHeaderStore
-	//IHeaderSyncInfo
+	IHeaderSync
 }
 
 type Chain struct {
 	Validate    IValidate
 	HeaderStore IHeaderStore
-	//HeaderSyncInfo IHeaderSyncInfo
+	HeaderSync  IHeaderSync
 }
 
 func (c *Chain) ValidateHeaderChain(db types.StateDB, headers []byte) (int, error) {
 	return c.Validate.ValidateHeaderChain(db, headers)
 }
 
-func (c *Chain) WriteHeaders(db types.StateDB, headers []byte) (int, error) {
+func (c *Chain) WriteHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error) {
 	return c.HeaderStore.WriteHeaders(db, headers)
 }
 
-func (c *Chain) CurrentHash() common.Hash {
-	return c.HeaderStore.CurrentHash()
+func (c *Chain) GetCurrentNumberAndHash(db types.StateDB) (uint64, common.Hash, error) {
+	return c.HeaderStore.GetCurrentNumberAndHash(db)
 }
 
-func (c *Chain) CurrentNumber() uint64 {
-	return c.HeaderStore.CurrentNumber()
+func (c *Chain) GetHashByNumber(db types.StateDB, number uint64) (common.Hash, error) {
+	return c.HeaderStore.GetHashByNumber(db, number)
 }
 
-func (c *Chain) GetHashByNumber(number uint64) common.Hash {
-	return c.HeaderStore.GetHashByNumber(number)
+func (c *Chain) StoreSyncTimes(db types.StateDB, epochID uint64, relayer common.Address, headers []*params.NumberHash) error {
+	return c.HeaderSync.StoreSyncTimes(db, epochID, relayer, headers)
+}
+
+func (c *Chain) LoadRelayerSyncTimes(db types.StateDB, epochID uint64, relayer common.Address) (uint64, error) {
+	return c.HeaderSync.LoadRelayerSyncTimes(db, epochID, relayer)
 }
 
 func ChainFactory(group chains.ChainGroup) (IChain, error) {
@@ -48,6 +54,7 @@ func ChainFactory(group chains.ChainGroup) (IChain, error) {
 		return &Chain{
 			Validate:    new(ethereum.Validate),
 			HeaderStore: new(ethereum.HeaderStore),
+			HeaderSync:  new(ethereum.HeaderSync),
 		}, nil
 	}
 

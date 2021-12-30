@@ -1,10 +1,10 @@
 package ethereum
 
 import (
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
-	"math/big"
-	"testing"
 )
 
 func TestHeaderStore_Decode(t *testing.T) {
@@ -16,11 +16,11 @@ func TestHeaderStore_Decode(t *testing.T) {
 		{
 			name: "",
 			hs: &HeaderSync{
-				epoch2reward: map[uint64]*big.Int{
-					1: big.NewInt(100),
-					2: big.NewInt(200),
-					3: big.NewInt(200),
-				},
+				//epoch2reward: map[uint64]*big.Int{
+				//	1: big.NewInt(100),
+				//	2: big.NewInt(200),
+				//	3: big.NewInt(200),
+				//},
 				height2receiveTimes: map[uint64]uint64{
 					101: 1,
 					202: 2,

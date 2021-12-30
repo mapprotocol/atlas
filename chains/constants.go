@@ -41,10 +41,9 @@ var chainType2LondonBlock = map[ChainType]*big.Int{
 	ChainTypeETHTest: big.NewInt(10_499_401),
 }
 
-
 var (
-	EthereumHeaderStoreAddress    = common.BytesToAddress([]byte("EthereumHeaderStoreAddress"))
-	EthereumHeaderSyncInfoAddress = common.BytesToAddress([]byte("EthereumHeaderSyncInfoAddress"))
+	EthereumHeaderStoreAddress = common.BytesToAddress([]byte("EthereumHeaderStoreAddress"))
+	EthereumHeaderSyncAddress  = common.BytesToAddress([]byte("EthereumHeaderSyncInfoAddress"))
 )
 
 type ChainType uint64

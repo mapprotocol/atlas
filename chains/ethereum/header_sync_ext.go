@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-type extHeaderStore struct {
+type extHeaderSync struct {
 	Heights      []uint64
 	ReceiveTimes []uint64
 	SyncEpochs   []uint64
@@ -42,7 +42,7 @@ func (h *HeaderSync) EncodeRLP(w io.Writer) error {
 		syncInfo = append(syncInfo, h.epoch2syncInfo[e])
 	}
 
-	return rlp.Encode(w, extHeaderStore{
+	return rlp.Encode(w, extHeaderSync{
 		Heights:      heights,
 		ReceiveTimes: receiveTimes,
 		SyncEpochs:   syncEpochs,
@@ -51,7 +51,7 @@ func (h *HeaderSync) EncodeRLP(w io.Writer) error {
 }
 
 func (h *HeaderSync) DecodeRLP(s *rlp.Stream) error {
-	var eh extHeaderStore
+	var eh extHeaderSync
 	if err := s.Decode(&eh); err != nil {
 		return err
 	}

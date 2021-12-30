@@ -447,3 +447,9 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 		IsCatalyst:       c.IsCatalyst(num),
 	}
 }
+
+// NumberHash is just a container for a number and a hash, to represent a block
+type NumberHash struct {
+	Number uint64
+	Hash   common.Hash
+}

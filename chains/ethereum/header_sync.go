@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru"
 
+	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 	"github.com/mapprotocol/atlas/tools"
@@ -44,7 +45,6 @@ type RelayerSyncInfo struct {
 }
 
 type HeaderSync struct {
-	epoch2reward        map[uint64]*big.Int
 	height2receiveTimes map[uint64]uint64
 	epoch2syncInfo      map[uint64][]*RelayerSyncInfo
 }
@@ -56,7 +56,7 @@ func NewHeaderSync() *HeaderSync {
 	}
 }
 
-func CloneHeaderStore(src *HeaderSync) (dst *HeaderSync, err error) {
+func CloneHeaderSync(src *HeaderSync) (dst *HeaderSync, err error) {
 	dst = NewHeaderSync()
 	err = DeepCopy(src.height2receiveTimes, &dst.height2receiveTimes)
 	if err != nil {
@@ -77,8 +77,12 @@ func DeepCopy(src, dst interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (h *HeaderSync) Store(state types.StateDB, address common.Address) error {
-	key := common.BytesToHash(address[:])
+func (h *HeaderSync) Store(state types.StateDB) error {
+	var (
+		address = chains.EthereumHeaderSyncAddress
+		key     = common.BytesToHash(address[:])
+	)
+
 	data, err := rlp.EncodeToBytes(h)
 	if err != nil {
 		log.Error("Failed to RLP encode HeaderSync", "err", err, "HeaderSync", h)
@@ -87,7 +91,7 @@ func (h *HeaderSync) Store(state types.StateDB, address common.Address) error {
 
 	state.SetPOWState(address, key, data)
 
-	clone, err := CloneHeaderStore(h)
+	clone, err := CloneHeaderSync(h)
 	if err != nil {
 		return err
 	}
@@ -96,13 +100,17 @@ func (h *HeaderSync) Store(state types.StateDB, address common.Address) error {
 	return nil
 }
 
-func (h *HeaderSync) Load(state types.StateDB, address common.Address) (err error) {
-	key := common.BytesToHash(address[:])
+func (h *HeaderSync) Load(state types.StateDB) (err error) {
+	var (
+		hs      HeaderSync
+		address = chains.EthereumHeaderSyncAddress
+		key     = common.BytesToHash(address[:])
+	)
+
 	data := state.GetPOWState(address, key)
-	var hs HeaderSync
 	hash := tools.RlpHash(data)
 	if cc, ok := syncCache.Cache.Get(hash); ok {
-		cp, err := CloneHeaderStore(cc.(*HeaderSync))
+		cp, err := CloneHeaderSync(cc.(*HeaderSync))
 		if err != nil {
 			return err
 		}
@@ -116,7 +124,7 @@ func (h *HeaderSync) Load(state types.StateDB, address common.Address) (err erro
 		return fmt.Errorf("HeaderSync RLP decode failed, error: %s", err.Error())
 	}
 
-	clone, err := CloneHeaderStore(&hs)
+	clone, err := CloneHeaderSync(&hs)
 	if err != nil {
 		return err
 	}
@@ -182,13 +190,16 @@ func (h *HeaderSync) AddSyncTimes(epochID, amount uint64, relayer common.Address
 	}
 }
 
-func (h *HeaderSync) LoadSyncTimes(epochID uint64, relayer common.Address) uint64 {
+func (h *HeaderSync) LoadRelayerSyncTimes(db types.StateDB, epochID uint64, relayer common.Address) (uint64, error) {
+	if err := h.Load(db); err != nil {
+		return 0, err
+	}
 	for i, rsi := range h.epoch2syncInfo[epochID] {
 		if bytes.Equal(rsi.Relayer.Bytes(), relayer.Bytes()) {
-			return h.epoch2syncInfo[epochID][i].Times
+			return h.epoch2syncInfo[epochID][i].Times, nil
 		}
 	}
-	return 0
+	return 0, nil
 }
 
 func (h *HeaderSync) GetSortedRelayers(epochID uint64) []common.Address {
@@ -206,41 +217,61 @@ func (h *HeaderSync) GetSortedRelayers(epochID uint64) []common.Address {
 	return rs
 }
 
-func (h *HeaderSync) CalcReward(epochID uint64, allAmount *big.Int) map[common.Address]*big.Int {
-	residualReward := allAmount
-	relayers := h.GetSortedRelayers(epochID)
-	rewards := make(map[common.Address]*big.Int, len(relayers))
+//func (h *HeaderSync) CalcReward(epochID uint64, allAmount *big.Int) map[common.Address]*big.Int {
+//	residualReward := allAmount
+//	relayers := h.GetSortedRelayers(epochID)
+//	rewards := make(map[common.Address]*big.Int, len(relayers))
+//
+//	totalSyncTimes := uint64(0)
+//	for _, s := range h.epoch2syncInfo[epochID] {
+//		totalSyncTimes += s.Times
+//	}
+//	if totalSyncTimes == 0 {
+//		return rewards
+//	}
+//	singleBlockReward := new(big.Int).Quo(allAmount, new(big.Int).SetUint64(totalSyncTimes))
+//
+//	for i, r := range relayers {
+//		if i == len(relayers)-1 {
+//			rewards[r] = residualReward
+//			break
+//		}
+//
+//		times := h.LoadRelayerSyncTimes(epochID, r)
+//		relayerReward := new(big.Int).Mul(singleBlockReward, new(big.Int).SetUint64(times))
+//		residualReward = new(big.Int).Sub(residualReward, relayerReward)
+//		rewards[r] = relayerReward
+//	}
+//	return rewards
+//}
 
-	totalSyncTimes := uint64(0)
-	for _, s := range h.epoch2syncInfo[epochID] {
-		totalSyncTimes += s.Times
+func (h *HeaderSync) StoreSyncTimes(db types.StateDB, epochID uint64, relayer common.Address, headers []*params.NumberHash) error {
+	if err := h.Load(db); err != nil {
+		return err
 	}
-	if totalSyncTimes == 0 {
-		return rewards
-	}
-	singleBlockReward := new(big.Int).Quo(allAmount, new(big.Int).SetUint64(totalSyncTimes))
 
-	for i, r := range relayers {
-		if i == len(relayers)-1 {
-			rewards[r] = residualReward
-			break
-		}
+	// todo
+	//var total uint64
+	//for _, header := range headers {
+	//	if h.GetReceiveTimes(header.Number) >= 3 {
+	//		return fmt.Errorf("the number of synchronizations has reached the limit(%d)", 3)
+	//	}
+	//	total++
+	//	h.IncrReceiveTimes(header.Number)
+	//}
 
-		times := h.LoadSyncTimes(epochID, r)
-		relayerReward := new(big.Int).Mul(singleBlockReward, new(big.Int).SetUint64(times))
-		residualReward = new(big.Int).Sub(residualReward, relayerReward)
-		rewards[r] = relayerReward
-	}
-	return rewards
+	h.AddSyncTimes(epochID, uint64(len(headers)), relayer)
+
+	return h.Store(db)
 }
 
 func HistoryWorkEfficiency(state types.StateDB, epochId uint64, relayer common.Address) (uint64, error) {
 	headerStore := NewHeaderSync()
-	err := headerStore.Load(state, params.HeaderStoreAddress)
+	err := headerStore.Load(state)
 	if err != nil {
-		log.Error("header store load error", "error", err)
+		log.Error("header sync load error", "error", err)
 		return 0, err
 	}
 
-	return headerStore.LoadSyncTimes(epochId, relayer), nil
+	return headerStore.LoadRelayerSyncTimes(state, epochId, relayer)
 }
