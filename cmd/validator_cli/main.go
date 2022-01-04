@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gopkg.in/urfave/cli.v1"
 	"os"
-	"path/filepath"
 	"sort"
 )
 
@@ -53,10 +52,6 @@ var (
 		Name:  "topNum",
 		Usage: "topNum of group`s member",
 	}
-	IdxFlag = cli.Int64Flag{
-		Name:  "idx",
-		Usage: "index of validators singer",
-	}
 
 	RPCListenAddrFlag = cli.StringFlag{
 		Name:  "rpcaddr",
@@ -73,19 +68,10 @@ var (
 		Usage: "value units one eth",
 		Value: 0,
 	}
-	FeeFlag = cli.Uint64Flag{
-		Name:  "fee",
-		Usage: "work fee",
-		Value: 0,
-	}
-	AddressFlag = cli.StringFlag{
-		Name:  "address",
+
+	TargetAddressFlag = cli.StringFlag{
+		Name:  "target",
 		Usage: "Transfer address",
-		Value: "",
-	}
-	BFTKeyKeyFlag = cli.StringFlag{
-		Name:  "bftkey",
-		Usage: "Validator bft key for BFT (no 0x prefix)",
 		Value: "",
 	}
 
@@ -95,42 +81,22 @@ var (
 		RPCListenAddrFlag,
 		RPCPortFlag,
 		ValueFlag,
-		FeeFlag,
-		BFTKeyKeyFlag,
 		PasswordFlag,
 		CommissionFlag,
 		lesserFlag,
 		greaterFlag,
 		voteNumFlag,
 		TopNumFlag,
-		IdxFlag,
-		AddressFlag,
+		TargetAddressFlag,
 	}
 )
 
 func init() {
 	app = cli.NewApp()
 	app.Usage = "Atlas Marker Tool"
-	app.Name = filepath.Base(os.Args[0])
+	app.Name = "marker"
 	app.Version = "1.0.0"
 	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
-	app.Flags = []cli.Flag{
-		KeyFlag,
-		KeyStoreFlag,
-		RPCListenAddrFlag,
-		RPCPortFlag,
-		ValueFlag,
-		FeeFlag,
-		BFTKeyKeyFlag,
-		PasswordFlag,
-		CommissionFlag,
-		lesserFlag,
-		greaterFlag,
-		TopNumFlag,
-		voteNumFlag,
-		IdxFlag,
-		AddressFlag,
-	}
 	app.Action = MigrateFlags(registerValidator)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
@@ -138,18 +104,8 @@ func init() {
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		registerValidatorCommand,
-
-		queryRegisteredValidatorSignersCommand,
-		queryTopValidatorsCommand,
-
-		deregisterValidatorCommand,
-		createAccountCommand,
-		lockedMAPCommand,
-		voteValidatorCommand,
-		getValidatorEligibilityCommand,
-		getTotalVotesForVCommand,
-		getBalanceVCommand,
+		validatorCommand,
+		voterCommand,
 	}
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
@@ -164,13 +120,13 @@ func main() {
 
 var OriginCommandHelpTemplate string = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...] {{if .Description}}{{.Description}} {{end}}{{if .Subcommands}} SUBCOMMANDS:     {{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}     {{end}}{{end}}{{if .Flags}} OPTIONS: {{range $.Flags}}{{"\t"}}{{.}} {{end}} {{end}}`
 
-func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error {
+func MigrateFlags(hdl func(ctx *cli.Context, config *Config) error) func(*cli.Context) error {
 	return func(ctx *cli.Context) error {
 		for _, name := range ctx.FlagNames() {
 			if ctx.IsSet(name) {
 				ctx.GlobalSet(name, ctx.String(name))
 			}
 		}
-		return action(ctx)
+		return hdl(ctx, AssemblyConfig(ctx))
 	}
 }

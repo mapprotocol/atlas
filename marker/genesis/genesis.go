@@ -40,30 +40,12 @@ func CreateCommonGenesisConfig(chainID *big.Int, adminAccountAddress common.Addr
 		DonutBlock:    common.Big0,
 	}
 
-	// Make admin account manager of Governance & Reserve
-	adminMultisig := MultiSigParameters{
-		Signatories:                      []common.Address{adminAccountAddress},
-		NumRequiredConfirmations:         1,
-		NumInternalRequiredConfirmations: 1,
-	}
-
-	genesisConfig.ReserveSpenderMultiSig = adminMultisig
-	genesisConfig.GovernanceApproverMultiSig = adminMultisig
-
-	// Ensure nothing is frozen
-	genesisConfig.GoldToken.Frozen = false
-	genesisConfig.EpochRewards.Frozen = false
-
 	return genesisConfig
 }
 
 func FundAccounts(genesisConfig *Config, accounts []env.Account) {
-	cusdBalances := make([]Balance, len(accounts))
-	ceurBalances := make([]Balance, len(accounts))
 	goldBalances := make([]Balance, len(accounts))
 	for i, acc := range accounts {
-		cusdBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k cUSD
-		ceurBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k cEUR
 		goldBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k Atlas
 	}
 	genesisConfig.GoldToken.InitialBalances = goldBalances

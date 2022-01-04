@@ -17,6 +17,7 @@
 package backend
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/contracts/random"
@@ -53,7 +54,8 @@ func (sb *Backend) GenerateRandomness(parentHash common.Hash) (common.Hash, comm
 	sb.randomSeedMu.Unlock()
 
 	randomness := crypto.Keccak256Hash(append(sb.randomSeed, parentHash.Bytes()...))
-
+	fmt.Println("parentHash", parentHash.String())
+	fmt.Println("sb.randomSeed", sb.randomSeed)
 	// The logic to compute the commitment via the randomness is in the random smart contract.
 	// That logic is stateless, so passing in any block header and state is fine.  There is a TODO for
 	// that commitment computation logic to be removed fromthe random smart contract.

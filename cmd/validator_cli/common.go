@@ -3,37 +3,43 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/params"
+	"gopkg.in/urfave/cli.v1"
+	"io/ioutil"
+	"math/big"
+	"os"
+	"time"
+
 	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/mapprotocol/atlas/accounts/abi"
-	"github.com/mapprotocol/atlas/cmd/validator_cli/env"
-	"gopkg.in/urfave/cli.v1"
-	"io/ioutil"
-	"math"
-	"math/big"
-	"os"
-	"time"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 )
 
-var (
-	key   string
-	store string
-	ip    string
-	port  int
-)
-
-func checkFee(fee *big.Int) {
-	if fee.Sign() < 0 || fee.Cmp(Base) > 0 {
-		log.Error("Please set correct fee value")
-	}
+type Config struct {
+	from          common.Address
+	PublicKey     []byte
+	PrivateKey    *ecdsa.PrivateKey
+	BlsPub        blscrypto.SerializedPublicKey
+	BLSProof      []byte
+	Value         uint64
+	Commission    int64
+	lesser        common.Address
+	greater       common.Address
+	voteNum       *big.Int
+	TopNum        *big.Int
+	Idx           *big.Int
+	targetAddress common.Address
+	ip            string
+	port          int
+	conn          *ethclient.Client
 }
 
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
@@ -93,7 +99,7 @@ func loadPrivateKey(keyfile string) common.Address {
 	//fmt.Println("address ", from.Hex(), "key", hex.EncodeToString(crypto.FromECDSA(priKey)))
 	return from
 }
-func loadAccount(path string, password string) env.Account {
+func loadAccount(path string, password string) Account {
 	logger := log.New("func", "getResult")
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -108,43 +114,10 @@ func loadAccount(path string, password string) env.Account {
 	var addr common.Address
 	addr.SetBytes(publicAddr.Bytes())
 
-	return env.Account{
+	return Account{
 		Address:    addr,
 		PrivateKey: priKey1,
 	}
-}
-func getAllFile(path string) (string, error) {
-	rd, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Error("path ", err)
-	}
-	for _, fi := range rd {
-		if fi.IsDir() {
-			fmt.Printf("[%s]\n", path+"\\"+fi.Name())
-			getAllFile(path + fi.Name() + "\\")
-			return "", errors.New("path error")
-		} else {
-			fmt.Println(path, "dir has ", fi.Name(), "file")
-			return fi.Name(), nil
-		}
-	}
-	return "", err
-}
-
-func ethToWei(ctx *cli.Context, zero bool) *big.Int {
-	Value = ctx.GlobalUint64(ValueFlag.Name)
-	if !zero && Value <= 0 {
-		log.Error("value must bigger than 0")
-	}
-	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	value := new(big.Int).Mul(big.NewInt(int64(Value)), baseUnit)
-	return value
-}
-
-func weiToEth(value *big.Int) uint64 {
-	baseUnit := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	valueT := new(big.Int).Div(value, baseUnit).Uint64()
-	return valueT
 }
 
 func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
@@ -209,39 +182,10 @@ func packInput(abi *abi.ABI, abiMethod string, params ...interface{}) []byte {
 	return input
 }
 
-func PrintBalance(conn *ethclient.Client, from common.Address) {
-	logger := log.New("func", "PrintBalance")
-	balance, err := conn.BalanceAt(context.Background(), from, nil)
-	if err != nil {
-		logger.Error("BalanceAt", "error", err)
-	}
-	balance2 := new(big.Float)
-	balance2.SetString(balance.String())
-	Value := new(big.Float).Quo(balance2, big.NewFloat(math.Pow10(18)))
-
-	fmt.Println("Your wallet balance is ", Value, "'eth ")
-}
-
-func loadPrivate(ctx *cli.Context) {
-	key = ctx.GlobalString(KeyFlag.Name)
-	store = ctx.GlobalString(KeyStoreFlag.Name)
-	if key != "" {
-		loadPrivateKey(key)
-	} else if store != "" {
-		loadSigningKey(store)
-	} else {
-		log.Error("Must specify --key or --keystore")
-	}
-
-	if priKey == nil {
-		log.Error("load privateKey failed")
-	}
-}
-
 func dialConn(ctx *cli.Context) (*ethclient.Client, string) {
 	logger := log.New("func", "dialConn")
-	ip = ctx.GlobalString("rpcaddr") //utils.RPCListenAddrFlag.Name)
-	port = ctx.GlobalInt("rpcport")  //utils.RPCPortFlag.Name)
+	ip := ctx.GlobalString("rpcaddr") //utils.RPCListenAddrFlag.Name)
+	port := ctx.GlobalInt("rpcport")  //utils.RPCPortFlag.Name)
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	conn, err := ethclient.Dial(url)
 	if err != nil {
@@ -250,36 +194,58 @@ func dialConn(ctx *cli.Context) (*ethclient.Client, string) {
 	return conn, url
 }
 
-func printBaseInfo(conn *ethclient.Client, url string) *types.Header {
-	logger := log.New("func", "printBaseInfo")
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		logger.Error("HeaderByNumber", "error", err)
+func AssemblyConfig(ctx *cli.Context) *Config {
+	var config *Config
+	//------------------ pre set --------------------------
+	path := ""
+	password := "111111"
+	config.voteNum = big.NewInt(int64(100))
+	config.lesser = params.ZeroAddress
+	config.greater = params.ZeroAddress
+	config.targetAddress = params.ZeroAddress
+	config.Commission = 80
+	//-----------------------------------------------------
+
+	if ctx.IsSet(KeyStoreFlag.Name) {
+		path = ctx.GlobalString(KeyStoreFlag.Name)
+	}
+	if ctx.IsSet(PasswordFlag.Name) {
+		password = ctx.GlobalString(PasswordFlag.Name)
 	}
 
-	if common.IsHexAddress(from.Hex()) {
-		fmt.Println("Connect url ", url, " current number ", header.Number.String(), " address ", from.Hex())
-	} else {
-		fmt.Println("Connect url ", url, " current number ", header.Number.String())
+	if ctx.IsSet(CommissionFlag.Name) {
+		config.Commission = ctx.GlobalInt64(CommissionFlag.Name)
+	}
+	if ctx.IsSet(lesserFlag.Name) {
+		config.lesser = common.HexToAddress(ctx.GlobalString(lesserFlag.Name))
+	}
+	if ctx.IsSet(greaterFlag.Name) {
+		config.greater = common.HexToAddress(ctx.GlobalString(greaterFlag.Name))
+	}
+	if ctx.IsSet(voteNumFlag.Name) {
+		config.voteNum = big.NewInt(ctx.Int64(voteNumFlag.Name))
+	}
+	if ctx.IsSet(TargetAddressFlag.Name) {
+		config.targetAddress = common.HexToAddress(ctx.GlobalString(TargetAddressFlag.Name))
+	}
+	if ctx.IsSet(ValueFlag.Name) {
+		config.Value = ctx.GlobalUint64(ValueFlag.Name)
+	}
+	if ctx.IsSet(TopNumFlag.Name) {
+		config.TopNum = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
 	}
 
-	return header
-}
-
-// loadSigningKey loads a private key in Ethereum keystore format.
-func loadSigningKey(keyfile string) common.Address {
-	keyjson, err := ioutil.ReadFile(keyfile)
+	account := loadAccount(path, password)
+	blsPub, err := account.BLSPublicKey()
 	if err != nil {
-		log.Error("ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
+		return nil
 	}
-	password, _ := prompt.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
-	//password := "secret"
-	key, err := keystore.DecryptKey(keyjson, password)
-	if err != nil {
-		log.Error("DecryptKey", fmt.Errorf("error decrypting key: %v", err))
-	}
-	priKey = key.PrivateKey
-	from = crypto.PubkeyToAddress(priKey.PublicKey)
-	//fmt.Println("address ", from.Hex(), "key", hex.EncodeToString(crypto.FromECDSA(priKey)))
-	return from
+	config.PublicKey = account.PublicKey()
+	config.from = account.Address
+	config.PrivateKey = account.PrivateKey
+	config.BlsPub = blsPub
+	config.BLSProof = account.MustBLSProofOfPossession()
+	conn, _ := dialConn(ctx)
+	config.conn = conn
+	return config
 }

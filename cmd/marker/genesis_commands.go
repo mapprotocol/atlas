@@ -59,24 +59,10 @@ var createGenesisCommand = cli.Command{
 	Action:    createGenesis,
 	ArgsUsage: "",
 	Flags: append(
-		[]cli.Flag{buildpathFlag, newEnvFlag},
+		[]cli.Flag{
+			buildpathFlag,
+			newEnvFlag},
 		templateFlags...),
-}
-
-var createGenesisConfigCommand = cli.Command{
-	Name:      "genesis-config",
-	Usage:     "Creates genesis-config.json from a template and overrides",
-	Action:    createGenesisConfig,
-	ArgsUsage: "[envdir]",
-	Flags:     append([]cli.Flag{}, templateFlags...),
-}
-
-var createGenesisFromConfigCommand = cli.Command{
-	Name:      "genesis-from-config",
-	Usage:     "Creates genesis.json from a genesis-config.json and env.json",
-	ArgsUsage: "[envdir]",
-	Action:    createGenesisFromConfig,
-	Flags:     []cli.Flag{buildpathFlag},
 }
 
 func readBuildPath(ctx *cli.Context) (string, error) {
@@ -170,51 +156,4 @@ func createGenesis(ctx *cli.Context) error {
 	}
 
 	return env.SaveGenesis(generatedGenesis)
-}
-
-func createGenesisConfig(ctx *cli.Context) error {
-	workdir, err := readWorkdir(ctx)
-	if err != nil {
-		return err
-	}
-
-	env, genesisConfig, err := envFromTemplate(ctx, workdir)
-	if err != nil {
-		return err
-	}
-
-	err = env.Save()
-	if err != nil {
-		return err
-	}
-
-	return genesisConfig.Save(path.Join(workdir, "genesis-config.json"))
-}
-
-func createGenesisFromConfig(ctx *cli.Context) error {
-	workdir, err := readWorkdir(ctx)
-	if err != nil {
-		return err
-	}
-	env, err := env.Load(workdir)
-	if err != nil {
-		return err
-	}
-
-	genesisConfig, err := genesis.LoadConfig(path.Join(workdir, "genesis-config.json"))
-	if err != nil {
-		return err
-	}
-
-	buildpath, err := readBuildPath(ctx)
-	if err != nil {
-		return err
-	}
-
-	genesis, err := genesis.GenerateGenesis(ctx, env.Accounts(), genesisConfig, buildpath)
-	if err != nil {
-		return err
-	}
-
-	return env.SaveGenesis(genesis)
 }

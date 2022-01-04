@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"gopkg.in/urfave/cli.v1"
-	"math/big"
 )
 
 var queryRegisteredValidatorSignersCommand = cli.Command{
@@ -23,25 +22,13 @@ var queryTopValidatorsCommand = cli.Command{
 	Flags:  ValidatorFlags,
 }
 
-func getRegisteredValidatorSigners(ctx *cli.Context) error {
-	//---------------------------- pre set ----------------------
-	path := ""
-	password = ""
-	//-----------------------------------------------------------
+func getRegisteredValidatorSigners(ctx *cli.Context, config *Config) error {
 	log.Info("==== getRegisteredValidatorSigners ===")
 	methodName := "getRegisteredValidatorSigners"
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	header, err := conn.HeaderByNumber(context.Background(), nil)
+	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	input := packInput(abiValidators, methodName)
 	msg := ethchain.CallMsg{From: from, To: &ValidatorAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	output, err := config.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
 	}
@@ -60,30 +47,13 @@ func getRegisteredValidatorSigners(ctx *cli.Context) error {
 	}
 	return nil
 }
-func getTopValidators(ctx *cli.Context) error {
-	//--------------------------- pre set -------------------------------------------
-	path := ""
-	n := big.NewInt(5) // top number
-	password = ""
-	//-------------------------------------------------------------------------------
-	if ctx.IsSet(TopNumFlag.Name) {
-		n = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
+func getTopValidators(ctx *cli.Context, config *Config) error {
 	methodName := "getTopValidators"
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-
+	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getTopValidators admin", "obj", from)
-	input := packInput(abiElection, methodName, n)
+	input := packInput(abiElection, methodName, config.TopNum)
 	msg := ethchain.CallMsg{From: from, To: &ElectionAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	output, err := config.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
 	}
@@ -102,30 +72,13 @@ func getTopValidators(ctx *cli.Context) error {
 	}
 	return nil
 }
-func getNumberValidators(ctx *cli.Context) error {
-	//--------------------------- pre set -------------------------------------------
-	path := ""
-	n := big.NewInt(5) // top number
-	password = ""
-	//-------------------------------------------------------------------------------
-	if ctx.IsSet(TopNumFlag.Name) {
-		n = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
+func getNumberValidators(ctx *cli.Context, config *Config) error {
 	methodName := "getTopValidators"
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	header, err := conn.HeaderByNumber(context.Background(), nil)
-
+	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getTopValidators admin", "obj", from)
-	input := packInput(abiElection, methodName, n)
+	input := packInput(abiElection, methodName, config.TopNum)
 	msg := ethchain.CallMsg{From: from, To: &ElectionAddress, Data: input}
-	output, err := conn.CallContract(context.Background(), msg, header.Number)
+	output, err := config.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
 	}

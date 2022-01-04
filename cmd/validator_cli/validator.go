@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/mapprotocol/atlas/accounts/abi"
-	"github.com/mapprotocol/atlas/cmd/validator_cli/env"
 	"github.com/mapprotocol/atlas/params"
 
 	"gopkg.in/urfave/cli.v1"
@@ -16,8 +15,8 @@ import (
 )
 
 var registerValidatorCommand = cli.Command{
-	Name:   "registerValidator",
-	Usage:  "register validator ",
+	Name:   "register",
+	Usage:  "register validator",
 	Action: MigrateFlags(registerValidator),
 	Flags:  ValidatorFlags,
 }
@@ -27,33 +26,54 @@ var createAccountCommand = cli.Command{
 	Action: MigrateFlags(createAccount1),
 	Flags:  ValidatorFlags,
 }
-var deregisterValidatorCommand = cli.Command{
-	Name:   "deregisterValidator",
-	Usage:  "deregister validator",
-	Action: MigrateFlags(deregisterValidator),
-	Flags:  ValidatorFlags,
-}
+
 var lockedMAPCommand = cli.Command{
 	Name:   "lockedMAP",
 	Usage:  "locked MAP",
 	Action: MigrateFlags(lockedMAP),
 	Flags:  ValidatorFlags,
 }
+var unlockedMAPCommand = cli.Command{
+	Name:   "unlockedMAP",
+	Usage:  "unlocked MAP",
+	Action: MigrateFlags(unlockedMAP),
+	Flags:  ValidatorFlags,
+}
+var relockMAPCommand = cli.Command{
+	Name:   "relockMAP",
+	Usage:  "unlocked MAP",
+	Action: MigrateFlags(relockMAP),
+	Flags:  ValidatorFlags,
+}
+var withdrawCommand = cli.Command{
+	Name:   "withdraw",
+	Usage:  "withdraw MAP",
+	Action: MigrateFlags(withdraw),
+	Flags:  ValidatorFlags,
+}
 
-const (
-	datadirPrivateKey      = "key"
-	datadirDefaultKeyStore = "keystore"
-	RegisterAmount         = 100000
-	RewardInterval         = 14
-	commission             = 80
-)
+var validatorCommand = cli.Command{
+	Name:  "validator",
+	Usage: "validator commands",
+	Subcommands: []cli.Command{
+		createAccountCommand,
+		lockedMAPCommand,
+		registerValidatorCommand,
+		unlockedMAPCommand,
+		relockMAPCommand,
+		withdrawCommand,
+
+		queryRegisteredValidatorSignersCommand,
+		queryTopValidatorsCommand,
+	},
+}
 
 var (
-	abiValidators  *abi.ABI
-	abiLocaledGold *abi.ABI
-	abiAccounts    *abi.ABI
-	abiElection    *abi.ABI
-	abiGoldToken   *abi.ABI
+	abiValidators *abi.ABI
+	abiLockedGold *abi.ABI
+	abiAccounts   *abi.ABI
+	abiElection   *abi.ABI
+	abiGoldToken  *abi.ABI
 
 	ValidatorAddress  = MustProxyAddressFor("Validators")
 	LockedGoldAddress = MustProxyAddressFor("LockedGold")
@@ -72,7 +92,7 @@ var (
 
 func init() {
 	abiValidators = AbiFor("Validators")
-	abiLocaledGold = AbiFor("LockedGold")
+	abiLockedGold = AbiFor("LockedGold")
 	abiAccounts = AbiFor("Accounts")
 	abiElection = AbiFor("Election")
 	abiGoldToken = AbiFor("GoldToken")
@@ -90,146 +110,81 @@ func init() {
 	glogger.Verbosity(log.LvlInfo)
 	log.Root().SetHandler(glogger)
 }
-func registerValidator(ctx *cli.Context) error {
-	//------------------ pre set --------------------------
-	path := ""
-	password = "111111"
-	commission := int64(80)
-	lesser := params.ZeroAddress
-	greater := params.ZeroAddress
-	//-----------------------------------------------------
 
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	if ctx.IsSet(CommissionFlag.Name) {
-		commission = ctx.GlobalInt64(CommissionFlag.Name)
-	}
-	if ctx.IsSet(lesserFlag.Name) {
-		lesser = common.HexToAddress(ctx.GlobalString(lesserFlag.Name))
-	}
-	if ctx.IsSet(greaterFlag.Name) {
-		greater = common.HexToAddress(ctx.GlobalString(greaterFlag.Name))
-	}
-	validator := loadAccount(path, password)
-
-	blsPub, err := validator.BLSPublicKey()
-	if err != nil {
-		return err
-	}
-
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
+func registerValidator(ctx *cli.Context, config *Config) error {
 	//---------------------------- create account ----------------------------------
-	createAccount(conn, validator, "validator")
-
+	createAccount(config.conn, config, "validator")
 	//---------------------------- lock ----------------------------------
 	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Atlas per validator,
 	log.Info("=== Lock validator gold ===")
 	log.Info("Lock group gold", "amount", groupRequiredGold)
-	input := packInput(abiLocaledGold, "lock")
-	txHash := sendContractTransaction(conn, validator.Address, LockedGoldAddress, groupRequiredGold, priKey, input)
-	getResult(conn, txHash, true)
+	input := packInput(abiLockedGold, "lock")
+	txHash := sendContractTransaction(config.conn, config.from, LockedGoldAddress, groupRequiredGold, priKey, input)
+	getResult(config.conn, txHash, true)
 
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	pubKey := validator.PublicKey()[1:]
-	input = packInput(abiValidators, "registerValidator", big.NewInt(commission), lesser, greater, pubKey, blsPub[:], validator.MustBLSProofOfPossession())
-	txHash = sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
+	input = packInput(abiValidators, "registerValidator", big.NewInt(config.Commission), config.lesser, config.greater, config.PublicKey, config.BlsPub[:], config.BLSProof)
+	txHash = sendContractTransaction(config.conn, config.from, ValidatorAddress, nil, priKey, input)
+	getResult(config.conn, txHash, true)
 	return nil
 }
-func lockedMAP(ctx *cli.Context) error {
-	//------------------ pre set --------------------------
-	path := ""
-	password = "111111"
-	//-----------------------------------------------------
-
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	loadPrivateKey(path)
-	account := loadAccount(path, password)
-	conn, _ := dialConn(ctx)
+func lockedMAP(ctx *cli.Context, config *Config) error {
 	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Atlas per groupAccount,
-	log.Info("=== Lock group gold ===")
-	log.Info("Lock group gold", "amount", groupRequiredGold)
-	input := packInput(abiLocaledGold, "lock")
-	txHash := sendContractTransaction(conn, account.Address, LockedGoldAddress, groupRequiredGold, priKey, input)
-	getResult(conn, txHash, true)
-	return nil
-
-}
-func createAccount1(ctx *cli.Context) error {
-	//------------------ pre set --------------------------
-	path := ""
-	password = "111111"
-	namePrefix := "validator"
-	//-----------------------------------------------------
-
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	if ctx.IsSet(NamePrefixFlag.Name) {
-		namePrefix = ctx.GlobalString(NamePrefixFlag.Name)
-	}
-	loadPrivateKey(path)
-	validator := loadAccount(path, password)
-	conn, _ := dialConn(ctx)
-	createAccount(conn, validator, namePrefix)
+	log.Info("=== Lock  gold ===")
+	log.Info("Lock  gold", "amount", groupRequiredGold)
+	input := packInput(abiLockedGold, "lock")
+	txHash := sendContractTransaction(config.conn, config.from, LockedGoldAddress, groupRequiredGold, priKey, input)
+	getResult(config.conn, txHash, true)
 	return nil
 }
-func createAccount(conn *ethclient.Client, account env.Account, namePrefix string) {
+
+func unlockedMAP(ctx *cli.Context, config *Config) error {
+	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
+	log.Info("=== unLock validator gold ===")
+	log.Info("unLock validator gold", "amount", groupRequiredGold)
+	input := packInput(abiLockedGold, "unlock", groupRequiredGold)
+	txHash := sendContractTransaction(config.conn, config.from, LockedGoldAddress, nil, priKey, input)
+	getResult(config.conn, txHash, true)
+	return nil
+}
+func relockMAP(ctx *cli.Context, config *Config) error {
+	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
+	log.Info("=== relockMAP validator gold ===")
+	log.Info("relockMAP validator gold", "amount", groupRequiredGold)
+	input := packInput(abiLockedGold, "relock", big.NewInt(0), groupRequiredGold)
+	txHash := sendContractTransaction(config.conn, config.from, LockedGoldAddress, nil, priKey, input)
+	getResult(config.conn, txHash, true)
+	return nil
+}
+
+func withdraw(ctx *cli.Context, config *Config) error {
+	log.Info("=== withdraw validator gold ===")
+	input := packInput(abiLockedGold, "withdraw", big.NewInt(0))
+	txHash := sendContractTransaction(config.conn, config.from, LockedGoldAddress, nil, priKey, input)
+	getResult(config.conn, txHash, true)
+	return nil
+}
+func createAccount1(ctx *cli.Context, config *Config) error {
+	createAccount(config.conn, config, "validator")
+	return nil
+}
+func createAccount(conn *ethclient.Client, cfg *Config, namePrefix string) {
 	logger := log.New("func", "createAccount")
-	logger.Info("Create account", "address", account.Address, "name", namePrefix)
+	logger.Info("Create account", "address", cfg.from, "name", namePrefix)
 
 	log.Info("=== create Account ===")
 	input := packInput(abiAccounts, "createAccount")
-	txHash := sendContractTransaction(conn, account.Address, AccountsAddress, nil, priKey, input)
+	txHash := sendContractTransaction(conn, cfg.from, AccountsAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 
 	log.Info("=== setName name ===")
 	input = packInput(abiAccounts, "setName", namePrefix)
-	txHash = sendContractTransaction(conn, account.Address, AccountsAddress, nil, priKey, input)
+	txHash = sendContractTransaction(conn, cfg.from, AccountsAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
 
 	log.Info("=== setAccountDataEncryptionKey ===")
-	input = packInput(abiAccounts, "setAccountDataEncryptionKey", account.PublicKey())
-	txHash = sendContractTransaction(conn, account.Address, AccountsAddress, nil, priKey, input)
+	input = packInput(abiAccounts, "setAccountDataEncryptionKey", cfg.PublicKey)
+	txHash = sendContractTransaction(conn, cfg.from, AccountsAddress, nil, priKey, input)
 	getResult(conn, txHash, true)
-}
-func deregisterValidator(ctx *cli.Context) error {
-	//------------------------pre set ------------------------------------------------
-	path := ""
-	password = "111111"
-	idx := big.NewInt(int64(4)) // index in registeredValidators
-	//--------------------------------------------------------------------------------
-
-	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
-	}
-	if ctx.IsSet(IdxFlag.Name) {
-		idx = big.NewInt(ctx.GlobalInt64(IdxFlag.Name))
-	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
-	}
-	validator := loadAccount(path, password)
-	loadPrivateKey(path)
-	conn, _ := dialConn(ctx)
-	//----------------------------- deregisterValidator --------------------------------
-	log.Info("====== deregisterValidator ======")
-	input := packInput(abiValidators, "deregisterValidator", idx)
-	txHash := sendContractTransaction(conn, validator.Address, ValidatorAddress, nil, priKey, input)
-	getResult(conn, txHash, true)
-	return nil
 }

@@ -496,6 +496,7 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 	}
 
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	fmt.Println("header.Root:", header.Root)
 	logger.Info("Finalized", "duration", now().Sub(start), "lastInEpoch", lastBlockOfEpoch)
 }
 

@@ -7,22 +7,7 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-var envCommand = cli.Command{
-	Name:  "env",
-	Usage: "Environment utility commands",
-	Subcommands: []cli.Command{
-		getAccountCommand,
-	},
-}
 
-var getAccountCommand = cli.Command{
-	Name:   "account",
-	Action: getAccount,
-	Flags: []cli.Flag{
-		idxFlag,
-		accountTypeFlag,
-	},
-}
 
 var (
 	idxFlag = cli.IntFlag{

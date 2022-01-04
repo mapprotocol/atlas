@@ -14,9 +14,8 @@ func TestConfigMarhalling(t *testing.T) {
 	cfg := Config{
 		ChainID: big.NewInt(1500),
 		Accounts: AccountsConfig{
-			Mnemonic:           "aloha hawai",
-			NumValidators:      6,
-			ValidatorsPerGroup: 2,
+			Mnemonic:      "aloha hawai",
+			NumValidators: 6,
 		},
 	}
 
@@ -48,9 +47,8 @@ func TestConfigReadJson(t *testing.T) {
 	expectedCfg := Config{
 		ChainID: big.NewInt(1500),
 		Accounts: AccountsConfig{
-			Mnemonic:           "aloha hawai",
-			NumValidators:      6,
-			ValidatorsPerGroup: 2,
+			Mnemonic:      "aloha hawai",
+			NumValidators: 6,
 		},
 	}
 

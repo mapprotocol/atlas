@@ -47,6 +47,11 @@ func ShuffledRoundRobinProposer(valSet istanbul.ValidatorSet, proposer common.Ad
 	if proposer != (common.Address{}) {
 		idx += uint64(reverse[proposerIndex(valSet, proposer)]) + 1
 	}
+	fmt.Println("=== validators ===")
+	for _, v := range valSet.List() {
+		fmt.Println(v.Address().String())
+	}
+	fmt.Println("Next validator ", valSet.List()[shuffle[idx%uint64(valSet.Size())]])
 	return valSet.List()[shuffle[idx%uint64(valSet.Size())]]
 }
 

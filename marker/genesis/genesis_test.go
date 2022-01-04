@@ -13,11 +13,12 @@ func Test_makeRegistryId(t *testing.T) {
 		hash := crypto.Keccak256([]byte(contractName))
 		var id [32]byte
 		copy(id[:], hash)
-
 		return id
 	}
 	a := makeRegistryId("Election") // common.hash
 	//a:= makeRegistryId("Validators") // common.hash
 	fmt.Println(common.BytesToHash(a[:]).String())
-	fmt.Println(common.ZeroAddress.String())
+	//fmt.Println(common.ZeroAddress.String())
+
+	//fmt.Println(big.NewInt(0).Exp(big.NewInt(2),big.NewInt(4),nil))
 }
