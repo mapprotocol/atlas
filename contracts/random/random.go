@@ -1,7 +1,6 @@
 package random
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +28,6 @@ func IsRunning(vmRunner vm.EVMRunner) bool {
 	} else if err != nil {
 		//log.Error(err.Error())
 	}
-	fmt.Println("IsRunning:", err == nil && randomAddress != params.ZeroAddress)
 	return err == nil && randomAddress != params.ZeroAddress
 }
 
@@ -45,7 +43,6 @@ func GetLastCommitment(vmRunner vm.EVMRunner, validator common.Address) (common.
 	if (lastCommitment == common.Hash{}) {
 		log.Debug("Unable to find last randomness commitment in smart contract")
 	}
-	fmt.Println("lastCommitment", lastCommitment)
 	return lastCommitment, nil
 }
 
@@ -58,10 +55,6 @@ func ComputeCommitment(vmRunner vm.EVMRunner, randomness common.Hash) (common.Ha
 		log.Error("Failed to call computeCommitment()", "err", err)
 		return common.Hash{}, err
 	}
-	//0x0e3f47124a429f254d6cb8f72e80b883fb99c622b1b3a914d76a2ede40afe9b2
-	//0x003ddee9481b857e0bc5057eb085e91becad4e97da02a767ef9050968f3a7fba
-	fmt.Println("ComputeCommitment", randomness)
-	fmt.Println("commitment:", commitment)
 	return commitment, err
 }
 
@@ -78,13 +71,11 @@ func RevealAndCommit(vmRunner vm.EVMRunner, randomness, newCommitment common.Has
 func Random(vmRunner vm.EVMRunner) (common.Hash, error) {
 	randomness := common.Hash{}
 	err := randomMethod.Query(vmRunner, &randomness)
-	fmt.Println("Random:", randomness)
 	return randomness, err
 }
 
 func BlockRandomness(vmRunner vm.EVMRunner, blockNumber uint64) (common.Hash, error) {
 	randomness := common.Hash{}
 	err := getBlockRandomnessMethod.Query(vmRunner, &randomness, big.NewInt(int64(blockNumber)))
-	fmt.Println("BlockRandomness:", randomness)
 	return randomness, err
 }

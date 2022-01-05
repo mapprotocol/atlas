@@ -1,55 +1,51 @@
 package main
 
 import (
-	"crypto/ecdsa"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/params"
 
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
-	"os"
 )
 
 var registerValidatorCommand = cli.Command{
 	Name:   "register",
 	Usage:  "register validator",
 	Action: MigrateFlags(registerValidator),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var createAccountCommand = cli.Command{
 	Name:   "createAccount",
 	Usage:  "creat validator account",
 	Action: MigrateFlags(createAccount1),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 
 var lockedMAPCommand = cli.Command{
 	Name:   "lockedMAP",
 	Usage:  "locked MAP",
 	Action: MigrateFlags(lockedMAP),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var unlockedMAPCommand = cli.Command{
 	Name:   "unlockedMAP",
 	Usage:  "unlocked MAP",
 	Action: MigrateFlags(unlockedMAP),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var relockMAPCommand = cli.Command{
 	Name:   "relockMAP",
 	Usage:  "unlocked MAP",
 	Action: MigrateFlags(relockMAP),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var withdrawCommand = cli.Command{
 	Name:   "withdraw",
 	Usage:  "withdraw MAP",
 	Action: MigrateFlags(withdraw),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 
 var validatorCommand = cli.Command{
@@ -80,14 +76,6 @@ var (
 	AccountsAddress   = MustProxyAddressFor("Accounts")
 	ElectionAddress   = MustProxyAddressFor("Election")
 	GoldTokenAddress  = MustProxyAddressFor("StableToken")
-
-	priKey   *ecdsa.PrivateKey
-	from     common.Address
-	password string
-	Value    uint64
-	fee      uint64
-
-	Base = new(big.Int).SetUint64(10000)
 )
 
 func init() {
@@ -103,15 +91,13 @@ func init() {
 	ElectionAddress = MustProxyAddressFor("Election")
 	GoldTokenAddress = MustProxyAddressFor("GoldToken")
 
-	Base = new(big.Int).SetUint64(10000)
-	password = ""
-
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.LvlInfo)
-	log.Root().SetHandler(glogger)
+	//glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
+	//glogger.Verbosity(log.LvlInfo)
+	//log.Root().SetHandler(glogger)
 }
 
 func registerValidator(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	//---------------------------- create account ----------------------------------
 	createAccount(config.conn, config, "validator")
 	//---------------------------- lock ----------------------------------
@@ -130,6 +116,7 @@ func registerValidator(ctx *cli.Context, config *Config) error {
 	return nil
 }
 func lockedMAP(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Atlas per groupAccount,
 	log.Info("=== Lock  gold ===")
 	log.Info("Lock  gold", "amount", groupRequiredGold)
@@ -140,6 +127,7 @@ func lockedMAP(ctx *cli.Context, config *Config) error {
 }
 
 func unlockedMAP(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
 	log.Info("=== unLock validator gold ===")
 	log.Info("unLock validator gold", "amount", groupRequiredGold)
@@ -149,6 +137,7 @@ func unlockedMAP(ctx *cli.Context, config *Config) error {
 	return nil
 }
 func relockMAP(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
 	log.Info("=== relockMAP validator gold ===")
 	log.Info("relockMAP validator gold", "amount", groupRequiredGold)
@@ -159,6 +148,7 @@ func relockMAP(ctx *cli.Context, config *Config) error {
 }
 
 func withdraw(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	log.Info("=== withdraw validator gold ===")
 	input := packInput(abiLockedGold, "withdraw", big.NewInt(0))
 	txHash := sendContractTransaction(config.conn, config.from, LockedGoldAddress, nil, priKey, input)
@@ -170,6 +160,7 @@ func createAccount1(ctx *cli.Context, config *Config) error {
 	return nil
 }
 func createAccount(conn *ethclient.Client, cfg *Config, namePrefix string) {
+	priKey := cfg.PrivateKey
 	logger := log.New("func", "createAccount")
 	logger.Info("Create account", "address", cfg.from, "name", namePrefix)
 

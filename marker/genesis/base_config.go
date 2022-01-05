@@ -49,7 +49,7 @@ func BaseConfig() *Config {
 		},
 
 		EpochRewards: EpochRewardsParameters{
-			MaxValidatorEpochPayment: bigIntStr("10000000000000000000000"), //10K map
+			MaxValidatorEpochPayment: bigIntStr("40000000000000000000000"), //40K map
 			CommunityRewardFraction:  fixed("0.1"),
 			CommunityPartner:         common.Address{},
 		},

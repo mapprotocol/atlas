@@ -18,6 +18,7 @@ package backend
 
 import (
 	"errors"
+	"fmt"
 	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"time"
@@ -69,10 +70,14 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	}
 
 	uptimeRets, err := sb.updateValidatorScores(header, state, valSet)
+	for _, v := range uptimeRets {
+		fmt.Println("uptimeScores", v)
+	}
 	if err != nil {
 		return err
 	}
 	scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets)
+	fmt.Println("=== scores ===", scores)
 	if err != nil {
 		return err
 	}
@@ -171,11 +176,12 @@ func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) 
    @return (N*p+s1+s2+s3...)
 */
 func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptimes []*big.Int) (*big.Int, error) {
-	var sum *big.Int
+	sum := big.NewInt(0)
 	for _, v := range uptimes {
 		sum.Add(sum, v)
 	}
 	PledgeMultiplier, err := validators.GetPledgeMultiplierInReward(vmRunner)
+	fmt.Println("=== PledgeMultiplier ===", PledgeMultiplier.String())
 	if err != nil {
 		return nil, err
 	}

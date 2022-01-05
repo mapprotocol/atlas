@@ -52,6 +52,10 @@ var (
 		Name:  "topNum",
 		Usage: "topNum of group`s member",
 	}
+	VerbosityFlag = cli.Int64Flag{
+		Name:  "Verbosity",
+		Usage: "Verbosity of log level",
+	}
 
 	RPCListenAddrFlag = cli.StringFlag{
 		Name:  "rpcaddr",
@@ -75,7 +79,7 @@ var (
 		Value: "",
 	}
 
-	ValidatorFlags = []cli.Flag{
+	Flags = []cli.Flag{
 		KeyFlag,
 		KeyStoreFlag,
 		RPCListenAddrFlag,
@@ -107,6 +111,7 @@ func init() {
 		validatorCommand,
 		voterCommand,
 	}
+	app.Flags = Flags
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
@@ -127,6 +132,11 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *Config) error) func(*cli.Co
 				ctx.GlobalSet(name, ctx.String(name))
 			}
 		}
-		return hdl(ctx, AssemblyConfig(ctx))
+		config := AssemblyConfig(ctx)
+		err := startLogger(ctx, config)
+		if err != nil {
+			panic(err)
+		}
+		return hdl(ctx, config)
 	}
 }

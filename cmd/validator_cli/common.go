@@ -9,9 +9,9 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"strconv"
 	"time"
 
-	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -40,6 +40,7 @@ type Config struct {
 	ip            string
 	port          int
 	conn          *ethclient.Client
+	Verbosity     string
 }
 
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
@@ -56,8 +57,8 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	}
 	gasLimit := uint64(3100000) // in units
 	//If the contract surely has code (or code is not needed), estimate the transaction
-	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	gasLimit, err = client.EstimateGas(context.Background(), msg)
+	//msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	//gasLimit, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
 		logger.Error("Contract exec failed", "error", err)
 	}
@@ -85,29 +86,14 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	return signedTx.Hash()
 }
 
-func loadPrivateKey(keyfile string) common.Address {
-	keyjson, err := ioutil.ReadFile(keyfile)
-	if err != nil {
-		log.Error("loadPrivateKey", fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
-	}
-	key, err := keystore.DecryptKey(keyjson, password)
-	if err != nil {
-		log.Error("DecryptKey", fmt.Errorf("error decrypting key: %v", err))
-	}
-	priKey = key.PrivateKey
-	from = crypto.PubkeyToAddress(priKey.PublicKey)
-	//fmt.Println("address ", from.Hex(), "key", hex.EncodeToString(crypto.FromECDSA(priKey)))
-	return from
-}
 func loadAccount(path string, password string) Account {
-	logger := log.New("func", "getResult")
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
-		logger.Crit("loadPrivate ReadFile", "error", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+		panic(fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		logger.Crit("loadPrivate DecryptKey", "error", fmt.Errorf("error decrypting key: %v", err))
+		panic(fmt.Errorf("error decrypting key: %v", err))
 	}
 	priKey1 := key.PrivateKey
 	publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
@@ -193,9 +179,24 @@ func dialConn(ctx *cli.Context) (*ethclient.Client, string) {
 	}
 	return conn, url
 }
+func startLogger(ctx *cli.Context, config *Config) error {
+	logger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
+
+	var lvl log.Lvl
+
+	if lvlToInt, err := strconv.Atoi(config.Verbosity); err == nil {
+		lvl = log.Lvl(lvlToInt)
+	} else if lvl, err = log.LvlFromString(config.Verbosity); err != nil {
+		return err
+	}
+	logger.Verbosity(lvl)
+	log.Root().SetHandler(log.LvlFilterHandler(lvl, logger))
+
+	return nil
+}
 
 func AssemblyConfig(ctx *cli.Context) *Config {
-	var config *Config
+	config := Config{}
 	//------------------ pre set --------------------------
 	path := ""
 	password := "111111"
@@ -204,6 +205,7 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config.greater = params.ZeroAddress
 	config.targetAddress = params.ZeroAddress
 	config.Commission = 80
+	config.Verbosity = "3"
 	//-----------------------------------------------------
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
@@ -234,7 +236,9 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	if ctx.IsSet(TopNumFlag.Name) {
 		config.TopNum = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
 	}
-
+	if ctx.IsSet(VerbosityFlag.Name) {
+		config.Verbosity = ctx.GlobalString(VerbosityFlag.Name)
+	}
 	account := loadAccount(path, password)
 	blsPub, err := account.BLSPublicKey()
 	if err != nil {
@@ -247,5 +251,5 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config.BLSProof = account.MustBLSProofOfPossession()
 	conn, _ := dialConn(ctx)
 	config.conn = conn
-	return config
+	return &config
 }

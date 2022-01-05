@@ -104,7 +104,7 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 
 func UpdateValidatorScore(vmRunner vm.EVMRunner, address common.Address, uptime *big.Int) (*big.Int, error) {
 	var uptimeRet *big.Int
-	err := updateValidatorScoreFromSignerMethod.Execute(vmRunner, uptimeRet, common.Big0, address, uptime)
+	err := updateValidatorScoreFromSignerMethod.Execute(vmRunner, &uptimeRet, common.Big0, address, uptime)
 	return uptimeRet, err
 }
 

@@ -45,11 +45,9 @@ func prepareBlock(w *worker) (*blockState, error) {
 
 	timestamp := time.Now().Unix()
 	parent := w.chain.CurrentBlock()
-	fmt.Println("prepareBlock1", parent.Hash())
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
 	}
-	fmt.Println("prepareBlock2", parent.Hash())
 	num := parent.Number()
 	header := &types.Header{
 		ParentHash: parent.Hash(),
@@ -108,9 +106,7 @@ func prepareBlock(w *worker) (*blockState, error) {
 		if !ok {
 			log.Crit("Istanbul consensus engine must be in use for the randomness beacon")
 		}
-		fmt.Println("w.validator", w.validator)
 		lastCommitment, err := random.GetLastCommitment(vmRunner, w.validator)
-		fmt.Println("lastCommitment 123", lastCommitment)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get last commitment: %w", err)
 		}
@@ -130,9 +126,6 @@ func prepareBlock(w *worker) (*blockState, error) {
 		}
 
 		_, newCommitment, err := istanbul.GenerateRandomness(b.header.ParentHash)
-		fmt.Println("b.header.ParentHash", b.header.ParentHash)
-		//0xfc234ae6e4bd965d7bb680d5ef32371b3e0f9fb81b5ee2b1e67da3fd6ea9a9a9
-		//0x3f036639ab347e4bfd8761a4b57332abce9485c0756bcefab8fffab3cbed4220
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate new randomness: %w", err)
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/celo-org/celo-blockchain/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"testing"
 )
 
@@ -19,6 +20,9 @@ func Test_makeRegistryId(t *testing.T) {
 	//a:= makeRegistryId("Validators") // common.hash
 	fmt.Println(common.BytesToHash(a[:]).String())
 	//fmt.Println(common.ZeroAddress.String())
-
 	//fmt.Println(big.NewInt(0).Exp(big.NewInt(2),big.NewInt(4),nil))
+}
+func Test_fixed(t *testing.T) {
+	fixed := fixed.MustNew
+	fmt.Println(fixed("1").BigInt()) // 10000 00000 00000 00000 00000  24
 }

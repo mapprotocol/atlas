@@ -44,15 +44,6 @@ func (cfg *Config) Save(filepath string) error {
 	return utils.WriteJson(cfg, filepath)
 }
 
-// LoadConfig will read config from a json file
-func LoadConfig(filepath string) (*Config, error) {
-	var cfg Config
-	if err := utils.ReadJson(&cfg, filepath); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
-
 // ChainConfig returns the chain config objt for the blockchain
 func (cfg *Config) ChainConfig() *params.ChainConfig {
 	return &params.ChainConfig{
@@ -86,8 +77,6 @@ type HardforkConfig struct {
 	DonutBlock    *big.Int `json:"donutBlock"`
 }
 
-//go:generate gencodec -type LockedGoldRequirements -field-override LockedgoldRequirementsMarshaling -out gen_locked_gold_requirements_json.go
-
 // LockedGoldRequirements represents value/duration requirments on locked gold
 type LockedGoldRequirements struct {
 	Value    *big.Int `json:"value"`
@@ -97,8 +86,6 @@ type LockedGoldRequirements struct {
 type LockedgoldRequirementsMarshaling struct {
 	Value *bigintstr.BigIntStr `json:"value"`
 }
-
-//go:generate gencodec -type ElectionParameters -field-override ElectionParametersMarshaling -out gen_election_parameters_json.go
 
 // ElectionParameters are the initial configuration parameters for Elections
 type ElectionParameters struct {
@@ -126,8 +113,6 @@ type BlockchainParameters struct {
 	BlockGasLimit           uint64  `json:"blockGasLimit"`
 }
 
-//go:generate gencodec -type DoubleSigningSlasherParameters -field-override DoubleSigningSlasherParametersMarshaling -out gen_double_signing_slasher_parameters_json.go
-
 // DoubleSigningSlasherParameters are the initial configuration parameters for DoubleSigningSlasher
 type DoubleSigningSlasherParameters struct {
 	Penalty *big.Int `json:"penalty"`
@@ -138,8 +123,6 @@ type DoubleSigningSlasherParametersMarshaling struct {
 	Penalty *bigintstr.BigIntStr `json:"penalty"`
 	Reward  *bigintstr.BigIntStr `json:"reward"`
 }
-
-//go:generate gencodec -type DowntimeSlasherParameters -field-override DowntimeSlasherParametersMarshaling -out gen_downtime_slasher_parameters_json.go
 
 // DowntimeSlasherParameters are the initial configuration parameters for DowntimeSlasher
 type DowntimeSlasherParameters struct {
@@ -152,8 +135,6 @@ type DowntimeSlasherParametersMarshaling struct {
 	Penalty *bigintstr.BigIntStr `json:"penalty"`
 	Reward  *bigintstr.BigIntStr `json:"reward"`
 }
-
-//go:generate gencodec -type GovernanceParameters -field-override GovernanceParametersMarshaling -out gen_governance_parameters_json.go
 
 type GovernanceParametersMarshaling struct {
 	MinDeposit *bigintstr.BigIntStr `json:"minDeposit"`
@@ -168,11 +149,8 @@ type ValidatorsParameters struct {
 	CommissionUpdateDelay           uint64                 `json:"commissionUpdateDelay"`
 	PledgeMultiplierInReward        *fixed.Fixed           `json:"pledgeMultiplierInReward"`
 	DowntimeGracePeriod             uint64                 `json:"downtimeGracePeriod"`
-
-	Commission *fixed.Fixed `json:"commission"` // commission for genesis registered validator
+	Commission                      *fixed.Fixed           `json:"commission"` // commission for genesis registered validator
 }
-
-//go:generate gencodec -type EpochRewardsParameters -field-override EpochRewardsParametersMarshaling -out gen_epoch_rewards_parameters_json.go
 
 // EpochRewardsParameters are the initial configuration parameters for EpochRewards
 type EpochRewardsParameters struct {
@@ -195,8 +173,6 @@ type RandomParameters struct {
 	RandomnessBlockRetentionWindow uint64 `json:"randomnessBlockRetentionWindow"`
 }
 
-//go:generate gencodec -type GasPriceMinimumParameters -field-override GasPriceMinimumParametersMarshaling -out gen_gas_price_minimum_parameters_json.go
-
 // GasPriceMinimumParameters are the initial configuration parameters for GasPriceMinimum
 type GasPriceMinimumParameters struct {
 	MinimumFloor    *big.Int     `json:"minimumFloor"`
@@ -212,8 +188,6 @@ type GasPriceMinimumParametersMarshaling struct {
 type LockedGoldParameters struct {
 	UnlockingPeriod uint64 `json:"unlockingPeriod"`
 }
-
-//go:generate gencodec -type Balance -field-override BalanceMarshaling -out gen_balance_json.go
 
 // Balance represents an account and it's initial balance in wei
 type Balance struct {

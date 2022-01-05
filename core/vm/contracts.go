@@ -1239,7 +1239,7 @@ func (c *transfer) Run(evm *EVM, contract *Contract, input []byte) ([]byte, erro
 
 	if from == params2.ZeroAddress {
 		// Mint case: Create cGLD out of thin air
-		fmt.Println("=== transfer:===", to.String(), value) //保存了一个合约状态 并没有写到链上去
+		fmt.Println("=== transfer:===", to.String(), value)
 		evm.StateDB.AddBalance(to, value)
 	} else {
 		// Fail if we're trying to transfer more than the available balance

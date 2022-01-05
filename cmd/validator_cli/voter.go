@@ -15,31 +15,31 @@ var voteValidatorCommand = cli.Command{
 	Name:   "voteValidator",
 	Usage:  "vote validator ",
 	Action: MigrateFlags(vote),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var getValidatorEligibilityCommand = cli.Command{
 	Name:   "getValidatorEligibility",
 	Usage:  "Judge whether the verifier`s Eligibility",
 	Action: MigrateFlags(getValidatorEligibility),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var getTotalVotesForVCommand = cli.Command{
 	Name:   "getTotalVotesForV",
 	Usage:  "vote validator ",
 	Action: MigrateFlags(getTotalVotesForEligibleValidators),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var getBalanceCommand = cli.Command{
 	Name:   "balanceOf",
 	Usage:  "Gets the balance of the specified address using the presently stored inflation factor.",
 	Action: MigrateFlags(balanceOf),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var activateCommand = cli.Command{
 	Name:   "activate",
 	Usage:  "Converts `account`'s pending votes for `validator` to active votes.",
 	Action: MigrateFlags(activate),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 
 var voterCommand = cli.Command{
@@ -57,6 +57,7 @@ var voterCommand = cli.Command{
 }
 
 func vote(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	//----------------------------- vote Validator ---------------------------------
 	log.Info("=== vote Validator ===")
 	amount := new(big.Int).Mul(config.voteNum, big.NewInt(1e18))
@@ -67,6 +68,7 @@ func vote(ctx *cli.Context, config *Config) error {
 }
 
 func getTotalVotesForEligibleValidators(ctx *cli.Context, config *Config) error {
+	from := config.from
 	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getTotalVotesForEligibleValidators admin", "obj", from)
 	methodName := "getTotalVotesForEligibleValidators"
@@ -96,6 +98,7 @@ func getTotalVotesForEligibleValidators(ctx *cli.Context, config *Config) error 
 
 //getValidatorEligibility
 func getValidatorEligibility(ctx *cli.Context, config *Config) error {
+	from := config.from
 	methodName := "getValidatorEligibility"
 	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getValidatorEligibility admin", "obj", from)
@@ -117,6 +120,7 @@ func getValidatorEligibility(ctx *cli.Context, config *Config) error {
 
 //StableToken
 func balanceOf(ctx *cli.Context, config *Config) error {
+	from := config.from
 	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	methodName := "balanceOf"
 	log.Info("=== balanceOf admin", "obj", from)
@@ -137,7 +141,9 @@ func balanceOf(ctx *cli.Context, config *Config) error {
 }
 
 func activate(ctx *cli.Context, config *Config) error {
+	priKey := config.PrivateKey
 	log.Info("=== activate validator gold ===", "account.Address", config.from)
+	fmt.Println(config.targetAddress)
 	input := packInput(abiElection, "activate", config.targetAddress)
 	txHash := sendContractTransaction(config.conn, config.from, ElectionAddress, nil, priKey, input)
 	getResult(config.conn, txHash, true)
@@ -145,6 +151,7 @@ func activate(ctx *cli.Context, config *Config) error {
 }
 
 func getPendingVotesForValidatorByAccount(ctx *cli.Context, config *Config) error {
+	from := config.from
 	header, _ := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getPendingVotesForValidatorByAccount ===", "account.Address", config.from)
 	methodName := "getPendingVotesForValidatorByAccount"
@@ -160,6 +167,7 @@ func getPendingVotesForValidatorByAccount(ctx *cli.Context, config *Config) erro
 	return nil
 }
 func getValidatorsVotedForByAccount(ctx *cli.Context, config *Config) error {
+	from := config.from
 	header, _ := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getValidatorsVotedForByAccount ===", "account.Address", config.from)
 	methodName := "getValidatorsVotedForByAccount"

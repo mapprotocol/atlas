@@ -13,16 +13,17 @@ var queryRegisteredValidatorSignersCommand = cli.Command{
 	Name:   "getRegisteredValidatorSigners",
 	Usage:  "Registered Validator Signers",
 	Action: MigrateFlags(getRegisteredValidatorSigners),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 var queryTopValidatorsCommand = cli.Command{
 	Name:   "getTopValidators",
 	Usage:  "get Top Group Validators",
 	Action: MigrateFlags(getTopValidators),
-	Flags:  ValidatorFlags,
+	Flags:  Flags,
 }
 
 func getRegisteredValidatorSigners(ctx *cli.Context, config *Config) error {
+	from := config.from
 	log.Info("==== getRegisteredValidatorSigners ===")
 	methodName := "getRegisteredValidatorSigners"
 	header, err := config.conn.HeaderByNumber(context.Background(), nil)
@@ -48,6 +49,7 @@ func getRegisteredValidatorSigners(ctx *cli.Context, config *Config) error {
 	return nil
 }
 func getTopValidators(ctx *cli.Context, config *Config) error {
+	from := config.from
 	methodName := "getTopValidators"
 	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getTopValidators admin", "obj", from)
@@ -73,6 +75,7 @@ func getTopValidators(ctx *cli.Context, config *Config) error {
 	return nil
 }
 func getNumberValidators(ctx *cli.Context, config *Config) error {
+	from := config.from
 	methodName := "getTopValidators"
 	header, err := config.conn.HeaderByNumber(context.Background(), nil)
 	log.Info("=== getTopValidators admin", "obj", from)
