@@ -1,4 +1,4 @@
-package main
+package genesis
 
 import (
 	"fmt"
@@ -53,7 +53,7 @@ var newEnvFlag = cli.StringFlag{
 	Usage: "Creates a new env in desired folder",
 }
 
-var createGenesisCommand = cli.Command{
+var CreateGenesisCommand = cli.Command{
 	Name:      "genesis",
 	Usage:     "Creates genesis.json from a template and overrides",
 	Action:    createGenesis,

@@ -1,32 +1,16 @@
-package main
+package account
 
 import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	"github.com/tyler-smith/go-bip39"
+
+	"io/ioutil"
 )
-
-// MustNewMnemonic creates a new mnemonic (panics on error)
-func MustNewMnemonic() string {
-	res, err := NewMnemonic()
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
-
-// NewMnemonic creates a new mnemonic
-func NewMnemonic() (string, error) {
-	entropy, err := bip39.NewEntropy(128)
-	if err != nil {
-		return "", err
-	}
-	return bip39.NewMnemonic(entropy)
-}
 
 // Account represents a atlas Account
 type Account struct {
@@ -94,4 +78,23 @@ func (a *Account) String() string {
 		a.Address.Hex(),
 		a.PrivateKeyHex(),
 	)
+}
+func LoadAccount(path string, password string) Account {
+	keyjson, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+	}
+	key, err := keystore.DecryptKey(keyjson, password)
+	if err != nil {
+		panic(fmt.Errorf("error decrypting key: %v", err))
+	}
+	priKey1 := key.PrivateKey
+	publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
+	var addr common.Address
+	addr.SetBytes(publicAddr.Bytes())
+
+	return Account{
+		Address:    addr,
+		PrivateKey: priKey1,
+	}
 }

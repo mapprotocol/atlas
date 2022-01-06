@@ -2,76 +2,126 @@ package main
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/helper/flags"
-	"os"
-	"path/filepath"
-
-	"github.com/mapprotocol/atlas/helper/debug"
-	"github.com/mapprotocol/atlas/marker/env"
-	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
+	"os"
+	"sort"
+	"strconv"
+
+	"github.com/ethereum/go-ethereum/log"
+
+	"github.com/mapprotocol/atlas/cmd/marker/config"
+	"github.com/mapprotocol/atlas/cmd/marker/geneisis"
 )
 
 var (
-	// Git information set by linker when building with ci.go.
-	gitCommit string
-	gitDate   string
-	app       = &cli.App{
-		Name:                 filepath.Base(os.Args[0]),
-		Usage:                "marker",
-		Version:              params.VersionWithCommit(gitCommit, gitDate),
-		Writer:               os.Stdout,
-		HideVersion:          true,
-		EnableBashCompletion: true,
+	// The app that holds all commands and flags.
+	app   *cli.App
+	Flags = []cli.Flag{
+		config.KeyFlag,
+		config.KeyStoreFlag,
+		config.RPCListenAddrFlag,
+		config.RPCPortFlag,
+		config.ValueFlag,
+		config.PasswordFlag,
+		config.CommissionFlag,
+		config.LesserFlag,
+		config.GreaterFlag,
+		config.VoteNumFlag,
+		config.TopNumFlag,
+		config.TargetAddressFlag,
+	}
+
+	validatorCommand = cli.Command{
+		Name:  "validator",
+		Usage: "validator commands",
+		Subcommands: []cli.Command{
+			createAccountCommand,
+			lockedMAPCommand,
+			registerValidatorCommand,
+			unlockedMAPCommand,
+			relockMAPCommand,
+			withdrawCommand,
+
+			queryRegisteredValidatorSignersCommand,
+			queryTopValidatorsCommand,
+		},
+		Flags: Flags,
+	}
+	voterCommand = cli.Command{
+		Name:  "voter",
+		Usage: "voter commands",
+		Subcommands: []cli.Command{
+			voteValidatorCommand,
+			getValidatorEligibilityCommand,
+			getTotalVotesForVCommand,
+			getBalanceCommand,
+			activateCommand,
+			queryRegisteredValidatorSignersCommand,
+			queryTopValidatorsCommand,
+		},
+		Flags: Flags,
 	}
 )
 
 func init() {
-	// Set up the CLI app.
-	app.Flags = append(app.Flags, debug.Flags...)
-	app.Before = func(ctx *cli.Context) error {
-		return debug.Setup(ctx)
-	}
-	app.After = func(ctx *cli.Context) error {
-		debug.Exit()
-		return nil
-	}
+	app = cli.NewApp()
+	app.Usage = "Atlas Marker Tool"
+	app.Name = "marker"
+	app.Version = "1.0.0"
+	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
+	app.Action = MigrateFlags(registerValidator)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		createGenesisCommand,
+		validatorCommand,
+		voterCommand,
+		genesis.CreateGenesisCommand,
 	}
-	cli.CommandHelpTemplate = flags.OriginCommandHelpTemplate
+	app.Flags = Flags
+	cli.CommandHelpTemplate = OriginCommandHelpTemplate
+	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
-	err := app.Run(os.Args)
-	if err == nil {
-		os.Exit(0)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-	fmt.Fprintln(os.Stderr, err)
-	os.Exit(1)
 }
 
-func readWorkdir(ctx *cli.Context) (string, error) {
-	if ctx.NArg() != 1 {
-		fmt.Println("Using current directory as workdir")
-		dir, err := os.Getwd()
-		if err != nil {
-			return "", err
+var OriginCommandHelpTemplate string = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...] {{if .Description}}{{.Description}} {{end}}{{if .Subcommands}} SUBCOMMANDS:     {{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}     {{end}}{{end}}{{if .Flags}} OPTIONS: {{range $.Flags}}{{"\t"}}{{.}} {{end}} {{end}}`
+
+func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.Context) error {
+	return func(ctx *cli.Context) error {
+		for _, name := range ctx.FlagNames() {
+			if ctx.IsSet(name) {
+				ctx.GlobalSet(name, ctx.String(name))
+			}
 		}
-		return dir, err
+		config := config.AssemblyConfig(ctx)
+		err := startLogger(ctx, config)
+		if err != nil {
+			panic(err)
+		}
+		core := NewListener(ctx, config)
+		writer := NewWriter(ctx, config)
+		core.setWriter(writer)
+		return hdl(ctx, core)
 	}
-	return ctx.Args().Get(0), nil
 }
-
-func readEnv(ctx *cli.Context) (*env.Environment, error) {
-	workdir, err := readWorkdir(ctx)
-	if err != nil {
-		return nil, err
+func startLogger(ctx *cli.Context, config *config.Config) error {
+	logger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
+	var lvl log.Lvl
+	if lvlToInt, err := strconv.Atoi(config.Verbosity); err == nil {
+		lvl = log.Lvl(lvlToInt)
+	} else if lvl, err = log.LvlFromString(config.Verbosity); err != nil {
+		return err
 	}
-	return env.Load(workdir)
+	logger.Verbosity(lvl)
+	log.Root().SetHandler(log.LvlFilterHandler(lvl, logger))
+
+	return nil
 }

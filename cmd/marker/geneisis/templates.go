@@ -1,4 +1,4 @@
-package main
+package genesis
 
 import (
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
