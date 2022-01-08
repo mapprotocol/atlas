@@ -16,7 +16,6 @@
 package election
 
 import (
-	"fmt"
 	"math/big"
 	"sort"
 
@@ -41,10 +40,6 @@ func GetElectedValidators(vmRunner vm.EVMRunner) ([]common.Address, error) {
 	// Get the new epoch's validator set
 	var newValSet []common.Address
 	err := electValidatorSignersMethod.Query(vmRunner, &newValSet)
-	fmt.Println("=== newValSet === ")
-	for _, add := range newValSet {
-		fmt.Println(add.String())
-	}
 	if err != nil {
 		return nil, err
 	}

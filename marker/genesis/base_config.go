@@ -27,8 +27,7 @@ func BaseConfig() *Config {
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
 				Value: bigIntStr("10000000000000000000000"), // 10k Atlas
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
-				//Duration: 60 * Day,// todo zhangwei
-				Duration: 1 * Second, // todo zhangwei
+				Duration: 60 * Day,
 			},
 			ValidatorScoreExponent:        10,
 			ValidatorScoreAdjustmentSpeed: fixed("0.1"),

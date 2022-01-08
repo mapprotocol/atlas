@@ -145,7 +145,7 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	return nil
 }
 func lockedMAP(_ *cli.Context, core *listener) error {
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map // todo zhangwei
+	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
 	log.Info("=== Lock  gold ===")
 	log.Info("Lock  gold", "amount", groupRequiredGold)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
@@ -157,7 +157,7 @@ func lockedMAP(_ *cli.Context, core *listener) error {
 	return nil
 }
 func unlockedMAP(_ *cli.Context, core *listener) error {
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map // todo zhangwei
+	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
 	log.Info("=== unLock validator gold ===")
 	log.Info("unLock validator gold", "amount", groupRequiredGold)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
@@ -168,7 +168,7 @@ func unlockedMAP(_ *cli.Context, core *listener) error {
 	return nil
 }
 func relockMAP(_ *cli.Context, core *listener) error {
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map // todo zhangwei
+	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
 	log.Info("=== relockMAP validator gold ===")
 	log.Info("relockMAP validator gold", "amount", groupRequiredGold)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
@@ -179,7 +179,7 @@ func relockMAP(_ *cli.Context, core *listener) error {
 	return nil
 }
 func withdraw(_ *cli.Context, core *listener) error {
-	index := big.NewInt(0) // todo zhangwei
+	index := big.NewInt(0)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
 	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
 	log.Info("=== withdraw validator gold ===")

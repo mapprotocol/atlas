@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/core/rawdb"
@@ -21,6 +20,5 @@ func (us *uptimeStoreImpl) ReadAccumulatedEpochUptime(epoch uint64) *uptime.Upti
 	return rawdb.ReadAccumulatedEpochUptime(us.db, epoch)
 }
 func (us *uptimeStoreImpl) WriteAccumulatedEpochUptime(epoch uint64, uptime *uptime.Uptime) {
-	fmt.Println("=== WriteAccumulatedEpochUptime ===", epoch, " ", uptime)
 	rawdb.WriteAccumulatedEpochUptime(us.db, epoch, uptime)
 }
