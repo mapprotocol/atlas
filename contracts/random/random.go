@@ -20,7 +20,6 @@ var (
 )
 
 func IsRunning(vmRunner vm.EVMRunner) bool {
-
 	randomAddress, err := contracts.GetRegisteredAddress(vmRunner, params.RandomRegistryId)
 
 	if err == contracts.ErrSmartContractNotDeployed || err == contracts.ErrRegistryContractNotDeployed {

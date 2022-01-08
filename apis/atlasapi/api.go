@@ -1163,7 +1163,19 @@ func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool, config *params.ChainConfig) (map[string]interface{}, error) {
 	fields := RPCMarshalHeader(block.Header())
 	fields["size"] = hexutil.Uint64(block.Size())
-
+	fields["randomness"] = map[string]interface{}{
+		"revealed":  hexutil.Bytes(block.Randomness().Revealed.Bytes()),
+		"committed": hexutil.Bytes(block.Randomness().Committed.Bytes()),
+	}
+	epochSnarkData := block.EpochSnarkData()
+	if epochSnarkData != nil && !epochSnarkData.IsEmpty() {
+		fields["epochSnarkData"] = map[string]interface{}{
+			"bitmap":    hexutil.Bytes(block.EpochSnarkData().Bitmap.Bytes()),
+			"signature": hexutil.Bytes(block.EpochSnarkData().Signature),
+		}
+	} else {
+		fields["epochSnarkData"] = nil
+	}
 	if inclTx {
 		formatTx := func(tx *types.Transaction) (interface{}, error) {
 			return tx.Hash(), nil
