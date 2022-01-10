@@ -15,7 +15,7 @@ type StoreLoad interface {
 }
 
 type IHeaderStore interface {
-	WriteHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error)
+	InsertHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error)
 	GetCurrentNumberAndHash(db types.StateDB) (uint64, common.Hash, error)
 	GetHashByNumber(db types.StateDB, number uint64) (common.Hash, error)
 }

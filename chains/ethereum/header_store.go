@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -36,6 +37,15 @@ func init() {
 	}
 	storeCache.Cache, _ = lru.New(storeCache.size)
 }
+
+// WriteStatus status of write
+type WriteStatus byte
+
+const (
+	NonStatTy WriteStatus = iota
+	CanonStatTy
+	SideStatTy
+)
 
 type Cache struct {
 	Cache *lru.Cache
@@ -81,8 +91,8 @@ func (hs *HeaderStore) delOldHeaders() {
 			delete(hs.TDs, key)
 		}
 	}
-	log.Info("before cleaning up the old headers", "headers length", length)
-	log.Info("after cleaning up the old headers", "headers length", len(hs.Headers))
+	log.Info("before cleaning up the old ethereum headers", "headers length", length)
+	log.Info("after cleaning up the old ethereum headers", "headers length", len(hs.Headers))
 }
 
 func encodeHeader(header *Header) []byte {
@@ -107,6 +117,26 @@ func NewHeaderStore() *HeaderStore {
 		CanonicalNumberToHash: make(map[uint64]common.Hash),
 		Headers:               make(map[string][]byte),
 		TDs:                   make(map[string]*big.Int),
+	}
+}
+
+func InitHeaderStore(header *Header, td *big.Int) *HeaderStore {
+	hash := header.Hash()
+	number := header.Number.Uint64()
+	key := headerKey(number, hash)
+
+	return &HeaderStore{
+		CanonicalNumberToHash: map[uint64]common.Hash{
+			number: hash,
+		},
+		Headers: map[string][]byte{
+			key: encodeHeader(header),
+		},
+		TDs: map[string]*big.Int{
+			key: td,
+		},
+		CurHash:   hash,
+		CurNumber: number,
 	}
 }
 
@@ -200,7 +230,7 @@ func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64) bool {
 }
 
 func (hs *HeaderStore) WriteTd(hash common.Hash, number uint64, td *big.Int) {
-	hs.TDs[headerKey(number, hash)] = td
+	hs.TDs[headerKey(number, hash)] = new(big.Int).SetUint64(td.Uint64())
 }
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
@@ -216,19 +246,50 @@ func (hs *HeaderStore) DeleteCanonicalHash(number uint64) {
 	delete(hs.CanonicalNumberToHash, number)
 }
 
-func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*params.NumberHash, error) {
+type headerWriteResult struct {
+	status     WriteStatus
+	ignored    int
+	imported   []*params.NumberHash
+	lastHash   common.Hash
+	lastNumber uint64
+}
+
+func (hs *HeaderStore) InsertHeaders(db types.StateDB, ethHeaders []byte) ([]*params.NumberHash, error) {
+	start := time.Now()
+	res, err := hs.WriteHeaders(db, ethHeaders)
+
+	// Report some public statistics so the user has a clue what's going on
+	context := []interface{}{
+		"count", len(res.imported),
+		"elapsed", common.PrettyDuration(time.Since(start)),
+	}
+	if err != nil {
+		context = append(context, "err", err)
+	}
+
+	if res.lastNumber != 0 {
+		context = append(context, "number", res.lastNumber, "hash", res.lastHash)
+	}
+	if res.ignored > 0 {
+		context = append(context, []interface{}{"ignored", res.ignored}...)
+	}
+	log.Info("stored new ethereum block headers", context...)
+	return res.imported, err
+}
+
+func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (*headerWriteResult, error) {
 	var headers []*Header
-	if err := rlp.DecodeBytes(ethHeaders, &hs); err != nil {
+	if err := rlp.DecodeBytes(ethHeaders, &headers); err != nil {
 		log.Error("rlp decode failed.", "err", err)
-		return nil, chains.ErrRLPDecode
+		return &headerWriteResult{}, chains.ErrRLPDecode
 	}
 
 	if err := hs.Load(db); err != nil {
-		return nil, err
+		return &headerWriteResult{}, err
 	}
 	ptd := hs.GetTd(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 	if ptd == nil {
-		return nil, errUnknownAncestor
+		return &headerWriteResult{}, errUnknownAncestor
 	}
 	var (
 		lastNumber = headers[0].Number.Uint64() - 1 // Last successfully imported number
@@ -249,7 +310,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*par
 			hash = header.Hash()
 		}
 		number := header.Number.Uint64()
-		newTD.Add(newTD, big.NewInt(1))
+		newTD.Add(newTD, header.Difficulty)
 
 		alreadyKnown := parentKnown && hs.HasHeader(hash, number)
 		if !alreadyKnown {
@@ -268,6 +329,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*par
 	var (
 		head    = hs.CurNumber
 		localTD = hs.GetTd(hs.CurHash, head)
+		status  = SideStatTy
 	)
 
 	reorg := newTD.Cmp(localTD) > 0
@@ -299,7 +361,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*par
 			)
 			headHeader := hs.GetHeader(headHash, headNumber)
 			if headHeader == nil {
-				return nil, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
+				return &headerWriteResult{}, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
 			}
 			for hs.ReadCanonicalHash(headNumber) != headHash {
 				hs.WriteCanonicalHash(headHash, headNumber)
@@ -307,7 +369,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*par
 				headNumber = headHeader.Number.Uint64() - 1
 				headHeader = hs.GetHeader(headHash, headNumber)
 				if headHeader == nil {
-					return nil, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
+					return &headerWriteResult{}, fmt.Errorf("not found header, number: %d, hash: %s", headNumber, headHash)
 				}
 			}
 
@@ -327,13 +389,26 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) ([]*par
 		}
 
 		hs.delOldHeaders()
-		if err := hs.Store(db); err != nil {
-			return nil, err
-		}
 		hs.CurHash = lastHash
-	}
+		hs.CurNumber = lastNumber
 
-	return inserted, nil
+		// Chain status is canonical since this insert was a reorg.
+		// Note that all inserts which have higher TD than existing are 'reorg'.
+		status = CanonStatTy
+	}
+	if err := hs.Store(db); err != nil {
+		return &headerWriteResult{}, err
+	}
+	if len(inserted) == 0 {
+		status = NonStatTy
+	}
+	return &headerWriteResult{
+		status:     status,
+		ignored:    len(headers) - len(inserted),
+		imported:   inserted,
+		lastHash:   lastHash,
+		lastNumber: lastNumber,
+	}, nil
 }
 
 func (hs *HeaderStore) CurrentNumber() uint64 {
@@ -350,6 +425,11 @@ func (hs *HeaderStore) GetHeader(hash common.Hash, number uint64) *Header {
 		return decodeHeader(data, hash)
 	}
 	return nil
+}
+
+func (hs *HeaderStore) GetHeaderByNumber(number uint64) *Header {
+	hash := hs.ReadCanonicalHash(number)
+	return hs.GetHeader(hash, number)
 }
 
 func (hs *HeaderStore) GetCurrentNumberAndHash(db types.StateDB) (uint64, common.Hash, error) {

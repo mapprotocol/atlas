@@ -127,5 +127,5 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if err != nil {
 		return nil, err
 	}
-	return nil, v.Verify(args.Router, args.SrcChain, args.DstChain, args.TxProve)
+	return nil, v.Verify(evm.StateDB, args.Router, args.SrcChain, args.DstChain, args.TxProve)
 }

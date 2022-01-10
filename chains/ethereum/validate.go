@@ -24,45 +24,7 @@ const (
 
 type Validate struct{}
 
-func (v *Validate) GetCurrentHeaderNumber(chainType chains.ChainType) (uint64, error) {
-	//if !chains.IsSupportedChain(chainType) {
-	//	return 0, errNotSupportChain
-	//}
-	//
-	//store, err := chainsdb.GetStoreMgr(chainType)
-	//if err != nil {
-	//	return 0, err
-	//}
-	//return store.CurrentHeaderNumber(), nil
-
-	//hs := NewHeaderStore()
-	//if err := hs.Load(db); err != nil {
-	//	return 0, err
-	//}
-	//return hs.CurrentNumber(), nil
-	return 0, nil
-}
-
-func (v *Validate) GetHashByNumber(chainType chains.ChainType, number uint64) (common.Hash, error) {
-	//if !chains.IsSupportedChain(chainType) {
-	//	return common.Hash{}, errNotSupportChain
-	//}
-	//
-	//store, err := chainsdb.GetStoreMgr(chainType)
-	//if err != nil {
-	//	return common.Hash{}, err
-	//}
-	//return store.ReadCanonicalHash(number), nil
-
-	//hs := NewHeaderStore()
-	//if err := hs.Load(db); err != nil {
-	//	return common.Hash{}, err
-	//}
-	//return hs.ReadCanonicalHash(number), nil
-	return common.Hash{}, nil
-}
-
-func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, error) {
+func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error) {
 	var chain []*Header
 	if err := rlp.DecodeBytes(headers, &chain); err != nil {
 		log.Error("rlp decode failed.", "err", err)
@@ -106,7 +68,7 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, e
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	abort, results := v.VerifyHeaders(hs, chain)
+	abort, results := v.VerifyHeaders(hs, chain, chainType)
 	defer close(abort)
 
 	for i := range chain {
@@ -118,7 +80,7 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte) (int, e
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header, chainType chains.ChainType) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -136,7 +98,7 @@ func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header) (chan<- str
 	for i := 0; i < workers; i++ {
 		go func() {
 			for index := range inputs {
-				errors[index] = v.verifyHeaderWorker(hs, headers, index, unixNow)
+				errors[index] = v.verifyHeaderWorker(hs, headers, index, unixNow, chainType)
 				done <- index
 			}
 		}()
@@ -172,7 +134,7 @@ func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header) (chan<- str
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index int, unixNow int64) error {
+func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index int, unixNow int64, chainType chains.ChainType) error {
 	var parent *Header
 	if index == 0 {
 		parent = hs.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
@@ -182,10 +144,10 @@ func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index 
 	if parent == nil {
 		return errUnknownAncestor
 	}
-	return v.verifyHeader(headers[index], parent, false, unixNow)
+	return v.verifyHeader(headers[index], parent, false, unixNow, chainType)
 }
 
-func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int64) error {
+func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int64, chainType chains.ChainType) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 	if uint64(len(header.Extra)) > ethparams.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), ethparams.MaximumExtraDataSize)
@@ -216,7 +178,7 @@ func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int6
 	}
 
 	// Verify the block's gas usage and (if applicable) verify the base fee.
-	lb, _ := chains.ChainType2LondonBlock(chains.ChainTypeETH)
+	lb, _ := chains.ChainType2LondonBlock(chainType)
 	cfg := &ethparams.ChainConfig{LondonBlock: lb}
 	if !cfg.IsLondon(header.Number) {
 		// Verify BaseFee not present before EIP-1559 fork.

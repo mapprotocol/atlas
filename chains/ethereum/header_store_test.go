@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"errors"
 	"math/big"
 	"os"
 	"reflect"
@@ -8,8 +9,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/rawdb"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
+	ethparams "github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/core/types"
@@ -280,4 +286,98 @@ func TestHeaderStore_Load(t *testing.T) {
 			t.Log("load hs: ", h)
 		})
 	}
+}
+
+func testInsert(t *testing.T, db types.StateDB, hs *HeaderStore, chain []byte, wantStatus WriteStatus, wantErr error) {
+	t.Helper()
+
+	res, err := hs.WriteHeaders(db, chain)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("unexpected error from WriteHeaders: got %v, want %v", err, wantErr)
+	}
+	if res.status != wantStatus {
+		t.Errorf("wrong write status from WriteHeaders: got %v, want %v", res.status, wantStatus)
+	}
+}
+
+func rlpEncode(headers []*ethtypes.Header) []byte {
+	bs, err := rlp.EncodeToBytes(headers)
+	if err != nil {
+		panic(err)
+	}
+	return bs
+}
+
+func convertHeader(header *ethtypes.Header) *Header {
+	bs, err := rlp.EncodeToBytes(header)
+	if err != nil {
+		panic(err)
+	}
+	var headers *Header
+	if err := rlp.DecodeBytes(bs, &headers); err != nil {
+		panic(err)
+	}
+	return headers
+}
+
+// This test checks status reporting of InsertHeader
+func TestHeaderInsertion(t *testing.T) {
+	var (
+		db      = rawdb.NewMemoryDatabase()
+		statedb = getStateDB()
+		genesis = (&core.Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	)
+
+	hs := NewHeaderStore()
+	hs.WriteCanonicalHash(genesis.Hash(), genesis.Number().Uint64())
+	hs.WriteHeader(convertHeader(genesis.Header()))
+	hs.WriteTd(genesis.Hash(), genesis.Number().Uint64(), big.NewInt(0))
+	hs.CurHash = genesis.Hash()
+	hs.CurNumber = genesis.Number().Uint64()
+	if err := hs.Store(statedb); err != nil {
+		t.Fatalf(err.Error())
+	}
+	// chain A: G->A1->A2...A128
+	chainA := makeHeaderChain(genesis.Header(), 128, ethash.NewFaker(), db, 10)
+	// chain B: G->A1->B2...B128
+
+	chainB := makeHeaderChain(chainA[0], 128, ethash.NewFaker(), db, 10)
+	log.Root().SetHandler(log.StdoutHandler)
+
+	// Inserting 64 headers on an empty chain, expecting
+	// 1 callbacks, 1 canon-status, 0 sidestatus,
+	testInsert(t, statedb, hs, rlpEncode(chainA[:64]), CanonStatTy, nil)
+
+	// Inserting 64 identical headers, expecting
+	// 0 callbacks, 0 canon-status, 0 sidestatus,
+	testInsert(t, statedb, hs, rlpEncode(chainA[:64]), NonStatTy, nil)
+
+	// Inserting the same some old, some new headers
+	// 1 callbacks, 1 canon, 0 side
+	testInsert(t, statedb, hs, rlpEncode(chainA[32:96]), CanonStatTy, nil)
+
+	// Inserting side blocks, but not overtaking the canon chain
+	testInsert(t, statedb, hs, rlpEncode(chainB[0:32]), SideStatTy, nil)
+
+	// Inserting more side blocks, but we don't have the parent
+	testInsert(t, statedb, hs, rlpEncode(chainB[34:36]), NonStatTy, errUnknownAncestor)
+
+	// Inserting more sideblocks, overtaking the canon chain
+	testInsert(t, statedb, hs, rlpEncode(chainB[32:97]), CanonStatTy, nil)
+
+	// Inserting more A-headers, taking back the canonicality
+	testInsert(t, statedb, hs, rlpEncode(chainA[90:100]), CanonStatTy, nil)
+
+	// And B becomes canon again
+	testInsert(t, statedb, hs, rlpEncode(chainB[97:107]), CanonStatTy, nil)
+
+	// And B becomes even longer
+	testInsert(t, statedb, hs, rlpEncode(chainB[107:128]), CanonStatTy, nil)
+
+	//var ns []int
+	//for n := range hs.CanonicalNumberToHash {
+	//	ns = append(ns, int(n))
+	//}
+	//sort.Ints(ns)
+	//fmt.Println("============================== ns: ", ns)
 }

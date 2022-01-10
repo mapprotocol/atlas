@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/chains"
 	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 var (
@@ -30,7 +31,7 @@ type TxParams struct {
 
 type TxProve struct {
 	Tx          *TxParams
-	Receipt     *types.Receipt
+	Receipt     *ethtypes.Receipt
 	Prove       light.NodeList
 	BlockNumber uint64
 	TxIndex     uint
@@ -39,7 +40,7 @@ type TxProve struct {
 type Verify struct {
 }
 
-func (v *Verify) Verify(routerContractAddr common.Address, srcChain, dstChain *big.Int, txProveBytes []byte) error {
+func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, srcChain, dstChain *big.Int, txProveBytes []byte) error {
 	txProve, err := v.decode(txProveBytes)
 	if err != nil {
 		return err
@@ -59,7 +60,7 @@ func (v *Verify) Verify(routerContractAddr common.Address, srcChain, dstChain *b
 		return err
 	}
 
-	receiptsRoot, err := v.getReceiptsRoot(chains.ChainType(srcChain.Uint64()), txProve.BlockNumber)
+	receiptsRoot, err := v.getReceiptsRoot(db, txProve.BlockNumber)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
 	return &txProve, nil
 }
 
-func (v *Verify) queryLog(routerContractAddr common.Address, logs []*types.Log) (*types.Log, error) {
+func (v *Verify) queryLog(routerContractAddr common.Address, logs []*ethtypes.Log) (*ethtypes.Log, error) {
 	for _, lg := range logs {
 		if bytes.Equal(lg.Address.Bytes(), routerContractAddr.Bytes()) {
 			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
@@ -86,7 +87,7 @@ func (v *Verify) queryLog(routerContractAddr common.Address, logs []*types.Log) 
 	return nil, fmt.Errorf("not found event log, router contract addr: %v, event hash: %v", routerContractAddr, EventHash)
 }
 
-func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *types.Log) error {
+func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *ethtypes.Log) error {
 	if len(log.Topics) < 4 {
 		return errors.New("verify tx params failed, the log.Topics`s length cannot be less than 4")
 	}
@@ -117,22 +118,22 @@ func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *
 	return nil
 }
 
-func (v *Verify) getReceiptsRoot(chain chains.ChainType, blockNumber uint64) (common.Hash, error) {
-	//store, err := chainsdb.GetStoreMgr(chain)
-	//if err != nil {
-	//	return common.Hash{}, err
-	//}
-	//header := store.GetHeaderByNumber(blockNumber)
-	//if header == nil {
-	//	return common.Hash{}, fmt.Errorf("get header by number failed, number: %d", blockNumber)
-	//}
-	//return header.ReceiptHash, nil
-	return common.Hash{}, nil
+func (v *Verify) getReceiptsRoot(db types.StateDB, blockNumber uint64) (common.Hash, error) {
+	hs := NewHeaderStore()
+	if err := hs.Load(db); err != nil {
+		return common.Hash{}, err
+	}
+	header := hs.GetHeaderByNumber(blockNumber)
+	if header == nil {
+		return common.Hash{}, fmt.Errorf("get header by number failed, number: %d", blockNumber)
+	}
+
+	return header.ReceiptHash, nil
 }
 
 func (v *Verify) verifyProof(receiptsRoot common.Hash, txProve *TxProve) error {
 	var buf bytes.Buffer
-	rs := types.Receipts{txProve.Receipt}
+	rs := ethtypes.Receipts{txProve.Receipt}
 	rs.EncodeIndex(0, &buf)
 	giveReceipt := buf.Bytes()
 

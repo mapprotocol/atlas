@@ -18,6 +18,7 @@
 package consensus
 
 import (
+	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -259,13 +260,19 @@ func initEthereumStore(state *state.StateDB) {
 	key := common.BytesToHash(chains.EthereumHeaderStoreAddress[:])
 	getState := state.GetPOWState(chains.EthereumHeaderStoreAddress, key)
 	if len(getState) == 0 {
-		hs := &ethereum.HeaderStore{
-			CanonicalNumberToHash: make(map[uint64]common.Hash),
-			Headers:               make(map[string][]byte),
-			TDs:                   make(map[string]*big.Int),
+		var header ethereum.Header
+
+		td, ok := new(big.Int).SetString(params.EthereumTestnetGenesisTD, 10)
+		if !ok {
+			log.Crit("parse ethereum testnet td failed")
 		}
+		if err := json.Unmarshal([]byte(params.EthereumTestnetGenesisHeader), &header); err != nil {
+			log.Crit("json unmarshal ethereum testnet header failed", "error", err)
+		}
+
+		hs := ethereum.InitHeaderStore(&header, td)
 		if err := hs.Store(state); err != nil {
-			log.Crit("store header store failed, ", "err", err)
+			log.Crit("store header store failed, ", "error", err)
 		}
 	}
 }
@@ -276,7 +283,7 @@ func initEthereumSync(state *state.StateDB) {
 	if len(getState) == 0 {
 		hs := ethereum.NewHeaderSync()
 		if err := hs.Store(state); err != nil {
-			log.Crit("store header sync failed, ", "err", err)
+			log.Crit("store header sync failed, ", "error", err)
 		}
 	}
 }

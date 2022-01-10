@@ -24,12 +24,12 @@ type Chain struct {
 	HeaderSync  IHeaderSync
 }
 
-func (c *Chain) ValidateHeaderChain(db types.StateDB, headers []byte) (int, error) {
-	return c.Validate.ValidateHeaderChain(db, headers)
+func (c *Chain) ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error) {
+	return c.Validate.ValidateHeaderChain(db, headers, chainType)
 }
 
-func (c *Chain) WriteHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error) {
-	return c.HeaderStore.WriteHeaders(db, headers)
+func (c *Chain) InsertHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error) {
+	return c.HeaderStore.InsertHeaders(db, headers)
 }
 
 func (c *Chain) GetCurrentNumberAndHash(db types.StateDB) (uint64, common.Hash, error) {

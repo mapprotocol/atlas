@@ -7,7 +7,7 @@ import (
 )
 
 type IValidate interface {
-	ValidateHeaderChain(db types.StateDB, headers []byte) (int, error)
+	ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error)
 }
 
 func ValidateFactory(group chains.ChainGroup) (IValidate, error) {

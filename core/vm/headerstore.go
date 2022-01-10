@@ -97,12 +97,12 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := chain.ValidateHeaderChain(evm.StateDB, args.Headers); err != nil {
+	if _, err := chain.ValidateHeaderChain(evm.StateDB, args.Headers, chains.ChainType(args.From.Uint64())); err != nil {
 		log.Error("failed to validate header chain", "error", err)
 		return nil, err
 	}
 
-	inserted, err := chain.WriteHeaders(evm.StateDB, args.Headers)
+	inserted, err := chain.InsertHeaders(evm.StateDB, args.Headers)
 	if err != nil {
 		log.Error("failed to write headers", "error", err)
 		return nil, err

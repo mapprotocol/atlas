@@ -12,7 +12,7 @@ const (
 	ChainTypeMAPTest ChainType = ChainType(params2.TestNetChainID)
 	ChainTypeMAPDev  ChainType = ChainType(params2.DevNetChainID)
 	ChainTypeETH     ChainType = 1
-	ChainTypeETHTest ChainType = 3 // start 800
+	ChainTypeETHTest ChainType = 3
 	ChainTypeETHDev  ChainType = 10
 )
 

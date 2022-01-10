@@ -325,11 +325,11 @@ func TestStateDB(t *testing.T) {
 	statedb.GetOrNewStateObject(params.RelayerAddress)
 	hs := ethereum.NewHeaderSync()
 	//hs.epoch2reward[11233] = big.NewInt(11233)
-	if err := hs.Store(statedb, params.RelayerAddress); err != nil {
+	if err := hs.Store(statedb); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	//hs.epoch2reward[2] = big.NewInt(2)
-	if err := hs.Load(statedb, params.RelayerAddress); err != nil {
+	if err := hs.Load(statedb); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	fmt.Println(reg)

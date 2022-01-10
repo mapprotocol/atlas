@@ -2,7 +2,6 @@ package vm
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"reflect"
 	"testing"
 )
@@ -59,7 +58,6 @@ func TestCurrentNumberAndHash(t *testing.T) {
 				input:    headerStorePack(CurNbrAndHash, "ETH"),
 			},
 			before: func() {
-				chainsdb.NewStoreDb(nil, 10, 2)
 			},
 			wantRet: nil,
 			wantErr: false,
