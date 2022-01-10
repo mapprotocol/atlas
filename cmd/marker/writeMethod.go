@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	ethchain "github.com/ethereum/go-ethereum"
-
 	"math/big"
 	"os"
 	"time"
@@ -29,15 +28,16 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	}
 	gasLimit := uint64(3100000) // in units
 	//If the contract surely has code (or code is not needed), estimate the transaction
-	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	gasLimit, err = client.EstimateGas(context.Background(), msg)
-	if err != nil {
-		logger.Error("Contract exec failed", "error", err)
-	}
-	if gasLimit < 1 {
-		//gasLimit = 866328
-		gasLimit = 2100000
-	}
+	/*
+	   msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	   	gasLimit, err = client.EstimateGas(context.Background(), msg)
+	   	if err != nil {
+	   		logger.Error("Contract exec failed", "error", err)
+	   	}
+	   	if gasLimit < 1 {
+	   		//gasLimit = 866328
+	   		gasLimit = 2100000
+	   	}*/
 
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
@@ -112,7 +112,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 	}
 }
 
-func (w writer) handleUnpackMethod(m Message) {
+func (w writer) handleUnpackMethodSolveType3(m Message) {
 	header, err := w.conn.HeaderByNumber(context.Background(), nil)
 	msg := ethchain.CallMsg{From: m.from, To: &m.to, Data: m.input}
 	output, err := w.conn.CallContract(context.Background(), msg, header.Number)
@@ -120,4 +120,17 @@ func (w writer) handleUnpackMethod(m Message) {
 		log.Error("method CallContract error", "error", err)
 	}
 	err = m.abi.UnpackIntoInterface(&m.ret, m.abiMethod, output)
+	if err != nil {
+		log.Error("handleUnpackMethodSolveType3", "err", err)
+	}
+}
+
+func (w writer) handleUnpackMethodSolveType4(m Message) {
+	header, err := w.conn.HeaderByNumber(context.Background(), nil)
+	msg := ethchain.CallMsg{From: m.from, To: &m.to, Data: m.input}
+	output, err := w.conn.CallContract(context.Background(), msg, header.Number)
+	if err != nil {
+		log.Error("method CallContract error", "error", err)
+	}
+	m.solveResult(output)
 }

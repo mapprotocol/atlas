@@ -47,6 +47,7 @@ type Config struct {
 	Greater              common.Address
 	VoteNum              *big.Int
 	TopNum               *big.Int
+	LockedNum            *big.Int
 	Idx                  *big.Int
 	TargetAddress        common.Address
 	ip                   string
@@ -63,7 +64,7 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config := Config{}
 	//------------------ pre set --------------------------
 	path := ""
-	password := "111111"
+	password := ""
 	config.VoteNum = big.NewInt(int64(100))
 	config.Lesser = params.ZeroAddress
 	config.Greater = params.ZeroAddress
@@ -73,35 +74,38 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	//-----------------------------------------------------
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.GlobalString(KeyStoreFlag.Name)
+		path = ctx.String(KeyStoreFlag.Name)
 	}
 	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.GlobalString(PasswordFlag.Name)
+		password = ctx.String(PasswordFlag.Name)
 	}
 
 	if ctx.IsSet(CommissionFlag.Name) {
-		config.Commission = ctx.GlobalInt64(CommissionFlag.Name)
+		config.Commission = ctx.Int64(CommissionFlag.Name)
 	}
 	if ctx.IsSet(LesserFlag.Name) {
-		config.Lesser = common.HexToAddress(ctx.GlobalString(LesserFlag.Name))
+		config.Lesser = common.HexToAddress(ctx.String(LesserFlag.Name))
 	}
 	if ctx.IsSet(GreaterFlag.Name) {
-		config.Greater = common.HexToAddress(ctx.GlobalString(GreaterFlag.Name))
+		config.Greater = common.HexToAddress(ctx.String(GreaterFlag.Name))
 	}
 	if ctx.IsSet(VoteNumFlag.Name) {
 		config.VoteNum = big.NewInt(ctx.Int64(VoteNumFlag.Name))
 	}
 	if ctx.IsSet(TargetAddressFlag.Name) {
-		config.TargetAddress = common.HexToAddress(ctx.GlobalString(TargetAddressFlag.Name))
+		config.TargetAddress = common.HexToAddress(ctx.String(TargetAddressFlag.Name))
 	}
 	if ctx.IsSet(ValueFlag.Name) {
-		config.Value = ctx.GlobalUint64(ValueFlag.Name)
+		config.Value = ctx.Uint64(ValueFlag.Name)
 	}
 	if ctx.IsSet(TopNumFlag.Name) {
-		config.TopNum = big.NewInt(ctx.GlobalInt64(TopNumFlag.Name))
+		config.TopNum = big.NewInt(ctx.Int64(TopNumFlag.Name))
+	}
+	if ctx.IsSet(LockedNumFlag.Name) {
+		config.LockedNum = big.NewInt(ctx.Int64(LockedNumFlag.Name))
 	}
 	if ctx.IsSet(VerbosityFlag.Name) {
-		config.Verbosity = ctx.GlobalString(VerbosityFlag.Name)
+		config.Verbosity = ctx.String(VerbosityFlag.Name)
 	}
 	account := account.LoadAccount(path, password)
 	blsPub, err := account.BLSPublicKey()
@@ -118,7 +122,7 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	LockedGoldAddress := mapprotocol.MustProxyAddressFor("LockedGold")
 	AccountsAddress := mapprotocol.MustProxyAddressFor("Accounts")
 	ElectionAddress := mapprotocol.MustProxyAddressFor("Election")
-	GoldTokenAddress := mapprotocol.MustProxyAddressFor("StableToken")
+	GoldTokenAddress := mapprotocol.MustProxyAddressFor("GoldToken")
 	config.ValidatorParameters.ValidatorAddress = ValidatorAddress
 	config.LockedGoldParameters.LockedGoldAddress = LockedGoldAddress
 	config.AccountsParameters.AccountsAddress = AccountsAddress

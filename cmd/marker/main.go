@@ -28,6 +28,7 @@ var (
 		config.GreaterFlag,
 		config.VoteNumFlag,
 		config.TopNumFlag,
+		config.LockedNumFlag,
 		config.TargetAddressFlag,
 	}
 
@@ -42,8 +43,14 @@ var (
 			relockMAPCommand,
 			withdrawCommand,
 
+			queryTotalVotesForEligibleValidatorsCommand,
 			queryRegisteredValidatorSignersCommand,
+			queryNumRegisteredValidatorsCommand,
 			queryTopValidatorsCommand,
+			queryValidatorEligibilityCommand,
+			getBalanceCommand,
+			getValidatorsVotedForByAccountCommand,
+			getAccountTotalLockedGoldCommand,
 		},
 		Flags: Flags,
 	}
@@ -52,12 +59,19 @@ var (
 		Usage: "voter commands",
 		Subcommands: []cli.Command{
 			voteValidatorCommand,
-			getValidatorEligibilityCommand,
-			getTotalVotesForVCommand,
-			getBalanceCommand,
+
+			queryTotalVotesForEligibleValidatorsCommand,
 			activateCommand,
+			getPendingVotesForValidatorByAccountCommand,
+			getActiveVotesForValidatorByAccountCommand,
+
 			queryRegisteredValidatorSignersCommand,
+			queryNumRegisteredValidatorsCommand,
 			queryTopValidatorsCommand,
+			queryValidatorEligibilityCommand,
+			getBalanceCommand,
+			getValidatorsVotedForByAccountCommand,
+			getAccountTotalLockedGoldCommand,
 		},
 		Flags: Flags,
 	}
@@ -98,16 +112,20 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 	return func(ctx *cli.Context) error {
 		for _, name := range ctx.FlagNames() {
 			if ctx.IsSet(name) {
-				ctx.GlobalSet(name, ctx.String(name))
+				err := ctx.Set(name, ctx.String(name))
+				if err != nil {
+					log.Error("MigrateFlags", "=== err ===", err, ctx.IsSet(name))
+				}
+
 			}
 		}
-		config := config.AssemblyConfig(ctx)
-		err := startLogger(ctx, config)
+		_config := config.AssemblyConfig(ctx)
+		err := startLogger(ctx, _config)
 		if err != nil {
 			panic(err)
 		}
-		core := NewListener(ctx, config)
-		writer := NewWriter(ctx, config)
+		core := NewListener(ctx, _config)
+		writer := NewWriter(ctx, _config)
 		core.setWriter(writer)
 		return hdl(ctx, core)
 	}
