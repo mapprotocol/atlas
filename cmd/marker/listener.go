@@ -1,14 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/cmd/marker/config"
 	"github.com/mapprotocol/atlas/cmd/marker/connections"
-	"github.com/mapprotocol/atlas/params"
-
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
 )
@@ -84,7 +81,7 @@ var withdrawCommand = cli.Command{
 
 //---------- voter -----------------
 var voteValidatorCommand = cli.Command{
-	Name:   "voteValidator",
+	Name:   "vote",
 	Usage:  "vote validator ",
 	Action: MigrateFlags(vote),
 	Flags:  Flags,
@@ -99,8 +96,14 @@ var activateCommand = cli.Command{
 //---------- query -----------------
 var queryRegisteredValidatorSignersCommand = cli.Command{
 	Name:   "getRegisteredValidatorSigners",
-	Usage:  "Registered Validator Signers",
+	Usage:  "get Registered Validator Signers",
 	Action: MigrateFlags(getRegisteredValidatorSigners),
+	Flags:  Flags,
+}
+var queryNumRegisteredValidatorsCommand = cli.Command{
+	Name:   "getNumRegisteredValidators",
+	Usage:  "get Num RegisteredValidators",
+	Action: MigrateFlags(getNumRegisteredValidators),
 	Flags:  Flags,
 }
 var queryTopValidatorsCommand = cli.Command{
@@ -109,14 +112,14 @@ var queryTopValidatorsCommand = cli.Command{
 	Action: MigrateFlags(getTopValidators),
 	Flags:  Flags,
 }
-var getValidatorEligibilityCommand = cli.Command{
+var queryValidatorEligibilityCommand = cli.Command{
 	Name:   "getValidatorEligibility",
 	Usage:  "Judge whether the verifier`s Eligibility",
 	Action: MigrateFlags(getValidatorEligibility),
 	Flags:  Flags,
 }
-var getTotalVotesForVCommand = cli.Command{
-	Name:   "getTotalVotesForV",
+var queryTotalVotesForEligibleValidatorsCommand = cli.Command{
+	Name:   "getTotalVotesForEligibleValidators",
 	Usage:  "vote validator ",
 	Action: MigrateFlags(getTotalVotesForEligibleValidators),
 	Flags:  Flags,
@@ -125,6 +128,30 @@ var getBalanceCommand = cli.Command{
 	Name:   "balanceOf",
 	Usage:  "Gets the balance of the specified address using the presently stored inflation factor.",
 	Action: MigrateFlags(balanceOf),
+	Flags:  Flags,
+}
+var getPendingVotesForValidatorByAccountCommand = cli.Command{
+	Name:   "getPendingVotesForValidatorByAccount",
+	Usage:  "Returns the pending votes for `validator` made by `account`",
+	Action: MigrateFlags(getPendingVotesForValidatorByAccount),
+	Flags:  Flags,
+}
+var getActiveVotesForValidatorByAccountCommand = cli.Command{
+	Name:   "getActiveVotesForValidatorByAccount",
+	Usage:  "Returns the active votes for `validator` made by `account`",
+	Action: MigrateFlags(getActiveVotesForValidatorByAccount),
+	Flags:  Flags,
+}
+var getValidatorsVotedForByAccountCommand = cli.Command{
+	Name:   "getValidatorsVotedForByAccount",
+	Usage:  "Returns the validators that `account` has voted for.",
+	Action: MigrateFlags(getValidatorsVotedForByAccount),
+	Flags:  Flags,
+}
+var getAccountTotalLockedGoldCommand = cli.Command{
+	Name:   "getAccountTotalLockedGold",
+	Usage:  "Returns the total amount of locked gold for an account.",
+	Action: MigrateFlags(getAccountTotalLockedGold),
 	Flags:  Flags,
 }
 
@@ -136,45 +163,44 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	lockedMAP(ctx, core)
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	_params := []interface{}{big.NewInt(core.cfg.Commission), core.cfg.Lesser, core.cfg.Greater, core.cfg.PublicKey, core.cfg.BlsPub[:], core.cfg.BLSProof}
+	_params := []interface{}{big.NewInt(core.cfg.Commission), core.cfg.Lesser, core.cfg.Greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
 func lockedMAP(_ *cli.Context, core *listener) error {
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
 	log.Info("=== Lock  gold ===")
-	log.Info("Lock  gold", "amount", groupRequiredGold)
+	log.Info("Lock  gold", "amount", lockedGold.String())
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
 	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, groupRequiredGold, abiLockedGold, "lock")
-	core.writer.ResolveMessage(m)
+	m := NewMessage(SolveType2, core.msgCh, core.cfg, LockedGoldAddress, lockedGold, abiLockedGold, "lock")
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-
 	return nil
 }
 func unlockedMAP(_ *cli.Context, core *listener) error {
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
 	log.Info("=== unLock validator gold ===")
-	log.Info("unLock validator gold", "amount", groupRequiredGold)
+	log.Info("unLock validator gold", "amount", lockedGold)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
 	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "unlock", groupRequiredGold)
-	core.writer.ResolveMessage(m)
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "unlock", lockedGold)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
 func relockMAP(_ *cli.Context, core *listener) error {
-	groupRequiredGold := params.MustBigInt("10000000000000000000000") // 10k Map
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
 	log.Info("=== relockMAP validator gold ===")
-	log.Info("relockMAP validator gold", "amount", groupRequiredGold)
+	log.Info("relockMAP validator gold", "amount", lockedGold)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
 	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "relock", groupRequiredGold)
-	core.writer.ResolveMessage(m)
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "relock", lockedGold)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
@@ -184,7 +210,7 @@ func withdraw(_ *cli.Context, core *listener) error {
 	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
 	log.Info("=== withdraw validator gold ===")
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "withdraw", index)
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
@@ -200,17 +226,17 @@ func createAccount(core *listener, namePrefix string) {
 	logger.Info("Create account", "address", core.cfg.From, "name", namePrefix)
 	log.Info("=== create Account ===")
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "createAccount")
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 
 	log.Info("=== setName name ===")
 	m = NewMessage(SolveType1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", namePrefix)
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 
 	log.Info("=== setAccountDataEncryptionKey ===")
 	m = NewMessage(SolveType1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setAccountDataEncryptionKey", core.cfg.PublicKey)
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 
 }
@@ -222,7 +248,7 @@ func vote(_ *cli.Context, core *listener) error {
 	log.Info("=== vote Validator ===")
 	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "vote", core.cfg.From, amount, core.cfg.Lesser, core.cfg.Greater)
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
@@ -231,7 +257,7 @@ func activate(_ *cli.Context, core *listener) error {
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== activate validator gold ===", "account.Address", core.cfg.From)
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "activate", core.cfg.TargetAddress)
-	core.writer.ResolveMessage(m)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
@@ -242,80 +268,165 @@ func getRegisteredValidatorSigners(_ *cli.Context, core *listener) error {
 	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidator := core.cfg.ValidatorParameters.ValidatorABI
 	log.Info("==== getRegisteredValidatorSigners ===")
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &ValidatorSigners, validatorAddress, nil, abiValidator, "getRegisteredValidatorSigners")
-	core.writer.ResolveMessage(m)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ValidatorSigners, validatorAddress, nil, abiValidator, "getRegisteredValidatorSigners")
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println("getRegisteredValidatorSigners:", ValidatorSigners.([]common.Address))
+
+	Validators := ValidatorSigners.([]common.Address)
+	for i := 0; i < len(Validators); i++ {
+		log.Info("Validator:", "index", i, "addr", Validators[i])
+	}
 	return nil
 }
-func getTopValidators(ctx *cli.Context, core *listener) error {
+func getNumRegisteredValidators(_ *cli.Context, core *listener) error {
+	var NumValidators interface{}
+	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidator := core.cfg.ValidatorParameters.ValidatorABI
+	log.Info("=== getNumRegisteredValidators ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &NumValidators, validatorAddress, nil, abiValidator, "getNumRegisteredValidators")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	ret := NumValidators.(*big.Int)
+	log.Info("=== result ===", "num", ret.String())
+	return nil
+}
+func getTopValidators(_ *cli.Context, core *listener) error {
 	var TopValidators interface{}
-	electionAddress := core.cfg.ElectionParameters.ElectionAddress
-	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getTopValidators admin", "obj", core.cfg.From)
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &TopValidators, electionAddress, nil, abiElection, "getTopValidators", core.cfg.TopNum)
-	core.writer.ResolveMessage(m)
+	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidator := core.cfg.ValidatorParameters.ValidatorABI
+	log.Info("=== getTopValidators ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &TopValidators, validatorAddress, nil, abiValidator, "getTopValidators", core.cfg.TopNum)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println("getTopValidators:", TopValidators.([]common.Address))
+	Validators := TopValidators.([]common.Address)
+	for i := 0; i < len(Validators); i++ {
+		log.Info("Validator:", "index", i, "addr", Validators[i])
+	}
 	return nil
 }
-func getTotalVotesForEligibleValidators(ctx *cli.Context, core *listener) error {
-	type Ret struct {
+
+/*
+* @notice Returns lists of all validator validators and the number of votes they've received.
+* @return Lists of all  validators and the number of votes they've received.
+ */
+func getTotalVotesForEligibleValidators(_ *cli.Context, core *listener) error {
+	type ret struct {
 		Validators interface{} // indexed
 		Values     interface{}
 	}
-	var t Ret
+	var t ret
 	electionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getTotalVotesForEligibleValidators admin", "obj", core.cfg.From)
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &t, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators", core.cfg.TopNum)
-	core.writer.ResolveMessage(m)
+	f := func(output []byte) {
+		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
+		if err != nil {
+			log.Error("handleUnpackMethodSolveType3", "err", err)
+		}
+	}
+	log.Info("=== getTotalVotesForEligibleValidators ===", "admin", core.cfg.From)
+	m := NewMessageRet2(SolveType4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println((t.Validators).([]common.Address))
-	fmt.Println((t.Values).([]*big.Int))
+	Validators := (t.Validators).([]common.Address)
+	Values := (t.Values).([]*big.Int)
+	for i := 0; i < len(Validators); i++ {
+		log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
+	}
 	return nil
 }
-func getValidatorEligibility(ctx *cli.Context, core *listener) error {
+
+/**
+ * @notice Returns whether or not a validator is eligible to receive votes.
+ * @return Whether or not a validator is eligible to receive votes.
+ * @dev Eligible validators that have received their maximum number of votes cannot receive more.
+ */
+func getValidatorEligibility(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	electionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getValidatorEligibility admin", "obj", core.cfg.From)
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &ret, electionAddress, nil, abiElection, "getValidatorEligibility", core.cfg.TargetAddress)
-	core.writer.ResolveMessage(m)
+	log.Info("=== getValidatorEligibility ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, electionAddress, nil, abiElection, "getValidatorEligibility", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println(ret.(bool))
+	log.Info("=== result ===", "bool", ret.(bool))
 	return nil
 }
-func balanceOf(ctx *cli.Context, core *listener) error {
+
+/**
+ * @notice Gets the balance of the specified address.
+ * @param owner The address to query the balance of.
+ * @return The balance of the specified address.
+ */
+func balanceOf(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	GoldTokenAddress := core.cfg.GoldTokenParameters.GoldTokenAddress
 	abiGoldToken := core.cfg.GoldTokenParameters.GoldTokenABI
-	log.Info("=== balanceOf admin", "obj", core.cfg.From)
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &ret, GoldTokenAddress, nil, abiGoldToken, "balanceOf", core.cfg.TargetAddress)
-	core.writer.ResolveMessage(m)
+	log.Info("=== balanceOf ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, GoldTokenAddress, nil, abiGoldToken, "balanceOf", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println(ret.(big.Int))
+	log.Info("=== result ===", "balance", ret.(*big.Int).String())
 	return nil
 }
-func getPendingVotesForValidatorByAccount(ctx *cli.Context, core *listener) error {
+
+/**
+ * @notice Returns the pending votes for `validator` made by `account`.
+ * @param validator The address of the validator.
+ * @param account The address of the voting account.
+ * @return The pending votes for `validator` made by `account`.
+ */
+func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getPendingVotesForValidatorByAccount ===", "account.Address", core.cfg.From)
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
-	core.writer.ResolveMessage(m)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println(ret.(big.Int))
+	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
-func getValidatorsVotedForByAccount(ctx *cli.Context, core *listener) error {
+
+func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getValidatorsVotedForByAccount ===", "account.Address", core.cfg.From)
-	m := NewMessageRet(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getValidatorsVotedForByAccount", core.cfg.TargetAddress)
-	core.writer.ResolveMessage(m)
+	log.Info("=== getActiveVotesForValidatorByAccount ===", "account.Address", core.cfg.From)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
+	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	fmt.Println(ret.([]common.Address))
+	log.Info("ActiveVotes", "balance", ret.(*big.Int))
+	return nil
+}
+
+/*
+* @notice Returns the validators that `account` has voted for.
+* @param account The address of the account casting votes.
+* @return The validators that `account` has voted for.
+ */
+func getValidatorsVotedForByAccount(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== getValidatorsVotedForByAccount ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getValidatorsVotedForByAccount", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret.([]common.Address)
+	for i := 0; i < len(result); i++ {
+		log.Info("validator", "Address", result[i])
+	}
+	return nil
+}
+func getAccountTotalLockedGold(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	log.Info("=== getAccountTotalLockedGold ===", "admin", core.cfg.From, "target", core.cfg.TargetAddress.String())
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, LockedGoldAddress, nil, abiLockedGold, "getAccountTotalLockedGold", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret.(*big.Int)
+	log.Info("result", "lockedGold", result)
 	return nil
 }

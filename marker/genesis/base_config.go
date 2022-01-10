@@ -25,7 +25,7 @@ func BaseConfig() *Config {
 		Validators: ValidatorsParameters{
 
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
-				Value: bigIntStr("10000000000000000000000"), // 10k Atlas
+				Value: bigIntStr("10000000000000000000000"), // 10k Map
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
 				Duration: 60 * Day,
 			},

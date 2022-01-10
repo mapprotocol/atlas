@@ -84,27 +84,27 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		// 01 Registry
 		ctx.deployRegistry,
 
-		// 04 GoldToken
+		// 02 GoldToken
 		ctx.deployGoldToken,
 
-		// 11 Accounts
+		// 03 Accounts
 		ctx.deployAccounts,
 
-		// 12 LockedGold
+		// 04 LockedGold
 		ctx.deployLockedGold,
 
-		// 13 Validators
+		// 05 Validators
 		ctx.deployValidators,
 
-		// 14 Election
+		// 06 Election
 		ctx.deployElection,
 		//
-		// 15 EpochRewards
+		// 07 EpochRewards
 		ctx.deployEpochRewards,
 
-		//
+		// 08 deployRandom
 		ctx.deployRandom,
-		// 25 Elect Validators
+		// 09 Elect Validators
 		ctx.electValidators,
 	}
 
@@ -163,11 +163,11 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 func (ctx *deployContext) fundAdminAccount() {
 	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
 	// validators
-	//ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -230,78 +230,9 @@ func (ctx *deployContext) deployRegistry() error {
 	})
 }
 
-func (ctx *deployContext) deployBlockchainParameters() error {
-	return ctx.deployCoreContract("BlockchainParameters", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			big.NewInt(ctx.genesisConfig.Blockchain.Version.Major),
-			big.NewInt(ctx.genesisConfig.Blockchain.Version.Minor),
-			big.NewInt(ctx.genesisConfig.Blockchain.Version.Patch),
-			newBigInt(ctx.genesisConfig.Blockchain.GasForNonGoldCurrencies),
-			newBigInt(ctx.genesisConfig.Blockchain.BlockGasLimit),
-			newBigInt(ctx.genesisConfig.Istanbul.LookbackWindow),
-		)
-	})
-}
-
-func (ctx *deployContext) deployGovernanceSlasher() error {
-	err := ctx.deployCoreContract("GovernanceSlasher", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-		)
-	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.addSlasher("GovernanceSlasher")
-}
-
 func (ctx *deployContext) addSlasher(slasherName string) error {
 	ctx.logger.Info("Adding new slasher", "slasher", slasherName)
 	return ctx.contract("LockedGold").SimpleCall("addSlasher", slasherName)
-}
-
-func (ctx *deployContext) deployDoubleSigningSlasher() error {
-	err := ctx.deployCoreContract("DoubleSigningSlasher", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.DoubleSigningSlasher.Penalty,
-			ctx.genesisConfig.DoubleSigningSlasher.Reward,
-		)
-	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.addSlasher("DoubleSigningSlasher")
-}
-
-func (ctx *deployContext) deployDowntimeSlasher() error {
-	err := ctx.deployCoreContract("DowntimeSlasher", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.DowntimeSlasher.Penalty,
-			ctx.genesisConfig.DowntimeSlasher.Reward,
-			newBigInt(ctx.genesisConfig.DowntimeSlasher.SlashableDowntime),
-		)
-	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.addSlasher("DowntimeSlasher")
-}
-
-func (ctx *deployContext) deployEscrow() error {
-	return ctx.deployCoreContract("Escrow", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize", env.MustProxyAddressFor("Registry"))
-	})
-}
-
-func (ctx *deployContext) deployFeeCurrencyWhitelist() error {
-	return ctx.deployCoreContract("FeeCurrencyWhitelist", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize")
-	})
 }
 
 func (ctx *deployContext) deployGoldToken() error {

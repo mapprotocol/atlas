@@ -29,22 +29,26 @@ var (
 		Usage: "register validator param",
 	}
 	LesserFlag = cli.StringFlag{
-		Name: "Lesser",
+		Name: "lesser",
 		Usage: "The validator receiving fewer votes than the validator for which the vote was revoked," +
 			"or 0 if that validator has the fewest votes of any validator validator",
 	}
 	GreaterFlag = cli.StringFlag{
-		Name: "Greater",
+		Name: "greater",
 		Usage: "Greater The validator receiving more votes than the validator for which the vote was revoked," +
 			"or 0 if that validator has the most votes of any validator validator.",
 	}
 	VoteNumFlag = cli.Int64Flag{
-		Name:  "VoteNum",
+		Name:  "voteNum",
 		Usage: "The amount of gold to use to vote",
 	}
 	TopNumFlag = cli.Int64Flag{
 		Name:  "topNum",
-		Usage: "topNum of group`s member",
+		Usage: "topNum of validator",
+	}
+	LockedNumFlag = cli.Int64Flag{
+		Name:  "lockedNum",
+		Usage: "lockedNum",
 	}
 	VerbosityFlag = cli.Int64Flag{
 		Name:  "Verbosity",

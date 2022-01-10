@@ -32,7 +32,10 @@ func (w *writer) ResolveMessage(m Message) bool {
 		getResult(w.conn, txHash, true)
 		m.DoneCh <- struct{}{}
 	case SolveType3:
-		w.handleUnpackMethod(m)
+		w.handleUnpackMethodSolveType3(m)
+		m.DoneCh <- struct{}{}
+	case SolveType4:
+		w.handleUnpackMethodSolveType4(m)
 		m.DoneCh <- struct{}{}
 	default:
 	}
