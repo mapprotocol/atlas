@@ -32,7 +32,7 @@ import (
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 )
 
 type ExternalBackend struct {

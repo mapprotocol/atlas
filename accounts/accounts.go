@@ -28,7 +28,7 @@ import (
 	"golang.org/x/crypto/sha3"
 
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 )
 
 // Account represents an Ethereum account located at a specific location defined

@@ -23,7 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 )
 
 // maxValidators represents the maximum number of validators the SNARK circuit supports

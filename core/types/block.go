@@ -31,7 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 )
 
 var (
@@ -210,10 +210,6 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt, randomnes
 	if len(receipts) == 0 {
 		b.header.ReceiptHash = EmptyRootHash
 	} else {
-		for _, v := range Receipts(receipts) {
-			fmt.Println("=== Receipts Logs ===", v.Logs)
-		}
-
 		b.header.ReceiptHash = DeriveSha(Receipts(receipts), trie.NewStackTrie(nil))
 		b.header.Bloom = CreateBloom(receipts)
 	}
@@ -229,7 +225,7 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt, randomnes
 // header data is copied, changes to header and to the field values
 // will not affect the block.
 func NewBlockWithHeader(header *Header) *Block {
-	return &Block{header: CopyHeader(header)}
+	return &Block{header: CopyHeader(header), randomness: &EmptyRandomness, epochSnarkData: &EmptyEpochSnarkData}
 }
 
 // CopyHeader creates a deep copy of a block header to prevent side effects from
@@ -271,7 +267,9 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 	})
 }
 
-func (b *Block) Transactions() Transactions { return b.transactions }
+func (b *Block) Transactions() Transactions      { return b.transactions }
+func (b *Block) Randomness() *Randomness         { return b.randomness }
+func (b *Block) EpochSnarkData() *EpochSnarkData { return b.epochSnarkData }
 
 func (b *Block) Transaction(hash common.Hash) *Transaction {
 	for _, transaction := range b.transactions {

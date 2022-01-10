@@ -24,8 +24,8 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 // in this test, we can set n to 1, and it means we can process Istanbul and commit a

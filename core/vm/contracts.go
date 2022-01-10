@@ -27,8 +27,8 @@ import (
 	ed25519 "github.com/hdevalence/ed25519consensus"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	params2 "github.com/mapprotocol/atlas/params"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -1352,7 +1352,7 @@ func (c *fractionMulExp) Run(evm *EVM, contract *Contract, input []byte) ([]byte
 	numeratorExp := new(big.Int).Mul(aNumerator, new(big.Int).Exp(bNumerator, exponent, nil))
 	denominatorExp := new(big.Int).Mul(aDenominator, new(big.Int).Exp(bDenominator, exponent, nil))
 
-	decimalAdjustment := new(big.Int).Exp(big.NewInt(10), decimals, nil)
+	decimalAdjustment := new(big.Int).Exp(big.NewInt(10), decimals, nil) //10^18
 
 	numeratorDecimalAdjusted := new(big.Int).Div(new(big.Int).Mul(numeratorExp, decimalAdjustment), denominatorExp).Bytes()
 	denominatorDecimalAdjusted := decimalAdjustment.Bytes()

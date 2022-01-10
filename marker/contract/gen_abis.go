@@ -20998,6 +20998,19 @@ func init() {
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "delay",
+          "type": "uint256"
+        }
+      ],
+      "name": "PledgeMultiplierInRewardSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "registryAddress",
@@ -21570,6 +21583,21 @@ func init() {
     {
       "constant": true,
       "inputs": [],
+      "name": "pledgeMultiplierInReward",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
       "name": "registry",
       "outputs": [
         {
@@ -21773,6 +21801,11 @@ func init() {
         },
         {
           "internalType": "uint256",
+          "name": "_pledgeMultiplierInReward",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
           "name": "_downtimeGracePeriod",
           "type": "uint256"
         }
@@ -21793,6 +21826,21 @@ func init() {
         }
       ],
       "name": "setCommissionUpdateDelay",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "pledgeMultiplier",
+          "type": "uint256"
+        }
+      ],
+      "name": "setPledgeMultiplierInReward",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
@@ -21828,6 +21876,21 @@ func init() {
       "constant": true,
       "inputs": [],
       "name": "getCommissionUpdateDelay",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getPledgeMultiplierInReward",
       "outputs": [
         {
           "internalType": "uint256",
@@ -21967,7 +22030,13 @@ func init() {
         }
       ],
       "name": "updateValidatorScoreFromSigner",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
       "payable": false,
       "stateMutability": "nonpayable",
       "type": "function"
@@ -21983,6 +22052,11 @@ func init() {
         {
           "internalType": "uint256",
           "name": "maxPayment",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalScores",
           "type": "uint256"
         }
       ],

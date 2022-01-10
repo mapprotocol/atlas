@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/core/types"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"io/ioutil"
 	"math/big"
 	"testing"

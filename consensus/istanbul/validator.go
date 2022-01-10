@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"math/big"
 
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 
 	"github.com/ethereum/go-ethereum/common"
 )

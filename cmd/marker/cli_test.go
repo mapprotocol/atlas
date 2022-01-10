@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"io/ioutil"
+	"math/big"
 	"testing"
 )
 
@@ -25,11 +26,17 @@ func TestJsonTransferKey(t *testing.T) {
 	if err != nil {
 		log.Error("", fmt.Errorf("error decrypting key: %v", err))
 	}
-	priKey = key.PrivateKey
+	priKey := key.PrivateKey
 	privHex := hex.EncodeToString(crypto.FromECDSA(priKey))
 	fmt.Println("private key:", privHex)
 	pkHash := common.Bytes2Hex(crypto.FromECDSAPub(&priKey.PublicKey))
 	fmt.Println("public key:", pkHash)
-	from = crypto.PubkeyToAddress(priKey.PublicKey)
+	from := crypto.PubkeyToAddress(priKey.PublicKey)
 	fmt.Println("address:", from)
+}
+
+func TestBigInt(t *testing.T) {
+	c, _ := new(big.Int).SetString("2999999999999999999999", 10)
+	c.Mul(c, big.NewInt(3))
+	fmt.Println(c)
 }

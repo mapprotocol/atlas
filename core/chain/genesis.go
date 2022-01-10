@@ -23,7 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rlp"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"

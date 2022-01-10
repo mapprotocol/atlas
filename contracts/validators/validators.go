@@ -17,7 +17,7 @@ package validators
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
 	blscrypto "github.com/celo-org/celo-bls-go/bls"
@@ -41,7 +41,7 @@ var (
 	getRegisteredValidatorSignersMethod      = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getRegisteredValidatorSigners", params.MaxGasForGetRegisteredValidators)
 	getRegisteredValidatorsMethod            = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getRegisteredValidators", params.MaxGasForGetRegisteredValidators)
 	getValidatorBlsPublicKeyFromSignerMethod = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidatorBlsPublicKeyFromSigner", params.MaxGasForGetValidator)
-	getMembershipInLastEpochFromSignerMethod = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getMembershipInLastEpochFromSigner", params.MaxGasForGetMembershipInLastEpoch)
+	getPledgeMultiplierInRewardMethod        = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getPledgeMultiplierInReward", params.MaxGasForGetPledgeMultiplierInReward)
 	getValidatorMethod                       = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidator", params.MaxGasForGetValidator)
 	updateValidatorScoreFromSignerMethod     = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "updateValidatorScoreFromSigner", params.MaxGasForUpdateValidatorScore)
 	distributeEpochPaymentsFromSignerMethod  = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "distributeEpochPaymentsFromSigner", params.MaxGasForDistributeEpochPayment)
@@ -102,22 +102,23 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 	return validatorData, nil
 }
 
-func UpdateValidatorScore(vmRunner vm.EVMRunner, address common.Address, uptime *big.Int) error {
-	err := updateValidatorScoreFromSignerMethod.Execute(vmRunner, nil, common.Big0, address, uptime)
-	return err
+func UpdateValidatorScore(vmRunner vm.EVMRunner, address common.Address, uptime *big.Int) (*big.Int, error) {
+	var uptimeRet *big.Int
+	err := updateValidatorScoreFromSignerMethod.Execute(vmRunner, &uptimeRet, common.Big0, address, uptime)
+	return uptimeRet, err
 }
 
-func DistributeEpochReward(vmRunner vm.EVMRunner, address common.Address, maxReward *big.Int) (*big.Int, error) {
+func DistributeEpochReward(vmRunner vm.EVMRunner, address common.Address, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, error) {
 	var epochReward *big.Int
-	err := distributeEpochPaymentsFromSignerMethod.Execute(vmRunner, &epochReward, common.Big0, address, maxReward)
+	err := distributeEpochPaymentsFromSignerMethod.Execute(vmRunner, &epochReward, common.Big0, address, maxReward, scoreDenominator)
 	return epochReward, err
 }
 
-func GetMembershipInLastEpoch(vmRunner vm.EVMRunner, validator common.Address) (common.Address, error) {
-	var group common.Address
-	err := getMembershipInLastEpochFromSignerMethod.Query(vmRunner, &group, validator)
+func GetPledgeMultiplierInReward(vmRunner vm.EVMRunner) (*big.Int, error) {
+	var pledgeMultiplierInReward *big.Int
+	err := getPledgeMultiplierInRewardMethod.Query(vmRunner, &pledgeMultiplierInReward)
 	if err != nil {
-		return params.ZeroAddress, err
+		return nil, err
 	}
-	return group, nil
+	return pledgeMultiplierInReward, nil
 }

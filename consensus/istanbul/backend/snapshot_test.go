@@ -33,8 +33,8 @@ import (
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/mapprotocol/atlas/params/bls"
 )
 
 type testerValSetDiff struct {

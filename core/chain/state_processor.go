@@ -25,7 +25,10 @@ import (
 
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/misc"
+
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
+	"github.com/mapprotocol/atlas/contracts/random"
+
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/state"
@@ -71,6 +74,19 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		vmRunner    = p.bc.NewEVMRunner(block.Header(), statedb)
 		gp          = new(core.GasPool).AddGas(blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner))
 	)
+	if random.IsRunning(vmRunner) {
+		author, err := p.bc.Engine().Author(header)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+
+		err = random.RevealAndCommit(vmRunner, block.Randomness().Revealed, block.Randomness().Committed, author)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		// always true (EIP158)
+		statedb.IntermediateRoot(true)
+	}
 	// Mutate the block and state according to any hard-fork specs
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
 		misc.ApplyDAOHardFork(statedb)
