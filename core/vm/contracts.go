@@ -1352,7 +1352,7 @@ func (c *fractionMulExp) Run(evm *EVM, contract *Contract, input []byte) ([]byte
 	numeratorExp := new(big.Int).Mul(aNumerator, new(big.Int).Exp(bNumerator, exponent, nil))
 	denominatorExp := new(big.Int).Mul(aDenominator, new(big.Int).Exp(bDenominator, exponent, nil))
 
-	decimalAdjustment := new(big.Int).Exp(big.NewInt(10), decimals, nil)
+	decimalAdjustment := new(big.Int).Exp(big.NewInt(10), decimals, nil) //10^18
 
 	numeratorDecimalAdjusted := new(big.Int).Div(new(big.Int).Mul(numeratorExp, decimalAdjustment), denominatorExp).Bytes()
 	denominatorDecimalAdjusted := decimalAdjustment.Bytes()

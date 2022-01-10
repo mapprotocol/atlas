@@ -377,6 +377,7 @@ func (q *queue) Results(block bool) []*fetchResult {
 		for _, tx := range result.Transactions {
 			size += tx.Size()
 		}
+		size += result.Randomness.Size()
 		q.resultSize = common.StorageSize(blockCacheSizeWeight)*size +
 			(1-common.StorageSize(blockCacheSizeWeight))*q.resultSize
 	}
@@ -529,6 +530,11 @@ func (q *queue) reserveHeaders(p *peerConnection, count int, taskPool map[common
 			log.Warn("Failed to reserve headers", "err", err)
 			// There are no resultslots available. Leave it in the task queue
 			break
+		}
+		// Only required if the reserve is for a body type
+		if kind == bodyType {
+			// All headers must be fetched so that the random beacon can be updated correctly.
+			item.pending |= (1 << bodyType)
 		}
 		if item.Done(kind) {
 			// If it's a noop, we can skip this task

@@ -1486,7 +1486,6 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		}
 
 		lookbackWindow := istEngine.LookbackWindow(block.Header(), state)
-
 		uptimeMonitor := uptime.NewMonitor(store.New(bc.db), bc.chainConfig.Istanbul.Epoch, lookbackWindow)
 		err = uptimeMonitor.ProcessBlock(block)
 		if err != nil {

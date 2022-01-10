@@ -40,7 +40,6 @@ func GetElectedValidators(vmRunner vm.EVMRunner) ([]common.Address, error) {
 	// Get the new epoch's validator set
 	var newValSet []common.Address
 	err := electValidatorSignersMethod.Query(vmRunner, &newValSet)
-
 	if err != nil {
 		return nil, err
 	}

@@ -1,300 +1,127 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/mapprotocol/atlas/helper/fileutils"
-	"github.com/mapprotocol/atlas/helper/flags"
+	"gopkg.in/urfave/cli.v1"
 	"os"
-	"path"
-	"path/filepath"
-
-	"golang.org/x/sync/errgroup"
+	"sort"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/helper/debug"
-	"github.com/mapprotocol/atlas/marker/cluster"
-	"github.com/mapprotocol/atlas/marker/env"
-	"github.com/mapprotocol/atlas/params"
-	"gopkg.in/urfave/cli.v1"
+
+	"github.com/mapprotocol/atlas/cmd/marker/config"
+	"github.com/mapprotocol/atlas/cmd/marker/geneisis"
 )
 
 var (
-	// Git information set by linker when building with ci.go.
-	gitCommit string
-	gitDate   string
-	app       = &cli.App{
-		Name:                 filepath.Base(os.Args[0]),
-		Usage:                "marker",
-		Version:              params.VersionWithCommit(gitCommit, gitDate),
-		Writer:               os.Stdout,
-		HideVersion:          true,
-		EnableBashCompletion: true,
+	// The app that holds all commands and flags.
+	app   *cli.App
+	Flags = []cli.Flag{
+		config.KeyFlag,
+		config.KeyStoreFlag,
+		config.RPCListenAddrFlag,
+		config.RPCPortFlag,
+		config.ValueFlag,
+		config.PasswordFlag,
+		config.CommissionFlag,
+		config.LesserFlag,
+		config.GreaterFlag,
+		config.VoteNumFlag,
+		config.TopNumFlag,
+		config.TargetAddressFlag,
+	}
+
+	validatorCommand = cli.Command{
+		Name:  "validator",
+		Usage: "validator commands",
+		Subcommands: []cli.Command{
+			createAccountCommand,
+			lockedMAPCommand,
+			registerValidatorCommand,
+			unlockedMAPCommand,
+			relockMAPCommand,
+			withdrawCommand,
+
+			queryRegisteredValidatorSignersCommand,
+			queryTopValidatorsCommand,
+		},
+		Flags: Flags,
+	}
+	voterCommand = cli.Command{
+		Name:  "voter",
+		Usage: "voter commands",
+		Subcommands: []cli.Command{
+			voteValidatorCommand,
+			getValidatorEligibilityCommand,
+			getTotalVotesForVCommand,
+			getBalanceCommand,
+			activateCommand,
+			queryRegisteredValidatorSignersCommand,
+			queryTopValidatorsCommand,
+		},
+		Flags: Flags,
 	}
 )
 
 func init() {
-	// Set up the CLI app.
-	app.Flags = append(app.Flags, debug.Flags...)
-	app.Before = func(ctx *cli.Context) error {
-		return debug.Setup(ctx)
-	}
-	app.After = func(ctx *cli.Context) error {
-		debug.Exit()
-		return nil
-	}
+	app = cli.NewApp()
+	app.Usage = "Atlas Marker Tool"
+	app.Name = "marker"
+	app.Version = "1.0.0"
+	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
+	app.Action = MigrateFlags(registerValidator)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		createGenesisCommand,
-		createGenesisConfigCommand,
-		createGenesisFromConfigCommand,
-		initValidatorsCommand,
-		runValidatorsCommand,
-		// initNodesCommand,
-		// runNodesCommand,
-		//loadBotCommand,
-		envCommand,
+		validatorCommand,
+		voterCommand,
+		genesis.CreateGenesisCommand,
 	}
-	cli.CommandHelpTemplate = flags.OriginCommandHelpTemplate
+	app.Flags = Flags
+	cli.CommandHelpTemplate = OriginCommandHelpTemplate
+	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
-	exit(app.Run(os.Args))
+	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
-var gethPathFlag = cli.StringFlag{
-	Name:  "geth",
-	Usage: "Path to geth binary",
-}
+var OriginCommandHelpTemplate string = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...] {{if .Description}}{{.Description}} {{end}}{{if .Subcommands}} SUBCOMMANDS:     {{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}     {{end}}{{end}}{{if .Flags}} OPTIONS: {{range $.Flags}}{{"\t"}}{{.}} {{end}} {{end}}`
 
-var gethExtraFlagsFlag = cli.StringFlag{
-	Name:  "extraflags",
-	Usage: "extra flags to pass to the validators",
-}
-
-var loadTestTPSFlag = cli.IntFlag{
-	Name:  "tps",
-	Usage: "Transactions per second to target in the load test",
-	Value: 20,
-}
-
-var loadTestMaxPendingFlag = cli.UintFlag{
-	Name:  "maxpending",
-	Usage: "Maximum number of in flight txs. Set to 0 to disable.",
-	Value: 200,
-}
-
-var loadTestSkipGasEstimationFlag = cli.BoolFlag{
-	Name:  "skipgasestimation",
-	Usage: "Skips estimating gas if true and instead hardcodes a value for the cUSD transfer",
-}
-
-var loadTestMixFeeCurrencyFlag = cli.BoolFlag{
-	Name:  "mixfeecurrency",
-	Usage: "Switches between paying for gas in cUSD and ATLAS",
-}
-
-var initValidatorsCommand = cli.Command{
-	Name:      "validator-init",
-	Usage:     "Setup all validators nodes",
-	ArgsUsage: "[envdir]",
-	Action:    validatorInit,
-	Flags:     []cli.Flag{gethPathFlag},
-}
-
-var runValidatorsCommand = cli.Command{
-	Name:      "validator-run",
-	Usage:     "Runs the testnet",
-	ArgsUsage: "[envdir]",
-	Action:    validatorRun,
-	Flags: []cli.Flag{
-		gethPathFlag,
-		gethExtraFlagsFlag,
-		cli.BoolFlag{Name: "init", Usage: "Init nodes before running them"},
-	},
-}
-
-// var initNodesCommand = cli.Command{
-// 	Name:      "node-init",
-// 	Usage:     "Setup all tx nodes",
-// 	ArgsUsage: "[envdir]",
-// 	Action:    nodeInit,
-// 	Flags:     []cli.Flag{gethPathFlag},
-// }
-
-// var runNodesCommand = cli.Command{
-// 	Name:      "run",
-// 	Usage:     "Runs the tx nodes",
-// 	ArgsUsage: "[envdir]",
-// 	Action:    nodeRun,
-// 	Flags:     []cli.Flag{gethPathFlag},
-// }
-
-//var loadBotCommand = cli.Command{
-//	Name:      "load-bot",
-//	Usage:     "Runs the load bot on the environment",
-//	ArgsUsage: "[envdir]",
-//	Action:    loadBot,
-//	Flags: []cli.Flag{
-//		loadTestTPSFlag,
-//		loadTestMaxPendingFlag,
-//		loadTestSkipGasEstimationFlag,
-//		loadTestMixFeeCurrencyFlag},
-//}
-
-func readWorkdir(ctx *cli.Context) (string, error) {
-	if ctx.NArg() != 1 {
-		fmt.Println("Using current directory as workdir")
-		dir, err := os.Getwd()
+func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.Context) error {
+	return func(ctx *cli.Context) error {
+		for _, name := range ctx.FlagNames() {
+			if ctx.IsSet(name) {
+				ctx.GlobalSet(name, ctx.String(name))
+			}
+		}
+		config := config.AssemblyConfig(ctx)
+		err := startLogger(ctx, config)
 		if err != nil {
-			return "", err
+			panic(err)
 		}
-		return dir, err
+		core := NewListener(ctx, config)
+		writer := NewWriter(ctx, config)
+		core.setWriter(writer)
+		return hdl(ctx, core)
 	}
-	return ctx.Args().Get(0), nil
 }
-
-func readGethPath(ctx *cli.Context) (string, error) {
-	gethPath := ctx.String(gethPathFlag.Name)
-	if gethPath == "" {
-		gethPath = path.Join(os.Getenv("ATLAS_BLOCKCHAIN"), "build/bin/geth")
-		if fileutils.FileExists(gethPath) {
-			log.Info("Missing --geth flag, using ATLAS_BLOCKCHAIN derived path", "geth", gethPath)
-		} else {
-			return "", fmt.Errorf("Missing --geth flag")
-		}
-	}
-	return gethPath, nil
-}
-
-func readEnv(ctx *cli.Context) (*env.Environment, error) {
-	workdir, err := readWorkdir(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return env.Load(workdir)
-}
-
-func validatorInit(ctx *cli.Context) error {
-	env, err := readEnv(ctx)
-	if err != nil {
+func startLogger(ctx *cli.Context, config *config.Config) error {
+	logger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
+	var lvl log.Lvl
+	if lvlToInt, err := strconv.Atoi(config.Verbosity); err == nil {
+		lvl = log.Lvl(lvlToInt)
+	} else if lvl, err = log.LvlFromString(config.Verbosity); err != nil {
 		return err
 	}
+	logger.Verbosity(lvl)
+	log.Root().SetHandler(log.LvlFilterHandler(lvl, logger))
 
-	gethPath, err := readGethPath(ctx)
-	if err != nil {
-		return err
-	}
-	cfg := cluster.Config{GethPath: gethPath}
-
-	cluster := cluster.New(env, cfg)
-	return cluster.Init()
+	return nil
 }
-
-func validatorRun(ctx *cli.Context) error {
-	env, err := readEnv(ctx)
-	if err != nil {
-		return err
-	}
-
-	gethPath, err := readGethPath(ctx)
-	if err != nil {
-		return err
-	}
-	extra := ""
-	if ctx.IsSet(gethExtraFlagsFlag.Name) {
-		extra = ctx.String(gethExtraFlagsFlag.Name)
-	}
-	cfg := cluster.Config{
-		GethPath:   gethPath,
-		ExtraFlags: extra,
-	}
-
-	cluster := cluster.New(env, cfg)
-
-	if ctx.IsSet("init") {
-		if err := cluster.Init(); err != nil {
-			return fmt.Errorf("error running init: %w", err)
-		}
-	}
-
-	group, runCtx := errgroup.WithContext(withExitSignals(context.Background()))
-
-	group.Go(func() error { return cluster.Run(runCtx) })
-	return group.Wait()
-}
-
-// // TODO: Make this run a full node, not a validator node
-// func nodeInit(ctx *cli.Context) error {
-// 	env, err := readEnv(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	gethPath, err := readGethPath(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	cluster := cluster.New(env, gethPath)
-// 	return cluster.Init()
-// }
-
-// // TODO: Make this run a full node, not a validator node
-// func nodeRun(ctx *cli.Context) error {
-// 	env, err := readEnv(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	gethPath, err := readGethPath(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	cluster := cluster.New(env, gethPath)
-
-// 	group, runCtx := errgroup.WithContext(withExitSignals(context.Background()))
-
-// 	group.Go(func() error { return cluster.Run(runCtx) })
-
-// 	return group.Wait()
-// }
-//
-//func loadBot(ctx *cli.Context) error {
-//	env, err := readEnv(ctx)
-//	if err != nil {
-//		return err
-//	}
-//
-//	verbosityLevel := ctx.GlobalInt("verbosity")
-//	verbose := verbosityLevel >= 4
-//
-//	runCtx := context.Background()
-//
-//	var clients []*ethclient.Client
-//	for i := 0; i < env.Accounts().NumValidators; i++ {
-//		// TODO: Pull all of these values from env.json
-//		client, err := ethclient.Dial(env.ValidatorIPC(i))
-//		if err != nil {
-//			return err
-//		}
-//		clients = append(clients, client)
-//	}
-//
-//	return loadbot.Start(runCtx, &loadbot.Config{
-//		ChainID:               env.Config.ChainID,
-//		Accounts:              env.Accounts().DeveloperAccounts(),
-//		Amount:                big.NewInt(10000000),
-//		TransactionsPerSecond: ctx.Int(loadTestTPSFlag.Name),
-//		Clients:               clients,
-//		Verbose:               verbose,
-//		MaxPending:            ctx.Uint64(loadTestMaxPendingFlag.Name),
-//		SkipGasEstimation:     ctx.GlobalBool(loadTestSkipGasEstimationFlag.Name),
-//		MixFeeCurrency:        ctx.GlobalBool(loadTestMixFeeCurrencyFlag.Name),
-//	})
-//}

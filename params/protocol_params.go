@@ -26,7 +26,7 @@ const (
 	MaxGasForGetEligibleValidatorGroupsVoteTotals  uint64 = 1 * million
 	MaxGasForGetGasPriceMinimum                    uint64 = 2 * million
 	MaxGasForGetGroupEpochRewards                  uint64 = 500 * thousand
-	MaxGasForGetMembershipInLastEpoch              uint64 = 1 * million
+	MaxGasForGetPledgeMultiplierInReward           uint64 = 50 * thousand
 	MaxGasForGetOrComputeTobinTax                  uint64 = 1 * million
 	MaxGasForGetRegisteredValidators               uint64 = 2 * million
 	MaxGasForGetValidator                          uint64 = 100 * thousand

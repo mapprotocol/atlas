@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,4 +23,9 @@ func TestUniqueContractAddresses(t *testing.T) {
 		}
 		addresses[addr] = true
 	}
+}
+
+func TestMustProxyAddressFor(t *testing.T) {
+	addr := MustProxyAddressFor("LockedGold") //0x000000000000000000000000000000000000d011
+	fmt.Println(addr)
 }

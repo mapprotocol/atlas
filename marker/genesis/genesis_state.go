@@ -20,7 +20,7 @@ import (
 var (
 	proxyOwnerStorageLocation = common.HexToHash("0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103")
 	proxyByteCode             = common.Hex2Bytes("60806040526004361061004a5760003560e01c806303386ba3146101e757806342404e0714610280578063bb913f41146102d7578063d29d44ee14610328578063f7e6af8014610379575b6000600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050600081549050600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610136576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260158152602001807f4e6f20496d706c656d656e746174696f6e20736574000000000000000000000081525060200191505060405180910390fd5b61013f816103d0565b6101b1576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260188152602001807f496e76616c696420636f6e74726163742061646472657373000000000000000081525060200191505060405180910390fd5b60405136810160405236600082376000803683855af43d604051818101604052816000823e82600081146101e3578282f35b8282fd5b61027e600480360360408110156101fd57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019064010000000081111561023a57600080fd5b82018360208201111561024c57600080fd5b8035906020019184600183028401116401000000008311171561026e57600080fd5b909192939192939050505061041b565b005b34801561028c57600080fd5b506102956105c1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b3480156102e357600080fd5b50610326600480360360208110156102fa57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061060d565b005b34801561033457600080fd5b506103776004803603602081101561034b57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506107bd565b005b34801561038557600080fd5b5061038e610871565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b60008060007fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47060001b9050833f915080821415801561041257506000801b8214155b92505050919050565b610423610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146104c3576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b6104cc8361060d565b600060608473ffffffffffffffffffffffffffffffffffffffff168484604051808383808284378083019250505092505050600060405180830381855af49150503d8060008114610539576040519150601f19603f3d011682016040523d82523d6000602084013e61053e565b606091505b508092508193505050816105ba576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252601e8152602001807f696e697469616c697a6174696f6e2063616c6c6261636b206661696c6564000081525060200191505060405180910390fd5b5050505050565b600080600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050805491505090565b610615610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146106b5576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b6000600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050610701826103d0565b610773576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260188152602001807f496e76616c696420636f6e74726163742061646472657373000000000000000081525060200191505060405180910390fd5b8181558173ffffffffffffffffffffffffffffffffffffffff167fab64f92ab780ecbf4f3866f57cee465ff36c89450dcce20237ca7a8d81fb7d1360405160405180910390a25050565b6107c5610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610865576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b61086e816108bd565b50565b600080600160405180807f656970313936372e70726f78792e61646d696e000000000000000000000000008152506013019050604051809103902060001c0360001b9050805491505090565b600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610960576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260118152602001807f6f776e65722063616e6e6f74206265203000000000000000000000000000000081525060200191505060405180910390fd5b6000600160405180807f656970313936372e70726f78792e61646d696e000000000000000000000000008152506013019050604051809103902060001c0360001b90508181558173ffffffffffffffffffffffffffffffffffffffff167f50146d0e3c60aa1d17a70635b05494f864e86144a2201275021014fbf08bafe260405160405180910390a2505056fea165627a7a72305820f4f741dbef8c566cb1690ae708b8ef1113bdb503225629cc1f9e86bd47efd1a40029")
-	adminGoldBalance          = token.MustNew("100000").BigInt() // 100k Atlas
+	adminGoldBalance          = token.MustNew("10000000").BigInt() // 10000k Atlas
 )
 
 // deployContext context for deployment
@@ -84,25 +84,8 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		// 01 Registry
 		ctx.deployRegistry,
 
-		//// 03 TransferWhitelist
-		//ctx.deployTransferWhitelist,
-		//
-		//// 03.bis FeeCurrencyWhitelist
-		//ctx.deployFeeCurrencyWhitelist,
-		//
 		// 04 GoldToken
 		ctx.deployGoldToken,
-
-		//// 06 GasPriceMinimum
-		//ctx.deployGasPriceMinimum,
-
-		//
-		//// 08 ReserveSpenderMultisig (requires reserve to work)
-		//ctx.deployReserveSpenderMultisig,
-
-		//
-		//// 10 Exchange and ExchangeEUR
-		//ctx.deployExchanges,
 
 		// 11 Accounts
 		ctx.deployAccounts,
@@ -118,34 +101,9 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 		//
 		// 15 EpochRewards
 		ctx.deployEpochRewards,
-		//
-		//// 16 Random
-		//ctx.deployRandom,
-		//
-		//// 17 Attestations
-		//ctx.deployAttestations,
-		//
-		//// 18 Escrow
-		//ctx.deployEscrow,
-		//
-		//// 19 BlockchainParameters
-		//ctx.deployBlockchainParameters,
-		//
-		//// 20 GovernanceSlasher
-		//ctx.deployGovernanceSlasher,
-		//
-		//// 21 DoubleSigningSlasher
-		//ctx.deployDoubleSigningSlasher,
-		//
-		//// 22 DowntimeSlasher
-		//ctx.deployDowntimeSlasher,
-		//
-		// 23 GovernanceApproverMultiSig
-		//ctx.deployGovernanceApproverMultiSig,
-		//
-		// 24 Governance
-		//ctx.deployGovernance,
 
+		//
+		ctx.deployRandom,
 		// 25 Elect Validators
 		ctx.electValidators,
 	}
@@ -205,11 +163,11 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 func (ctx *deployContext) fundAdminAccount() {
 	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
 	// validators
-	ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -239,8 +197,6 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 
 	logger.Info("Set proxy implementation")
 	proxyContract := ctx.proxyContract(name)
-	fmt.Println("name:", name)
-	fmt.Println("implAddress:", implAddress)
 	if err := proxyContract.SimpleCall("_setImplementation", implAddress); err != nil {
 		return err
 	}
@@ -265,105 +221,6 @@ func (ctx *deployContext) deployCoreContract(name string, initialize func(contra
 		return err
 	}
 
-	return nil
-}
-
-func (ctx *deployContext) deployTransferWhitelist() error {
-	name := "TransferWhitelist"
-	logger := ctx.logger.New("contract", name)
-
-	contract, err := contract.DeployCoreContract(
-		ctx.runtimeConfig,
-		"TransferWhitelist",
-		ctx.truffleReader.MustReadBytecodeFor("TransferWhitelist"),
-		env.MustProxyAddressFor("Registry"),
-	)
-	if err != nil {
-		return err
-	}
-	logger.Info("Contract deployed", "address", contract.Address)
-
-	logger.Debug("setDirectlyWhitelistedAddresses")
-	err = contract.SimpleCall("setDirectlyWhitelistedAddresses", ctx.genesisConfig.TransferWhitelist.Addresses)
-	if err != nil {
-		return err
-	}
-
-	logger.Debug("setWhitelistedContractIdentifiers")
-	err = contract.SimpleCall("setWhitelistedContractIdentifiers", ctx.genesisConfig.TransferWhitelist.RegistryIDs)
-	if err != nil {
-		return err
-	}
-
-	logger.Info("Add to Registry")
-	if err := ctx.contract("Registry").SimpleCall("setAddressFor", name, contract.Address); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ctx *deployContext) deployMultiSig(name string, param MultiSigParameters) (common.Address, error) {
-	err := ctx.deployProxiedContract(name, func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			param.Signatories,
-			newBigInt(param.NumRequiredConfirmations),
-			newBigInt(param.NumInternalRequiredConfirmations),
-		)
-	})
-	if err != nil {
-		return params.ZeroAddress, err
-	}
-	return env.MustProxyAddressFor(name), nil
-}
-
-func (ctx *deployContext) deployReserveSpenderMultisig() error {
-	multiSigAddr, err := ctx.deployMultiSig("ReserveSpenderMultiSig", ctx.genesisConfig.ReserveSpenderMultiSig)
-	if err != nil {
-		return err
-	}
-
-	if err := ctx.contract("Reserve").SimpleCall("addSpender", multiSigAddr); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ctx *deployContext) deployGovernanceApproverMultiSig() error {
-	_, err := ctx.deployMultiSig("GovernanceApproverMultiSig", ctx.genesisConfig.GovernanceApproverMultiSig)
-	return err
-}
-
-func (ctx *deployContext) deployGovernance() error {
-	approver := AdminAT.Address
-	if ctx.genesisConfig.Governance.UseMultiSig {
-		approver = env.MustProxyAddressFor("GovernanceApproverMultiSig")
-	}
-	err := ctx.deployCoreContract("Governance", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			approver,
-			newBigInt(ctx.genesisConfig.Governance.ConcurrentProposals),
-			ctx.genesisConfig.Governance.MinDeposit,
-			newBigInt(ctx.genesisConfig.Governance.QueueExpiry),
-			newBigInt(ctx.genesisConfig.Governance.DequeueFrequency),
-			newBigInt(ctx.genesisConfig.Governance.ApprovalStageDuration),
-			newBigInt(ctx.genesisConfig.Governance.ReferendumStageDuration),
-			newBigInt(ctx.genesisConfig.Governance.ExecutionStageDuration),
-			ctx.genesisConfig.Governance.ParticipationBaseline.BigInt(),
-			ctx.genesisConfig.Governance.ParticipationFloor.BigInt(),
-			ctx.genesisConfig.Governance.BaselineUpdateFactor.BigInt(),
-			ctx.genesisConfig.Governance.BaselineQuorumFactor.BigInt(),
-		)
-	})
-	if err != nil {
-		return err
-	}
-	// We are skipping two steps for now:
-	// 1. Setting the governance thresholds from a constitution
-	// 2. Transferring ownership of the core contracts to governance
-	// While the monorepo migrations code does support them, in the configurations it's always
-	// set to skip them, so we can skip supporting them until it's needed.
 	return nil
 }
 
@@ -455,14 +312,6 @@ func (ctx *deployContext) deployGoldToken() error {
 		return err
 	}
 
-	if ctx.genesisConfig.GoldToken.Frozen {
-		ctx.logger.Info("Freezing GoldToken")
-		err = ctx.contract("Freezer").SimpleCall("freeze", env.MustProxyAddressFor("GoldToken"))
-		if err != nil {
-			return err
-		}
-	}
-
 	for _, bal := range ctx.genesisConfig.GoldToken.InitialBalances {
 		ctx.statedb.SetBalance(bal.Account, bal.Amount)
 	}
@@ -476,19 +325,11 @@ func (ctx *deployContext) deployEpochRewards() error {
 			env.MustProxyAddressFor("Registry"),
 			ctx.genesisConfig.EpochRewards.MaxValidatorEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
-			ctx.genesisConfig.EpochRewards.CommunityPartnerPartner,
+			ctx.genesisConfig.EpochRewards.CommunityPartner,
 		)
 	})
 	if err != nil {
 		return err
-	}
-
-	if ctx.genesisConfig.EpochRewards.Frozen {
-		ctx.logger.Info("Freezing EpochRewards")
-		err = ctx.contract("Freezer").SimpleCall("freeze", env.MustProxyAddressFor("EpochRewards"))
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -526,6 +367,7 @@ func (ctx *deployContext) deployValidators() error {
 			ctx.genesisConfig.Validators.ValidatorScoreAdjustmentSpeed.BigInt(),
 			newBigInt(ctx.genesisConfig.Validators.SlashingPenaltyResetPeriod),
 			newBigInt(ctx.genesisConfig.Validators.CommissionUpdateDelay),
+			ctx.genesisConfig.Validators.PledgeMultiplierInReward.BigInt(),
 			newBigInt(ctx.genesisConfig.Validators.DowntimeGracePeriod),
 		)
 	})
@@ -636,28 +478,28 @@ func (ctx *deployContext) voteForValidators() error {
 	// hence, we use:
 	//    greater = zero (we become the one with most votes)
 	//    lesser = currentLeader
-
+	validatorAddress := ValidatorsAT[0].Address
 	// special case: only one validator (no lesser or greater)
 	if len(ValidatorsAT) == 1 {
-		validatorAddress := ValidatorsAT[0].Address
+		voterAddress := ValidatorsAT[0].Address
 		ctx.logger.Info("Vote for validator", "validator", validatorAddress, "amount", lockedGoldOnValidator)
-		return election.SimpleCallFrom(validatorAddress, "vote", validatorAddress, lockedGoldOnValidator, params.ZeroAddress, params.ZeroAddress)
+		return election.SimpleCallFrom(voterAddress, "vote", validatorAddress, lockedGoldOnValidator, params.ZeroAddress, params.ZeroAddress)
 	}
 
 	// first to vote is validator 0, which is already the leader. Hence lesser should go to validator 1
 	currentLeader := ValidatorsAT[1].Address
-	for _, validator := range ValidatorsAT {
-		validatorAddress := validator.Address
-
-		ctx.logger.Info("Vote for validator", "validator", validatorAddress, "amount", lockedGoldOnValidator)
-		if err := election.SimpleCallFrom(validatorAddress, "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
+	for i, voter := range ValidatorsAT {
+		if i < 1 {
+			continue
+		}
+		ctx.logger.Info("Vote for validator", "voter", voter.Address, "validator", validatorAddress, "amount", lockedGoldOnValidator)
+		if err := election.SimpleCallFrom(voter.Address, "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
 			return err
 		}
 
 		// we now become the currentLeader
-		currentLeader = validatorAddress
+		currentLeader = voter.Address
 	}
-
 	return nil
 }
 
@@ -778,7 +620,7 @@ func (ctx *deployContext) verifyState() error {
 	//	return err
 	//}
 
-	var (
+	/*var (
 		validator = new(*big.Int)
 		community = new(*big.Int)
 	)
@@ -797,6 +639,18 @@ func (ctx *deployContext) verifyState() error {
 		fmt.Println("err:", err)
 		return err
 	}
-	fmt.Println(*totalPayment)
+	fmt.Println(*totalPayment)*/
+
+	//lock
+	//_,err := ctx.contract("LockedGold").Call(contract.CallOpts{Origin: common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), Value: big.NewInt(1000)}, "lock")
+	//if err != nil {
+	//	return err
+	//}
+	////unlock
+	//err = ctx.contract("LockedGold").SimpleCallFrom(common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), "unlock", big.NewInt(100))
+	//if err != nil {
+	//	return err
+	//}
+
 	return nil
 }

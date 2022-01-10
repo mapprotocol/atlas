@@ -45,11 +45,9 @@ func prepareBlock(w *worker) (*blockState, error) {
 
 	timestamp := time.Now().Unix()
 	parent := w.chain.CurrentBlock()
-
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
 	}
-
 	num := parent.Number()
 	header := &types.Header{
 		ParentHash: parent.Hash(),
@@ -108,7 +106,6 @@ func prepareBlock(w *worker) (*blockState, error) {
 		if !ok {
 			log.Crit("Istanbul consensus engine must be in use for the randomness beacon")
 		}
-
 		lastCommitment, err := random.GetLastCommitment(vmRunner, w.validator)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get last commitment: %w", err)

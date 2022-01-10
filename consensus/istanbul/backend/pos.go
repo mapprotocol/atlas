@@ -68,13 +68,16 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	_, err = sb.updateValidatorScores(header, state, valSet)
+	uptimeRets, err := sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
 		return err
 	}
-
+	scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets)
+	if err != nil {
+		return err
+	}
 	// Reward Validators And voters
-	totalValidatorRewards, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward)
+	totalValidatorRewards, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward, scores)
 	if err != nil {
 		return err
 	}
@@ -111,19 +114,24 @@ func (sb *Backend) updateValidatorScores(header *types.Header, state *state.Stat
 	vmRunner := sb.chain.NewEVMRunner(header, state)
 	for i, val := range valSet {
 		logger.Trace("Updating validator score", "uptime", uptimes[i], "address", val.Address())
-		err := validators.UpdateValidatorScore(vmRunner, val.Address(), uptimes[i])
+		uptimeRet, err := validators.UpdateValidatorScore(vmRunner, val.Address(), uptimes[i])
 		if err != nil {
 			return nil, err
 		}
+		uptimes[i] = uptimeRet
+		logger.Trace("Updating validator score ret", "uptime", uptimes[i], "address", val.Address())
 	}
 	return uptimes, nil
 }
 
-func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, valSet []istanbul.Validator, maxReward *big.Int) (*big.Int, error) {
+/*
+@param maxReward is epochReward for all validators
+*/
+func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, valSet []istanbul.Validator, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, error) {
 	totalValidatorRewards := big.NewInt(0)
 	for _, val := range valSet {
 		sb.logger.Debug("Distributing epoch reward for validator", "address", val.Address())
-		validatorReward, err := validators.DistributeEpochReward(vmRunner, val.Address(), maxReward)
+		validatorReward, err := validators.DistributeEpochReward(vmRunner, val.Address(), maxReward, scoreDenominator)
 		if err != nil {
 			sb.logger.Error("Error in distributing rewards to validator", "address", val.Address(), "err", err)
 			continue
@@ -154,4 +162,24 @@ func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) 
 		}
 	}
 	return nil
+}
+
+/*
+   @notice calculatePaymentScoreDenominator
+   @params uptimes  update score for validator return
+   @dev     (score + p)/(N*p+s1+s2+s3...)
+   @return (N*p+s1+s2+s3...)
+*/
+func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptimes []*big.Int) (*big.Int, error) {
+	sum := big.NewInt(0)
+	for _, v := range uptimes {
+		sum.Add(sum, v)
+	}
+	PledgeMultiplier, err := validators.GetPledgeMultiplierInReward(vmRunner)
+	if err != nil {
+		return nil, err
+	}
+	l := int64(len(uptimes))
+	sum.Add(sum, PledgeMultiplier.Mul(PledgeMultiplier, big.NewInt(l)))
+	return sum, nil
 }

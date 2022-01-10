@@ -27,34 +27,21 @@ type Config struct {
 	Hardforks        HardforkConfig        `json:"hardforks"`
 	GenesisTimestamp uint64                `json:"genesisTimestamp"`
 
-	GasPriceMinimum            GasPriceMinimumParameters
-	LockedGold                 LockedGoldParameters
-	GoldToken                  GoldTokenParameters
-	Validators                 ValidatorsParameters
-	Election                   ElectionParameters
-	EpochRewards               EpochRewardsParameters
-	Blockchain                 BlockchainParameters
-	Random                     RandomParameters
-	TransferWhitelist          TransferWhitelistParameters
-	ReserveSpenderMultiSig     MultiSigParameters
-	GovernanceApproverMultiSig MultiSigParameters
-	DoubleSigningSlasher       DoubleSigningSlasherParameters
-	DowntimeSlasher            DowntimeSlasherParameters
-	Governance                 GovernanceParameters
+	GasPriceMinimum      GasPriceMinimumParameters
+	LockedGold           LockedGoldParameters
+	GoldToken            GoldTokenParameters
+	Validators           ValidatorsParameters
+	Election             ElectionParameters
+	EpochRewards         EpochRewardsParameters
+	Blockchain           BlockchainParameters
+	Random               RandomParameters
+	DoubleSigningSlasher DoubleSigningSlasherParameters
+	DowntimeSlasher      DowntimeSlasherParameters
 }
 
 // Save will write config into a json file
 func (cfg *Config) Save(filepath string) error {
 	return utils.WriteJson(cfg, filepath)
-}
-
-// LoadConfig will read config from a json file
-func LoadConfig(filepath string) (*Config, error) {
-	var cfg Config
-	if err := utils.ReadJson(&cfg, filepath); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
 }
 
 // ChainConfig returns the chain config objt for the blockchain
@@ -90,15 +77,6 @@ type HardforkConfig struct {
 	DonutBlock    *big.Int `json:"donutBlock"`
 }
 
-// MultiSigParameters are the initial configuration parameters for a MultiSig contract
-type MultiSigParameters struct {
-	Signatories                      []common.Address `json:"signatories"`
-	NumRequiredConfirmations         uint64           `json:"numRequiredConfirmations"`
-	NumInternalRequiredConfirmations uint64           `json:"numInternalRequiredConfirmations"`
-}
-
-//go:generate gencodec -type LockedGoldRequirements -field-override LockedgoldRequirementsMarshaling -out gen_locked_gold_requirements_json.go
-
 // LockedGoldRequirements represents value/duration requirments on locked gold
 type LockedGoldRequirements struct {
 	Value    *big.Int `json:"value"`
@@ -108,8 +86,6 @@ type LockedGoldRequirements struct {
 type LockedgoldRequirementsMarshaling struct {
 	Value *bigintstr.BigIntStr `json:"value"`
 }
-
-//go:generate gencodec -type ElectionParameters -field-override ElectionParametersMarshaling -out gen_election_parameters_json.go
 
 // ElectionParameters are the initial configuration parameters for Elections
 type ElectionParameters struct {
@@ -137,8 +113,6 @@ type BlockchainParameters struct {
 	BlockGasLimit           uint64  `json:"blockGasLimit"`
 }
 
-//go:generate gencodec -type DoubleSigningSlasherParameters -field-override DoubleSigningSlasherParametersMarshaling -out gen_double_signing_slasher_parameters_json.go
-
 // DoubleSigningSlasherParameters are the initial configuration parameters for DoubleSigningSlasher
 type DoubleSigningSlasherParameters struct {
 	Penalty *big.Int `json:"penalty"`
@@ -149,8 +123,6 @@ type DoubleSigningSlasherParametersMarshaling struct {
 	Penalty *bigintstr.BigIntStr `json:"penalty"`
 	Reward  *bigintstr.BigIntStr `json:"reward"`
 }
-
-//go:generate gencodec -type DowntimeSlasherParameters -field-override DowntimeSlasherParametersMarshaling -out gen_downtime_slasher_parameters_json.go
 
 // DowntimeSlasherParameters are the initial configuration parameters for DowntimeSlasher
 type DowntimeSlasherParameters struct {
@@ -164,24 +136,6 @@ type DowntimeSlasherParametersMarshaling struct {
 	Reward  *bigintstr.BigIntStr `json:"reward"`
 }
 
-//go:generate gencodec -type GovernanceParameters -field-override GovernanceParametersMarshaling -out gen_governance_parameters_json.go
-
-// GovernanceParameters are the initial configuration parameters for Governance
-type GovernanceParameters struct {
-	UseMultiSig             bool         `json:"useMultiSig"` // whether the approver should be the multisig (otherwise it's the admin)
-	ConcurrentProposals     uint64       `json:"concurrentProposals"`
-	MinDeposit              *big.Int     `json:"minDeposit"`
-	QueueExpiry             uint64       `json:"queueExpiry"`
-	DequeueFrequency        uint64       `json:"dequeueFrequency"`
-	ApprovalStageDuration   uint64       `json:"approvalStageDuration"`
-	ReferendumStageDuration uint64       `json:"referendumStageDuration"`
-	ExecutionStageDuration  uint64       `json:"executionStageDuration"`
-	ParticipationBaseline   *fixed.Fixed `json:"participationBaseline"`
-	ParticipationFloor      *fixed.Fixed `json:"participationFloor"`
-	BaselineUpdateFactor    *fixed.Fixed `json:"baselineUpdateFactor"`
-	BaselineQuorumFactor    *fixed.Fixed `json:"baselineQuorumFactor"`
-}
-
 type GovernanceParametersMarshaling struct {
 	MinDeposit *bigintstr.BigIntStr `json:"minDeposit"`
 }
@@ -191,45 +145,26 @@ type ValidatorsParameters struct {
 	ValidatorLockedGoldRequirements LockedGoldRequirements `json:"validatorLockedGoldRequirements"`
 	ValidatorScoreExponent          uint64                 `json:"validatorScoreExponent"`
 	ValidatorScoreAdjustmentSpeed   *fixed.Fixed           `json:"validatorScoreAdjustmentSpeed"`
-	MembershipHistoryLength         uint64                 `json:"membershipHistoryLength"`
 	SlashingPenaltyResetPeriod      uint64                 `json:"slashingPenaltyResetPeriod"`
 	CommissionUpdateDelay           uint64                 `json:"commissionUpdateDelay"`
+	PledgeMultiplierInReward        *fixed.Fixed           `json:"pledgeMultiplierInReward"`
 	DowntimeGracePeriod             uint64                 `json:"downtimeGracePeriod"`
-
-	Commission *fixed.Fixed `json:"commission"` // commission for genesis registered validator
+	Commission                      *fixed.Fixed           `json:"commission"` // commission for genesis registered validator
 }
-
-//go:generate gencodec -type EpochRewardsParameters -field-override EpochRewardsParametersMarshaling -out gen_epoch_rewards_parameters_json.go
 
 // EpochRewardsParameters are the initial configuration parameters for EpochRewards
 type EpochRewardsParameters struct {
-	TargetVotingYieldInitial                     *fixed.Fixed   `json:"targetVotingYieldInitial"`
-	TargetVotingYieldMax                         *fixed.Fixed   `json:"targetVotingYieldMax"`
-	TargetVotingYieldAdjustmentFactor            *fixed.Fixed   `json:"targetVotingYieldAdjustmentFactor"`
-	RewardsMultiplierMax                         *fixed.Fixed   `json:"rewardsMultiplierMax"`
-	RewardsMultiplierAdjustmentFactorsUnderspend *fixed.Fixed   `json:"rewardsMultiplierAdjustmentFactorsUnderspend"`
-	RewardsMultiplierAdjustmentFactorsOverspend  *fixed.Fixed   `json:"rewardsMultiplierAdjustmentFactorsOverspend"`
-	TargetVotingGoldFraction                     *fixed.Fixed   `json:"targetVotingGoldFraction"`
-	MaxValidatorEpochPayment                     *big.Int       `json:"maxValidatorEpochPayment"`
-	CommunityRewardFraction                      *fixed.Fixed   `json:"communityRewardFraction"`
-	CommunityPartnerPartner                      common.Address `json:"carbonOffsettingPartner"`
-	//CarbonOffsettingFraction                     *fixed.Fixed   `json:"carbonOffsettingFraction"`
-	Frozen bool `json:"frozen"`
+	MaxValidatorEpochPayment *big.Int       `json:"maxValidatorEpochPayment"`
+	CommunityRewardFraction  *fixed.Fixed   `json:"communityRewardFraction"`
+	CommunityPartner         common.Address `json:"communityPartner"`
 }
 
 type EpochRewardsParametersMarshaling struct {
 	MaxValidatorEpochPayment *bigintstr.BigIntStr `json:"maxValidatorEpochPayment"`
 }
 
-// TransferWhitelistParameters are the initial configuration parameters for TransferWhitelist
-type TransferWhitelistParameters struct {
-	Addresses   []common.Address `json:"addresses"`
-	RegistryIDs []common.Hash    `json:"registryIds"`
-}
-
 // GoldTokenParameters are the initial configuration parameters for GoldToken
 type GoldTokenParameters struct {
-	Frozen          bool        `json:"frozen"`
 	InitialBalances BalanceList `json:"initialBalances"`
 }
 
@@ -237,8 +172,6 @@ type GoldTokenParameters struct {
 type RandomParameters struct {
 	RandomnessBlockRetentionWindow uint64 `json:"randomnessBlockRetentionWindow"`
 }
-
-//go:generate gencodec -type GasPriceMinimumParameters -field-override GasPriceMinimumParametersMarshaling -out gen_gas_price_minimum_parameters_json.go
 
 // GasPriceMinimumParameters are the initial configuration parameters for GasPriceMinimum
 type GasPriceMinimumParameters struct {
@@ -255,8 +188,6 @@ type GasPriceMinimumParametersMarshaling struct {
 type LockedGoldParameters struct {
 	UnlockingPeriod uint64 `json:"unlockingPeriod"`
 }
-
-//go:generate gencodec -type Balance -field-override BalanceMarshaling -out gen_balance_json.go
 
 // Balance represents an account and it's initial balance in wei
 type Balance struct {

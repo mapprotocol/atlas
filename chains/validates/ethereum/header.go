@@ -155,7 +155,6 @@ func (v *Validate) verifyHeaderWorker(headers []*ethereum.Header, index int, uni
 		if err != nil {
 			return err
 		}
-		fmt.Println(headers[0].ParentHash)
 		parent = s.ReadHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
