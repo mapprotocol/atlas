@@ -61,7 +61,7 @@ var lockedMAPCommand = cli.Command{
 	Flags:  Flags,
 }
 var unlockedMAPCommand = cli.Command{
-	Name:   "unlockedMAP",
+	Name:   "unlockMap",
 	Usage:  "unlocked MAP",
 	Action: MigrateFlags(unlockedMAP),
 	Flags:  Flags,
@@ -90,6 +90,18 @@ var activateCommand = cli.Command{
 	Name:   "activate",
 	Usage:  "Converts `account`'s pending votes for `validator` to active votes.",
 	Action: MigrateFlags(activate),
+	Flags:  Flags,
+}
+var revokePendingCommand = cli.Command{
+	Name:   "revokePending",
+	Usage:  "Revokes `value` pending votes for `validator`",
+	Action: MigrateFlags(revokePending),
+	Flags:  Flags,
+}
+var revokeActiveCommand = cli.Command{
+	Name:   "revokeActive",
+	Usage:  "Revokes `value` active votes for `validator`",
+	Action: MigrateFlags(revokeActive),
 	Flags:  Flags,
 }
 
@@ -154,6 +166,32 @@ var getAccountTotalLockedGoldCommand = cli.Command{
 	Action: MigrateFlags(getAccountTotalLockedGold),
 	Flags:  Flags,
 }
+var getAccountNonvotingLockedGoldCommand = cli.Command{
+	Name:   "getAccountNonvotingLockedGold",
+	Usage:  "Returns the total amount of non-voting locked gold for an account",
+	Action: MigrateFlags(getAccountNonvotingLockedGold),
+	Flags:  Flags,
+}
+var getAccountLockedGoldRequirementCommand = cli.Command{
+	Name:   "getAccountLockedGoldRequirement",
+	Usage:  "Returns the current locked gold balance requirement for the supplied account.",
+	Action: MigrateFlags(getAccountLockedGoldRequirement),
+	Flags:  Flags,
+}
+var getPendingWithdrawalsCommand = cli.Command{
+	Name:   "getPendingWithdrawals",
+	Usage:  "Returns the pending withdrawals from unlocked gold for an account.",
+	Action: MigrateFlags(getPendingWithdrawals),
+	Flags:  Flags,
+}
+
+//-------------- owner --------------------
+var setValidatorLockedGoldRequirementsCommand = cli.Command{
+	Name:   "setValidatorLockedGoldRequirements",
+	Usage:  "Updates the Locked Gold requirements for Validators.",
+	Action: MigrateFlags(setValidatorLockedGoldRequirements),
+	Flags:  Flags,
+}
 
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
@@ -167,49 +205,6 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	return nil
-}
-func lockedMAP(_ *cli.Context, core *listener) error {
-	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
-	log.Info("=== Lock  gold ===")
-	log.Info("Lock  gold", "amount", lockedGold.String())
-	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
-	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	m := NewMessage(SolveType2, core.msgCh, core.cfg, LockedGoldAddress, lockedGold, abiLockedGold, "lock")
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	return nil
-}
-func unlockedMAP(_ *cli.Context, core *listener) error {
-	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
-	log.Info("=== unLock validator gold ===")
-	log.Info("unLock validator gold", "amount", lockedGold)
-	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
-	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "unlock", lockedGold)
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	return nil
-}
-func relockMAP(_ *cli.Context, core *listener) error {
-	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
-	log.Info("=== relockMAP validator gold ===")
-	log.Info("relockMAP validator gold", "amount", lockedGold)
-	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
-	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "relock", lockedGold)
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	return nil
-}
-func withdraw(_ *cli.Context, core *listener) error {
-	index := big.NewInt(0)
-	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
-	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
-	log.Info("=== withdraw validator gold ===")
-	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "withdraw", index)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -257,6 +252,62 @@ func activate(_ *cli.Context, core *listener) error {
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== activate validator gold ===", "account.Address", core.cfg.From)
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "activate", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+/**
+ * @notice Revokes `value` pending votes for `validator`
+ * @param validator The validator to revoke votes from.
+ * @param value The number of votes to revoke.
+ * @param lesser The validator receiving fewer votes than the validator for which the vote was revoked,
+ *   or 0 if that validator has the fewest votes of any validator.
+ * @param greater The validator receiving more votes than the validator for which the vote was revoked,
+ *   or 0 if that validator has the most votes of any validator.
+ * @param index The index of the validator in the account's voting list.
+ * @return True upon success.
+ * @dev Fails if the account has not voted on a validator.
+ */
+func revokePending(_ *cli.Context, core *listener) error {
+	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElections := core.cfg.ElectionParameters.ElectionABI
+	validator := core.cfg.TargetAddress
+	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	lesser := core.cfg.Lesser
+	greater := core.cfg.Greater
+	index := core.cfg.ValidatorIndex
+	_params := []interface{}{validator, LockedNum, lesser, greater, index}
+	log.Info("=== revokePending ===", "admin", core.cfg.From)
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "revokePending", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+/**
+ * @notice Revokes `value` active votes for `validator`
+ * @param validator The validator  to revoke votes from.
+ * @param value The number of votes to revoke.
+ * @param lesser The validator receiving fewer votes than the validator for which the vote was revoked,
+ *   or 0 if that validator has the fewest votes of any validator.
+ * @param greater The validator receiving more votes than the validator for which the vote was revoked,
+ *   or 0 if that validator has the most votes of any validator.
+ * @param index The index of the validator in the account's voting list.
+ * @return True upon success.
+ * @dev Fails if the account has not voted on a validator.
+ */
+func revokeActive(_ *cli.Context, core *listener) error {
+	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElections := core.cfg.ElectionParameters.ElectionABI
+	validator := core.cfg.TargetAddress
+	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	lesser := core.cfg.Lesser
+	greater := core.cfg.Greater
+	index := core.cfg.ValidatorIndex
+	_params := []interface{}{validator, LockedNum, lesser, greater, index}
+	log.Info("=== revokeActive ===", "admin", core.cfg.From)
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "revokeActive", _params...)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -320,7 +371,7 @@ func getTotalVotesForEligibleValidators(_ *cli.Context, core *listener) error {
 	f := func(output []byte) {
 		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
 		if err != nil {
-			log.Error("handleUnpackMethodSolveType3", "err", err)
+			log.Error("getTotalVotesForEligibleValidators", "err", err)
 		}
 	}
 	log.Info("=== getTotalVotesForEligibleValidators ===", "admin", core.cfg.From)
@@ -379,19 +430,18 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getPendingVotesForValidatorByAccount ===", "account.Address", core.cfg.From)
+	log.Info("=== getPendingVotesForValidatorByAccount ===", "admin", core.cfg.From)
 	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
-
 func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getActiveVotesForValidatorByAccount ===", "account.Address", core.cfg.From)
+	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", core.cfg.From)
 	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
@@ -428,5 +478,117 @@ func getAccountTotalLockedGold(_ *cli.Context, core *listener) error {
 	core.waitUntilMsgHandled(1)
 	result := ret.(*big.Int)
 	log.Info("result", "lockedGold", result)
+	return nil
+}
+func getAccountNonvotingLockedGold(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	log.Info("=== getAccountNonvotingLockedGold ===", "admin", core.cfg.From, "target", core.cfg.TargetAddress.String())
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, LockedGoldAddress, nil, abiLockedGold, "getAccountNonvotingLockedGold", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret.(*big.Int)
+	log.Info("result", "lockedGold", result)
+	return nil
+}
+func getAccountLockedGoldRequirement(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	log.Info("=== getAccountLockedGoldRequirement ===", "admin", core.cfg.From, "target", core.cfg.TargetAddress.String())
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "getAccountLockedGoldRequirement", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret.(*big.Int)
+	log.Info("result", "GoldRequirement", result)
+	return nil
+}
+func getPendingWithdrawals(_ *cli.Context, core *listener) error {
+	type ret []interface{}
+	var Values interface{}
+	var Timestamps interface{}
+	t := ret{&Values, &Timestamps}
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	log.Info("=== getPendingWithdrawals ===", "admin", core.cfg.From, "target", core.cfg.TargetAddress.String())
+	f := func(output []byte) {
+		err := abiLockedGold.UnpackIntoInterface(&t, "getPendingWithdrawals", output)
+		if err != nil {
+			log.Error("getPendingWithdrawals", "err", err)
+		}
+	}
+	m := NewMessageRet2(SolveType4, core.msgCh, core.cfg, f, LockedGoldAddress, nil, abiLockedGold, "getPendingWithdrawals", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+
+	Values1 := (Values).([]*big.Int)
+	Timestamps1 := (Timestamps).([]*big.Int)
+	if len(Values1) == 0 {
+		log.Info("nil")
+		return nil
+	}
+	for i := 0; i < len(Values1); i++ {
+		log.Info("result:", "index", i, "values", Values1[i], "timestamps", Timestamps1[i])
+	}
+	return nil
+}
+
+//--------------------- locked Map ------------------------
+func lockedMAP(_ *cli.Context, core *listener) error {
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	log.Info("=== Lock  gold ===")
+	log.Info("Lock  gold", "amount", lockedGold.String())
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	m := NewMessage(SolveType2, core.msgCh, core.cfg, LockedGoldAddress, lockedGold, abiLockedGold, "lock")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func unlockedMAP(_ *cli.Context, core *listener) error {
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	log.Info("=== unLock validator gold ===")
+	log.Info("unLock validator gold", "amount", lockedGold, "admin", core.cfg.From)
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "unlock", lockedGold)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func relockMAP(_ *cli.Context, core *listener) error {
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	index := core.cfg.RelockIndex
+	log.Info("=== relockMAP validator gold ===")
+	log.Info("relockMAP validator gold", "amount", lockedGold)
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "relock", index, lockedGold)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func withdraw(_ *cli.Context, core *listener) error {
+	index := core.cfg.WithdrawIndex
+	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
+	abiLockedGold := core.cfg.LockedGoldParameters.LockedGoldABI
+	log.Info("=== withdraw validator gold ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, LockedGoldAddress, nil, abiLockedGold, "withdraw", index)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+//-------------------------- owner ------------------------
+func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
+	value := big.NewInt(int64(core.cfg.Value))
+	duration := big.NewInt(core.cfg.Duration)
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	log.Info("=== setValidatorLockedGoldRequirements ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "setValidatorLockedGoldRequirements", value, duration)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
 	return nil
 }

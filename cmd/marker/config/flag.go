@@ -50,6 +50,18 @@ var (
 		Name:  "lockedNum",
 		Usage: "lockedNum",
 	}
+	WithdrawIndexFlag = cli.Int64Flag{
+		Name:  "withdrawIndex",
+		Usage: "use for withdraw",
+	}
+	RelockIndexFlag = cli.Int64Flag{
+		Name:  "relockIndex",
+		Usage: "use for relock",
+	}
+	ValidatorIndexFlag = cli.Int64Flag{
+		Name:  "validatorIndex",
+		Usage: "use for revokePending or revokeActive",
+	}
 	VerbosityFlag = cli.Int64Flag{
 		Name:  "Verbosity",
 		Usage: "Verbosity of log level",
@@ -70,7 +82,11 @@ var (
 		Usage: "value units one eth",
 		Value: 0,
 	}
-
+	DurationFlag = cli.Int64Flag{
+		Name:  "duration",
+		Usage: "Duration",
+		Value: 0,
+	}
 	TargetAddressFlag = cli.StringFlag{
 		Name:  "target",
 		Usage: "Transfer address",

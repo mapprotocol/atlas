@@ -22,6 +22,7 @@ var (
 		config.RPCListenAddrFlag,
 		config.RPCPortFlag,
 		config.ValueFlag,
+		config.DurationFlag,
 		config.PasswordFlag,
 		config.CommissionFlag,
 		config.LesserFlag,
@@ -29,6 +30,9 @@ var (
 		config.VoteNumFlag,
 		config.TopNumFlag,
 		config.LockedNumFlag,
+		config.WithdrawIndexFlag,
+		config.RelockIndexFlag,
+		config.ValidatorIndexFlag,
 		config.TargetAddressFlag,
 	}
 
@@ -36,13 +40,15 @@ var (
 		Name:  "validator",
 		Usage: "validator commands",
 		Subcommands: []cli.Command{
+			registerValidatorCommand,
+
+			revokePendingCommand,
+			revokeActiveCommand,
 			createAccountCommand,
 			lockedMAPCommand,
-			registerValidatorCommand,
 			unlockedMAPCommand,
 			relockMAPCommand,
 			withdrawCommand,
-
 			queryTotalVotesForEligibleValidatorsCommand,
 			queryRegisteredValidatorSignersCommand,
 			queryNumRegisteredValidatorsCommand,
@@ -51,6 +57,10 @@ var (
 			getBalanceCommand,
 			getValidatorsVotedForByAccountCommand,
 			getAccountTotalLockedGoldCommand,
+			getAccountNonvotingLockedGoldCommand,
+			getAccountLockedGoldRequirementCommand,
+			getPendingWithdrawalsCommand,
+			setValidatorLockedGoldRequirementsCommand,
 		},
 		Flags: Flags,
 	}
@@ -59,12 +69,18 @@ var (
 		Usage: "voter commands",
 		Subcommands: []cli.Command{
 			voteValidatorCommand,
-
-			queryTotalVotesForEligibleValidatorsCommand,
 			activateCommand,
 			getPendingVotesForValidatorByAccountCommand,
 			getActiveVotesForValidatorByAccountCommand,
 
+			revokePendingCommand,
+			revokeActiveCommand,
+			createAccountCommand,
+			lockedMAPCommand,
+			unlockedMAPCommand,
+			relockMAPCommand,
+			withdrawCommand,
+			queryTotalVotesForEligibleValidatorsCommand,
 			queryRegisteredValidatorSignersCommand,
 			queryNumRegisteredValidatorsCommand,
 			queryTopValidatorsCommand,
@@ -72,6 +88,10 @@ var (
 			getBalanceCommand,
 			getValidatorsVotedForByAccountCommand,
 			getAccountTotalLockedGoldCommand,
+			getAccountNonvotingLockedGoldCommand,
+			getAccountLockedGoldRequirementCommand,
+			getPendingWithdrawalsCommand,
+			setValidatorLockedGoldRequirementsCommand,
 		},
 		Flags: Flags,
 	}

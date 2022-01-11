@@ -28,16 +28,16 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	}
 	gasLimit := uint64(3100000) // in units
 	//If the contract surely has code (or code is not needed), estimate the transaction
-	/*
-	   msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	   	gasLimit, err = client.EstimateGas(context.Background(), msg)
-	   	if err != nil {
-	   		logger.Error("Contract exec failed", "error", err)
-	   	}
-	   	if gasLimit < 1 {
-	   		//gasLimit = 866328
-	   		gasLimit = 2100000
-	   	}*/
+
+	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	gasLimit, err = client.EstimateGas(context.Background(), msg)
+	if err != nil {
+		logger.Error("Contract exec failed", "error", err)
+	}
+	if gasLimit < 1 {
+		//gasLimit = 866328
+		gasLimit = 2100000
+	}
 
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)

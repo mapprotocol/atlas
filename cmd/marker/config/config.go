@@ -42,13 +42,16 @@ type Config struct {
 	BlsPub               blscrypto.SerializedPublicKey
 	BLSProof             []byte
 	Value                uint64
+	Duration             int64
 	Commission           int64
 	Lesser               common.Address
 	Greater              common.Address
 	VoteNum              *big.Int
 	TopNum               *big.Int
 	LockedNum            *big.Int
-	Idx                  *big.Int
+	WithdrawIndex        *big.Int
+	RelockIndex          *big.Int
+	ValidatorIndex       *big.Int
 	TargetAddress        common.Address
 	ip                   string
 	port                 int
@@ -98,11 +101,23 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
 	}
+	if ctx.IsSet(DurationFlag.Name) {
+		config.Duration = ctx.Int64(DurationFlag.Name)
+	}
 	if ctx.IsSet(TopNumFlag.Name) {
 		config.TopNum = big.NewInt(ctx.Int64(TopNumFlag.Name))
 	}
 	if ctx.IsSet(LockedNumFlag.Name) {
 		config.LockedNum = big.NewInt(ctx.Int64(LockedNumFlag.Name))
+	}
+	if ctx.IsSet(WithdrawIndexFlag.Name) {
+		config.WithdrawIndex = big.NewInt(ctx.Int64(WithdrawIndexFlag.Name))
+	}
+	if ctx.IsSet(RelockIndexFlag.Name) {
+		config.RelockIndex = big.NewInt(ctx.Int64(RelockIndexFlag.Name))
+	}
+	if ctx.IsSet(ValidatorIndexFlag.Name) {
+		config.ValidatorIndex = big.NewInt(ctx.Int64(ValidatorIndexFlag.Name))
 	}
 	if ctx.IsSet(VerbosityFlag.Name) {
 		config.Verbosity = ctx.String(VerbosityFlag.Name)
