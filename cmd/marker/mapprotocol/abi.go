@@ -4087,7 +4087,7 @@ func init() {
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ]`) // EpochRewards ABI
+  ]`) // Election ABI
 	abis["EpochRewards"] = mustParseABI(`[
     {
       "inputs": [
@@ -4900,7 +4900,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Escrow ABI
+  ]`) // EpochRewards ABI
 	abis["LockedGold"] = mustParseABI(`[
     {
       "inputs": [

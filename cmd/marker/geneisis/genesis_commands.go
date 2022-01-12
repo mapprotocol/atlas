@@ -77,7 +77,11 @@ func readBuildPath(ctx *cli.Context) (string, error) {
 	}
 	return buildpath, nil
 }
-
+func init() {
+	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
+	glogger.Verbosity(log.LvlInfo)
+	log.Root().SetHandler(glogger)
+}
 func envFromTemplate(ctx *cli.Context, workdir string) (*env.Environment, *genesis.Config, error) {
 	templateString := ctx.String("template")
 	template := templateFromString(templateString)
