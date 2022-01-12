@@ -41,6 +41,7 @@ var (
 		Usage: "validator commands",
 		Subcommands: []cli.Command{
 			registerValidatorCommand,
+			deregisterValidatorCommand,
 
 			revokePendingCommand,
 			revokeActiveCommand,
@@ -150,7 +151,8 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 		return hdl(ctx, core)
 	}
 }
-func startLogger(ctx *cli.Context, config *config.Config) error {
+
+func startLogger(_ *cli.Context, config *config.Config) error {
 	logger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
 	var lvl log.Lvl
 	if lvlToInt, err := strconv.Atoi(config.Verbosity); err == nil {
@@ -160,6 +162,5 @@ func startLogger(ctx *cli.Context, config *config.Config) error {
 	}
 	logger.Verbosity(lvl)
 	log.Root().SetHandler(log.LvlFilterHandler(lvl, logger))
-
 	return nil
 }

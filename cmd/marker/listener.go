@@ -48,6 +48,12 @@ var registerValidatorCommand = cli.Command{
 	Action: MigrateFlags(registerValidator),
 	Flags:  Flags,
 }
+var deregisterValidatorCommand = cli.Command{
+	Name:   "deregisterValidator",
+	Usage:  "deregister Validator",
+	Action: MigrateFlags(deregisterValidator),
+	Flags:  Flags,
+}
 var createAccountCommand = cli.Command{
 	Name:   "createAccount",
 	Usage:  "creat validator account",
@@ -235,7 +241,17 @@ func createAccount(core *listener, namePrefix string) {
 	core.waitUntilMsgHandled(1)
 
 }
-
+func deregisterValidator(ctx *cli.Context, core *listener) error {
+	//----------------------------- deregisterValidator ---------------------------------
+	log.Info("=== deregisterValidator ===")
+	index:= core.cfg.ValidatorIndex
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator", index)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
 //---------- voter -----------------
 func vote(_ *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
@@ -355,7 +371,6 @@ func getTopValidators(_ *cli.Context, core *listener) error {
 	}
 	return nil
 }
-
 /*
 * @notice Returns lists of all validator validators and the number of votes they've received.
 * @return Lists of all  validators and the number of votes they've received.

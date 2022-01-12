@@ -427,7 +427,9 @@ func (ctx *deployContext) voteForValidators() error {
 		if err := election.SimpleCallFrom(voter.Address, "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
 			return err
 		}
-
+		//if err := election.SimpleCallFrom(voter.Address, "activate", validatorAddress); err != nil {
+		//	return err
+		//}
 		// we now become the currentLeader
 		currentLeader = voter.Address
 	}
@@ -572,16 +574,32 @@ func (ctx *deployContext) verifyState() error {
 	}
 	fmt.Println(*totalPayment)*/
 
-	//lock
-	//_,err := ctx.contract("LockedGold").Call(contract.CallOpts{Origin: common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), Value: big.NewInt(1000)}, "lock")
+	/*	//lock
+		_,err := ctx.contract("LockedGold").Call(contract.CallOpts{Origin: common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), Value: big.NewInt(1000)}, "lock")
+		if err != nil {
+			return err
+		}
+		//unlock
+		err = ctx.contract("LockedGold").SimpleCallFrom(common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), "unlock", big.NewInt(100))
+		if err != nil {
+			return err
+		}
+	*/
+	//distributeEpochPaymentsFromSigner
+	//err := ctx.contract("Validators").SimpleCallFrom(common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), "distributeEpochPaymentsFromSigner", common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), big.NewInt(100), big.NewInt(100))
 	//if err != nil {
 	//	return err
 	//}
-	////unlock
-	//err = ctx.contract("LockedGold").SimpleCallFrom(common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), "unlock", big.NewInt(100))
-	//if err != nil {
+	//
+	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//voterAddr := common.HexToAddress("0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af")
+	//
+	//totalPayment := new(*big.Int)
+	//if _, err := ctx.contract("Election").Query(totalPayment, "getActiveVotesForValidator", validatorAddr,voterAddr); err != nil {
+	//	fmt.Println("err:", err)
 	//	return err
 	//}
+	//fmt.Println("=== totalPayment ===", totalPayment)
 
 	return nil
 }
