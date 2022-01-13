@@ -21,7 +21,7 @@ type listener struct {
 }
 
 func NewListener(ctx *cli.Context, config *config.Config) *listener {
-	conn, _ := connections.DialConn(ctx)
+	conn, _ := connections.DialConn(ctx, config)
 	return &listener{
 		cfg:   config,
 		conn:  conn,
