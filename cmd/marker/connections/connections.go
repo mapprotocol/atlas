@@ -6,12 +6,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/cmd/marker/config"
 )
 
-func DialConn(ctx *cli.Context) (*ethclient.Client, string) {
+func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, string) {
 	logger := log.New("func", "dialConn")
-	ip := ctx.GlobalString("rpcaddr") //utils.RPCListenAddrFlag.Name)
-	port := ctx.GlobalInt("rpcport")  //utils.RPCPortFlag.Name)
+	ip := config.Ip     //utils.RPCListenAddrFlag.Name)
+	port := config.Port //utils.RPCPortFlag.Name)
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	conn, err := ethclient.Dial(url)
 	if err != nil {

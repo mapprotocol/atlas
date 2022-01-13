@@ -14,7 +14,7 @@ type writer struct {
 }
 
 func NewWriter(ctx *cli.Context, config *config.Config) *writer {
-	conn, _ := connections.DialConn(ctx)
+	conn, _ := connections.DialConn(ctx, config)
 	return &writer{
 		config: config,
 		conn:   conn,

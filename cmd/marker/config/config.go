@@ -53,8 +53,8 @@ type Config struct {
 	RelockIndex          *big.Int
 	ValidatorIndex       *big.Int
 	TargetAddress        common.Address
-	ip                   string
-	port                 int
+	Ip                   string
+	Port                 int
 	Verbosity            string
 	NamePrefix           string
 	LockedGoldParameters LockedGoldParameters
@@ -128,10 +128,10 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 		config.NamePrefix = ctx.String(NamePrefixFlag.Name)
 	}
 	if ctx.IsSet(RPCListenAddrFlag.Name) {
-		config.ip = ctx.String(RPCListenAddrFlag.Name)
+		config.Ip = ctx.String(RPCListenAddrFlag.Name)
 	}
 	if ctx.IsSet(RPCPortFlag.Name) {
-		config.port = ctx.Int(RPCPortFlag.Name)
+		config.Port = ctx.Int(RPCPortFlag.Name)
 	}
 
 	account := account.LoadAccount(path, password)
