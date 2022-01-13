@@ -56,6 +56,7 @@ type Config struct {
 	ip                   string
 	port                 int
 	Verbosity            string
+	NamePrefix           string
 	LockedGoldParameters LockedGoldParameters
 	AccountsParameters   AccountsParameters
 	ValidatorParameters  ValidatorParameters
@@ -74,6 +75,7 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config.TargetAddress = params.ZeroAddress
 	config.Commission = 80
 	config.Verbosity = "3"
+	config.NamePrefix = "validator"
 	//-----------------------------------------------------
 
 	if ctx.IsSet(KeyStoreFlag.Name) {
@@ -122,6 +124,16 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	if ctx.IsSet(VerbosityFlag.Name) {
 		config.Verbosity = ctx.String(VerbosityFlag.Name)
 	}
+	if ctx.IsSet(NamePrefixFlag.Name) {
+		config.NamePrefix = ctx.String(NamePrefixFlag.Name)
+	}
+	if ctx.IsSet(RPCListenAddrFlag.Name) {
+		config.ip = ctx.String(RPCListenAddrFlag.Name)
+	}
+	if ctx.IsSet(RPCPortFlag.Name) {
+		config.port = ctx.Int(RPCPortFlag.Name)
+	}
+
 	account := account.LoadAccount(path, password)
 	blsPub, err := account.BLSPublicKey()
 	if err != nil {
