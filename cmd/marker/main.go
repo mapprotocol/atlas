@@ -26,6 +26,7 @@ var (
 		config.PasswordFlag,
 		config.CommissionFlag,
 		config.LesserFlag,
+		config.NamePrefixFlag,
 		config.GreaterFlag,
 		config.VoteNumFlag,
 		config.TopNumFlag,
@@ -45,7 +46,7 @@ var (
 
 			revokePendingCommand,
 			revokeActiveCommand,
-			createAccountCommand,
+			createAccountCommand, //1
 			lockedMAPCommand,
 			unlockedMAPCommand,
 			relockMAPCommand,

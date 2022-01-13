@@ -22,7 +22,7 @@ var (
 
 	NamePrefixFlag = cli.StringFlag{
 		Name:  "namePrefix",
-		Usage: "Keystore file`s password",
+		Usage: "namePrefix",
 	}
 	CommissionFlag = cli.Int64Flag{
 		Name:  "commission",
@@ -48,7 +48,7 @@ var (
 	}
 	LockedNumFlag = cli.Int64Flag{
 		Name:  "lockedNum",
-		Usage: "lockedNum",
+		Usage: "The amount of map to lock 、unlock、relock、withdraw ",
 	}
 	WithdrawIndexFlag = cli.Int64Flag{
 		Name:  "withdrawIndex",
@@ -84,7 +84,7 @@ var (
 	}
 	DurationFlag = cli.Int64Flag{
 		Name:  "duration",
-		Usage: "Duration",
+		Usage: "duration The time (in seconds) that these requirements persist for.",
 		Value: 0,
 	}
 	TargetAddressFlag = cli.StringFlag{
