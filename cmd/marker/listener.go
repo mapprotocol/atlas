@@ -201,10 +201,10 @@ var setValidatorLockedGoldRequirementsCommand = cli.Command{
 
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
-	////---------------------------- create account ----------------------------------
-	//createAccount(core, "validator")
-	////---------------------------- lock ----------------------------------
-	//lockedMAP(ctx, core)
+	//---------------------------- create account ----------------------------------
+	createAccount(core, "validator")
+	//---------------------------- lock ----------------------------------
+	lockedMAP(ctx, core)
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
 	_params := []interface{}{big.NewInt(core.cfg.Commission), core.cfg.Lesser, core.cfg.Greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}

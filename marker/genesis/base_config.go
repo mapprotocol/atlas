@@ -27,7 +27,8 @@ func BaseConfig() *Config {
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
 				Value: bigIntStr("10000000000000000000000"), // 10k Map 10000
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
-				Duration: 60 * Day,
+				//Duration: 60 * Day,
+				Duration: 1, //todo zhangwei
 			},
 			ValidatorScoreExponent:        10,
 			ValidatorScoreAdjustmentSpeed: fixed("0.1"),
@@ -48,8 +49,8 @@ func BaseConfig() *Config {
 		},
 
 		EpochRewards: EpochRewardsParameters{
-			MaxValidatorEpochPayment: bigIntStr("40000000000000000000000"), //40K map
-			CommunityRewardFraction:  fixed("0.1"),
+			MaxValidatorEpochPayment: bigIntStr("160000000000000000000000"), //160K map
+			CommunityRewardFraction:  fixed("0.5"),
 			CommunityPartner:         common.Address{},
 		},
 		LockedGold: LockedGoldParameters{
