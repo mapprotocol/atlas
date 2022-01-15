@@ -36,67 +36,6 @@ var (
 		config.ValidatorIndexFlag,
 		config.TargetAddressFlag,
 	}
-
-	validatorCommand = cli.Command{
-		Name:  "validator",
-		Usage: "validator commands",
-		Subcommands: []cli.Command{
-			registerValidatorCommand,
-			deregisterValidatorCommand,
-
-			revokePendingCommand,
-			revokeActiveCommand,
-			createAccountCommand, //1
-			lockedMAPCommand,
-			unlockedMAPCommand,
-			relockMAPCommand,
-			withdrawCommand,
-			queryTotalVotesForEligibleValidatorsCommand,
-			queryRegisteredValidatorSignersCommand,
-			queryNumRegisteredValidatorsCommand,
-			queryTopValidatorsCommand,
-			queryValidatorEligibilityCommand,
-			getBalanceCommand,
-			getValidatorsVotedForByAccountCommand,
-			getAccountTotalLockedGoldCommand,
-			getAccountNonvotingLockedGoldCommand,
-			getAccountLockedGoldRequirementCommand,
-			getPendingWithdrawalsCommand,
-			setValidatorLockedGoldRequirementsCommand,
-		},
-		Flags: Flags,
-	}
-	voterCommand = cli.Command{
-		Name:  "voter",
-		Usage: "voter commands",
-		Subcommands: []cli.Command{
-			voteValidatorCommand,
-			activateCommand,
-			getPendingVotesForValidatorByAccountCommand,
-			getActiveVotesForValidatorByAccountCommand,
-
-			revokePendingCommand,
-			revokeActiveCommand,
-			createAccountCommand,
-			lockedMAPCommand,
-			unlockedMAPCommand,
-			relockMAPCommand,
-			withdrawCommand,
-			queryTotalVotesForEligibleValidatorsCommand,
-			queryRegisteredValidatorSignersCommand,
-			queryNumRegisteredValidatorsCommand,
-			queryTopValidatorsCommand,
-			queryValidatorEligibilityCommand,
-			getBalanceCommand,
-			getValidatorsVotedForByAccountCommand,
-			getAccountTotalLockedGoldCommand,
-			getAccountNonvotingLockedGoldCommand,
-			getAccountLockedGoldRequirementCommand,
-			getPendingWithdrawalsCommand,
-			setValidatorLockedGoldRequirementsCommand,
-		},
-		Flags: Flags,
-	}
 )
 
 func init() {
@@ -112,8 +51,37 @@ func init() {
 	}
 	// Add subcommands.
 	app.Commands = []cli.Command{
-		validatorCommand,
-		voterCommand,
+		//------ validator -----
+		registerValidatorCommand,
+		deregisterValidatorCommand,
+
+		//------ voter -----
+		voteValidatorCommand,
+		activateCommand,
+		getPendingVotesForValidatorByAccountCommand,
+		getActiveVotesForValidatorByAccountCommand,
+
+		revokePendingCommand,
+		revokeActiveCommand,
+		createAccountCommand,
+		lockedMAPCommand,
+		unlockedMAPCommand,
+		relockMAPCommand,
+		withdrawCommand,
+		queryTotalVotesForEligibleValidatorsCommand,
+		queryRegisteredValidatorSignersCommand,
+		queryNumRegisteredValidatorsCommand,
+		queryTopValidatorsCommand,
+		queryValidatorEligibilityCommand,
+		getBalanceCommand,
+		getValidatorsVotedForByAccountCommand,
+		getAccountTotalLockedGoldCommand,
+		getAccountNonvotingLockedGoldCommand,
+		getAccountLockedGoldRequirementCommand,
+		getPendingWithdrawalsCommand,
+		setValidatorLockedGoldRequirementsCommand,
+
+		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 	}
 	app.Flags = Flags

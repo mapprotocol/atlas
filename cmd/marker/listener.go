@@ -51,7 +51,7 @@ var registerValidatorCommand = cli.Command{
 	Flags:  Flags,
 }
 var deregisterValidatorCommand = cli.Command{
-	Name:   "deregisterValidator",
+	Name:   "deregister",
 	Usage:  "deregister Validator",
 	Action: MigrateFlags(deregisterValidator),
 	Flags:  Flags,
