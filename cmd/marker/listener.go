@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/cmd/marker/config"
 	"github.com/mapprotocol/atlas/cmd/marker/connections"
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
 )
@@ -207,7 +209,9 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	//lockedMAP(ctx, core)
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	_params := []interface{}{big.NewInt(core.cfg.Commission), core.cfg.Lesser, core.cfg.Greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
+	commision := fixed.MustNew(core.cfg.Commission).BigInt()
+	fmt.Println("=== commision ===", commision)
+	_params := []interface{}{commision, core.cfg.Lesser, core.cfg.Greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveType1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)

@@ -24,7 +24,7 @@ var (
 		Name:  "namePrefix",
 		Usage: "namePrefix",
 	}
-	CommissionFlag = cli.Int64Flag{
+	CommissionFlag = cli.StringFlag{
 		Name:  "commission",
 		Usage: "register validator param",
 	}

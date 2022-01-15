@@ -43,7 +43,7 @@ type Config struct {
 	BLSProof             []byte
 	Value                uint64
 	Duration             int64
-	Commission           int64
+	Commission           string
 	Lesser               common.Address
 	Greater              common.Address
 	VoteNum              *big.Int
@@ -73,7 +73,7 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config.Lesser = params.ZeroAddress
 	config.Greater = params.ZeroAddress
 	config.TargetAddress = params.ZeroAddress
-	config.Commission = 80
+	config.Commission = "0.1"
 	config.Verbosity = "3"
 	config.NamePrefix = "validator"
 	//-----------------------------------------------------
@@ -86,7 +86,7 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	}
 
 	if ctx.IsSet(CommissionFlag.Name) {
-		config.Commission = ctx.Int64(CommissionFlag.Name)
+		config.Commission = ctx.String(CommissionFlag.Name)
 	}
 	if ctx.IsSet(LesserFlag.Name) {
 		config.Lesser = common.HexToAddress(ctx.String(LesserFlag.Name))
