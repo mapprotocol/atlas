@@ -50,6 +50,12 @@ var registerValidatorCommand = cli.Command{
 	Action: MigrateFlags(registerValidator),
 	Flags:  Flags,
 }
+var quicklyRegisterValidatorCommand = cli.Command{
+	Name:   "quicklyRegister",
+	Usage:  "register validator",
+	Action: MigrateFlags(quicklyRegisterValidator),
+	Flags:  Flags,
+}
 var deregisterValidatorCommand = cli.Command{
 	Name:   "deregister",
 	Usage:  "deregister Validator",
@@ -92,6 +98,12 @@ var voteValidatorCommand = cli.Command{
 	Name:   "vote",
 	Usage:  "vote validator ",
 	Action: MigrateFlags(vote),
+	Flags:  Flags,
+}
+var quicklyVoteValidatorCommand = cli.Command{
+	Name:   "quicklyVote",
+	Usage:  "vote validator ",
+	Action: MigrateFlags(quicklyVote),
 	Flags:  Flags,
 }
 var activateCommand = cli.Command{
@@ -220,6 +232,24 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	return nil
 }
 
+func quicklyRegisterValidator(ctx *cli.Context, core *listener) error {
+	//---------------------------- create account ----------------------------------
+	createAccount(core, "validator")
+	//---------------------------- lock ----------------------------------
+	lockedMAP(ctx, core)
+	//----------------------------- registerValidator ---------------------------------
+	log.Info("=== Register validator ===")
+	commision := fixed.MustNew(core.cfg.Commission).BigInt()
+	//fmt.Println("=== commision ===", commision)
+	_params := []interface{}{commision, core.cfg.Lesser, core.cfg.Greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
 func createAccount1(_ *cli.Context, core *listener) error {
 	createAccount(core, core.cfg.NamePrefix)
 	return nil
@@ -247,7 +277,7 @@ func createAccount(core *listener, namePrefix string) {
 	core.waitUntilMsgHandled(1)
 }
 
-func deregisterValidator(ctx *cli.Context, core *listener) error {
+func deregisterValidator(_ *cli.Context, core *listener) error {
 	//----------------------------- deregisterValidator ---------------------------------
 	log.Info("=== deregisterValidator ===")
 	index := core.cfg.ValidatorIndex
@@ -260,7 +290,23 @@ func deregisterValidator(ctx *cli.Context, core *listener) error {
 }
 
 //---------- voter -----------------
-func vote(_ *cli.Context, core *listener) error {
+func vote(ctx *cli.Context, core *listener) error {
+	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElections := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== vote Validator ===")
+	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
+	m := NewMessage(SolveType1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "vote", core.cfg.TargetAddress, amount, core.cfg.Lesser, core.cfg.Greater)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func quicklyVote(ctx *cli.Context, core *listener) error {
+	//---------------------------- create account ----------------------------------
+	createAccount(core, "validator")
+	//---------------------------- lock ----------------------------------
+	lockedMAP(ctx, core)
+
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== vote Validator ===")

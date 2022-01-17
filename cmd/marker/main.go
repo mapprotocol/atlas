@@ -35,6 +35,7 @@ var (
 		config.RelockIndexFlag,
 		config.ValidatorIndexFlag,
 		config.TargetAddressFlag,
+		config.GasLimitFlag,
 	}
 )
 
@@ -53,10 +54,12 @@ func init() {
 	app.Commands = []cli.Command{
 		//------ validator -----
 		registerValidatorCommand,
+		quicklyRegisterValidatorCommand,
 		deregisterValidatorCommand,
 
 		//------ voter -----
 		voteValidatorCommand,
+		quicklyVoteValidatorCommand,
 		activateCommand,
 		getPendingVotesForValidatorByAccountCommand,
 		getActiveVotesForValidatorByAccountCommand,

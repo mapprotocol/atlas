@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
+func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte, gasLimitSeting uint64) common.Hash {
 	// Ensure a valid value field and resolve the account nonce
 	logger := log.New("func", "sendContractTransaction")
 	nonce, err := client.PendingNonceAt(context.Background(), from)
@@ -27,9 +27,10 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 		log.Error("SuggestGasPrice", "error", err)
 	}
 	gasLimit := uint64(3100000) // in units
+
 	//If the contract surely has code (or code is not needed), estimate the transaction
 
-	/*msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
 	gasLimit, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
 		logger.Error("Contract exec failed", "error", err)
@@ -37,7 +38,10 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	if gasLimit < 1 {
 		//gasLimit = 866328
 		gasLimit = 2100000
-	}*/
+	}
+	if gasLimitSeting != 0 {
+		gasLimit = gasLimitSeting // in units
+	}
 
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
