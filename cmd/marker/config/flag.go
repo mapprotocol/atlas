@@ -92,4 +92,9 @@ var (
 		Usage: "Transfer address",
 		Value: "",
 	}
+	GasLimitFlag = cli.Int64Flag{
+		Name:  "gasLimit",
+		Usage: "use for sendContractTransaction gasLimit",
+		Value: 0,
+	}
 )

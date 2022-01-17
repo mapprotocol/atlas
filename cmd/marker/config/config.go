@@ -55,6 +55,7 @@ type Config struct {
 	TargetAddress        common.Address
 	Ip                   string
 	Port                 int
+	GasLimit             int64
 	Verbosity            string
 	NamePrefix           string
 	LockedGoldParameters LockedGoldParameters
@@ -133,7 +134,9 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	if ctx.IsSet(RPCPortFlag.Name) {
 		config.Port = ctx.Int(RPCPortFlag.Name)
 	}
-
+	if ctx.IsSet(GasLimitFlag.Name) {
+		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
+	}
 	account := account.LoadAccount(path, password)
 	blsPub, err := account.BLSPublicKey()
 	if err != nil {

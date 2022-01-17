@@ -28,6 +28,7 @@ type Message struct {
 	DoneCh      chan<- struct{}
 	ret         interface{}
 	solveResult func([]byte)
+	gasLimit    uint64
 }
 
 func NewMessage(messageType string, ch chan<- struct{}, cfg *config.Config, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
@@ -41,6 +42,7 @@ func NewMessage(messageType string, ch chan<- struct{}, cfg *config.Config, to c
 		abiMethod:   abiMethod,
 		input:       mapprotocol.PackInput(abi, abiMethod, params...),
 		DoneCh:      ch,
+		gasLimit:    uint64(cfg.GasLimit),
 	}
 }
 
@@ -57,6 +59,7 @@ func NewMessageRet1(messageType string, ch chan<- struct{}, cfg *config.Config, 
 		input:       mapprotocol.PackInput(abi, abiMethod, params...),
 		DoneCh:      ch,
 		ret:         ret,
+		gasLimit:    uint64(cfg.GasLimit),
 	}
 }
 
@@ -73,5 +76,6 @@ func NewMessageRet2(messageType string, ch chan<- struct{}, cfg *config.Config, 
 		input:       mapprotocol.PackInput(abi, abiMethod, params...),
 		DoneCh:      ch,
 		solveResult: solveResult,
+		gasLimit:    uint64(cfg.GasLimit),
 	}
 }
