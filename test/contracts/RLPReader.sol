@@ -4,7 +4,8 @@
 * @author Hamdi Allam hamdi.allam97@gmail.com
 * Please reach out with any questions or concerns
 */
-pragma solidity ^0.8.7;
+pragma solidity >=0.7.1;
+
 
 library RLPReader {
     uint8 constant STRING_SHORT_START = 0x80;
@@ -111,7 +112,7 @@ library RLPReader {
         uint dataLen;
         for (uint i = 0; i < items; i++) {
             dataLen = _itemLength(memPtr);
-            result[i] = RLPItem(dataLen, memPtr); 
+            result[i] = RLPItem(dataLen, memPtr);
             memPtr = memPtr + dataLen;
         }
 
@@ -166,7 +167,7 @@ library RLPReader {
     function toRlpBytes(RLPItem memory item) internal pure returns (bytes memory) {
         bytes memory result = new bytes(item.len);
         if (result.length == 0) return result;
-        
+
         uint ptr;
         assembly {
             ptr := add(0x20, result)
@@ -196,12 +197,12 @@ library RLPReader {
         }
     }
 
-    //function toAddress(RLPItem memory item) internal pure returns (address) {
+    function toAddress(RLPItem memory item) internal pure returns (address) {
         // 1 byte for the length prefix
-        //require(item.len == 21);
+        require(item.len == 21);
 
-        //return address(toUint(item));
-    //}
+        return address(uint160(toUint(item)));
+    }
 
     function toUint(RLPItem memory item) internal pure returns (uint) {
         require(item.len > 0 && item.len <= 33);
@@ -279,7 +280,7 @@ library RLPReader {
 
         if (byte0 < STRING_SHORT_START)
             itemLen = 1;
-        
+
         else if (byte0 < STRING_LONG_START)
             itemLen = byte0 - STRING_SHORT_START + 1;
 
@@ -287,7 +288,7 @@ library RLPReader {
             assembly {
                 let byteLen := sub(byte0, 0xb7) // # of bytes the actual length is
                 memPtr := add(memPtr, 1) // skip over the first byte
-                
+
                 /* 32 byte word size */
                 let dataLen := div(mload(memPtr), exp(256, sub(32, byteLen))) // right shifting to get the len
                 itemLen := add(dataLen, add(byteLen, 1))
@@ -296,7 +297,7 @@ library RLPReader {
 
         else if (byte0 < LIST_LONG_START) {
             itemLen = byte0 - LIST_SHORT_START + 1;
-        } 
+        }
 
         else {
             assembly {
@@ -318,7 +319,7 @@ library RLPReader {
             byte0 := byte(0, mload(memPtr))
         }
 
-        if (byte0 < STRING_SHORT_START) 
+        if (byte0 < STRING_SHORT_START)
             return 0;
         else if (byte0 < STRING_LONG_START || (byte0 >= LIST_SHORT_START && byte0 < LIST_LONG_START))
             return 1;
