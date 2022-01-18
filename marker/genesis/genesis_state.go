@@ -419,10 +419,8 @@ func (ctx *deployContext) voteForValidators() error {
 
 	// first to vote is validator 0, which is already the leader. Hence lesser should go to validator 1
 	currentLeader := ValidatorsAT[1].Address
-	for i, voter := range ValidatorsAT {
-		if i < 1 {
-			continue
-		}
+	for _, voter := range ValidatorsAT {
+		validatorAddress = voter.Address
 		ctx.logger.Info("Vote for validator", "voter", voter.Address, "validator", validatorAddress, "amount", lockedGoldOnValidator)
 		if err := election.SimpleCallFrom(voter.Address, "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
 			return err
@@ -600,6 +598,19 @@ func (ctx *deployContext) verifyState() error {
 	//	return err
 	//}
 	//fmt.Println("=== totalPayment ===", totalPayment)
+
+	totalPayment := new(*big.Int)
+	if _, err := ctx.contract("Election").Query(totalPayment, "getTotalVotes"); err != nil {
+		fmt.Println("err:", err)
+		return err
+	}
+	fmt.Println("=== totalPayment ===", totalPayment)
+
+	out := new([]common.Address)
+	if _, err := ctx.contract("Election").Query(out, "electNValidatorSigners", big.NewInt(2), big.NewInt(110)); err != nil {
+		return err
+	}
+	fmt.Println(out)
 
 	return nil
 }

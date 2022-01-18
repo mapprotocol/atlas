@@ -45,7 +45,7 @@ func BaseConfig() *Config {
 			MinElectableValidators: 1,
 			MaxElectableValidators: 100,
 			MaxVotesPerAccount:     bigInt(10),
-			ElectabilityThreshold:  fixed("0"),
+			ElectabilityThreshold:  fixed("0.001"),
 		},
 
 		EpochRewards: EpochRewardsParameters{
