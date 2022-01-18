@@ -187,6 +187,12 @@ var getValidatorsVotedForByAccountCommand = cli.Command{
 	Action: MigrateFlags(getValidatorsVotedForByAccount),
 	Flags:  Flags,
 }
+var getTotalVotesCommand = cli.Command{
+	Name:   "getTotalVotes",
+	Usage:  "Returns the total votes received across all validators.",
+	Action: MigrateFlags(getTotalVotes),
+	Flags:  Flags,
+}
 var getAccountTotalLockedGoldCommand = cli.Command{
 	Name:   "getAccountTotalLockedGold",
 	Usage:  "Returns the total amount of locked gold for an account.",
@@ -596,6 +602,20 @@ func getAccountLockedGoldRequirement(_ *cli.Context, core *listener) error {
 	log.Info("result", "GoldRequirement", result)
 	return nil
 }
+
+func getTotalVotes(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	log.Info("=== getAccountLockedGoldRequirement ===", "admin", core.cfg.From)
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	m := NewMessageRet1(SolveType3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getTotalVotes")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret.(*big.Int)
+	log.Info("result", "getTotalVotes", result)
+	return nil
+}
+
 func getPendingWithdrawals(_ *cli.Context, core *listener) error {
 	type ret []interface{}
 	var Values interface{}

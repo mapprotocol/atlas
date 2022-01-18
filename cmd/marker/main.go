@@ -75,6 +75,7 @@ func init() {
 		queryValidatorEligibilityCommand,
 		getBalanceCommand,
 		getValidatorsVotedForByAccountCommand,
+		getTotalVotesCommand,
 		getAccountTotalLockedGoldCommand,
 		getAccountNonvotingLockedGoldCommand,
 		getAccountLockedGoldRequirementCommand,
