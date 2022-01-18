@@ -36,22 +36,21 @@ type GoldTokenParameters struct {
 }
 
 type Config struct {
-	From                 common.Address
-	PublicKey            []byte
-	PrivateKey           *ecdsa.PrivateKey
-	BlsPub               blscrypto.SerializedPublicKey
-	BLSProof             []byte
-	Value                uint64
-	Duration             int64
-	Commission           string
-	Lesser               common.Address
-	Greater              common.Address
-	VoteNum              *big.Int
-	TopNum               *big.Int
-	LockedNum            *big.Int
-	WithdrawIndex        *big.Int
-	RelockIndex          *big.Int
-	ValidatorIndex       *big.Int
+	From       common.Address
+	PublicKey  []byte
+	PrivateKey *ecdsa.PrivateKey
+	BlsPub     blscrypto.SerializedPublicKey
+	BLSProof   []byte
+	Value      uint64
+	Duration   int64
+	Commission string
+
+	VoteNum       *big.Int
+	TopNum        *big.Int
+	LockedNum     *big.Int
+	WithdrawIndex *big.Int
+	RelockIndex   *big.Int
+
 	TargetAddress        common.Address
 	Ip                   string
 	Port                 int
@@ -69,31 +68,21 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config := Config{}
 	//------------------ pre set --------------------------
 	path := ""
-	password := ""
-	config.VoteNum = big.NewInt(int64(100))
-	config.Lesser = params.ZeroAddress
-	config.Greater = params.ZeroAddress
+	password := "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	config.VoteNum = big.NewInt(int64(0))
 	config.TargetAddress = params.ZeroAddress
 	config.Commission = "0.1"
 	config.Verbosity = "3"
 	config.NamePrefix = "validator"
 	//-----------------------------------------------------
-
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.String(KeyStoreFlag.Name)
 	}
 	if ctx.IsSet(PasswordFlag.Name) {
 		password = ctx.String(PasswordFlag.Name)
 	}
-
 	if ctx.IsSet(CommissionFlag.Name) {
 		config.Commission = ctx.String(CommissionFlag.Name)
-	}
-	if ctx.IsSet(LesserFlag.Name) {
-		config.Lesser = common.HexToAddress(ctx.String(LesserFlag.Name))
-	}
-	if ctx.IsSet(GreaterFlag.Name) {
-		config.Greater = common.HexToAddress(ctx.String(GreaterFlag.Name))
 	}
 	if ctx.IsSet(VoteNumFlag.Name) {
 		config.VoteNum = big.NewInt(ctx.Int64(VoteNumFlag.Name))
@@ -118,9 +107,6 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	}
 	if ctx.IsSet(RelockIndexFlag.Name) {
 		config.RelockIndex = big.NewInt(ctx.Int64(RelockIndexFlag.Name))
-	}
-	if ctx.IsSet(ValidatorIndexFlag.Name) {
-		config.ValidatorIndex = big.NewInt(ctx.Int64(ValidatorIndexFlag.Name))
 	}
 	if ctx.IsSet(VerbosityFlag.Name) {
 		config.Verbosity = ctx.String(VerbosityFlag.Name)

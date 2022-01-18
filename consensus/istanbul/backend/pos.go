@@ -116,7 +116,8 @@ func (sb *Backend) updateValidatorScores(header *types.Header, state *state.Stat
 		logger.Trace("Updating validator score", "uptime", uptimes[i], "address", val.Address())
 		uptimeRet, err := validators.UpdateValidatorScore(vmRunner, val.Address(), uptimes[i])
 		if err != nil {
-			return nil, err
+			sb.logger.Error("Error in updateValidatorScores to validator", "address", val.Address(), "err", err)
+			continue
 		}
 		uptimes[i] = uptimeRet
 		logger.Trace("Updating validator score ret", "uptime", uptimes[i], "address", val.Address())
@@ -155,7 +156,6 @@ func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) 
 		}
 		genesisSupply := new(big.Int)
 		genesisSupply.SetBytes(data)
-
 		err = gold_token.IncreaseSupply(vmRunner, genesisSupply)
 		if err != nil {
 			return err
@@ -171,15 +171,17 @@ func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) 
    @return (N*p+s1+s2+s3...)
 */
 func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptimes []*big.Int) (*big.Int, error) {
-	sum := big.NewInt(0)
-	for _, v := range uptimes {
-		sum.Add(sum, v)
-	}
 	PledgeMultiplier, err := validators.GetPledgeMultiplierInReward(vmRunner)
 	if err != nil {
 		return nil, err
 	}
-	l := int64(len(uptimes))
-	sum.Add(sum, PledgeMultiplier.Mul(PledgeMultiplier, big.NewInt(l)))
+	sum := big.NewInt(0)
+	for _, v := range uptimes {
+		sum.Add(sum, v)
+		if v.CmpAbs(big.NewInt(0)) == 0 {
+			continue
+		}
+		sum.Add(sum, PledgeMultiplier)
+	}
 	return sum, nil
 }

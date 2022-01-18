@@ -24,5 +24,6 @@ func Test_makeRegistryId(t *testing.T) {
 }
 func Test_fixed(t *testing.T) {
 	fixed := fixed.MustNew
-	fmt.Println(fixed("1").BigInt()) // 10000 00000 00000 00000 00000  24
+	fmt.Println(fixed("1").BigInt())                    // 10000 00000 00000 00000 00000  24
+	fmt.Println(common.HexToAddress("0xd012").String()) // ValidatorsProxy
 }

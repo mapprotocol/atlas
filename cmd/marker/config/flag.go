@@ -28,16 +28,7 @@ var (
 		Name:  "commission",
 		Usage: "register validator param",
 	}
-	LesserFlag = cli.StringFlag{
-		Name: "lesser",
-		Usage: "The validator receiving fewer votes than the validator for which the vote was revoked," +
-			"or 0 if that validator has the fewest votes of any validator validator",
-	}
-	GreaterFlag = cli.StringFlag{
-		Name: "greater",
-		Usage: "Greater The validator receiving more votes than the validator for which the vote was revoked," +
-			"or 0 if that validator has the most votes of any validator validator.",
-	}
+
 	VoteNumFlag = cli.Int64Flag{
 		Name:  "voteNum",
 		Usage: "The amount of gold to use to vote",
@@ -58,10 +49,7 @@ var (
 		Name:  "relockIndex",
 		Usage: "use for relock",
 	}
-	ValidatorIndexFlag = cli.Int64Flag{
-		Name:  "validatorIndex",
-		Usage: "use for revokePending or revokeActive",
-	}
+
 	VerbosityFlag = cli.Int64Flag{
 		Name:  "Verbosity",
 		Usage: "Verbosity of log level",
