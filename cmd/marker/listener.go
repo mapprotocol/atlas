@@ -17,6 +17,7 @@ import (
 
 var (
 	GetIndexError = errors.New("get Index nil(no Address)")
+	isRegister    = false
 )
 
 type Writer interface {
@@ -232,8 +233,9 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	log.Info("=== Register validator ===")
 	commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	log.Info("=== commision ===", "commision", commision)
-	greater, lesser := getGreaterLesser(core)
-	fmt.Println("=== greater, lesser ===", greater, lesser)
+	isRegister = true
+	greater, lesser := getGreaterLesser(core, core.cfg.From)
+	//fmt.Println("=== greater, lesser ===", greater, lesser)
 	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
@@ -300,11 +302,11 @@ func deregisterValidator(_ *cli.Context, core *listener) error {
 func vote(ctx *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
-	greater, lesser := getGreaterLesser(core)
+	greater, lesser := getGreaterLesser(core, core.cfg.TargetAddress)
 	log.Info("=== vote Validator ===")
 	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
-	//fmt.Println("=== greater ===", greater.String())
-	//fmt.Println("=== lesser ===", lesser.String())
+	fmt.Println("=== greater ===", greater.String())
+	fmt.Println("=== lesser ===", lesser.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "vote", core.cfg.TargetAddress, amount, lesser, greater)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
@@ -628,11 +630,11 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	//log.Info("333333", "calculateEpochScore3 ", fixed.MustNew("0.271").BigInt())
 	//a:=params.MustBigInt("1000000000000000000000000")
 	//fmt.Println(result.Div(result,a))
-	////INFO [01-19|11:00:16.269] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
-	////INFO [01-19|11:00:16.289] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
-	////INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =1,000,000,000,000,000,000,000,000
-	////INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =271,000,000,000,000,000,000,000
-	////INFO [01-19|11:00:16.289] 333333                                   calculateEpochScore3 =271,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.269] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =1,000,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =271,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 333333                                   calculateEpochScore3 =271,000,000,000,000,000,000,000
 	return nil
 }
 
@@ -727,7 +729,7 @@ func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
 
 //-------------------- getLesser getGreater -------
 //@return  Greater Lesser
-func getGreaterLesser(core *listener) (common.Address, common.Address) {
+func getGreaterLesser(core *listener, target common.Address) (common.Address, common.Address) {
 	type ret struct {
 		Validators interface{} // indexed
 		Values     interface{}
@@ -748,10 +750,16 @@ func getGreaterLesser(core *listener) (common.Address, common.Address) {
 	Values := (t.Values).([]*big.Int)
 	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
 
+	for i := 0; i < len(Validators); i++ {
+		if bytes.Equal(Validators[i].Bytes(), target.Bytes()) {
+			amount.Add(amount, Values[i])
+		}
+		//log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
+	}
+
 	firstOne := true
 	LastOne := true
 	for i := 0; i < len(Validators); i++ {
-		amount.Add(amount, Values[i])
 		if Values[i].CmpAbs(amount) > 0 && firstOne {
 			firstOne = false
 		}
@@ -761,8 +769,15 @@ func getGreaterLesser(core *listener) (common.Address, common.Address) {
 		//log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
 	}
 	l := len(Validators)
+	if isRegister {
+		firstOne = false
+		LastOne = true
+	}
 	if l > 1 {
 		if firstOne {
+			if bytes.Equal(core.cfg.TargetAddress.Bytes(), Validators[0].Bytes()) {
+				return params.ZeroAddress, Validators[1]
+			}
 			return params.ZeroAddress, Validators[0]
 		}
 		index := len(Validators) - 1
