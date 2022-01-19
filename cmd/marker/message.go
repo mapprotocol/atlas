@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	SolveType1 = "type1" // value ==nil
-	SolveType2 = "type2" // value !=nil
-	SolveType3 = "type3" // handle Atomic
-	SolveType4 = "type4" // handle Tuple
+	SolveSendTranstion1 = "type1" // value ==nil
+	SolveSendTranstion2 = "type2" // value !=nil
+	SolveQueryResult3   = "type3" // handle Atomic
+	SolveQueryResult4   = "type4" // handle Tuple
 )
 
 type Message struct {

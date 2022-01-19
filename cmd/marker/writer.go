@@ -23,18 +23,18 @@ func NewWriter(ctx *cli.Context, config *config.Config) *writer {
 
 func (w *writer) ResolveMessage(m Message) bool {
 	switch m.messageType {
-	case SolveType1:
+	case SolveSendTranstion1:
 		txHash := sendContractTransaction(w.conn, m.from, m.to, nil, m.priKey, m.input, m.gasLimit)
 		getResult(w.conn, txHash, true)
 		m.DoneCh <- struct{}{}
-	case SolveType2:
+	case SolveSendTranstion2:
 		txHash := sendContractTransaction(w.conn, m.from, m.to, m.value, m.priKey, m.input, m.gasLimit)
 		getResult(w.conn, txHash, true)
 		m.DoneCh <- struct{}{}
-	case SolveType3:
+	case SolveQueryResult3:
 		w.handleUnpackMethodSolveType3(m)
 		m.DoneCh <- struct{}{}
-	case SolveType4:
+	case SolveQueryResult4:
 		w.handleUnpackMethodSolveType4(m)
 		m.DoneCh <- struct{}{}
 	default:
