@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.7.1;
 
-import "./RLPReader.sol";
+import "../lib/RLPReader.sol";
 
 contract sync {
 
@@ -21,7 +21,7 @@ contract sync {
         //bytes nonce;
         //uint256 baseFee;
     }
-    mapping(uint256 => blockHeader) private allHeader;
+    mapping(uint256 => bytes) private allHeader;
 
     struct istanbulAggregatedSeal{
         //uint256   round;
@@ -37,14 +37,15 @@ contract sync {
         uint256  removeList;
         bytes[]  addedPubKey;
     }
-    mapping(uint256 => istanbulExtra) private allExtra;
+    //mapping(uint256 => bytes) private allExtra;
 
     mapping(uint256 => bytes[]) private allkey;
     uint256 nowEpoch;
     uint256 nowNumber;
     address rootAccount;
     uint256 epochLength;
-    uint maxSyncNum;
+    uint256 maxSyncNum;
+    uint256 keyNum;
 
     using RLPReader for bytes;
     using RLPReader for uint;
@@ -53,12 +54,31 @@ contract sync {
 
     event setParams(string s,uint256 v);
     event setParams(string s,bytes v);
+    event log(string s,bool e);
 
-    constructor(uint256 _epochLength) {
+    constructor(bytes memory firstBlock,uint _epochLength) {
         rootAccount = msg.sender;
         epochLength = _epochLength;
         maxSyncNum = 10;
         nowEpoch = 0;
+        initFirstBlock(firstBlock);
+    }
+
+    function initFirstBlock(bytes memory firstBlock) private{
+        blockHeader memory bh = decodeHeaderPart1(firstBlock);
+        bytes memory extra = splitExtra(bh.extraData);
+        istanbulExtra memory ist = decodeExtraData(extra);
+
+        keyNum = ist.addedPubKey.length;
+        nowNumber = bh.number;
+        require(nowNumber == 0);
+        allkey[nowEpoch] = new bytes[](keyNum);
+
+        for(uint8 i = 0;i<keyNum;i++){
+            allkey[nowEpoch][i] = ist.addedPubKey[i];
+        }
+        allHeader[nowNumber] = firstBlock;
+        //allExtra[nowNumber] = extra;
     }
 
     function setBLSPublickKeys(bytes[] memory keys,uint256 epoch) public {
@@ -71,13 +91,31 @@ contract sync {
         }
     }
 
-    // function verifyAggregatedSeal(bytes memory aggregatedSeal,bytes memory seal) private {
-    // }
+    function setMaxSyncNum(uint8 max) public{
+        require(msg.sender == rootAccount, "onlyRoot");
+        emit setParams("setMaxSyncNum",max);
+        maxSyncNum = max;
+    }
+
+    function checkNowParams() public view returns(uint,uint,uint,uint){
+        //require(msg.sender == rootAccount, "onlyRoot");
+        return (maxSyncNum,nowEpoch,nowNumber,keyNum);
+    }
 
     function checkBLSPublickKeys(uint256 epoch) public view returns(bytes[] memory){
         require(msg.sender == rootAccount, "onlyRoot");
         return allkey[epoch];
     }
+
+    function checkBlockHeader(uint256 number) public view returns(bytes memory){
+        require(msg.sender == rootAccount, "onlyRoot");
+        return allHeader[number];
+    }
+
+    //function checkExtraData(uint256 number) public view returns(istanbulExtra memory){
+    //    require(msg.sender == rootAccount, "onlyRoot");
+    //    return allExtra[number];
+    //}
 
     function decodeHeaderPart1(bytes memory rlpBytes)public pure returns(blockHeader memory bh){
         RLPReader.RLPItem[] memory ls = rlpBytes.toRlpItem().toList();
@@ -119,16 +157,6 @@ contract sync {
         //return bh;
     //}
 
-    function setMaxSyncNum(uint max) public{
-        require(msg.sender == rootAccount, "onlyRoot");
-        emit setParams("setMaxSyncNum",max);
-        maxSyncNum = max;
-    }
-
-    function checkNowParams() public view returns(uint,uint,uint){
-        //require(msg.sender == rootAccount, "onlyRoot");
-        return (maxSyncNum,nowEpoch,nowNumber);
-    }
 
     function verifymoreHeaders(bytes[] memory moreRlpHeader,bytes[] memory moreHeaderBytes/*,bytes32[] moreBlockHash*/)public returns(uint,bool){
         require(moreHeaderBytes.length == moreRlpHeader.length);
@@ -151,23 +179,21 @@ contract sync {
         bytes32 HeaderSignHash = keccak256(abi.encodePacked(HeaderBytes));
         ret = verifySign(ist.seal,HeaderSignHash,bh.coinbase);
         if (ret == false) {
-            return false;
+            revert("verifyEscaSign fail");
+            //return false;
         }
-
-        if (bh.number == 0){
-            require(ist.addedPubKey.length != 0);
-            changeValidators(ist.removeList,ist.addedPubKey);
-            return true;
-        }
+        emit log("verifyEscaSign pass",true);
 
         if (bh.number%epochLength == 0){
             //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blockHash);
             changeValidators(ist.removeList,ist.addedPubKey);
+            emit log("changeValidators pass",true);
         }else{
             //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blockHash);
         }
         // if (ret == false) {
-        //     return false;
+        //     revert("verifyBlsSign fail");
+        //     //return false;
         // }
 
         //verify parentSeal
@@ -176,13 +202,19 @@ contract sync {
         //         ret = verifyAggregatedSeal(allkey[nowEpoch-1],ist.parentAggregatedSeals.Signature,ParentBlockHash);
         //     }
         //     if (ret == false) {
-        //         return false;
+        //         revert("verifyBlsSign fail");
+        //         //return false;
         //     }
         // }
 
-
-        allExtra[nowNumber] = ist;
-        //allHeader[nowNumber] = bh;
+        nowNumber = nowNumber + 1;
+        //if(nowNumber+1 != bh.number){
+        //    revert("number error");
+        //    //return false;
+        //}
+        //allExtra[nowNumber] = rlpBytes;
+        allHeader[nowNumber] = extra;
+        emit log("verifyHeader pass",true);
         return ret;
     }
 
@@ -212,25 +244,47 @@ contract sync {
         return  ist;
     }
 
-    function changeValidators(uint256 removedVal,bytes[] memory addVal) public {
-        uint oldValNum = allkey[nowEpoch].length;
-        uint j = 0;
-        // for(uint i=0;removedVal>0;i++){
-        //     if (removedVal%2 == 1){
-        //         removedVal = (removedVal-1)/2;
-        //     }else{
-        //         removedVal = removedVal/2;
-        //         allkey[nowEpoch+1][j] = allkey[nowEpoch][oldValNum-i];
-        //     }
-        //     j = j + 1;
-        // }
-
-
-        // for(uint i=0;i<addVal.length;i++){
-        //     allkey[nowEpoch+1][j] = allkey[nowEpoch+1][i];
-        // }
-        nowEpoch = nowEpoch + 1;
+    function changeValidators(uint256 removedVal,bytes[] memory addVal) public view returns(bytes[] memory ret){
+        (uint[] memory list,uint8 oldVal) = readRemoveList(removedVal);
+        ret = new bytes[](oldVal+addVal.length);
+        uint j=0;
+        for(uint i=0;i<list.length;i++){
+            if (list[i] == 0){
+                ret[j] = allkey[nowEpoch][i];
+                j = j + 1;
+            }
+        }
+        for(uint i=0;i<addVal.length;i++){
+            ret[j] = addVal[i];
+            j = j + 1;
+        }
+        return ret;
     }
+
+    function readRemoveList(uint256 r) public view returns(uint[] memory ret,uint8 sum){
+        sum = 0;
+        ret = new uint[](keyNum);
+        for(uint i=0;r>0;i++){
+            if (r%2 == 1){
+                r = (r-1)/2;
+                ret[i] = 1;
+            }else{
+                r = r/2;
+                ret[i] = 0;
+                sum = sum + 1;
+            }
+        }
+
+        for(uint i=0;i<ret.length/2;i++) {
+            uint temp = ret[i];
+            ret[i] = ret[ret.length-1-i];
+            ret[ret.length-1-i] = temp;
+        }
+        return (ret,sum);
+    }
+
+    // function verifyAggregatedSeal(bytes memory aggregatedSeal,bytes memory seal) private pure returns (bool){
+    // }
 
     function verifySign(bytes memory seal,bytes32 hash,address coinbase) public pure returns (bool){
         (bytes32 r, bytes32 s, uint8 v) = splitSignature(seal);
