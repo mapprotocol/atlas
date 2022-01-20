@@ -102,10 +102,11 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 	return validatorData, nil
 }
 
-func UpdateValidatorScore(vmRunner vm.EVMRunner, address common.Address, uptime *big.Int) (*big.Int, error) {
+func UpdateValidatorScore(vmRunner vm.EVMRunner, address common.Address, uptime *big.Int) (*big.Int, bool, error) {
 	var uptimeRet *big.Int
-	err := updateValidatorScoreFromSignerMethod.Execute(vmRunner, &uptimeRet, common.Big0, address, uptime)
-	return uptimeRet, err
+	var isValidator bool
+	err := updateValidatorScoreFromSignerMethod.Execute(vmRunner, &[]interface{}{&uptimeRet, &isValidator}, common.Big0, address, uptime)
+	return uptimeRet, isValidator, err
 }
 
 func DistributeEpochReward(vmRunner vm.EVMRunner, address common.Address, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, error) {

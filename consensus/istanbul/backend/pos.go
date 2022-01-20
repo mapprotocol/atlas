@@ -68,11 +68,11 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	uptimeRets, err := sb.updateValidatorScores(header, state, valSet)
+	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
 		return err
 	}
-	scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets)
+	scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets, ignores)
 	if err != nil {
 		return err
 	}
@@ -92,10 +92,10 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	return nil
 }
 
-func (sb *Backend) updateValidatorScores(header *types.Header, state *state.StateDB, valSet []istanbul.Validator) ([]*big.Int, error) {
+func (sb *Backend) updateValidatorScores(header *types.Header, state *state.StateDB, valSet []istanbul.Validator) ([]*big.Int, []bool, error) {
 	epoch := istanbul.GetEpochNumber(header.Number.Uint64(), sb.EpochSize())
 	logger := sb.logger.New("func", "Backend.updateValidatorScores", "blocknum", header.Number.Uint64(), "epoch", epoch, "epochsize", sb.EpochSize())
-
+	ignore := make([]bool, len(valSet), len(valSet))
 	// header (&state) == lastBlockOfEpoch
 	// sb.LookbackWindow(header, state) => value at the end of epoch
 	// It doesn't matter which was the value at the beginning but how it ends.
@@ -108,13 +108,17 @@ func (sb *Backend) updateValidatorScores(header *types.Header, state *state.Stat
 	monitor := uptime.NewMonitor(store.New(sb.db), sb.EpochSize(), lookbackWindow)
 	uptimes, err := monitor.ComputeValidatorsUptime(epoch, len(valSet))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	vmRunner := sb.chain.NewEVMRunner(header, state)
+
 	for i, val := range valSet {
 		logger.Trace("Updating validator score", "uptime", uptimes[i], "address", val.Address())
-		uptimeRet, err := validators.UpdateValidatorScore(vmRunner, val.Address(), uptimes[i])
+		uptimeRet, isValidator, err := validators.UpdateValidatorScore(vmRunner, val.Address(), uptimes[i])
+		if !isValidator {
+			ignore[i] = true
+		}
 		if err != nil {
 			sb.logger.Error("Error in updateValidatorScores to validator", "address", val.Address(), "err", err)
 			continue
@@ -122,7 +126,7 @@ func (sb *Backend) updateValidatorScores(header *types.Header, state *state.Stat
 		uptimes[i] = uptimeRet
 		logger.Trace("Updating validator score ret", "uptime", uptimes[i], "address", val.Address())
 	}
-	return uptimes, nil
+	return uptimes, ignore, nil
 }
 
 /*
@@ -170,15 +174,15 @@ func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) 
    @dev     (score + p)/(N*p+s1+s2+s3...)
    @return (N*p+s1+s2+s3...)
 */
-func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptimes []*big.Int) (*big.Int, error) {
+func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptimes []*big.Int, ignores []bool) (*big.Int, error) {
 	PledgeMultiplier, err := validators.GetPledgeMultiplierInReward(vmRunner)
 	if err != nil {
 		return nil, err
 	}
 	sum := big.NewInt(0)
-	for _, v := range uptimes {
+	for i, v := range uptimes {
 		sum.Add(sum, v)
-		if v.CmpAbs(big.NewInt(0)) == 0 {
+		if ignores[i] {
 			continue
 		}
 		sum.Add(sum, PledgeMultiplier)
