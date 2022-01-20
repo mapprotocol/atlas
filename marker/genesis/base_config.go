@@ -31,7 +31,7 @@ func BaseConfig() *Config {
 				Duration: 1, //todo zhangwei
 			},
 			ValidatorScoreExponent:        10,
-			ValidatorScoreAdjustmentSpeed: fixed("0.1"),
+			ValidatorScoreAdjustmentSpeed: fixed("1"),
 			PledgeMultiplierInReward:      fixed("1"),
 			CommissionUpdateDelay:         (3 * Day) / 5, // Approximately 3 days with 5s block times
 

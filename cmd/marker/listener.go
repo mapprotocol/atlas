@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
@@ -303,10 +302,11 @@ func vote(ctx *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	greater, lesser := getGreaterLesser(core, core.cfg.TargetAddress)
-	log.Info("=== vote Validator ===")
 	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
-	fmt.Println("=== greater ===", greater.String())
-	fmt.Println("=== lesser ===", lesser.String())
+	log.Info("=== vote Validator ===", "admin", core.cfg.From, "voteTargetValidator", core.cfg.TargetAddress.String(), "vote MAP Num", core.cfg.VoteNum.String())
+
+	//fmt.Println("=== greater ===", greater.String())
+	//fmt.Println("=== lesser ===", lesser.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "vote", core.cfg.TargetAddress, amount, lesser, greater)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
