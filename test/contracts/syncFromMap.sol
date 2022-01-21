@@ -37,7 +37,6 @@ contract sync {
         uint256  removeList;
         bytes[]  addedPubKey;
     }
-    //mapping(uint256 => bytes) private allExtra;
 
     mapping(uint256 => bytes[]) private allkey;
     uint256 nowEpoch;
@@ -64,6 +63,8 @@ contract sync {
         initFirstBlock(firstBlock);
     }
 
+    //the first block is used for init params,
+    //it was operated specially.
     function initFirstBlock(bytes memory firstBlock) private{
         blockHeader memory bh = decodeHeaderPart1(firstBlock);
         bytes memory extra = splitExtra(bh.extraData);
@@ -78,9 +79,9 @@ contract sync {
             allkey[nowEpoch][i] = ist.addedPubKey[i];
         }
         allHeader[nowNumber] = firstBlock;
-        //allExtra[nowNumber] = extra;
     }
 
+    //
     function setBLSPublickKeys(bytes[] memory keys,uint256 epoch) public {
         require(msg.sender == rootAccount, "onlyRoot");
         emit setParams("current epoch",epoch);
@@ -103,12 +104,12 @@ contract sync {
     }
 
     function checkBLSPublickKeys(uint256 epoch) public view returns(bytes[] memory){
-        require(msg.sender == rootAccount, "onlyRoot");
+        //require(msg.sender == rootAccount, "onlyRoot");
         return allkey[epoch];
     }
 
     function checkBlockHeader(uint256 number) public view returns(bytes memory){
-        require(msg.sender == rootAccount, "onlyRoot");
+        //require(msg.sender == rootAccount, "onlyRoot");
         return allHeader[number];
     }
 
@@ -170,13 +171,20 @@ contract sync {
         return (moreRlpHeader.length,true);
     }
 
-    function verifyHeader(bytes memory rlpBytes,bytes memory HeaderBytes/*,bytes32 blockHash*/) public returns(bool){
+    //the input data is the header after rlp encode within seal by proposer and aggregated seal by validators.
+    function verifyHeader(bytes memory rlpHeader,bytes memory escaMsg/*,bytes32 blockHash*/) public returns(bool){
         bool ret = true;
-        blockHeader memory bh = decodeHeaderPart1(rlpBytes);
-        //bh = decodeHeaderPart2(rlpBytes,bh);
+
+        //it only decode data about validation,so that reduce storage and calculation.
+        blockHeader memory bh = decodeHeaderPart1(rlpHeader);
+        //bh = decodeHeaderPart2(rlpHeader,bh);
         bytes memory extra = splitExtra(bh.extraData);
         istanbulExtra memory ist = decodeExtraData(extra);
-        bytes32 HeaderSignHash = keccak256(abi.encodePacked(HeaderBytes));
+
+        //the escaMsg is the hash of the header without seal by proposer and aggregated seal by validators.
+        //bytes memory escaMsg = cutSealAndAgg(rlpHeader);
+        bytes32 HeaderSignHash = keccak256(abi.encodePacked(escaMsg));
+        //the esca seal signed by proposer
         ret = verifySign(ist.seal,HeaderSignHash,bh.coinbase);
         if (ret == false) {
             revert("verifyEscaSign fail");
@@ -184,8 +192,12 @@ contract sync {
         }
         emit log("verifyEscaSign pass",true);
 
+
+        //the blockHash is the hash of the header without aggregated seal by validators.
+        //bytes memory blockHash = cutAgg(rlpHeader);
         if (bh.number%epochLength == 0){
             //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blockHash);
+            //it need to update validators at first block of new epoch.
             changeValidators(ist.removeList,ist.addedPubKey);
             emit log("changeValidators pass",true);
         }else{
@@ -196,10 +208,14 @@ contract sync {
         //     //return false;
         // }
 
-        //verify parentSeal
+        //the parent seal need to pks of last epoch to verify parent seal,if block number is the first block or the second block at new epoch.
+        //because, the parent seal of the first block and the second block is signed by validitors of last epoch.
+        //and it need to not verify, when the block number is less than 2, the block is no parent seal.
         // if (blockNumber > 1) {
-        //     if ((blockNumber-1)%epochLength == 0){
-        //         ret = verifyAggregatedSeal(allkey[nowEpoch-1],ist.parentAggregatedSeals.Signature,ParentBlockHash);
+        //     if ((blockNumber-1)%epochLength == 0 || (blockNumber)%epochLength == 0){
+        //         ret = verifyAggregatedSeal(allkey[nowEpoch-1],ist.parentAggregatedSeals.Signature,bh.parentHash);
+        //     }else{
+        //         ret = verifyAggregatedSeal(allkey[nowEpoch],ist.parentAggregatedSeals.Signature,bh.parentHash);
         //     }
         //     if (ret == false) {
         //         revert("verifyBlsSign fail");
@@ -212,8 +228,7 @@ contract sync {
         //    revert("number error");
         //    //return false;
         //}
-        //allExtra[nowNumber] = rlpBytes;
-        allHeader[nowNumber] = extra;
+        allHeader[nowNumber] = rlpHeader;
         emit log("verifyHeader pass",true);
         return ret;
     }
@@ -226,6 +241,8 @@ contract sync {
         RLPReader.RLPItem memory item4 = ls[4];
         RLPReader.RLPItem memory item5 = ls[5];
 
+        //Usually, the length of BLS pk is 98 bytes.
+        //According to its length, it can calculate the number of pk.
         if (item1.len > 98){
             uint num = (item1.len - 2)/98;
             ist.addedPubKey = new bytes[](num);
@@ -244,10 +261,12 @@ contract sync {
         return  ist;
     }
 
+    //the function will select legal validators from old validator and add new validators.
     function changeValidators(uint256 removedVal,bytes[] memory addVal) public view returns(bytes[] memory ret){
         (uint[] memory list,uint8 oldVal) = readRemoveList(removedVal);
         ret = new bytes[](oldVal+addVal.length);
         uint j=0;
+        //if value is 1, the related address will be not validaor at nest epoch.
         for(uint i=0;i<list.length;i++){
             if (list[i] == 0){
                 ret[j] = allkey[nowEpoch][i];
@@ -258,10 +277,14 @@ contract sync {
             ret[j] = addVal[i];
             j = j + 1;
         }
+        //require(j<101,"the number of validators is more than 100")
         return ret;
     }
 
+
+    //it return binary data and the number of validator in the list.
     function readRemoveList(uint256 r) public view returns(uint[] memory ret,uint8 sum){
+        //the function transfer uint to binary.
         sum = 0;
         ret = new uint[](keyNum);
         for(uint i=0;r>0;i++){
@@ -274,7 +297,7 @@ contract sync {
                 sum = sum + 1;
             }
         }
-
+        //the current array is inverted.it needs to count down.
         for(uint i=0;i<ret.length/2;i++) {
             uint temp = ret[i];
             ret[i] = ret[ret.length-1-i];
@@ -286,7 +309,10 @@ contract sync {
     // function verifyAggregatedSeal(bytes memory aggregatedSeal,bytes memory seal) private pure returns (bool){
     // }
 
+
     function verifySign(bytes memory seal,bytes32 hash,address coinbase) public pure returns (bool){
+        //Signature storaged in extraData sub 27 after proposer signed.
+        //So signature need to add 27 when verify it.
         (bytes32 r, bytes32 s, uint8 v) = splitSignature(seal);
         v=v+27;
         return coinbase == ecrecover(hash, v, r, s);
@@ -302,6 +328,8 @@ contract sync {
     }
 
     function splitExtra(bytes memory extra) internal pure returns (bytes memory newExtra){
+       //extraData rlpcode is storaged from No.32 byte to latest byte.
+       //So, the extraData need to reduce 32 bytes at the beginning.
        newExtra = new bytes(extra.length - 32);
        uint n = 0;
        for(uint i=32;i<extra.length;i++){
