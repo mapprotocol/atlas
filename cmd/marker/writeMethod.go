@@ -14,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
+const DefaultGasLimit = 6721975
+
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte, gasLimitSeting uint64) common.Hash {
 	// Ensure a valid value field and resolve the account nonce
 	logger := log.New("func", "sendContractTransaction")
@@ -26,19 +28,21 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	if err != nil {
 		log.Error("SuggestGasPrice", "error", err)
 	}
-	gasLimit := uint64(3100000) // in units
+	//gasLimit := uint64(3100000) // in units
+	gasLimit := uint64(DefaultGasLimit) // in units
 
 	//If the contract surely has code (or code is not needed), estimate the transaction
 
 	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	gasLimit, err = client.EstimateGas(context.Background(), msg)
+	_, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
 		logger.Error("Contract exec failed", "error", err)
 	}
-	if gasLimit < 1 {
-		//gasLimit = 866328
-		gasLimit = 2100000
-	}
+	//if gasLimit < 1 {
+	//	//gasLimit = 866328
+	//	gasLimit = 2100000
+	//}
+
 	if gasLimitSeting != 0 {
 		gasLimit = gasLimitSeting // in units
 	}
@@ -58,7 +62,6 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	if err != nil {
 		log.Error("SendTransaction", "error", err)
 	}
-
 	return signedTx.Hash()
 }
 
@@ -122,11 +125,14 @@ func (w writer) handleUnpackMethodSolveType3(m Message) {
 	output, err := w.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
+		isContinueError = false
 	}
 	err = m.abi.UnpackIntoInterface(&m.ret, m.abiMethod, output)
 	if err != nil {
 		log.Error("handleUnpackMethodSolveType3", "err", err)
+		isContinueError = false
 	}
+
 }
 
 func (w writer) handleUnpackMethodSolveType4(m Message) {
@@ -135,6 +141,7 @@ func (w writer) handleUnpackMethodSolveType4(m Message) {
 	output, err := w.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
+		isContinueError = false
 	}
 	m.solveResult(output)
 }

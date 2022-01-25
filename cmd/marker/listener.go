@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	GetIndexError = errors.New("get Index nil(no Address)")
-	isRegister    = false
+	GetIndexError   = errors.New("get Index nil(no Address)")
+	isRegister      = false
+	isContinueError = true
 )
 
 type Writer interface {
@@ -246,32 +247,37 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 
 func quicklyRegisterValidator(ctx *cli.Context, core *listener) error {
 	//---------------------------- create account ----------------------------------
-	createAccount(core, "validator")
+	createAccount(core)
 	//---------------------------- lock ----------------------------------
-	lockedMAP(ctx, core)
+	if isContinueError {
+		lockedMAP(ctx, core)
+	}
 	//----------------------------- registerValidator ---------------------------------
-	registerValidator(ctx, core)
+	if isContinueError {
+		registerValidator(ctx, core)
+	}
+	log.Info("END")
 	return nil
 }
 
 func createAccount1(_ *cli.Context, core *listener) error {
-	createAccount(core, core.cfg.NamePrefix)
+	createAccount(core)
 	return nil
 }
 
-func createAccount(core *listener, namePrefix string) {
+func createAccount(core *listener) {
 	abiAccounts := core.cfg.AccountsParameters.AccountsABI
 	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
 
 	logger := log.New("func", "createAccount")
-	logger.Info("Create account", "address", core.cfg.From, "name", namePrefix)
+	logger.Info("Create account", "address", core.cfg.From, "name", core.cfg.NamePrefix)
 	log.Info("=== create Account ===")
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "createAccount")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 
 	log.Info("=== setName name ===")
-	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", namePrefix)
+	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.NamePrefix)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 
@@ -315,11 +321,16 @@ func vote(ctx *cli.Context, core *listener) error {
 
 func quicklyVote(ctx *cli.Context, core *listener) error {
 	//---------------------------- create account ----------------
-	createAccount(core, "validator")
+	createAccount(core)
 	//---------------------------- lock --------------------------
-	lockedMAP(ctx, core)
+	if isContinueError {
+		lockedMAP(ctx, core)
+	}
 	//---------------------------- vote --------------------------
-	vote(ctx, core)
+	if isContinueError {
+		vote(ctx, core)
+	}
+	log.Info("END")
 	return nil
 }
 
@@ -615,26 +626,6 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	core.waitUntilMsgHandled(1)
 	result := ret.(*big.Int)
 	log.Info("result", "getTotalVotes", result)
-	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1e18))
-	//var ret interface{}
-	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
-	//abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "calculateEpochScore", updatetime)
-	//go core.writer.ResolveMessage(m)
-	//core.waitUntilMsgHandled(1)
-	//result := ret.(*big.Int)
-	//log.Info("111111", "calculateEpochScore1 ", result)
-	//log.Info("111111", "calculateEpochScore1 ", updatetime)
-	//log.Info("222222", "calculateEpochScore2 ", params.MustBigInt("1000000000000000000000000"))
-	//log.Info("222222", "calculateEpochScore2 ", params.MustBigInt("271000000000000000000000"))
-	//log.Info("333333", "calculateEpochScore3 ", fixed.MustNew("0.271").BigInt())
-	//a:=params.MustBigInt("1000000000000000000000000")
-	//fmt.Println(result.Div(result,a))
-	//INFO [01-19|11:00:16.269] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =1,000,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =271,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 333333                                   calculateEpochScore3 =271,000,000,000,000,000,000,000
 	return nil
 }
 
