@@ -110,14 +110,14 @@ type BLSCryptoSelector interface {
 func CryptoType() BLSCryptoSelector {
 	switch BLSCryptoType {
 	case BN256Curve:
-		//curve := BLS12377{}
+		//curve := bn256.BN256{}
 		return nil //curve
 	case BLS12377Curve:
 		curve := BLS12377{}
 		return curve
 	case BLS12381Curve:
-		//blscrypto :=
-		return nil //
+		//curve := BLS12377{}
+		return nil //curve
 	default:
 		// Programming error.
 		panic(fmt.Sprintf("unknown bls crypto selection policy: %v", BLSCryptoType))

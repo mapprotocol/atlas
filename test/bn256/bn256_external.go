@@ -1,64 +1,22 @@
 package bn256
 
 import (
-	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"reflect"
+	"crypto/ecdsa"
+	blscrypto "github.com/celo-org/celo-bls-go/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 )
 
-const (
-	PUBLICKEYBYTES    = 96
-	SIGNATUREBYTES    = 48
-	EPOCHENTROPYBYTES = 16
-)
+type BN256 struct{}
 
-type SerializedPublicKey [PUBLICKEYBYTES]byte
-
-var (
-	serializedPublicKeyT = reflect.TypeOf(SerializedPublicKey{})
-	serializedSignatureT = reflect.TypeOf(SerializedSignature{})
-)
-
-// MarshalText returns the hex representation of pk.
-func (pk SerializedPublicKey) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(pk[:]).MarshalText()
+func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
+	return nil, nil
 }
 
-// UnmarshalText parses a BLS public key in hex syntax.
-func (pk *SerializedPublicKey) UnmarshalText(input []byte) error {
-	return hexutil.UnmarshalFixedText("SerializedPublicKey", input, pk[:])
+func (BN256) PrivateToPublic(privateKeyBytes []byte) (bls.SerializedPublicKey, error) {
+	return bls.SerializedPublicKey{}, nil
 }
 
-// UnmarshalJSON parses a BLS public key in hex syntax.
-func (pk *SerializedPublicKey) UnmarshalJSON(input []byte) error {
-	return hexutil.UnmarshalFixedJSON(serializedPublicKeyT, input, pk[:])
-}
-
-type SerializedSignature [SIGNATUREBYTES]byte
-
-// MarshalText returns the hex representation of sig.
-func (sig SerializedSignature) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(sig[:]).MarshalText()
-}
-
-// UnmarshalText parses a BLS signature in hex syntax.
-func (sig *SerializedSignature) UnmarshalText(input []byte) error {
-	return hexutil.UnmarshalFixedText("SerializedSignature", input, sig[:])
-}
-
-// UnmarshalJSON parses a BLS signature in hex syntax.
-func (sig *SerializedSignature) UnmarshalJSON(input []byte) error {
-	return hexutil.UnmarshalFixedJSON(serializedSignatureT, input, sig[:])
-}
-
-type EpochEntropy [EPOCHENTROPYBYTES]byte
-
-func ECDSAToBLS() {}
-
-func PrivateToPublic() {}
-
-func VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+func (BN256) VerifyAggregatedSignature(publicKeys []bls.SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
 	sigma := &Signature{}
 	err := sigma.Unmarshal(signature)
 	if err != nil {
@@ -86,7 +44,7 @@ func VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte,
 	return err
 }
 
-func AggregateSignatures(signatures [][]byte) ([]byte, error) {
+func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
 	sigma := &Signature{}
 	for _, v := range signatures {
 		var sign Signature
@@ -99,7 +57,7 @@ func AggregateSignatures(signatures [][]byte) ([]byte, error) {
 	return sigma.Marshal(), nil
 }
 
-func VerifySignature(publicKey PublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+func (BN256) VerifySignature(publicKey bls.SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
 	var sign Signature
 	err := sign.Unmarshal(signature)
 	if err != nil {
@@ -124,31 +82,15 @@ func VerifySignature(publicKey PublicKey, message []byte, extraData []byte, sign
 	return nil
 }
 
-func EncodeEpochSnarkDataCIP22(newValSet []PublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash EpochEntropy) ([]byte, []byte, error) {
+func (BN256) EncodeEpochSnarkDataCIP22(newValSet []bls.SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash blscrypto.EpochEntropy) ([]byte, []byte, error) {
 	return nil, nil, nil
 }
 
-func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
-	if len(serializedSignature) != SIGNATUREBYTES {
-		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
-	}
-	signatureBytesFixed := SerializedSignature{}
-	copy(signatureBytesFixed[:], serializedSignature)
-	return signatureBytesFixed, nil
-}
-
-func UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
+func (BN256) UncompressKey(serialized bls.SerializedPublicKey) ([]byte, error) {
 	var sign Signature
 	err := sign.Decompress(serialized[:])
 	if err != nil {
 		return nil, err
 	}
 	return sign.Compress(), nil
-}
-
-// EpochEntropyFromHash truncates the given hash to the length of epoch SNARK entropy.
-func EpochEntropyFromHash(hash common.Hash) EpochEntropy {
-	var entropy EpochEntropy
-	copy(entropy[:], hash[:EPOCHENTROPYBYTES])
-	return entropy
 }
