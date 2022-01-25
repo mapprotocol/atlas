@@ -71,7 +71,7 @@ func (c *core) generateEpochValidatorSetData(blockNumber uint64, round uint8, bl
 	}
 
 	maxNonSigners = maxValidators - uint32(newValSet.MinQuorumSize())
-	message, extraData, err := blscrypto.EncodeEpochSnarkDataCIP22(
+	message, extraData, err := blscrypto.CryptoType().EncodeEpochSnarkDataCIP22(
 		blsPubKeys, maxNonSigners, maxValidators,
 		uint16(istanbul.GetEpochNumber(blockNumber, c.config.Epoch)),
 		round,
@@ -255,7 +255,7 @@ func (c *core) verifyCommit(commit *istanbul.CommittedSubject) error {
 // verifyCommittedSeal verifies the commit seal in the received COMMIT message
 func (c *core) verifyCommittedSeal(comSub *istanbul.CommittedSubject, src istanbul.Validator) error {
 	seal := PrepareCommittedSeal(comSub.Subject.Digest, comSub.Subject.View.Round)
-	return blscrypto.VerifySignature(src.BLSPublicKey(), seal, []byte{}, comSub.CommittedSeal, false, false)
+	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), seal, []byte{}, comSub.CommittedSeal, false, false)
 }
 
 // verifyEpochValidatorSetSeal verifies the epoch validator set seal in the received COMMIT message
@@ -270,5 +270,5 @@ func (c *core) verifyEpochValidatorSetSeal(comSub *istanbul.CommittedSubject, bl
 		}
 		return err
 	}
-	return blscrypto.VerifySignature(src.BLSPublicKey(), epochData, epochExtraData, comSub.EpochValidatorSetSeal, true, cip22)
+	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), epochData, epochExtraData, comSub.EpochValidatorSetSeal, true, cip22)
 }

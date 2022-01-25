@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
 
@@ -17,6 +18,9 @@ import (
 )
 
 const (
+	BN256Curve        = 1
+	BLS12377Curve     = 2
+	BLS12381Curve     = 3
 	PUBLICKEYBYTES    = 96
 	SIGNATUREBYTES    = 48
 	EPOCHENTROPYBYTES = 16
@@ -68,7 +72,61 @@ func (sig *SerializedSignature) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(serializedSignatureT, input, sig[:])
 }
 
-func ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
+func EncodeEpochSnarkData(newValSet []SerializedPublicKey, maximumNonSigners uint32, epochIndex uint16) ([]byte, []byte, error) {
+	pubKeys := []*bls.PublicKey{}
+	for _, pubKey := range newValSet {
+		publicKeyObj, err := bls.DeserializePublicKeyCached(pubKey[:])
+		if err != nil {
+			return nil, nil, err
+		}
+		defer publicKeyObj.Destroy()
+
+		pubKeys = append(pubKeys, publicKeyObj)
+	}
+
+	message, err := bls.EncodeEpochToBytes(epochIndex, maximumNonSigners, pubKeys)
+	return message, nil, err
+}
+
+func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
+	if len(serializedSignature) != SIGNATUREBYTES {
+		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
+	}
+	signatureBytesFixed := SerializedSignature{}
+	copy(signatureBytesFixed[:], serializedSignature)
+	return signatureBytesFixed, nil
+}
+
+type BLSCryptoSelector interface {
+	ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error)
+	PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error)
+	VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
+	AggregateSignatures(signatures [][]byte) ([]byte, error)
+	VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
+	EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash bls.EpochEntropy) ([]byte, []byte, error)
+	UncompressKey(serialized SerializedPublicKey) ([]byte, error)
+}
+
+func CryptoType() BLSCryptoSelector {
+	switch params.CryptoType {
+	case BN256Curve:
+		//curve := BLS12377{}
+		return nil //curve
+	case BLS12377Curve:
+		curve := BLS12377{}
+		return curve
+	case BLS12381Curve:
+		//blscrypto :=
+		return nil //
+	default:
+		// Programming error.
+		panic(fmt.Sprintf("unknown bls crypto selection policy: %v", params.CryptoType))
+	}
+}
+
+type BLS12377 struct{}
+
+func (BLS12377) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 	for i := 0; i < 256; i++ {
 		modulus := big.NewInt(0)
 		modulus, ok := modulus.SetString(bls.MODULUS377, 10)
@@ -121,7 +179,7 @@ func ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 	return nil, errors.New("couldn't derive a BLS key from an ECDSA key")
 }
 
-func PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
+func (BLS12377) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
 	privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
 	if err != nil {
 		return SerializedPublicKey{}, err
@@ -145,7 +203,7 @@ func PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
 	return pubKeyBytesFixed, nil
 }
 
-func VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+func (BLS12377) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
 	publicKeyObjs := []*bls.PublicKey{}
 	for _, publicKey := range publicKeys {
 		publicKeyObj, err := bls.DeserializePublicKeyCached(publicKey[:])
@@ -171,7 +229,7 @@ func VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte,
 	return err
 }
 
-func AggregateSignatures(signatures [][]byte) ([]byte, error) {
+func (BLS12377) AggregateSignatures(signatures [][]byte) ([]byte, error) {
 	signatureObjs := []*bls.Signature{}
 	for _, signature := range signatures {
 		signatureObj, err := bls.DeserializeSignature(signature)
@@ -196,7 +254,7 @@ func AggregateSignatures(signatures [][]byte) ([]byte, error) {
 	return asigBytes, nil
 }
 
-func VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+func (BLS12377) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
 	publicKeyObj, err := bls.DeserializePublicKeyCached(publicKey[:])
 	if err != nil {
 		return err
@@ -213,23 +271,7 @@ func VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []
 	return err
 }
 
-func EncodeEpochSnarkData(newValSet []SerializedPublicKey, maximumNonSigners uint32, epochIndex uint16) ([]byte, []byte, error) {
-	pubKeys := []*bls.PublicKey{}
-	for _, pubKey := range newValSet {
-		publicKeyObj, err := bls.DeserializePublicKeyCached(pubKey[:])
-		if err != nil {
-			return nil, nil, err
-		}
-		defer publicKeyObj.Destroy()
-
-		pubKeys = append(pubKeys, publicKeyObj)
-	}
-
-	message, err := bls.EncodeEpochToBytes(epochIndex, maximumNonSigners, pubKeys)
-	return message, nil, err
-}
-
-func EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash bls.EpochEntropy) ([]byte, []byte, error) {
+func (BLS12377) EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash bls.EpochEntropy) ([]byte, []byte, error) {
 	pubKeys := []*bls.PublicKey{}
 	for _, pubKey := range newValSet {
 		publicKeyObj, err := bls.DeserializePublicKeyCached(pubKey[:])
@@ -244,16 +286,7 @@ func EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigner
 	return bls.EncodeEpochToBytesCIP22(epochIndex, round, blockHash, parentHash, maximumNonSigners, maxValidators, pubKeys)
 }
 
-func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
-	if len(serializedSignature) != SIGNATUREBYTES {
-		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
-	}
-	signatureBytesFixed := SerializedSignature{}
-	copy(signatureBytesFixed[:], serializedSignature)
-	return signatureBytesFixed, nil
-}
-
-func UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
+func (BLS12377) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
 	publicKey, err := bls.DeserializePublicKeyCached(serialized[:])
 	if err != nil {
 		return nil, err

@@ -69,8 +69,8 @@ func TestMakeValidator(t *testing.T) {
 
 func TestMakeKey(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
-	blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-	blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+	blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(privateKey)
+	blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
 	bp, _ := blsPublicKey.MarshalText()
 	from := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
@@ -93,8 +93,8 @@ func TestMakeKeyFromJson(t *testing.T) {
 	}
 	key, _ := keystore.DecryptKey(keyjson, password)
 	privateKey := key.PrivateKey
-	blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-	blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+	blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(privateKey)
+	blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
 	bp, _ := blsPublicKey.MarshalText()
 	from := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privHex := hex.EncodeToString(crypto.FromECDSA(privateKey))

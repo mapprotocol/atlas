@@ -64,7 +64,7 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	privateKeyBytes, err := blscrypto.ECDSAToBLS(a.PrivateKey)
+	privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -90,12 +90,12 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 
 // BLSPublicKey returns the bls public key
 func (a *Account) BLSPublicKey() (blscrypto.SerializedPublicKey, error) {
-	privateKey, err := blscrypto.ECDSAToBLS(a.PrivateKey)
+	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
 	if err != nil {
 		return blscrypto.SerializedPublicKey{}, err
 	}
 
-	return blscrypto.PrivateToPublic(privateKey)
+	return blscrypto.CryptoType().PrivateToPublic(privateKey)
 }
 
 // PublicKeyHex hex representation of the public key

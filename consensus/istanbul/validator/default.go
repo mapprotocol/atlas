@@ -90,7 +90,7 @@ func (val *defaultValidator) Copy() istanbul.Validator {
 
 func (val *defaultValidator) CacheUncompressedBLSKey() {
 	if len(val.uncompressedBlsPublicKey) == 0 {
-		uncompressed, err := blscrypto.UncompressKey(val.blsPublicKey)
+		uncompressed, err := blscrypto.CryptoType().UncompressKey(val.blsPublicKey)
 		if err != nil {
 			log.Error("Bad BLS public key", "adddress", val.address, "bls", val.blsPublicKey)
 		}

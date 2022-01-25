@@ -535,7 +535,7 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 		return blscrypto.SerializedSignature{}, ErrLocked
 	}
 
-	privateKeyBytes, err := blscrypto.ECDSAToBLS(unlockedKey.PrivateKey)
+	privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(unlockedKey.PrivateKey)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}

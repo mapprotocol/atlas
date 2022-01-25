@@ -124,7 +124,7 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 		log.Println("now", len(publicKeys), ",need", pknum, ",all", len(pubKey))
 		return errors.New("no enough publicKey")
 	}
-	err := blscrypto.VerifyAggregatedSignature(publicKeys, proposalSeal, []byte{}, aggregatedSeal.Signature, false, false)
+	err := blscrypto.CryptoType().VerifyAggregatedSignature(publicKeys, proposalSeal, []byte{}, aggregatedSeal.Signature, false, false)
 	if err != nil {
 		return err
 	}

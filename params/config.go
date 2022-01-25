@@ -1,6 +1,7 @@
 package params
 
 import (
+	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +12,7 @@ const (
 	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
 	Epoch          uint64 = 20
+	CryptoType     int    = bls.BLS12377Curve
 )
 
 // network id

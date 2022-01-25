@@ -377,7 +377,7 @@ func generateValidators(n int) ([]istanbul.ValidatorData, [][]byte, []*ecdsa.Pri
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
 		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-		blsPublicKey, _ := bls.PrivateToPublic(blsPrivateKey)
+		blsPublicKey, _ := bls.CryptoType().PrivateToPublic(blsPrivateKey)
 		vals = append(vals, istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
 			BLSPublicKey: blsPublicKey,
