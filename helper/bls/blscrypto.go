@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
 
@@ -18,6 +17,7 @@ import (
 )
 
 const (
+	BLSCryptoType     = 2
 	BN256Curve        = 1
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
@@ -108,7 +108,7 @@ type BLSCryptoSelector interface {
 }
 
 func CryptoType() BLSCryptoSelector {
-	switch params.CryptoType {
+	switch BLSCryptoType {
 	case BN256Curve:
 		//curve := BLS12377{}
 		return nil //curve
@@ -120,7 +120,7 @@ func CryptoType() BLSCryptoSelector {
 		return nil //
 	default:
 		// Programming error.
-		panic(fmt.Sprintf("unknown bls crypto selection policy: %v", params.CryptoType))
+		panic(fmt.Sprintf("unknown bls crypto selection policy: %v", BLSCryptoType))
 	}
 }
 
