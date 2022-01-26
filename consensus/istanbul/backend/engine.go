@@ -31,7 +31,6 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
-	gpm "github.com/mapprotocol/atlas/contracts/gasprice_minimum"
 	ethCore "github.com/mapprotocol/atlas/core"
 	ethChain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/state"
@@ -480,10 +479,6 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 
 	// Trigger an update to the gas price minimum in the GasPriceMinimum contract based on block congestion
 	snapshot = state.Snapshot()
-	_, err = gpm.UpdateGasPriceMinimum(vmRunner, header.GasUsed)
-	if err != nil {
-		state.RevertToSnapshot(snapshot)
-	}
 
 	lastBlockOfEpoch := istanbul.IsLastBlockOfEpoch(header.Number.Uint64(), sb.config.Epoch)
 	if lastBlockOfEpoch {

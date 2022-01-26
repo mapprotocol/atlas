@@ -70,6 +70,8 @@ func init() {
 		withdrawCommand,
 		queryTotalVotesForEligibleValidatorsCommand,
 		queryRegisteredValidatorSignersCommand,
+		getValidatorCommand,
+		getRewardInfoCommand,
 		queryNumRegisteredValidatorsCommand,
 		queryTopValidatorsCommand,
 		queryValidatorEligibilityCommand,
