@@ -9,12 +9,15 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
+	ethparams "github.com/ethereum/go-ethereum/params"
 )
 
 var (
 	baseUnit           = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	FbaseUnit          = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
 	Base               = big.NewInt(1e8)
+	MaxBaseFee         = big.NewInt(5000 * ethparams.GWei)
+	MinBaseFee         = big.NewInt(1000 * ethparams.GWei)
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))

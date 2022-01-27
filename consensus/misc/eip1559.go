@@ -63,33 +63,36 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header) *big.Int {
 		parentGasTarget          = parent.GasLimit / ethparams.ElasticityMultiplier
 		parentGasTargetBig       = new(big.Int).SetUint64(parentGasTarget)
 		baseFeeChangeDenominator = new(big.Int).SetUint64(ethparams.BaseFeeChangeDenominator)
+		newBaseFee               = big.NewInt(0)
 	)
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {
-		return new(big.Int).Set(parent.BaseFee)
-	}
-	if parent.GasUsed > parentGasTarget {
-		// If the parent block used more gas than its target, the baseFee should increase.
-		gasUsedDelta := new(big.Int).SetUint64(parent.GasUsed - parentGasTarget)
-		x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
-		y := x.Div(x, parentGasTargetBig)
-		baseFeeDelta := math.BigMax(
-			x.Div(y, baseFeeChangeDenominator),
-			common.Big1,
-		)
-
-		return x.Add(parent.BaseFee, baseFeeDelta)
+		newBaseFee = new(big.Int).Set(parent.BaseFee)
 	} else {
-		// Otherwise if the parent block used less gas than its target, the baseFee should decrease.
-		gasUsedDelta := new(big.Int).SetUint64(parentGasTarget - parent.GasUsed)
-		x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
-		y := x.Div(x, parentGasTargetBig)
-		baseFeeDelta := x.Div(y, baseFeeChangeDenominator)
-		bf := math.BigMax(x.Sub(parent.BaseFee, baseFeeDelta), common.Big0)
-		if bf.Cmp(params.Base) > -1 {
-			return bf
+		if parent.GasUsed > parentGasTarget {
+			// If the parent block used more gas than its target, the baseFee should increase.
+			gasUsedDelta := new(big.Int).SetUint64(parent.GasUsed - parentGasTarget)
+			x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
+			y := x.Div(x, parentGasTargetBig)
+			baseFeeDelta := math.BigMax(
+				x.Div(y, baseFeeChangeDenominator),
+				common.Big1,
+			)
+			newBaseFee = x.Add(parent.BaseFee, baseFeeDelta)
 		} else {
-			return params.Base
+			// Otherwise if the parent block used less gas than its target, the baseFee should decrease.
+			gasUsedDelta := new(big.Int).SetUint64(parentGasTarget - parent.GasUsed)
+			x := new(big.Int).Mul(parent.BaseFee, gasUsedDelta)
+			y := x.Div(x, parentGasTargetBig)
+			baseFeeDelta := x.Div(y, baseFeeChangeDenominator)
+			newBaseFee = math.BigMax(x.Sub(parent.BaseFee, baseFeeDelta), common.Big0)
 		}
 	}
+
+	if newBaseFee.Cmp(params.MaxBaseFee) == 1 {
+		newBaseFee = params.MaxBaseFee
+	} else if newBaseFee.Cmp(params.MinBaseFee) == -1 {
+		newBaseFee = params.MinBaseFee
+	}
+	return newBaseFee
 }

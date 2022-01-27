@@ -1601,7 +1601,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 			return nil, err
 		}
 		if header.BaseFee == nil {
-			header.BaseFee = params.Base
+			header.BaseFee = params.MinBaseFee
 		}
 		gasPrice := new(big.Int).Add(header.BaseFee, tx.EffectiveGasTipValue(header.BaseFee))
 		fields["effectiveGasPrice"] = hexutil.Uint64(gasPrice.Uint64())
