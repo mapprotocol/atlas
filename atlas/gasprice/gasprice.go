@@ -37,7 +37,8 @@ import (
 const sampleNumber = 3 // Number of transactions sampled in a block
 
 var (
-	DefaultMaxPrice    = big.NewInt(500 * ethparams.GWei)
+	DefaultMaxPrice    = big.NewInt(5000 * ethparams.GWei)
+	DefaultMinPrice    = big.NewInt(1000 * ethparams.GWei)
 	DefaultIgnorePrice = big.NewInt(2 * ethparams.Wei)
 )
 
@@ -205,6 +206,8 @@ func (oracle *Oracle) SuggestTipCap(ctx context.Context) (*big.Int, error) {
 	}
 	if price.Cmp(oracle.maxPrice) > 0 {
 		price = new(big.Int).Set(oracle.maxPrice)
+	} else if price.Cmp(DefaultMinPrice) == -1 {
+		price = new(big.Int).Set(DefaultMinPrice)
 	}
 	oracle.cacheLock.Lock()
 	oracle.lastHead = headHash
