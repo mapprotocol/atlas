@@ -95,7 +95,7 @@ func NewOracle(backend OracleBackend, params Config) *Oracle {
 		percent = 100
 		log.Warn("Sanitizing invalid gasprice oracle sample percentile", "provided", params.Percentile, "updated", percent)
 	}
-	maxPrice := params.MaxPrice
+	maxPrice := DefaultMaxPrice
 	if maxPrice == nil || maxPrice.Int64() <= 0 {
 		maxPrice = DefaultMaxPrice
 		log.Warn("Sanitizing invalid gasprice oracle price cap", "provided", params.MaxPrice, "updated", maxPrice)
@@ -204,8 +204,8 @@ func (oracle *Oracle) SuggestTipCap(ctx context.Context) (*big.Int, error) {
 		sort.Sort(bigIntArray(results))
 		price = results[(len(results)-1)*oracle.percentile/100]
 	}
-	if price.Cmp(oracle.maxPrice) > 0 {
-		price = new(big.Int).Set(oracle.maxPrice)
+	if price.Cmp(DefaultMaxPrice) > 0 {
+		price = new(big.Int).Set(DefaultMaxPrice)
 	} else if price.Cmp(DefaultMinPrice) == -1 {
 		price = new(big.Int).Set(DefaultMinPrice)
 	}
