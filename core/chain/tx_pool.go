@@ -30,8 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	ethparams "github.com/ethereum/go-ethereum/params"
 
-	"github.com/mapprotocol/atlas/atlas/gasprice"
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	"github.com/mapprotocol/atlas/contracts/currency"
@@ -96,6 +96,7 @@ var (
 var (
 	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
 	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
+	defaultMinGasPrice     = big.NewInt(1000 * ethparams.GWei)
 )
 
 var (
@@ -307,7 +308,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 		reorgDoneCh:     make(chan chan struct{}),
 		reorgShutdownCh: make(chan struct{}),
 		initDoneCh:      make(chan struct{}),
-		gasPrice:        gasprice.DefaultMinPrice,
+		gasPrice:        defaultMinGasPrice,
 	}
 	pool.locals = newAccountSet(pool.signer)
 	for _, addr := range config.Locals {
