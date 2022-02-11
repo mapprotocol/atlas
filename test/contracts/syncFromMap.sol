@@ -2,6 +2,7 @@
 pragma solidity >=0.7.1;
 
 import "../lib/RLPReader.sol";
+import "../lib/RLPEncode.sol";
 
 contract sync {
 
@@ -337,6 +338,98 @@ contract sync {
            n = n + 1;
        }
        return newExtra;
+    }
+
+    function cutAgg(bytes memory hb,bytes memory agg) public pure returns(bytes memory data){
+        require(hb.length < 65535,"the lenght of header rlpcode is too long.");
+        require(hb.length > agg.length,"params error.");
+
+        uint datalen = agg.length-2;
+        uint index = 0;
+        uint target;
+        //the escaSeal rlpcode will be replace of nil,the length of seal will become 1 byte. the aggregatedSeal rlpcode as same as the escaSeal.
+        //when the length of header rlpcode more than 257,it will add 1 byte.
+        uint len = hb.length - datalen + 1; //+3
+        if(len>257){
+            data = new bytes(len);
+            data[index] = bytes1(uint8(249));
+            index++;
+            data[index] = bytes2(uint16(len-3))[0];
+            index++;
+            data[index] = bytes2(uint16(len-3))[1];
+            index++;
+            //emit log("pre 3 byte",len);
+        }else{
+            data = new bytes(len-1);
+            data[index] = bytes1(uint8(248));
+            index++;
+            data[index] = bytes1(uint8(len-2));
+            index++;
+            //emit log("pre 2 byte",len);
+        }
+        //emit log("len",len);
+
+        //it use Brute-Force arithmetic for looking for target.
+        for (uint i=0;i<hb.length;i++) {
+		    for (uint j=0;j<datalen;j++) {
+			    if(i+j == hb.length) {
+                    //emit log("fail",j);
+				    return hb;
+			    }
+			    if(hb[i+j] != agg[j+2]) {
+                    //emit log("not match",i);
+				    break;
+			    }
+			    if(j == datalen-1) {
+				    target = i;
+			    }
+		    }
+	    }
+        //emit log("target",target);
+
+        uint k;
+        if (hb.length>257){
+            k=3;
+        }else{
+            k=2;
+        }
+
+        for(;k<hb.length;k++) {
+            if (k == target){
+                data[k] = bytes1(uint8(128));
+                index++;
+            }
+            if (k<target||k>target+datalen){
+                data[index] = hb[k];
+                index++;
+            }
+        }
+        //emit log("index",index);
+
+        return data;
+    }
+
+    function encodeAgg(bytes memory signature,uint round,uint bitmap) public pure returns (bytes memory output){
+        bytes memory output1 = RLPEncode.encodeUint(round);//round
+        bytes memory output2 = RLPEncode.encodeBytes(signature);//signature
+        bytes memory output3 = RLPEncode.encodeUint(bitmap);//bitmap
+
+        uint index = 0;
+        //
+
+        output = new bytes(output1.length+output2.length+output3.length);
+        for(uint i=0;i<output1.length;i++){
+            output[index] = output1[i];
+            index++;
+        }
+        for(uint i=0;i<output2.length;i++){
+            output[index] = output2[i];
+            index++;
+        }
+        for(uint i=0;i<output3.length;i++){
+            output[index] = output3[i];
+            index++;
+        }
     }
 
 }
