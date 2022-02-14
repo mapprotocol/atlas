@@ -64,7 +64,7 @@ type Config struct {
 	GoldTokenParameters  GoldTokenParameters
 }
 
-func AssemblyConfig(ctx *cli.Context) *Config {
+func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config := Config{}
 	//------------------ pre set --------------------------
 	path := ""
@@ -89,6 +89,9 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	}
 	if ctx.IsSet(TargetAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(TargetAddressFlag.Name))
+	}
+	if ctx.IsSet(ValidatorAddressFlag.Name) {
+		config.TargetAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
 	}
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
@@ -123,16 +126,19 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
 	}
-	account := account.LoadAccount(path, password)
-	blsPub, err := account.BLSPublicKey()
+	_account, err := account.LoadAccount(path, password)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	config.PublicKey = account.PublicKey()
-	config.From = account.Address
-	config.PrivateKey = account.PrivateKey
+	blsPub, err := _account.BLSPublicKey()
+	if err != nil {
+		return nil, err
+	}
+	config.PublicKey = _account.PublicKey()
+	config.From = _account.Address
+	config.PrivateKey = _account.PrivateKey
 	config.BlsPub = blsPub
-	config.BLSProof = account.MustBLSProofOfPossession()
+	config.BLSProof = _account.MustBLSProofOfPossession()
 
 	ValidatorAddress := mapprotocol.MustProxyAddressFor("Validators")
 	LockedGoldAddress := mapprotocol.MustProxyAddressFor("LockedGold")
@@ -156,5 +162,5 @@ func AssemblyConfig(ctx *cli.Context) *Config {
 	config.ElectionParameters.ElectionABI = abiElection
 	config.GoldTokenParameters.GoldTokenABI = abiGoldToken
 
-	return &config
+	return &config, nil
 }

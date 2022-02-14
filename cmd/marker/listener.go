@@ -217,6 +217,12 @@ var getPendingVotersForValidatorCommand = cli.Command{
 	Action: MigrateFlags(getPendingVotersForValidator),
 	Flags:  Flags,
 }
+var getPendingInfoForValidatorCommand = cli.Command{
+	Name:   "getPendingInfoForValidator",
+	Usage:  "Returns the  pending Info voters vote And Epoch for target `validator`.",
+	Action: MigrateFlags(getPendingInfoForValidator),
+	Flags:  Flags,
+}
 var getValidatorsVotedForByAccountCommand = cli.Command{
 	Name:   "getValidatorsVotedForByAccount",
 	Usage:  "Returns the validators that `account` has voted for.",
@@ -310,11 +316,17 @@ func createAccount(core *listener) {
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "createAccount")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
+	if !isContinueError {
+		return
+	}
 
 	log.Info("=== setName name ===")
 	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.NamePrefix)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
+	if !isContinueError {
+		return
+	}
 
 	log.Info("=== setAccountDataEncryptionKey ===")
 	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setAccountDataEncryptionKey", core.cfg.PublicKey)
@@ -339,7 +351,7 @@ func deregisterValidator(_ *cli.Context, core *listener) error {
 }
 
 //---------- voter -----------------
-func vote(ctx *cli.Context, core *listener) error {
+func vote(_ *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	greater, lesser := getGreaterLesser(core, core.cfg.TargetAddress)
@@ -456,7 +468,6 @@ func getRegisteredValidatorSigners(_ *cli.Context, core *listener) error {
 	}
 	return nil
 }
-
 func getValidator(_ *cli.Context, core *listener) error {
 	type ret struct {
 		EcdsaPublicKey      interface{}
@@ -498,7 +509,6 @@ func getValidator(_ *cli.Context, core *listener) error {
 	log.Info("", "LastSlashed", ConvertToFraction(t.LastSlashed))
 	return nil
 }
-
 func ConvertToFraction(num interface{}) string {
 	s := num.(*big.Int)
 	p := decimal.Precision(24)
@@ -510,7 +520,6 @@ func ConvertToFraction(num interface{}) string {
 	str = strings.Replace(str, "\"", "", -1)
 	return str
 }
-
 func getRewardInfo(_ *cli.Context, core *listener) error {
 	curBlockNumber, err := core.conn.BlockNumber(context.Background())
 	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
@@ -540,7 +549,6 @@ func getRewardInfo(_ *cli.Context, core *listener) error {
 	log.Info("=== END ===")
 	return nil
 }
-
 func _getRegisteredValidatorSigners(core *listener) []common.Address {
 	var ValidatorSigners interface{}
 	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
@@ -550,7 +558,6 @@ func _getRegisteredValidatorSigners(core *listener) []common.Address {
 	core.waitUntilMsgHandled(1)
 	return ValidatorSigners.([]common.Address)
 }
-
 func getNumRegisteredValidators(_ *cli.Context, core *listener) error {
 	var NumValidators interface{}
 	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
@@ -660,6 +667,38 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
+func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== getPendingVotersForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotersForValidator", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("getPendingVotersForValidator", "voters", ret.([]common.Address))
+	return nil
+}
+func getPendingInfoForValidator(_ *cli.Context, core *listener) error {
+	type ret []interface{}
+	var Value interface{}
+	var Epoch interface{}
+	t := ret{&Value, &Epoch}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	f := func(output []byte) {
+		err := abiElection.UnpackIntoInterface(&t, "pendingInfo", output)
+		if err != nil {
+			isContinueError = false
+			log.Error("getPendingInfoForValidator", "err", err)
+		}
+	}
+	log.Info("=== getPendingInfoForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, ElectionAddress, nil, abiElection, "pendingInfo", core.cfg.From, core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("getPendingInfoForValidator", "Value", Epoch.(*big.Int), "Epoch", Value.(*big.Int))
+	return nil
+}
 
 func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	var ret interface{}
@@ -672,6 +711,7 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
 	return nil
 }
+
 func getActiveVotesForValidator(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
@@ -681,18 +721,6 @@ func getActiveVotesForValidator(_ *cli.Context, core *listener) error {
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
-	return nil
-}
-
-func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
-	var ret interface{}
-	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
-	abiElection := core.cfg.ElectionParameters.ElectionABI
-	log.Info("=== getPendingVotersForValidator ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotersForValidator", core.cfg.TargetAddress)
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	log.Info("getPendingVotersForValidator", "voters", ret.([]common.Address))
 	return nil
 }
 
@@ -722,7 +750,6 @@ func _getValidatorsVotedForByAccount(core *listener, target common.Address) []co
 	result := ret.([]common.Address)
 	return result
 }
-
 func getAccountTotalLockedGold(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
@@ -752,14 +779,13 @@ func getAccountLockedGoldRequirement(_ *cli.Context, core *listener) error {
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	log.Info("=== getAccountLockedGoldRequirement ===", "admin", core.cfg.From, "target", core.cfg.TargetAddress.String())
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "getAccountLockedGoldRequirement", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "getAccountLockedGoldRequirement", core.cfg.TargetAddress)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	result := ret.(*big.Int)
 	log.Info("result", "GoldRequirement", result)
 	return nil
 }
-
 func getTotalVotes(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	log.Info("=== getAccountLockedGoldRequirement ===", "admin", core.cfg.From)
@@ -802,7 +828,6 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	//fmt.Println(result.String())
 	return nil
 }
-
 func getPendingWithdrawals(_ *cli.Context, core *listener) error {
 	type ret []interface{}
 	var Values interface{}
