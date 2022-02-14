@@ -170,7 +170,7 @@ var queryNumRegisteredValidatorsCommand = cli.Command{
 }
 var queryTopValidatorsCommand = cli.Command{
 	Name:   "getTopValidators",
-	Usage:  "get Top Group Validators",
+	Usage:  "get Top Validators",
 	Action: MigrateFlags(getTopValidators),
 	Flags:  Flags,
 }
@@ -202,6 +202,19 @@ var getActiveVotesForValidatorByAccountCommand = cli.Command{
 	Name:   "getActiveVotesForValidatorByAccount",
 	Usage:  "Returns the active votes for `validator` made by `account`",
 	Action: MigrateFlags(getActiveVotesForValidatorByAccount),
+	Flags:  Flags,
+}
+var getActiveVotesForValidatorCommand = cli.Command{
+	Name:   "getActiveVotesForValidator",
+	Usage:  "Returns the total active vote units made for `validator`.",
+	Action: MigrateFlags(getActiveVotesForValidator),
+	Flags:  Flags,
+}
+
+var getPendingVotersForValidatorCommand = cli.Command{
+	Name:   "getPendingVotersForValidator",
+	Usage:  "Returns the total pending voters vote for target `validator`.",
+	Action: MigrateFlags(getPendingVotersForValidator),
 	Flags:  Flags,
 }
 var getValidatorsVotedForByAccountCommand = cli.Command{
@@ -498,7 +511,7 @@ func ConvertToFraction(num interface{}) string {
 	return str
 }
 
-func getRewardInfo(ctx *cli.Context, core *listener) error {
+func getRewardInfo(_ *cli.Context, core *listener) error {
 	curBlockNumber, err := core.conn.BlockNumber(context.Background())
 	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
 	if err != nil {
@@ -647,6 +660,7 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
+
 func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
@@ -656,6 +670,29 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
+	return nil
+}
+func getActiveVotesForValidator(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== getActiveVotesForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidator", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("ActiveVotes", "balance", ret.(*big.Int))
+	return nil
+}
+
+func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== getPendingVotersForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotersForValidator", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("getPendingVotersForValidator", "voters", ret.([]common.Address))
 	return nil
 }
 

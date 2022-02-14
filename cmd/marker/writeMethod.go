@@ -115,6 +115,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 		//logger.Info("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		logger.Info("Transaction Success", "block Number", receipt.BlockNumber.Uint64())
 	} else if receipt.Status == types.ReceiptStatusFailed {
+		isContinueError = false
 		logger.Info("Transaction Failed ", "Block Number", receipt.BlockNumber.Uint64())
 	}
 }

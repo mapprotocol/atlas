@@ -60,6 +60,8 @@ func init() {
 		activateCommand,
 		getPendingVotesForValidatorByAccountCommand,
 		getActiveVotesForValidatorByAccountCommand,
+		getActiveVotesForValidatorCommand,
+		getPendingVotersForValidatorCommand,
 
 		revokePendingCommand,
 		revokeActiveCommand,

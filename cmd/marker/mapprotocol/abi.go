@@ -3409,6 +3409,32 @@ func init() {
       "type": "function"
     },
     {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "pendingInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "constant": false,
       "inputs": [
         {
@@ -3587,85 +3613,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVotesForValidatorByAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
       "name": "getTotalVotesForValidatorByAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVoteForValidatorByAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVotesForValidator",
       "outputs": [
         {
           "internalType": "uint256",
@@ -3728,7 +3676,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVotersForValidator",
+      "name": "getPendingVotersForValidator",
       "outputs": [
         {
           "internalType": "address[]",
@@ -3815,6 +3763,16 @@ func init() {
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lesser",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "greater",
+          "type": "address"
         }
       ],
       "name": "distributeEpochVotersRewards",
@@ -4081,6 +4039,53 @@ func init() {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "getActiveVotesForValidatorByAccount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "validators",
+          "type": "address[]"
+        }
+      ],
+      "name": "activeAllPending",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
       "payable": false,
@@ -5647,7 +5652,7 @@ func init() {
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ]`) // Proxy ABI
+  ]`) // LockedGold ABI
 	abis["Proxy"] = mustParseABI(`[
     {
       "inputs": [],
@@ -5766,7 +5771,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Random ABI
+  ]`) // Proxy ABI
 	abis["Random"] = mustParseABI(`[
     {
       "anonymous": false,
@@ -6383,7 +6388,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Registry ABI
+  ]`) // Random ABI
 	abis["Validators"] = mustParseABI(`[
     {
       "inputs": [
@@ -7506,6 +7511,11 @@ func init() {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "payable": false,
@@ -7961,14 +7971,13 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`)
+  ]`) // Validators ABI
 }
 
 var genesisAddresses = map[string]common.Address{
 	// Contract implementations
 	"Registry":             addr("0xce11"),
 	"GoldToken":            addr("0xf003"),
-	"SortedOracles":        addr("0xf004"),
 	"StableToken":          addr("0xf008"),
 	"Exchange":             addr("0xf009"),
 	"Accounts":             addr("0xf010"),

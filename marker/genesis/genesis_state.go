@@ -599,18 +599,98 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Println("=== totalPayment ===", totalPayment)
 
-	totalPayment := new(*big.Int)
-	if _, err := ctx.contract("Election").Query(totalPayment, "getTotalVotes"); err != nil {
+	/*	totalPayment := new(*big.Int)
+		if _, err := ctx.contract("Election").Query(totalPayment, "getTotalVotes"); err != nil {
+			fmt.Println("err:", err)
+			return err
+		}
+		fmt.Println("=== totalPayment ===", totalPayment)
+
+		out := new([]common.Address)
+		if _, err := ctx.contract("Election").Query(out, "electNValidatorSigners", big.NewInt(2), big.NewInt(110)); err != nil {
+			return err
+		}
+		fmt.Println(out)*/
+
+	/*
+		var (
+			scoreRet *big.Int
+			isValidator bool
+		)
+		out := &[]interface{}{
+			&scoreRet,
+			&isValidator,
+		}
+
+		validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+		if _, err := ctx.contract("Validators").Query(out, "updateValidatorScoreFromSigner", validatorAddr, big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1e18))); err != nil {
+			fmt.Println("err:", err)
+			return err
+		}
+		fmt.Println(scoreRet,isValidator)*/
+
+	//var totalVotes *big.Int
+	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//if _, err := ctx.contract("Election").Query(&totalVotes, "getActiveVotesForValidator", validatorAddr); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== getActiveVotesForValidator ===",totalVotes)
+	//var totalVotes *big.Int
+	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//if _, err := ctx.contract("Election").Query(&totalVotes, "getActiveVotesForValidatorByAccount", validatorAddr,validatorAddr); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== getActiveVotesForValidatorByAccount ===",totalVotes)
+
+	//var totalVotes *big.Int
+	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//if _, err := ctx.contract("Election").Query(&totalVotes, "getPendingVotesForValidatorByAccount", validatorAddr,validatorAddr); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== getPendingVotesForValidatorByAccount ===",totalVotes)
+
+	//var voters interface{}
+	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//if _, err := ctx.contract("Election").Query(&voters, "getPendingVotersForValidator", validatorAddr); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== getPendingVotersForValidator ===",voters.([]common.Address))
+
+	//activeAllPending
+	var success bool
+	cList := []common.Address{common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")}
+	if _, err := ctx.contract("Election").Query(&success, "activeAllPending", &cList); err != nil {
 		fmt.Println("err:", err)
 		return err
 	}
-	fmt.Println("=== totalPayment ===", totalPayment)
+	fmt.Println("=== activeAllPending ===", success)
 
-	out := new([]common.Address)
-	if _, err := ctx.contract("Election").Query(out, "electNValidatorSigners", big.NewInt(2), big.NewInt(110)); err != nil {
+	var voters interface{}
+	validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	if _, err := ctx.contract("Election").Query(&voters, "getPendingVotersForValidator", validatorAddr); err != nil {
+		fmt.Println("err:", err)
 		return err
 	}
-	fmt.Println(out)
+	fmt.Println("=== getPendingVotersForValidator ===", voters.([]common.Address))
 
+	var value *big.Int
+	var epoch *big.Int
+
+	pendingInfo := &[]interface{}{
+		&value,
+		&epoch,
+	}
+
+	validatorAddr1 := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	if _, err := ctx.contract("Election").Query(pendingInfo, "pendingInfo", validatorAddr1, validatorAddr1); err != nil {
+		fmt.Println("err:", err)
+		return err
+	}
+	fmt.Println("=== pendingInfo  value===", value.String())
+	fmt.Println("=== pendingInfo  epoch===", epoch.String())
 	return nil
 }

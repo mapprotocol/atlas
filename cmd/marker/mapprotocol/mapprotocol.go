@@ -41,21 +41,3 @@ func BuildQuery(contract common.Address, sig EventSig, startBlock *big.Int, endB
 	}
 	return query
 }
-
-//func ParseEthLogIntoSwapWithProofArgs(log types.Log, bridgeAddr common.Address, receipts []*types.Receipt) (uint64, uint64, []byte, error) {
-//	token := log.Topics[1].Bytes()
-//	from := log.Topics[2].Bytes()
-//	to := log.Topics[3].Bytes()
-//	// every 32 bytes forms a value
-//	var orderHash [32]byte
-//	copy(orderHash[:], log.Data[:32])
-//	amount := log.Data[32:64]
-//
-//	fromChainID := log.Data[64:96]
-//	toChainID := log.Data[96:128]
-//	uFromChainID := binary.BigEndian.Uint64(fromChainID[len(fromChainID)-8:])
-//	uToChainID := binary.BigEndian.Uint64(toChainID[len(toChainID)-8:])
-//
-//
-//	return uFromChainID, uToChainID, payloads, nil
-//}
