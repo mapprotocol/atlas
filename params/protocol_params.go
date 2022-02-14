@@ -18,12 +18,13 @@ const (
 	MaxGasForDebitGasFeesTransactions              uint64 = 1 * million
 	MaxGasForCreditGasFeesTransactions             uint64 = 1 * million
 	MaxGasForDistributeEpochPayment                uint64 = 1 * million
-	MaxGasForDistributeEpochRewards                uint64 = 1 * million
+	MaxGasForDistributeVoterEpochRewards           uint64 = 1 * million
 	MaxGasForElectValidators                       uint64 = 50 * million
 	MaxGasForElectNValidatorSigners                uint64 = 50 * million
+	MaxGasForActiveAllPending                      uint64 = 50 * million
 	MaxGasForGetAddressFor                         uint64 = 100 * thousand
 	MaxGasForGetElectableValidators                uint64 = 100 * thousand
-	MaxGasForGetEligibleValidatorGroupsVoteTotals  uint64 = 1 * million
+	MaxGasForGetEligibleValidatorsVoteTotals       uint64 = 1 * million
 	MaxGasForGetGasPriceMinimum                    uint64 = 2 * million
 	MaxGasForGetGroupEpochRewards                  uint64 = 500 * thousand
 	MaxGasForGetPledgeMultiplierInReward           uint64 = 50 * thousand

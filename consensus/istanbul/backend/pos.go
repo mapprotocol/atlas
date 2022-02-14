@@ -18,6 +18,7 @@ package backend
 
 import (
 	"errors"
+	"github.com/mapprotocol/atlas/contracts/election"
 	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"time"
@@ -67,6 +68,18 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		logger.Error(err.Error())
 		return err
 	}
+	var validators_ []common.Address
+	for _, val := range valSet {
+		validators_ = append(validators_, val.Address())
+		sb.logger.Info("Validator elected validator", "validator", val.Address().String())
+	}
+	//----------------------------- Automatic active -------------------
+	b, err := sb.activeAllPending(vmRunner, validators_)
+	if err != nil {
+		return err
+	}
+	log.Info("Automatic active", "success", b)
+	//----------------------------------------------------------------------
 
 	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
@@ -77,12 +90,16 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 	// Reward Validators And voters
-	totalValidatorRewards, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward, scores)
+	totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward, scores)
 	if err != nil {
 		return err
 	}
 	log.Info("totalValidatorRewards", "maxReward", totalValidatorRewards.String())
-
+	totalVoterRewards, err := sb.distributeVoterRewards(vmRunner, validators_, voterRewardData)
+	if err != nil {
+		return err
+	}
+	log.Info("distributeVoterRewards", "totalVoterRewards", totalVoterRewards.String())
 	if communityReward.Cmp(new(big.Int)) != 0 {
 		if err = gold_token.Mint(vmRunner, communityPartnerAddress, communityReward); err != nil {
 			return err
@@ -132,18 +149,21 @@ func (sb *Backend) updateValidatorScores(header *types.Header, state *state.Stat
 /*
 @param maxReward is epochReward for all validators
 */
-func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, valSet []istanbul.Validator, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, error) {
+func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, valSet []istanbul.Validator, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, map[common.Address]*big.Int, error) {
 	totalValidatorRewards := big.NewInt(0)
+	voterRewards := make(map[common.Address]*big.Int, len(valSet))
+
 	for _, val := range valSet {
 		sb.logger.Debug("Distributing epoch reward for validator", "address", val.Address())
-		validatorReward, err := validators.DistributeEpochReward(vmRunner, val.Address(), maxReward, scoreDenominator)
+		validatorReward, voterReward, err := validators.DistributeEpochReward(vmRunner, val.Address(), maxReward, scoreDenominator)
 		if err != nil {
 			sb.logger.Error("Error in distributing rewards to validator", "address", val.Address(), "err", err)
 			continue
 		}
+		voterRewards[val.Address()] = voterReward
 		totalValidatorRewards.Add(totalValidatorRewards, validatorReward)
 	}
-	return totalValidatorRewards, nil
+	return totalValidatorRewards, voterRewards, nil
 }
 
 func (sb *Backend) setInitialGoldTokenTotalSupplyIfUnset(vmRunner vm.EVMRunner) error {
@@ -188,4 +208,19 @@ func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptim
 		sum.Add(sum, PledgeMultiplier)
 	}
 	return sum, nil
+}
+func (sb *Backend) distributeVoterRewards(vmRunner vm.EVMRunner, validators []common.Address, rewards map[common.Address]*big.Int) (*big.Int, error) {
+	totalReward, err := election.DistributeEpochRewards(vmRunner, validators, rewards)
+	if err != nil {
+		return nil, err
+	}
+	return totalReward, nil
+}
+
+func (sb *Backend) activeAllPending(vmRunner vm.EVMRunner, validators []common.Address) (bool, error) {
+	b, err := election.ActiveAllPending(vmRunner, validators)
+	if err != nil {
+		return false, err
+	}
+	return b, nil
 }

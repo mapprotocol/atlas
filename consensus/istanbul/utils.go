@@ -71,7 +71,7 @@ func CheckValidatorSignature(valSet ValidatorSet, data []byte, sig []byte) (comm
 // The return value will be 1-based; thus first block of epoch is 1, and last block of epoch is `epochSize`
 // There is a special case if the number == 0. It is basically the last block of the 0th epoch, and should have a value of epochSize
 func GetNumberWithinEpoch(number uint64, epochSize uint64) uint64 {
-	number = number % epochSize
+	number = number % epochSize // 0    1 - 100  101 - 200
 	if number == 0 {
 		return epochSize
 	}

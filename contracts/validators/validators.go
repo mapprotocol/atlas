@@ -109,10 +109,11 @@ func UpdateValidatorScore(vmRunner vm.EVMRunner, address common.Address, uptime 
 	return uptimeRet, isValidator, err
 }
 
-func DistributeEpochReward(vmRunner vm.EVMRunner, address common.Address, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, error) {
+func DistributeEpochReward(vmRunner vm.EVMRunner, address common.Address, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, *big.Int, error) {
 	var epochReward *big.Int
-	err := distributeEpochPaymentsFromSignerMethod.Execute(vmRunner, &epochReward, common.Big0, address, maxReward, scoreDenominator)
-	return epochReward, err
+	var voterReward *big.Int
+	err := distributeEpochPaymentsFromSignerMethod.Execute(vmRunner, &[]interface{}{&epochReward, &voterReward}, common.Big0, address, maxReward, scoreDenominator)
+	return epochReward, voterReward, err
 }
 
 func GetPledgeMultiplierInReward(vmRunner vm.EVMRunner) (*big.Int, error) {
