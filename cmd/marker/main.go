@@ -32,6 +32,7 @@ var (
 		config.WithdrawIndexFlag,
 		config.RelockIndexFlag,
 		config.TargetAddressFlag,
+		config.ValidatorAddressFlag,
 		config.GasLimitFlag,
 	}
 )
@@ -62,6 +63,7 @@ func init() {
 		getActiveVotesForValidatorByAccountCommand,
 		getActiveVotesForValidatorCommand,
 		getPendingVotersForValidatorCommand,
+		getPendingInfoForValidatorCommand,
 
 		revokePendingCommand,
 		revokeActiveCommand,
@@ -114,8 +116,11 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 
 			}
 		}
-		_config := config.AssemblyConfig(ctx)
-		err := startLogger(ctx, _config)
+		_config, err := config.AssemblyConfig(ctx)
+		if err != nil {
+			panic(err)
+		}
+		err = startLogger(ctx, _config)
 		if err != nil {
 			panic(err)
 		}

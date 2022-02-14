@@ -77,9 +77,16 @@ var (
 	}
 	TargetAddressFlag = cli.StringFlag{
 		Name:  "target",
-		Usage: "Transfer address",
+		Usage: "Target query address",
 		Value: "",
 	}
+
+	ValidatorAddressFlag = cli.StringFlag{
+		Name:  "validator",
+		Usage: "validator address",
+		Value: "",
+	}
+
 	GasLimitFlag = cli.Int64Flag{
 		Name:  "gasLimit",
 		Usage: "use for sendContractTransaction gasLimit",

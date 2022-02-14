@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-const DefaultGasLimit = 6721975
+const DefaultGasLimit = 4500000
 
 func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte, gasLimitSeting uint64) common.Hash {
 	// Ensure a valid value field and resolve the account nonce
@@ -25,10 +25,10 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
+	//gasPrice = big.NewInt(1000 000 000 000)
 	if err != nil {
 		log.Error("SuggestGasPrice", "error", err)
 	}
-	//gasLimit := uint64(3100000) // in units
 	gasLimit := uint64(DefaultGasLimit) // in units
 
 	//If the contract surely has code (or code is not needed), estimate the transaction
@@ -42,6 +42,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 		//gasLimit = 866328
 		gasLimit = 2100000
 	}
+	gasLimit = uint64(DefaultGasLimit)
 
 	if gasLimitSeting != 0 {
 		gasLimit = gasLimitSeting // in units

@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"io/ioutil"
 )
@@ -78,22 +79,24 @@ func (a *Account) String() string {
 		a.PrivateKeyHex(),
 	)
 }
-func LoadAccount(path string, password string) Account {
+func LoadAccount(path string, password string) (*Account, error) {
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
-		panic(fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+		log.Error("LoadAccount", "msg", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+		return nil, err
 	}
 	key, err := keystore.DecryptKey(keyjson, password)
 	if err != nil {
-		panic(fmt.Errorf("error decrypting key: %v", err))
+		log.Error("LoadAccount", "msg", fmt.Errorf("error decrypting key: %v", err))
+		return nil, err
 	}
 	priKey1 := key.PrivateKey
 	publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
 	var addr common.Address
 	addr.SetBytes(publicAddr.Bytes())
 
-	return Account{
+	return &Account{
 		Address:    addr,
 		PrivateKey: priKey1,
-	}
+	}, nil
 }
