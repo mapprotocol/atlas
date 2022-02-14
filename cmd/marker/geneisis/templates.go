@@ -10,6 +10,10 @@ import (
 	"github.com/mapprotocol/atlas/params"
 )
 
+const (
+	Epoch uint64 = 20
+)
+
 type template interface {
 	createEnv(workdir string) (*env.Environment, error)
 	createGenesisConfig(*env.Environment) (*genesis.Config, error)
@@ -49,7 +53,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
 
 	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
-		Epoch:          10,
+		Epoch:          Epoch,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
 		BlockPeriod:    1,
@@ -126,7 +130,7 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 
 func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
 	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
-		Epoch:          10,
+		Epoch:          Epoch,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
 		BlockPeriod:    1,

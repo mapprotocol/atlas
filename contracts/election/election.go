@@ -17,17 +17,23 @@ package election
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
+	"sort"
 )
 
 var (
-	electValidatorSignersMethod  = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electValidatorSigners", params.MaxGasForElectValidators)
-	getElectableValidatorsMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getElectableValidators", params.MaxGasForGetElectableValidators)
-	electNValidatorSignersMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electNValidatorSigners", params.MaxGasForElectNValidatorSigners)
+	electValidatorSignersMethod              = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electValidatorSigners", params.MaxGasForElectValidators)
+	getElectableValidatorsMethod             = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getElectableValidators", params.MaxGasForGetElectableValidators)
+	electNValidatorSignersMethod             = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electNValidatorSigners", params.MaxGasForElectNValidatorSigners)
+	getTotalVotesForEligibleValidatorsMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getTotalVotesForEligibleValidators", params.MaxGasForGetEligibleValidatorsVoteTotals)
+	distributeEpochVotersRewardsMethod       = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "distributeEpochVotersRewards", params.MaxGasForDistributeVoterEpochRewards)
+
+	activeAllPendingMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "activeAllPending", params.MaxGasForActiveAllPending)
 )
 
 func GetElectedValidators(vmRunner vm.EVMRunner) ([]common.Address, error) {
@@ -55,4 +61,84 @@ func ElectNValidatorSigners(vmRunner vm.EVMRunner, additionalAboveMaxElectable i
 		return nil, err
 	}
 	return electedValidators, nil
+}
+
+type voteTotal struct {
+	Validator common.Address
+	Value     *big.Int
+}
+
+func getTotalVotesForEligibleValidators(vmRunner vm.EVMRunner) ([]voteTotal, error) {
+	var validators []common.Address
+	var values []*big.Int
+	err := getTotalVotesForEligibleValidatorsMethod.Query(vmRunner, &[]interface{}{&validators, &values})
+	if err != nil {
+		return nil, err
+	}
+
+	voteTotals := make([]voteTotal, len(validators))
+	for i, validator := range validators {
+		log.Trace("Got Validator vote total", "Validator", validator, "value", values[i])
+		voteTotals[i].Validator = validator
+		voteTotals[i].Value = values[i]
+	}
+	return voteTotals, err
+}
+
+func DistributeEpochRewards(vmRunner vm.EVMRunner, validators []common.Address, rewards map[common.Address]*big.Int) (*big.Int, error) {
+	totalRewards := big.NewInt(0)
+	voteTotals, err := getTotalVotesForEligibleValidators(vmRunner)
+	if err != nil {
+		return totalRewards, err
+	}
+
+	for _, validator := range validators {
+		reward := rewards[validator]
+		if rewards[validator] == nil {
+			reward = big.NewInt(0)
+		}
+		for _, voteTotal := range voteTotals {
+			if voteTotal.Validator == validator {
+				if rewards[validator] != nil {
+					voteTotal.Value.Add(voteTotal.Value, rewards[validator])
+				}
+				break
+			}
+		}
+
+		// Sorting in descending order is necessary to match the order on-chain.
+		// TODO: We could make this more efficient by only moving the newly vote member.
+		sort.SliceStable(voteTotals, func(j, k int) bool {
+			return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
+		})
+
+		lesser := params.ZeroAddress
+		greater := params.ZeroAddress
+		for j, voteTotal := range voteTotals {
+			if voteTotal.Validator == validator {
+				if j > 0 {
+					greater = voteTotals[j-1].Validator
+				}
+				if j+1 < len(voteTotals) {
+					lesser = voteTotals[j+1].Validator
+				}
+				break
+			}
+		}
+		err := distributeEpochVotersRewardsMethod.Execute(vmRunner, nil, common.Big0, validator, reward, lesser, greater)
+		if err != nil {
+			return totalRewards, err
+		}
+		totalRewards.Add(totalRewards, reward)
+	}
+	return totalRewards, nil
+}
+func ActiveAllPending(vmRunner vm.EVMRunner, validators []common.Address) (bool, error) {
+	// Automatic activation
+	var success bool
+	err := activeAllPendingMethod.Execute(vmRunner, &success, common.Big0, validators)
+	if err != nil {
+		return false, err
+	}
+	return success, nil
 }

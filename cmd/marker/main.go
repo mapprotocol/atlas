@@ -60,6 +60,8 @@ func init() {
 		activateCommand,
 		getPendingVotesForValidatorByAccountCommand,
 		getActiveVotesForValidatorByAccountCommand,
+		getActiveVotesForValidatorCommand,
+		getPendingVotersForValidatorCommand,
 
 		revokePendingCommand,
 		revokeActiveCommand,
@@ -70,6 +72,8 @@ func init() {
 		withdrawCommand,
 		queryTotalVotesForEligibleValidatorsCommand,
 		queryRegisteredValidatorSignersCommand,
+		getValidatorCommand,
+		getRewardInfoCommand,
 		queryNumRegisteredValidatorsCommand,
 		queryTopValidatorsCommand,
 		queryValidatorEligibilityCommand,

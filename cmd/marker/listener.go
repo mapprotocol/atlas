@@ -2,16 +2,24 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/mapprotocol/atlas/cmd/marker/config"
 	"github.com/mapprotocol/atlas/cmd/marker/connections"
+	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/helper/decimal"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
+
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
+	"strings"
 )
 
 var (
@@ -140,6 +148,20 @@ var queryRegisteredValidatorSignersCommand = cli.Command{
 	Action: MigrateFlags(getRegisteredValidatorSigners),
 	Flags:  Flags,
 }
+
+var getValidatorCommand = cli.Command{
+	Name:   "getValidator",
+	Usage:  "getValidator Info",
+	Action: MigrateFlags(getValidator),
+	Flags:  Flags,
+}
+
+var getRewardInfoCommand = cli.Command{
+	Name:   "getRewardInfo",
+	Usage:  "getValidator Info",
+	Action: MigrateFlags(getRewardInfo),
+	Flags:  Flags,
+}
 var queryNumRegisteredValidatorsCommand = cli.Command{
 	Name:   "getNumRegisteredValidators",
 	Usage:  "get Num RegisteredValidators",
@@ -148,7 +170,7 @@ var queryNumRegisteredValidatorsCommand = cli.Command{
 }
 var queryTopValidatorsCommand = cli.Command{
 	Name:   "getTopValidators",
-	Usage:  "get Top Group Validators",
+	Usage:  "get Top Validators",
 	Action: MigrateFlags(getTopValidators),
 	Flags:  Flags,
 }
@@ -180,6 +202,19 @@ var getActiveVotesForValidatorByAccountCommand = cli.Command{
 	Name:   "getActiveVotesForValidatorByAccount",
 	Usage:  "Returns the active votes for `validator` made by `account`",
 	Action: MigrateFlags(getActiveVotesForValidatorByAccount),
+	Flags:  Flags,
+}
+var getActiveVotesForValidatorCommand = cli.Command{
+	Name:   "getActiveVotesForValidator",
+	Usage:  "Returns the total active vote units made for `validator`.",
+	Action: MigrateFlags(getActiveVotesForValidator),
+	Flags:  Flags,
+}
+
+var getPendingVotersForValidatorCommand = cli.Command{
+	Name:   "getPendingVotersForValidator",
+	Usage:  "Returns the total pending voters vote for target `validator`.",
+	Action: MigrateFlags(getPendingVotersForValidator),
 	Flags:  Flags,
 }
 var getValidatorsVotedForByAccountCommand = cli.Command{
@@ -256,7 +291,7 @@ func quicklyRegisterValidator(ctx *cli.Context, core *listener) error {
 	if isContinueError {
 		registerValidator(ctx, core)
 	}
-	log.Info("END")
+	log.Info("=== End ===")
 	return nil
 }
 
@@ -330,7 +365,7 @@ func quicklyVote(ctx *cli.Context, core *listener) error {
 	if isContinueError {
 		vote(ctx, core)
 	}
-	log.Info("END")
+	log.Info("=== End ===")
 	return nil
 }
 
@@ -422,6 +457,90 @@ func getRegisteredValidatorSigners(_ *cli.Context, core *listener) error {
 	return nil
 }
 
+func getValidator(_ *cli.Context, core *listener) error {
+	type ret struct {
+		EcdsaPublicKey      interface{}
+		BlsPublicKey        interface{}
+		Score               interface{}
+		Signer              interface{}
+		Commission          interface{}
+		NextCommission      interface{}
+		NextCommissionBlock interface{}
+		SlashMultiplier     interface{}
+		LastSlashed         interface{}
+	}
+	var t ret
+	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidator := core.cfg.ValidatorParameters.ValidatorABI
+	f := func(output []byte) {
+		err := abiValidator.UnpackIntoInterface(&t, "getValidator", output)
+		if err != nil {
+			isContinueError = false
+			log.Error("getValidator", "err", err)
+		}
+	}
+
+	log.Info("=== getValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, validatorAddress, nil, abiValidator, "getValidator", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	if !isContinueError {
+		return nil
+	}
+	log.Info("", "ecdsaPublicKey", common.BytesToHash(t.EcdsaPublicKey.([]byte)).String())
+	log.Info("", "BlsPublicKey", common.BytesToHash(t.BlsPublicKey.([]byte)).String())
+	log.Info("", "Score", ConvertToFraction(t.Score))
+	log.Info("", "Signer", t.Signer)
+	log.Info("", "Commission", ConvertToFraction(t.Commission))
+	log.Info("", "NextCommission", ConvertToFraction(t.NextCommission))
+	log.Info("", "NextCommissionBlock", t.NextCommissionBlock)
+	log.Info("", "SlashMultiplier", ConvertToFraction(t.SlashMultiplier))
+	log.Info("", "LastSlashed", ConvertToFraction(t.LastSlashed))
+	return nil
+}
+
+func ConvertToFraction(num interface{}) string {
+	s := num.(*big.Int)
+	p := decimal.Precision(24)
+	b, err := decimal.ToJSON(s, p)
+	if err != nil {
+		log.Error("ConvertToFraction", "err", err)
+	}
+	str := (string)(b)
+	str = strings.Replace(str, "\"", "", -1)
+	return str
+}
+
+func getRewardInfo(_ *cli.Context, core *listener) error {
+	curBlockNumber, err := core.conn.BlockNumber(context.Background())
+	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
+	if err != nil {
+		return err
+	}
+	EpochFirst, err := istanbul.GetEpochFirstBlockGivenBlockNumber(curBlockNumber, epochSize)
+	if err != nil {
+		return err
+	}
+	Epoch := istanbul.GetEpochNumber(curBlockNumber, epochSize)
+	validatorContractAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	queryBlock := big.NewInt(int64(EpochFirst - 1))
+	log.Info("=== getReward ===", "cur_epoch", Epoch, "epochSize", epochSize, "queryBlockNumber", queryBlock, "validatorContractAddress", validatorContractAddress.String(), "admin", core.cfg.From)
+	query := mapprotocol.BuildQuery(validatorContractAddress, mapprotocol.ValidatorEpochPaymentDistributed, queryBlock, queryBlock)
+	// querying for logs
+	logs, err := core.conn.FilterLogs(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		//validator := common.Bytes2Hex(l.Topics[0].Bytes())
+		validator := common.BytesToAddress(l.Topics[1].Bytes())
+		reward := big.NewInt(0).SetBytes(l.Data[:32])
+		log.Info("", "validator", validator, "reward", reward)
+	}
+	log.Info("=== END ===")
+	return nil
+}
+
 func _getRegisteredValidatorSigners(core *listener) []common.Address {
 	var ValidatorSigners interface{}
 	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
@@ -474,6 +593,7 @@ func getTotalVotesForEligibleValidators(_ *cli.Context, core *listener) error {
 	f := func(output []byte) {
 		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
 		if err != nil {
+			isContinueError = false
 			log.Error("getTotalVotesForEligibleValidators", "err", err)
 		}
 	}
@@ -540,6 +660,7 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
+
 func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
@@ -549,6 +670,29 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
+	return nil
+}
+func getActiveVotesForValidator(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== getActiveVotesForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidator", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("ActiveVotes", "balance", ret.(*big.Int))
+	return nil
+}
+
+func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	log.Info("=== getPendingVotersForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotersForValidator", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("getPendingVotersForValidator", "voters", ret.([]common.Address))
 	return nil
 }
 
@@ -626,6 +770,36 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	core.waitUntilMsgHandled(1)
 	result := ret.(*big.Int)
 	log.Info("result", "getTotalVotes", result)
+	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1e18))
+	//var ret interface{}
+	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	//abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "calculateEpochScore", updatetime)
+	//go core.writer.ResolveMessage(m)
+	//core.waitUntilMsgHandled(1)
+	//result := ret.(*big.Int)
+	//log.Info("111111", "calculateEpochScore1 ", result)
+	//log.Info("111111", "calculateEpochScore1 ", updatetime)
+	//log.Info("222222", "calculateEpochScore2 ", params.MustBigInt("1000000000000000000000000"))
+	//log.Info("222222", "calculateEpochScore2 ", params.MustBigInt("271000000000000000000000"))
+	//log.Info("333333", "calculateEpochScore3 ", fixed.MustNew("0.271").BigInt())
+	//a:=params.MustBigInt("1000000000000000000000000")
+	//fmt.Println(result.Div(result,a))
+	//INFO [01-19|11:00:16.269] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =1,000,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =271,000,000,000,000,000,000,000
+	//INFO [01-19|11:00:16.289] 333333                                   calculateEpochScore3 =271,000,000,000,000,000,000,000
+
+	//updatetime := big.NewInt(90)
+	//var ret interface{}
+	//ValidatorAddress := mapprotocol.MustProxyAddressFor("Random")
+	//abiValidators := mapprotocol.AbiFor("Random")
+	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "getBlockRandomness", updatetime)
+	//go core.writer.ResolveMessage(m)
+	//core.waitUntilMsgHandled(1)
+	//result := ret.(common.Hash)
+	//fmt.Println(result.String())
 	return nil
 }
 
@@ -640,6 +814,7 @@ func getPendingWithdrawals(_ *cli.Context, core *listener) error {
 	f := func(output []byte) {
 		err := abiLockedGold.UnpackIntoInterface(&t, "getPendingWithdrawals", output)
 		if err != nil {
+			isContinueError = false
 			log.Error("getPendingWithdrawals", "err", err)
 		}
 	}
@@ -731,6 +906,7 @@ func getGreaterLesser(core *listener, target common.Address) (common.Address, co
 	f := func(output []byte) {
 		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
 		if err != nil {
+			isContinueError = false
 			log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
 		}
 	}
@@ -792,6 +968,7 @@ func getGreaterLesser1(core *listener, target common.Address) (common.Address, c
 	f := func(output []byte) {
 		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
 		if err != nil {
+			isContinueError = false
 			log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
 		}
 	}
@@ -830,7 +1007,6 @@ func getGreaterLesser1(core *listener, target common.Address) (common.Address, c
 }
 
 func GetIndex(target common.Address, list []common.Address) (*big.Int, error) {
-
 	//fmt.Println("=== target ===", target.String())
 	for index, v := range list {
 		//fmt.Println("=== list ===", v.String())

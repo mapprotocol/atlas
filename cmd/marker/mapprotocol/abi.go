@@ -3409,6 +3409,37 @@ func init() {
       "type": "function"
     },
     {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "pendingInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "constant": false,
       "inputs": [
         {
@@ -3587,85 +3618,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVotesForValidatorByAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
       "name": "getTotalVotesForValidatorByAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVoteForValidatorByAccount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "getActiveVotesForValidator",
       "outputs": [
         {
           "internalType": "uint256",
@@ -3728,7 +3681,7 @@ func init() {
           "type": "address"
         }
       ],
-      "name": "getActiveVotersForValidator",
+      "name": "getPendingVotersForValidator",
       "outputs": [
         {
           "internalType": "address[]",
@@ -3815,6 +3768,16 @@ func init() {
           "internalType": "uint256",
           "name": "value",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lesser",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "greater",
+          "type": "address"
         }
       ],
       "name": "distributeEpochVotersRewards",
@@ -4081,6 +4044,53 @@ func init() {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "getActiveVotesForValidatorByAccount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "validators",
+          "type": "address[]"
+        }
+      ],
+      "name": "activeAllPending",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
       "payable": false,
@@ -5647,7 +5657,7 @@ func init() {
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ]`) // Proxy ABI
+  ]`) // LockedGold ABI
 	abis["Proxy"] = mustParseABI(`[
     {
       "inputs": [],
@@ -5766,7 +5776,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Random ABI
+  ]`) // Proxy ABI
 	abis["Random"] = mustParseABI(`[
     {
       "anonymous": false,
@@ -6383,7 +6393,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Registry ABI
+  ]`) // Random ABI
 	abis["Validators"] = mustParseABI(`[
     {
       "inputs": [
@@ -7506,6 +7516,11 @@ func init() {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "payable": false,
@@ -7961,65 +7976,34 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`)
+  ]`) // Validators ABI
 }
 
 var genesisAddresses = map[string]common.Address{
 	// Contract implementations
-	"Registry":                   addr("0xce11"),
-	"Freezer":                    addr("0xf001"),
-	"FeeCurrencyWhitelist":       addr("0xf002"),
-	"GoldToken":                  addr("0xf003"),
-	"SortedOracles":              addr("0xf004"),
-	"GasPriceMinimum":            addr("0xf005"),
-	"ReserveSpenderMultiSig":     addr("0xf006"),
-	"Reserve":                    addr("0xf007"),
-	"StableToken":                addr("0xf008"),
-	"Exchange":                   addr("0xf009"),
-	"Accounts":                   addr("0xf010"),
-	"LockedGold":                 addr("0xf011"),
-	"Validators":                 addr("0xf012"),
-	"Election":                   addr("0xf013"),
-	"EpochRewards":               addr("0xf014"),
-	"Random":                     addr("0xf015"),
-	"Attestations":               addr("0xf016"),
-	"Escrow":                     addr("0xf017"),
-	"BlockchainParameters":       addr("0xf018"),
-	"GovernanceSlasher":          addr("0xf019"),
-	"DoubleSigningSlasher":       addr("0xf020"),
-	"DowntimeSlasher":            addr("0xf021"),
-	"GovernanceApproverMultiSig": addr("0xf022"),
-	"Governance":                 addr("0xf023"),
-	"StableTokenEUR":             addr("0xf024"),
-	"ExchangeEUR":                addr("0xf025"),
+	"Registry":             addr("0xce11"),
+	"GoldToken":            addr("0xf003"),
+	"StableToken":          addr("0xf008"),
+	"Exchange":             addr("0xf009"),
+	"Accounts":             addr("0xf010"),
+	"LockedGold":           addr("0xf011"),
+	"Validators":           addr("0xf012"),
+	"Election":             addr("0xf013"),
+	"EpochRewards":         addr("0xf014"),
+	"Random":               addr("0xf015"),
+	"BlockchainParameters": addr("0xf018"),
 
 	// Contract Proxies
-	"RegistryProxy":                   addr("0xce10"),
-	"FreezerProxy":                    addr("0xd001"),
-	"FeeCurrencyWhitelistProxy":       addr("0xd002"),
-	"GoldTokenProxy":                  addr("0xd003"),
-	"SortedOraclesProxy":              addr("0xd004"),
-	"GasPriceMinimumProxy":            addr("0xd005"),
-	"ReserveSpenderMultiSigProxy":     addr("0xd006"),
-	"ReserveProxy":                    addr("0xd007"),
-	"StableTokenProxy":                addr("0xd008"),
-	"ExchangeProxy":                   addr("0xd009"),
-	"AccountsProxy":                   addr("0xd010"),
-	"LockedGoldProxy":                 addr("0xd011"),
-	"ValidatorsProxy":                 addr("0xd012"),
-	"ElectionProxy":                   addr("0xd013"),
-	"EpochRewardsProxy":               addr("0xd014"),
-	"RandomProxy":                     addr("0xd015"),
-	"AttestationsProxy":               addr("0xd016"),
-	"EscrowProxy":                     addr("0xd017"),
-	"BlockchainParametersProxy":       addr("0xd018"),
-	"GovernanceSlasherProxy":          addr("0xd019"),
-	"DoubleSigningSlasherProxy":       addr("0xd020"),
-	"DowntimeSlasherProxy":            addr("0xd021"),
-	"GovernanceApproverMultiSigProxy": addr("0xd022"),
-	"GovernanceProxy":                 addr("0xd023"),
-	"StableTokenEURProxy":             addr("0xd024"),
-	"ExchangeEURProxy":                addr("0xd025"),
+	"RegistryProxy":             addr("0xce10"),
+	"GoldTokenProxy":            addr("0xd003"),
+	"StableTokenProxy":          addr("0xd008"),
+	"AccountsProxy":             addr("0xd010"),
+	"LockedGoldProxy":           addr("0xd011"),
+	"ValidatorsProxy":           addr("0xd012"),
+	"ElectionProxy":             addr("0xd013"),
+	"EpochRewardsProxy":         addr("0xd014"),
+	"RandomProxy":               addr("0xd015"),
+	"BlockchainParametersProxy": addr("0xd018"),
 }
 
 func mustParseABI(abiStr string) *abi.ABI {

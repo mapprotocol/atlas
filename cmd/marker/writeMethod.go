@@ -34,14 +34,14 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	//If the contract surely has code (or code is not needed), estimate the transaction
 
 	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
-	_, err = client.EstimateGas(context.Background(), msg)
+	gasLimit, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
 		logger.Error("Contract exec failed", "error", err)
 	}
-	//if gasLimit < 1 {
-	//	//gasLimit = 866328
-	//	gasLimit = 2100000
-	//}
+	if gasLimit < 1 {
+		//gasLimit = 866328
+		gasLimit = 2100000
+	}
 
 	if gasLimitSeting != 0 {
 		gasLimit = gasLimitSeting // in units
@@ -115,6 +115,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 		//logger.Info("Transaction Success", " block Number", receipt.BlockNumber.Uint64(), " block txs", len(block.Transactions()), "blockhash", block.Hash().Hex())
 		logger.Info("Transaction Success", "block Number", receipt.BlockNumber.Uint64())
 	} else if receipt.Status == types.ReceiptStatusFailed {
+		isContinueError = false
 		logger.Info("Transaction Failed ", "Block Number", receipt.BlockNumber.Uint64())
 	}
 }
