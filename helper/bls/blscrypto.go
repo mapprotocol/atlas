@@ -116,7 +116,7 @@ func CryptoType() BLSCryptoSelector {
 		curve := BLS12377{}
 		return curve
 	case BLS12381Curve:
-		//curve := BLS12377{}
+		//curve := BLS12381{}
 		return nil //curve
 	default:
 		// Programming error.
