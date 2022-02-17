@@ -1,4 +1,4 @@
-package bn256
+package bn256_dusk_network
 
 import (
 	"bytes"

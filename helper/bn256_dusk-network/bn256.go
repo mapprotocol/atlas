@@ -3,7 +3,7 @@
 // The form implemented uses an array of distinct keys (as in https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html)
 // instead of the aggregated form (as in https://eprint.iacr.org/2018/483.pdf where {pk₁,...,pkₙ} would be appended to each pkᵢ
 //according to apk ← ∏ⁿᵢ₌₁ pk^H₁(pkᵢ, {pk₁,...,pkₙ})
-package bn256
+package bn256_dusk_network
 
 import (
 	"crypto/rand"

@@ -1,7 +1,8 @@
-package bn256
+package bn256_keep_network
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	blscrypto "github.com/celo-org/celo-bls-go/bls"
 	"github.com/mapprotocol/atlas/helper/bls"
 )
@@ -18,28 +19,26 @@ func (BN256) PrivateToPublic(privateKeyBytes []byte) (bls.SerializedPublicKey, e
 
 func (BN256) VerifyAggregatedSignature(publicKeys []bls.SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
 	sigma := &Signature{}
-	err := sigma.Unmarshal(signature)
+	err := sigma.UnmarshalJSON(signature)
 	if err != nil {
 		return err
 	}
 
 	var pks []*PublicKey
+	var apk PublicKey
 	for _, v := range publicKeys {
 		var pk2 *PublicKey
-		err = pk2.UnmarshalText(v[:])
+		err = pk2.UnmarshalJSON(v[:])
 		if err != nil {
 			return err
 		}
 		pks = append(pks, pk2)
+		apk = apk.Aggregate(*pk2)
 	}
 
-	apk, err := AggregateApk(pks)
-	if err != nil {
-		return err
-	}
-	err = Verify(apk, message, sigma)
-	if err != nil {
-		return err
+	ok := sigma.Verify(apk, message)
+	if ok == false {
+		return errors.New("no pass")
 	}
 	return err
 }
@@ -48,18 +47,18 @@ func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
 	sigma := &Signature{}
 	for _, v := range signatures {
 		var sign Signature
-		err := sign.Unmarshal(v)
+		err := sign.UnmarshalJSON(v)
 		if err != nil {
 			return nil, err
 		}
-		sigma.Aggregate(&sign)
+		sigma.Aggregate(sign)
 	}
 	return sigma.Marshal(), nil
 }
 
 func (BN256) VerifySignature(publicKey bls.SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
 	var sign Signature
-	err := sign.Unmarshal(signature)
+	err := sign.UnmarshalJSON(signature)
 	if err != nil {
 		return err
 	}
@@ -70,14 +69,14 @@ func (BN256) VerifySignature(publicKey bls.SerializedPublicKey, message []byte, 
 	}
 
 	var pk *PublicKey
-	err = pk.UnmarshalText(p)
+	err = pk.UnmarshalJSON(p)
 	if err != nil {
 		return err
 	}
 
-	err = Verify(NewApk(pk), message, &sign)
-	if err != nil {
-		return err
+	ok := sign.Verify(*pk, message)
+	if ok == false {
+		return errors.New("no pass")
 	}
 	return nil
 }
@@ -88,9 +87,9 @@ func (BN256) EncodeEpochSnarkDataCIP22(newValSet []bls.SerializedPublicKey, maxi
 
 func (BN256) UncompressKey(serialized bls.SerializedPublicKey) ([]byte, error) {
 	var sign Signature
-	err := sign.Decompress(serialized[:])
+	err := sign.UnmarshalJSON(serialized[:])
 	if err != nil {
 		return nil, err
 	}
-	return sign.Compress(), nil
+	return sign.Marshal(), nil
 }
