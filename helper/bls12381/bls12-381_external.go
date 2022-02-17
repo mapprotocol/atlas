@@ -3,6 +3,7 @@ package bls12381
 import (
 	"crypto/ecdsa"
 	blscrypto "github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/helper/bls"
 )
 
@@ -78,14 +79,35 @@ func (BLS12381) VerifySignature(publicKey bls.SerializedPublicKey, message []byt
 }
 
 func (BLS12381) EncodeEpochSnarkDataCIP22(newValSet []bls.SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash blscrypto.EpochEntropy) ([]byte, []byte, error) {
-	return nil, nil, nil
+	type pack1 struct {
+		newValSet         []bls.SerializedPublicKey
+		maximumNonSigners uint32
+		maxValidators     uint32
+		epochIndex        uint16
+	}
+
+	type pack2 struct {
+		round      uint8
+		blockHash  blscrypto.EpochEntropy
+		parentHash blscrypto.EpochEntropy
+	}
+
+	ret1, err := rlp.EncodeToBytes(pack1{newValSet, maximumNonSigners, maxValidators, epochIndex})
+	if err != nil {
+		return nil, nil, err
+	}
+	ret2, err := rlp.EncodeToBytes(pack2{round, blockHash, parentHash})
+	if err != nil {
+		return nil, nil, err
+	}
+	return ret1, ret2, nil
 }
 
 func (BLS12381) UncompressKey(serialized bls.SerializedPublicKey) ([]byte, error) {
 	blsm := NewBlsManager()
-	signature, err := blsm.DecPublicKey(serialized[:])
+	pk, err := blsm.DecPublicKey(serialized[:])
 	if err != nil {
 		return nil, err
 	}
-	return signature.Compress().Bytes(), nil
+	return pk.Compress().Bytes(), nil
 }

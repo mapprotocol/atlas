@@ -84,6 +84,8 @@ func newG2Base(strRepr string) *bn256.G2 {
 	return g2Base
 }
 
+// @long: public key in G1 and signature in G2
+
 // SecretKey has "x" as secret for the BLS signature
 type SecretKey struct {
 	x *big.Int
@@ -91,7 +93,7 @@ type SecretKey struct {
 
 // PublicKey is calculated as g^x
 type PublicKey struct {
-	gx *bn256.G2
+	gx *bn256.G1
 }
 
 // Apk is the short aggregated public key struct
@@ -101,12 +103,12 @@ type Apk struct {
 
 // Signature is the plain public key model of the BLS signature being resilient to rogue key attack
 type Signature struct {
-	e *bn256.G1
+	e *bn256.G2
 }
 
 // UnsafeSignature is the BLS Signature Struct not resilient to rogue-key attack
 type UnsafeSignature struct {
-	e *bn256.G1
+	e *bn256.G2
 }
 
 // GenKeyPair generates Public and Private Keys
@@ -114,7 +116,7 @@ func GenKeyPair(randReader io.Reader) (*PublicKey, *SecretKey, error) {
 	if randReader == nil {
 		randReader = rand.Reader
 	}
-	x, gx, err := bn256.RandomG2(randReader)
+	x, gx, err := bn256.RandomG1(randReader)
 
 	if err != nil {
 		return nil, nil, err
@@ -138,13 +140,13 @@ var hashFn = sha3.New256
 // h0 is the hash-to-curve-point function
 // Hₒ : M -> Gₒ
 // TODO: implement the Elligator algorithm for deterministic random-looking hashing to BN256 point. See https://eprint.iacr.org/2014/043.pdf
-func h0(msg []byte) (*bn256.G1, error) {
+func h0(msg []byte) (*bn256.G2, error) {
 	hashed, err := hash.PerformHash(hashFn(), msg)
 	if err != nil {
 		return nil, err
 	}
 	k := new(big.Int).SetBytes(hashed)
-	return newG1().ScalarBaseMult(k), nil
+	return newG2().ScalarBaseMult(k), nil
 }
 
 // h1 is the hashing function used in the modified BLS multi-signature construction
@@ -161,14 +163,14 @@ func h1(pk *PublicKey) (*big.Int, error) {
 	return new(big.Int).SetBytes(h), nil
 }
 
-func pkt(pk *PublicKey) (*bn256.G2, error) {
+func pkt(pk *PublicKey) (*bn256.G1, error) {
 	t, err := h1(pk)
 	if err != nil {
 		return nil, err
 	}
 
 	//TODO: maybe a bit inefficient to recreate G2 instances instead of mutating the underlying group
-	return newG2().ScalarMult(pk.gx, t), nil
+	return newG1().ScalarMult(pk.gx, t), nil
 }
 
 // NewApk creates an Apk either from a public key or scratch
@@ -186,13 +188,13 @@ func NewApk(pk *PublicKey) *Apk {
 // Copy the APK by marshalling and unmarshalling the internals. It is somewhat
 // wasteful but does the job
 func (apk *Apk) Copy() *Apk {
-	g2 := new(bn256.G2)
+	g1 := new(bn256.G1)
 	b := apk.gx.Marshal()
 	// no need to check errors. We deal with well formed APKs
-	_, _ = g2.Unmarshal(b)
+	_, _ = g1.Unmarshal(b)
 
 	cpy := &Apk{
-		PublicKey: &PublicKey{g2},
+		PublicKey: &PublicKey{g1},
 	}
 	return cpy
 }
@@ -272,7 +274,7 @@ func UnmarshalSignature(sig []byte) (*Signature, error) {
 func (sigma *Signature) Copy() *Signature {
 	b := sigma.e.Marshal()
 	s := &Signature{
-		e: new(bn256.G1),
+		e: new(bn256.G2),
 	}
 	_, _ = s.e.Unmarshal(b)
 	return s
@@ -306,17 +308,17 @@ func (sigma *Signature) Aggregate(other *Signature) *Signature {
 }
 
 // Compress the signature to the 32 byte form
-func (sigma *Signature) Compress() []byte {
-	return sigma.e.Compress()
+func (pk *PublicKey) Compress() []byte {
+	return pk.Compress()
 }
 
-// Decompress reconstructs the 64 byte signature from the compressed form
-func (sigma *Signature) Decompress(x []byte) error {
+//Decompress reconstructs the 64 byte signature from the compressed form
+func (pk *PublicKey) Decompress(x []byte) error {
 	e, err := bn256.Decompress(x)
 	if err != nil {
 		return err
 	}
-	sigma.e = e
+	pk.gx = e
 	return nil
 }
 
@@ -327,18 +329,18 @@ func (sigma *Signature) Marshal() []byte {
 
 // Unmarshal a byte array into a Signature
 func (sigma *Signature) Unmarshal(msg []byte) error {
-	var err error
-	var e *bn256.G1
-	if len(msg) == 33 {
-		e, err = bn256.Decompress(msg)
-		if err != nil {
-			return err
-		}
-		sigma.e = e
-		return nil
-	}
+	//var err error
+	var e *bn256.G2
+	//if len(msg) == 33 {
+	//	e, err = bn256.Decompress(msg)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	sigma.e = e
+	//	return nil
+	//}
 
-	e = newG1()
+	e = newG2()
 	if _, err := e.Unmarshal(msg); err != nil {
 		return err
 	}
@@ -354,7 +356,7 @@ func apkSigWrap(pk *PublicKey, signature *UnsafeSignature) (*Signature, error) {
 		return nil, err
 	}
 
-	sigma := newG1()
+	sigma := newG2()
 
 	sigma.ScalarMult(signature.e, t)
 
@@ -377,7 +379,7 @@ func VerifyBatch(apks []*Apk, msgs [][]byte, sigma *Signature) error {
 		)
 	}
 
-	pks := make([]*bn256.G2, len(apks))
+	pks := make([]*bn256.G1, len(apks))
 	for i, pk := range apks {
 		pks[i] = pk.gx
 	}
@@ -391,25 +393,25 @@ func UnsafeSign(key *SecretKey, msg []byte) (*UnsafeSignature, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := newG1()
+	p := newG2()
 	p.ScalarMult(hash, key.x)
 	return &UnsafeSignature{p}, nil
 }
 
-// Compress the signature to the 32 byte form
-func (usig *UnsafeSignature) Compress() []byte {
-	return usig.e.Compress()
-}
+//// Compress the signature to the 32 byte form
+//func (usig *UnsafeSignature) Compress() []byte {
+//	return usig.e.Compress()
+//}
 
-// Decompress reconstructs the 64 byte signature from the compressed form
-func (usig *UnsafeSignature) Decompress(x []byte) error {
-	e, err := bn256.Decompress(x)
-	if err != nil {
-		return err
-	}
-	usig.e = e
-	return nil
-}
+//// Decompress reconstructs the 64 byte signature from the compressed form
+//func (usig *UnsafeSignature) Decompress(x []byte) error {
+//	e, err := bn256.Decompress(x)
+//	if err != nil {
+//		return err
+//	}
+//	usig.e = e
+//	return nil
+//}
 
 // Marshal an UnsafeSignature into a byte array
 func (usig *UnsafeSignature) Marshal() []byte {
@@ -418,7 +420,7 @@ func (usig *UnsafeSignature) Marshal() []byte {
 
 // Unmarshal a byte array into an UnsafeSignature
 func (usig *UnsafeSignature) Unmarshal(msg []byte) error {
-	e := newG1()
+	e := newG2()
 	if _, err := e.Unmarshal(msg); err != nil {
 		return err
 	}
@@ -428,7 +430,7 @@ func (usig *UnsafeSignature) Unmarshal(msg []byte) error {
 
 // UnsafeAggregate combines signatures on distinct messages.
 func UnsafeAggregate(one, other *UnsafeSignature) *UnsafeSignature {
-	res := newG1()
+	res := newG2()
 	res.Add(one.e, other.e)
 	return &UnsafeSignature{e: res}
 }
@@ -451,11 +453,11 @@ func UnsafeBatch(sigs ...*UnsafeSignature) (*UnsafeSignature, error) {
 // VerifyUnsafeBatch verifies a batch of messages signed with aggregated signature
 // the rogue-key attack is prevented by making all messages distinct
 func VerifyUnsafeBatch(pkeys []*PublicKey, msgList [][]byte, signature *UnsafeSignature) error {
-	g2s := make([]*bn256.G2, len(pkeys))
+	g1s := make([]*bn256.G1, len(pkeys))
 	for i, pk := range pkeys {
-		g2s[i] = pk.gx
+		g1s[i] = pk.gx
 	}
-	return verifyBatch(g2s, msgList, signature.e, false)
+	return verifyBatch(g1s, msgList, signature.e, false)
 }
 
 // VerifyUnsafe checks the given BLS signature bls on the message m using the
@@ -465,14 +467,14 @@ func VerifyUnsafe(pkey *PublicKey, msg []byte, signature *UnsafeSignature) error
 	return verify(pkey.gx, msg, signature.e)
 }
 
-func verify(pk *bn256.G2, msg []byte, sigma *bn256.G1) error {
+func verify(pk *bn256.G1, msg []byte, sigma *bn256.G2) error {
 	h0m, err := h0(msg)
 	if err != nil {
 		return err
 	}
 
-	pairH0mPK := bn256.Pair(h0m, pk).Marshal()
-	pairSigG2 := bn256.Pair(sigma, g2Base).Marshal()
+	pairH0mPK := bn256.Pair(pk, h0m).Marshal()
+	pairSigG2 := bn256.Pair(g1Base, sigma).Marshal()
 	if subtle.ConstantTimeCompare(pairH0mPK, pairSigG2) != 1 {
 		msg := fmt.Sprintf(
 			"bls apk: Invalid Signature.\nG1Sig pair (length %d): %v...\nApk H0(m) pair (length %d): %v...",
@@ -487,7 +489,7 @@ func verify(pk *bn256.G2, msg []byte, sigma *bn256.G1) error {
 	return nil
 }
 
-func verifyBatch(pkeys []*bn256.G2, msgList [][]byte, sig *bn256.G1, allowDistinct bool) error {
+func verifyBatch(pkeys []*bn256.G1, msgList [][]byte, sig *bn256.G2, allowDistinct bool) error {
 	if !allowDistinct && !distinct(msgList) {
 		return errors.New("bls: Messages are not distinct")
 	}
@@ -501,13 +503,13 @@ func verifyBatch(pkeys []*bn256.G2, msgList [][]byte, sig *bn256.G1, allowDistin
 		}
 
 		if i == 0 {
-			pairH0mPKs = bn256.Pair(h0m, pkeys[i])
+			pairH0mPKs = bn256.Pair(pkeys[i], h0m)
 		} else {
-			pairH0mPKs.Add(pairH0mPKs, bn256.Pair(h0m, pkeys[i]))
+			pairH0mPKs.Add(pairH0mPKs, bn256.Pair(pkeys[i], h0m))
 		}
 	}
 
-	pairSigG2 := bn256.Pair(sig, g2Base)
+	pairSigG2 := bn256.Pair(g1Base, sig)
 
 	if subtle.ConstantTimeCompare(pairSigG2.Marshal(), pairH0mPKs.Marshal()) != 1 {
 		return errors.New("bls: Invalid Signature")
@@ -516,14 +518,14 @@ func verifyBatch(pkeys []*bn256.G2, msgList [][]byte, sig *bn256.G1, allowDistin
 	return nil
 }
 
-// VerifyCompressed verifies a Compressed marshalled signature
-func VerifyCompressed(pks []*bn256.G2, msgList [][]byte, compressedSig []byte, allowDistinct bool) error {
-	sig, err := bn256.Decompress(compressedSig)
-	if err != nil {
-		return err
-	}
-	return verifyBatch(pks, msgList, sig, allowDistinct)
-}
+//// VerifyCompressed verifies a Compressed marshalled signature
+//func VerifyCompressed(pks []*bn256.G1, msgList [][]byte, compressedSig []byte, allowDistinct bool) error {
+//	sig, err := bn256.Decompress(compressedSig)
+//	if err != nil {
+//		return err
+//	}
+//	return verifyBatch(pks, msgList, sig, allowDistinct)
+//}
 
 // distinct makes sure that the msg list is composed of different messages
 func distinct(msgList [][]byte) bool {
@@ -540,7 +542,7 @@ func distinct(msgList [][]byte) bool {
 
 // Aggregate is a shortcut for Public Key aggregation
 func (pk *PublicKey) Aggregate(pp *PublicKey) *PublicKey {
-	p3 := newG2()
+	p3 := newG1()
 	p3.Add(pk.gx, pp.gx)
 	return &PublicKey{p3}
 }
@@ -556,7 +558,7 @@ func (pk *PublicKey) UnmarshalText(data []byte) error {
 	if err != nil {
 		return err
 	}
-	pk.gx = newG2()
+	pk.gx = newG1()
 	_, err = pk.gx.Unmarshal(bs)
 	if err != nil {
 		return err
@@ -571,7 +573,7 @@ func (pk *PublicKey) Marshal() []byte {
 
 // Unmarshal a public key from a byte array
 func (pk *PublicKey) Unmarshal(data []byte) error {
-	pk.gx = newG2()
+	pk.gx = newG1()
 	_, err := pk.gx.Unmarshal(data)
 	if err != nil {
 		return err

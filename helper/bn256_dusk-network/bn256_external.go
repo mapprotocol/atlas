@@ -3,6 +3,7 @@ package bn256_dusk_network
 import (
 	"crypto/ecdsa"
 	blscrypto "github.com/celo-org/celo-bls-go/bls"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/helper/bls"
 )
 
@@ -83,14 +84,35 @@ func (BN256) VerifySignature(publicKey bls.SerializedPublicKey, message []byte, 
 }
 
 func (BN256) EncodeEpochSnarkDataCIP22(newValSet []bls.SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash blscrypto.EpochEntropy) ([]byte, []byte, error) {
-	return nil, nil, nil
+	type pack1 struct {
+		newValSet         []bls.SerializedPublicKey
+		maximumNonSigners uint32
+		maxValidators     uint32
+		epochIndex        uint16
+	}
+
+	type pack2 struct {
+		round      uint8
+		blockHash  blscrypto.EpochEntropy
+		parentHash blscrypto.EpochEntropy
+	}
+
+	ret1, err := rlp.EncodeToBytes(pack1{newValSet, maximumNonSigners, maxValidators, epochIndex})
+	if err != nil {
+		return nil, nil, err
+	}
+	ret2, err := rlp.EncodeToBytes(pack2{round, blockHash, parentHash})
+	if err != nil {
+		return nil, nil, err
+	}
+	return ret1, ret2, nil
 }
 
 func (BN256) UncompressKey(serialized bls.SerializedPublicKey) ([]byte, error) {
-	var sign Signature
-	err := sign.Decompress(serialized[:])
+	var pk PublicKey
+	err := pk.Decompress(serialized[:])
 	if err != nil {
 		return nil, err
 	}
-	return sign.Compress(), nil
+	return pk.Marshal(), nil
 }

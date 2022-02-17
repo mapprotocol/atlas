@@ -1,0 +1,545 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "firstBlock",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_epochLength",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "s",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "bool",
+						"name": "e",
+						"type": "bool"
+					}
+				],
+				"name": "log",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "s",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "v",
+						"type": "uint256"
+					}
+				],
+				"name": "setParams",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "s",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "bytes",
+						"name": "v",
+						"type": "bytes"
+					}
+				],
+				"name": "setParams",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "removedVal",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes[]",
+						"name": "addVal",
+						"type": "bytes[]"
+					}
+				],
+				"name": "changeValidators",
+				"outputs": [
+					{
+						"internalType": "bytes[]",
+						"name": "ret",
+						"type": "bytes[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "epoch",
+						"type": "uint256"
+					}
+				],
+				"name": "checkBLSPublickKeys",
+				"outputs": [
+					{
+						"internalType": "bytes[]",
+						"name": "",
+						"type": "bytes[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "number",
+						"type": "uint256"
+					}
+				],
+				"name": "checkBlockHeader",
+				"outputs": [
+					{
+						"internalType": "bytes",
+						"name": "",
+						"type": "bytes"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "checkNowParams",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "hb",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "agg",
+						"type": "bytes"
+					}
+				],
+				"name": "cutAgg",
+				"outputs": [
+					{
+						"internalType": "bytes",
+						"name": "data",
+						"type": "bytes"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "rlpBytes",
+						"type": "bytes"
+					}
+				],
+				"name": "decodeExtraData",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "bytes",
+								"name": "seal",
+								"type": "bytes"
+							},
+							{
+								"components": [
+									{
+										"internalType": "bytes",
+										"name": "signature",
+										"type": "bytes"
+									},
+									{
+										"internalType": "uint256",
+										"name": "bitmap",
+										"type": "uint256"
+									}
+								],
+								"internalType": "struct sync.istanbulAggregatedSeal",
+								"name": "aggregatedSeals",
+								"type": "tuple"
+							},
+							{
+								"components": [
+									{
+										"internalType": "bytes",
+										"name": "signature",
+										"type": "bytes"
+									},
+									{
+										"internalType": "uint256",
+										"name": "bitmap",
+										"type": "uint256"
+									}
+								],
+								"internalType": "struct sync.istanbulAggregatedSeal",
+								"name": "parentAggregatedSeals",
+								"type": "tuple"
+							},
+							{
+								"internalType": "uint256",
+								"name": "removeList",
+								"type": "uint256"
+							},
+							{
+								"internalType": "bytes[]",
+								"name": "addedPubKey",
+								"type": "bytes[]"
+							}
+						],
+						"internalType": "struct sync.istanbulExtra",
+						"name": "ist",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "rlpBytes",
+						"type": "bytes"
+					}
+				],
+				"name": "decodeHeaderPart1",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "coinbase",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "number",
+								"type": "uint256"
+							},
+							{
+								"internalType": "bytes",
+								"name": "extraData",
+								"type": "bytes"
+							}
+						],
+						"internalType": "struct sync.blockHeader",
+						"name": "bh",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "signature",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256",
+						"name": "round",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "bitmap",
+						"type": "uint256"
+					}
+				],
+				"name": "encodeAgg",
+				"outputs": [
+					{
+						"internalType": "bytes",
+						"name": "output",
+						"type": "bytes"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "r",
+						"type": "uint256"
+					}
+				],
+				"name": "readRemoveList",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "ret",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "uint8",
+						"name": "sum",
+						"type": "uint8"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes[]",
+						"name": "keys",
+						"type": "bytes[]"
+					},
+					{
+						"internalType": "uint256",
+						"name": "epoch",
+						"type": "uint256"
+					}
+				],
+				"name": "setBLSPublickKeys",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint8",
+						"name": "max",
+						"type": "uint8"
+					}
+				],
+				"name": "setMaxSyncNum",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "rlpHeader",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "escaMsg",
+						"type": "bytes"
+					}
+				],
+				"name": "verifyHeader",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "seal",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "hash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "address",
+						"name": "coinbase",
+						"type": "address"
+					}
+				],
+				"name": "verifySign",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes[]",
+						"name": "moreRlpHeader",
+						"type": "bytes[]"
+					},
+					{
+						"internalType": "bytes[]",
+						"name": "moreHeaderBytes",
+						"type": "bytes[]"
+					}
+				],
+				"name": "verifymoreHeaders",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contract/sync.sol": "sync"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"bn256/BlsSignatureTest.sol": {
+			"keccak256": "0xc0aa836f2925371502e39d35ad9bc9f09f8982fea0891f21846d55a1afdeeaea",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://6aee9ce97b219548904ddb48b208b6e8bd76dc3554f57476f662721a7ae54275",
+				"dweb:/ipfs/QmeXMaoaRXC5EngvEVtrMJCsRShnrMZdPEJkDjc2t97MMv"
+			]
+		},
+		"bn256/BlsSignatureVerification.sol": {
+			"keccak256": "0x98bf82b39b6e1026bef492cd88605885a199412f90c3a271b8e6c1b3b1fc457d",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://052a1ad39cf5753acb6e1b5cd1598fa6f27ef1fd3ed82d76c93e91475e034507",
+				"dweb:/ipfs/QmetPJ7p8FUtzUxYGkhi8juVWzKGq6uDY8M1Rr3DD2f5j1"
+			]
+		},
+		"bn256/ModUtils.sol": {
+			"keccak256": "0x52655602ea749a4503a21d0219432debf7234db7d47af67d753865ac096f3ae8",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://57ac4f3a1caea1309cedaba51ca44b1427ffdc0bd27dc9b00db263cdcc9b44e9",
+				"dweb:/ipfs/QmYUmb5GZ3Lm8kDK4ZmctfFrupP1Jpcat7URc3iHSC6Wjp"
+			]
+		},
+		"contract/sync.sol": {
+			"keccak256": "0xb76dcd938aceee13c6035f82ed92d1f5f14c522a5c41567a90b560a68eba69a3",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://b6f480629765c1931e37b64b50d5a2a2505898a517b7bd84b3ad40e22835107c",
+				"dweb:/ipfs/QmNbfVYprSqFNCUVUd3Yrn6HtERdpaQteKJh59rPtgAx3H"
+			]
+		},
+		"lib/RLPEncode.sol": {
+			"keccak256": "0x0c63202e8e03d456381e77166e454fa3d746e48b64f6b9a85a3fbb5dc1160cd6",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://972f8e5edf55bde883e93ac90a5d9b4c9ef4d5bc12ccadae5e3725c88a8f5519",
+				"dweb:/ipfs/QmXRuW7oa5JNYX64XyhC8a8bJKuWfbA3abK5u4NKBieiaE"
+			]
+		},
+		"lib/RLPReader.sol": {
+			"keccak256": "0x7c854222403be13be559ff77955c08d48784394f896918dbe48bc1aa1613ecc4",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://bafc5996ce8cad0bae18a2b7bbf767c482e1a726074258895f3c4dd27000ed8e",
+				"dweb:/ipfs/QmTapHGWff2LETZyCpVq2c5p2qfz2AmtDMrbPMDJcmNYHS"
+			]
+		}
+	},
+	"version": 1
+}

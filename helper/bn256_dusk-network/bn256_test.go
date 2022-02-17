@@ -1,9 +1,7 @@
 package bn256_dusk_network
 
 import (
-	"bytes"
 	"crypto/rand"
-	"fmt"
 	"io"
 	"math/big"
 	"reflect"
@@ -59,6 +57,8 @@ func TestSignVerify(t *testing.T) {
 	pub2, _, err := GenKeyPair(rand.Reader)
 	require.NoError(t, err)
 	require.NotNil(t, VerifyUnsafe(pub2, msg, sig))
+	//k := []byte(priv.x.String())
+	//fmt.Println(len(k), len(pub.Marshal()), len(sig.Marshal()))
 }
 
 // TestCombine checks for the Batched form of the BLS signature
@@ -116,14 +116,14 @@ func TestRogueKey(t *testing.T) {
 	// α is the pseudo-secret key of the attacker
 	alpha := randomInt(reader)
 	// g₂ᵅ
-	g2Alpha := newG2().ScalarBaseMult(alpha)
+	g1Alpha := newG1().ScalarBaseMult(alpha)
 
 	// pk⁻¹
-	rogueGx := newG2()
+	rogueGx := newG1()
 	rogueGx.Neg(pub.gx)
 
-	pRogue := newG2()
-	pRogue.Add(g2Alpha, rogueGx)
+	pRogue := newG1()
+	pRogue.Add(g1Alpha, rogueGx)
 
 	sk, pk := &SecretKey{alpha}, &PublicKey{pRogue}
 
@@ -131,7 +131,7 @@ func TestRogueKey(t *testing.T) {
 	rogueSignature, err := UnsafeSign(sk, msg)
 	require.NoError(t, err)
 
-	require.NoError(t, verifyBatch([]*bn256.G2{pub.gx, pk.gx}, [][]byte{msg, msg}, rogueSignature.e, true))
+	require.NoError(t, verifyBatch([]*bn256.G1{pub.gx, pk.gx}, [][]byte{msg, msg}, rogueSignature.e, true))
 }
 
 func TestMarshalPk(t *testing.T) {
@@ -141,15 +141,15 @@ func TestMarshalPk(t *testing.T) {
 
 	pkByteRepr := pub.Marshal()
 
-	g2 := newG2()
-	_, _ = g2.Unmarshal(pkByteRepr)
+	g1 := newG1()
+	_, _ = g1.Unmarshal(pkByteRepr)
 
-	g2ByteRepr := g2.Marshal()
-	require.Equal(t, pkByteRepr, g2ByteRepr)
+	g1ByteRepr := g1.Marshal()
+	require.Equal(t, pkByteRepr, g1ByteRepr)
 
 	pkInt := new(big.Int).SetBytes(pkByteRepr)
-	g2Int := new(big.Int).SetBytes(g2ByteRepr)
-	require.Equal(t, pkInt, g2Int)
+	g1Int := new(big.Int).SetBytes(g1ByteRepr)
+	require.Equal(t, pkInt, g1Int)
 
 	pk, err := UnmarshalPk(pkByteRepr)
 	require.NoError(t, err)
@@ -238,79 +238,79 @@ func TestApkBatchVerification(t *testing.T) {
 	))
 }
 
-func TestSafeCompress(t *testing.T) {
-	msg := randomMessage()
-	pub, priv, err := GenKeyPair(rand.Reader)
-	require.NoError(t, err)
+//func TestSafeCompress(t *testing.T) {
+//	msg := randomMessage()
+//	pub, priv, err := GenKeyPair(rand.Reader)
+//	require.NoError(t, err)
+//
+//	sig, err := Sign(priv, pub, msg)
+//	require.NoError(t, err)
+//	require.NoError(t, Verify(NewApk(pub), msg, sig))
+//
+//	sigb := sig.Compress()
+//	sigTest := &Signature{e: newG1()}
+//	require.NoError(t, sigTest.Decompress(sigb))
+//
+//	require.Equal(t, sig.Marshal(), sigTest.Marshal())
+//}
+//
+//func TestUnsafeCompress(t *testing.T) {
+//	msg := randomMessage()
+//	pub, priv, err := GenKeyPair(rand.Reader)
+//	require.NoError(t, err)
+//
+//	sig, err := UnsafeSign(priv, msg)
+//	require.NoError(t, err)
+//	require.NoError(t, VerifyUnsafe(pub, msg, sig))
+//
+//	sigb := sig.Compress()
+//	sigTest := &UnsafeSignature{e: newG1()}
+//	require.NoError(t, sigTest.Decompress(sigb))
+//
+//	sigM := sig.e.Marshal()
+//	require.NotEmpty(t, sigM)
+//	require.Equal(t, sigM, sigTest.e.Marshal())
+//}
 
-	sig, err := Sign(priv, pub, msg)
-	require.NoError(t, err)
-	require.NoError(t, Verify(NewApk(pub), msg, sig))
-
-	sigb := sig.Compress()
-	sigTest := &Signature{e: newG1()}
-	require.NoError(t, sigTest.Decompress(sigb))
-
-	require.Equal(t, sig.Marshal(), sigTest.Marshal())
-}
-
-func TestUnsafeCompress(t *testing.T) {
-	msg := randomMessage()
-	pub, priv, err := GenKeyPair(rand.Reader)
-	require.NoError(t, err)
-
-	sig, err := UnsafeSign(priv, msg)
-	require.NoError(t, err)
-	require.NoError(t, VerifyUnsafe(pub, msg, sig))
-
-	sigb := sig.Compress()
-	sigTest := &UnsafeSignature{e: newG1()}
-	require.NoError(t, sigTest.Decompress(sigb))
-
-	sigM := sig.e.Marshal()
-	require.NotEmpty(t, sigM)
-	require.Equal(t, sigM, sigTest.e.Marshal())
-}
-
-func TestAmbiguousCompress(t *testing.T) {
-	msg := randomMessage()
-	pub, priv, err := GenKeyPair(rand.Reader)
-	require.NoError(t, err)
-
-	sig, err := UnsafeSign(priv, msg)
-	require.NoError(t, err)
-	require.NoError(t, VerifyUnsafe(pub, msg, sig))
-
-	sigb := sig.Compress()
-	require.Equal(t, len(sigb), 33)
-
-	xy1, xy2, err := bn256.DecompressAmbiguous(sigb)
-	require.NoError(t, err)
-
-	if xy1 == nil && xy2 == nil {
-		fmt.Printf("Original signature: %v\n", new(big.Int).SetBytes(sig.Marshal()).String())
-		fmt.Printf("Compressed signature: %v\n", new(big.Int).SetBytes(sigb).String())
-		require.Fail(t, "Orcoddue")
-	}
-
-	sigM := sig.e.Marshal()
-	require.NotEmpty(t, sigM)
-
-	if xy1 != nil {
-		sig1 := &UnsafeSignature{xy1}
-		if bytes.Equal(sigM, sig1.e.Marshal()) {
-			return
-		}
-	}
-	if xy2 != nil {
-		sig2 := &UnsafeSignature{xy2}
-		if bytes.Equal(sigM, sig2.e.Marshal()) {
-			return
-		}
-	}
-
-	require.Fail(t, "Decompression failed both xy1 and xy2 are nil")
-}
+//func TestAmbiguousCompress(t *testing.T) {
+//	msg := randomMessage()
+//	pub, priv, err := GenKeyPair(rand.Reader)
+//	require.NoError(t, err)
+//
+//	sig, err := UnsafeSign(priv, msg)
+//	require.NoError(t, err)
+//	require.NoError(t, VerifyUnsafe(pub, msg, sig))
+//
+//	sigb := sig.Compress()
+//	require.Equal(t, len(sigb), 33)
+//
+//	xy1, xy2, err := bn256.DecompressAmbiguous(sigb)
+//	require.NoError(t, err)
+//
+//	if xy1 == nil && xy2 == nil {
+//		fmt.Printf("Original signature: %v\n", new(big.Int).SetBytes(sig.Marshal()).String())
+//		fmt.Printf("Compressed signature: %v\n", new(big.Int).SetBytes(sigb).String())
+//		require.Fail(t, "Orcoddue")
+//	}
+//
+//	sigM := sig.e.Marshal()
+//	require.NotEmpty(t, sigM)
+//
+//	if xy1 != nil {
+//		sig1 := &UnsafeSignature{xy1}
+//		if bytes.Equal(sigM, sig1.e.Marshal()) {
+//			return
+//		}
+//	}
+//	if xy2 != nil {
+//		sig2 := &UnsafeSignature{xy2}
+//		if bytes.Equal(sigM, sig2.e.Marshal()) {
+//			return
+//		}
+//	}
+//
+//	require.Fail(t, "Decompression failed both xy1 and xy2 are nil")
+//}
 
 func BenchmarkSign(b *testing.B) {
 	msg := randomMessage()
@@ -391,39 +391,39 @@ func BenchmarkVerifyUnsafeSingleSignature(b *testing.B) {
 	}
 }
 
-func BenchmarkVerifySingleCompressedSignature(b *testing.B) {
-	msg := randomMessage()
-	b.StopTimer()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		pk, sk, _ := GenKeyPair(rand.Reader)
-		signature, _ := Sign(sk, pk, msg)
-		sigb := signature.Compress()
-		apk := NewApk(pk)
-
-		b.StartTimer()
-		signature = &Signature{}
-		_ = signature.Decompress(sigb)
-		_ = Verify(apk, msg, signature)
-		b.StopTimer()
-	}
-}
-
-func BenchmarkVerifySingleCompressedUnsafeSignature(b *testing.B) {
-	msg := randomMessage()
-	b.StopTimer()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		pk, sk, _ := GenKeyPair(rand.Reader)
-		signature, _ := UnsafeSign(sk, msg)
-		sigb := signature.Compress()
-
-		b.StartTimer()
-		signature = &UnsafeSignature{}
-		_ = signature.Decompress(sigb)
-		_ = VerifyUnsafe(pk, msg, signature)
-		b.StopTimer()
-	}
-}
+//func BenchmarkVerifySingleCompressedSignature(b *testing.B) {
+//	msg := randomMessage()
+//	b.StopTimer()
+//	b.ResetTimer()
+//
+//	for i := 0; i < b.N; i++ {
+//		pk, sk, _ := GenKeyPair(rand.Reader)
+//		signature, _ := Sign(sk, pk, msg)
+//		sigb := signature.Compress()
+//		apk := NewApk(pk)
+//
+//		b.StartTimer()
+//		signature = &Signature{}
+//		_ = signature.Decompress(sigb)
+//		_ = Verify(apk, msg, signature)
+//		b.StopTimer()
+//	}
+//}
+//
+//func BenchmarkVerifySingleCompressedUnsafeSignature(b *testing.B) {
+//	msg := randomMessage()
+//	b.StopTimer()
+//	b.ResetTimer()
+//
+//	for i := 0; i < b.N; i++ {
+//		pk, sk, _ := GenKeyPair(rand.Reader)
+//		signature, _ := UnsafeSign(sk, msg)
+//		sigb := signature.Compress()
+//
+//		b.StartTimer()
+//		signature = &UnsafeSignature{}
+//		_ = signature.Decompress(sigb)
+//		_ = VerifyUnsafe(pk, msg, signature)
+//		b.StopTimer()
+//	}
+//}

@@ -35,6 +35,7 @@ func Test_AggregatedSignature(t *testing.T) {
 	sig1 := priv1.Sign(msg)
 	sig2 := priv2.Sign(msg)
 	sig3 := priv3.Sign(msg)
+	//fmt.Println(len(priv1.Marshal()), len(pub1.Marshal()), len(sig1.Marshal()))
 
 	require.True(t, sig1.Aggregate(sig2).Aggregate(sig3).Verify(pub1.Aggregate(pub2).Aggregate(pub3), msg))
 }
