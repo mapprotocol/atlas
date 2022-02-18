@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"io"
 	"math/big"
 
@@ -123,6 +124,16 @@ func GenKeyPair(randReader io.Reader) (*PublicKey, *SecretKey, error) {
 	}
 
 	return &PublicKey{gx}, &SecretKey{x}, nil
+}
+
+func PrivateToPublic(privateKeyBytes []byte) ([]byte, error) {
+	key, err := crypto.ToECDSA(privateKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	gx := new(bn256.G1).ScalarBaseMult(key.D)
+	pk := PublicKey{gx}
+	return pk.Compress(), nil
 }
 
 // UnmarshalPk unmarshals a byte array into a BLS PublicKey
@@ -309,7 +320,7 @@ func (sigma *Signature) Aggregate(other *Signature) *Signature {
 
 // Compress the signature to the 32 byte form
 func (pk *PublicKey) Compress() []byte {
-	return pk.Compress()
+	return pk.gx.Compress()
 }
 
 //Decompress reconstructs the 64 byte signature from the compressed form
