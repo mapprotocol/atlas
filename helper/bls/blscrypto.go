@@ -23,7 +23,7 @@ const (
 	BN256Curve        = 1
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
-	PUBLICKEYBYTES    = 96
+	PUBLICKEYBYTES    = 33
 	SIGNATUREBYTES    = 48
 	EPOCHENTROPYBYTES = 16
 )
@@ -112,8 +112,8 @@ type BLSCryptoSelector interface {
 func CryptoType() BLSCryptoSelector {
 	switch BLSCryptoType {
 	case BN256Curve:
-		//curve := BN256{}
-		return nil //curve
+		curve := BN256{}
+		return curve
 	case BLS12377Curve:
 		//curve := BLS12377{}
 		return nil //curve
