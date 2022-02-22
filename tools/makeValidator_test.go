@@ -174,7 +174,8 @@ func TestMakeValidator1(t *testing.T) {
 
 	for _, s := range sliceOfBlsPubKeyHexStr {
 		pk1 := blscrypto.SerializedPublicKey{}
-		pk1.UnmarshalText([]byte(s))
+		p := common.Hex2Bytes(s)
+		copy(pk1[:], p)
 		apks = append(apks, pk1)
 	}
 
@@ -202,5 +203,5 @@ func TestMakeValidator1(t *testing.T) {
 	if err != nil {
 		fmt.Println("err", err)
 	}
-	fmt.Printf("h:%x\n", finalExtra[32:])
+	fmt.Printf("pk0:%x\n", istanbulExtra.AddedValidatorsPublicKeys[0])
 }

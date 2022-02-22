@@ -303,7 +303,7 @@ func (BLS12377) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
 
 type BN256 struct{}
 
-func (b BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
+func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 	return crypto.FromECDSA(privateKeyECDSA), nil
 }
 
@@ -315,7 +315,7 @@ func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error
 }
 
 func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	sigma := &bn256_dusk_network.Signature{}
+	sigma := bn256_dusk_network.Signature{}
 	err := sigma.Unmarshal(signature)
 	if err != nil {
 		return err
@@ -323,19 +323,20 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 
 	var pks []*bn256_dusk_network.PublicKey
 	for _, v := range publicKeys {
-		var pk2 *bn256_dusk_network.PublicKey
+		var pk2 bn256_dusk_network.PublicKey
 		err = pk2.Decompress(v[:])
 		if err != nil {
 			return err
 		}
-		pks = append(pks, pk2)
+		pks = append(pks, &pk2)
 	}
 
 	apk, err := bn256_dusk_network.AggregateApk(pks)
 	if err != nil {
 		return err
 	}
-	err = bn256_dusk_network.Verify(apk, message, sigma)
+
+	err = bn256_dusk_network.Verify(apk, message, &sigma)
 	if err != nil {
 		return err
 	}
@@ -343,16 +344,20 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 }
 
 func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
-	sigma := &bn256_dusk_network.Signature{}
-	for _, v := range signatures {
+	var signs bn256_dusk_network.Signature
+	err := signs.Unmarshal(signatures[0])
+	if err != nil {
+		return nil, err
+	}
+	for i := 1; i < len(signatures); i++ {
 		var sign bn256_dusk_network.Signature
-		err := sign.Unmarshal(v)
+		err := sign.Unmarshal(signatures[i])
 		if err != nil {
 			return nil, err
 		}
-		sigma.Aggregate(&sign)
+		signs.Aggregate(&sign)
 	}
-	return sigma.Marshal(), nil
+	return signs.Marshal(), nil
 }
 
 func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
@@ -362,13 +367,13 @@ func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extr
 		return err
 	}
 
-	var pk *bn256_dusk_network.PublicKey
+	var pk bn256_dusk_network.PublicKey
 	err = pk.Decompress(publicKey[:])
 	if err != nil {
 		return err
 	}
 
-	err = bn256_dusk_network.Verify(bn256_dusk_network.NewApk(pk), message, &sign)
+	err = bn256_dusk_network.Verify(bn256_dusk_network.NewApk(&pk), message, &sign)
 	if err != nil {
 		return err
 	}
