@@ -603,3 +603,7 @@ func decodeText(data []byte) ([]byte, error) {
 	n, err := base64.RawURLEncoding.Decode(buf, data)
 	return buf[:n], err
 }
+
+func NewKey(x *big.Int) SecretKey {
+	return SecretKey{x}
+}

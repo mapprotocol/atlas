@@ -24,7 +24,7 @@ const (
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
 	PUBLICKEYBYTES    = 33
-	SIGNATUREBYTES    = 48
+	SIGNATUREBYTES    = 129
 	EPOCHENTROPYBYTES = 16
 )
 
@@ -91,6 +91,7 @@ func EncodeEpochSnarkData(newValSet []SerializedPublicKey, maximumNonSigners uin
 }
 
 func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
+	fmt.Println("sl", len(serializedSignature))
 	if len(serializedSignature) != SIGNATUREBYTES {
 		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
 	}
