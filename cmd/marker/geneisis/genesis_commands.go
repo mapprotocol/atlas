@@ -53,6 +53,11 @@ var newEnvFlag = cli.StringFlag{
 	Usage: "Creates a new env in desired folder",
 }
 
+var markerCfgFlag = cli.StringFlag{
+	Name:  "markerCfg",
+	Usage: "marker config path",
+}
+
 var CreateGenesisCommand = cli.Command{
 	Name:      "genesis",
 	Usage:     "Creates genesis.json from a template and overrides",
@@ -61,7 +66,9 @@ var CreateGenesisCommand = cli.Command{
 	Flags: append(
 		[]cli.Flag{
 			buildpathFlag,
-			newEnvFlag},
+			newEnvFlag,
+			markerCfgFlag,
+		},
 		templateFlags...),
 }
 
@@ -122,7 +129,7 @@ func envFromTemplate(ctx *cli.Context, workdir string) (*env.Environment, *genes
 
 func createGenesis(ctx *cli.Context) error {
 	////////////////////////////////////////////////////////////////////////
-	genesis.UnmarshalMarkerConfig()
+	genesis.UnmarshalMarkerConfig(ctx)
 	////////////////////////////////////////////////////////////////////////
 	var workdir string
 	var err error

@@ -151,7 +151,7 @@ var queryRegisteredValidatorSignersCommand = cli.Command{
 
 var getValidatorCommand = cli.Command{
 	Name:   "getValidator",
-	Usage:  "getValidator Info",
+	Usage:  "Validator Info",
 	Action: MigrateFlags(getValidator),
 	Flags:  Flags,
 }
