@@ -32,6 +32,7 @@ func ExtractIstanbulExtra(h *Header) (*IstanbulExtra, error) {
 	var istanbulExtra *IstanbulExtra
 	err := rlp.DecodeBytes(h.Extra[IstanbulExtraVanity:], &istanbulExtra)
 	if err != nil {
+		fmt.Printf("e:%x\n", h.Extra[IstanbulExtraVanity:])
 		return nil, err
 	}
 	return istanbulExtra, nil

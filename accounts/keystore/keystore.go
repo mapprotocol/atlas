@@ -24,6 +24,7 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
+	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -32,7 +33,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
@@ -540,23 +540,43 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 		return blscrypto.SerializedSignature{}, err
 	}
 
-	privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+	///////////////////////
+	privateKey, err := crypto.ToECDSA(privateKeyBytes)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}
-	defer privateKey.Destroy()
+	blskey := bn256_dusk_network.NewKey(privateKey.D)
+	pubkey, err := bn256_dusk_network.PrivateToPublic(privateKeyBytes)
+	if err != nil {
+		return blscrypto.SerializedSignature{}, err
+	}
+	pk := bn256_dusk_network.PublicKey{}
+	pk.Decompress(pubkey)
+	sign, err := bn256_dusk_network.Sign(&blskey, &pk, msg)
+	if err != nil {
+		return blscrypto.SerializedSignature{}, err
+	}
+	signature := blscrypto.SerializedSignature{}
+	copy(signature[:], sign.Marshal())
+	return signature, nil
 
-	signature, err := privateKey.SignMessage(msg, extraData, useComposite, cip22)
-	if err != nil {
-		return blscrypto.SerializedSignature{}, err
-	}
-	defer signature.Destroy()
-	signatureBytes, err := signature.Serialize()
-	if err != nil {
-		return blscrypto.SerializedSignature{}, err
-	}
+	//privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+	//if err != nil {
+	//	return blscrypto.SerializedSignature{}, err
+	//}
+	//defer privateKey.Destroy()
 
-	return blscrypto.SerializedSignatureFromBytes(signatureBytes)
+	//signature, err := privateKey.SignMessage(msg, extraData, useComposite, cip22)
+	//if err != nil {
+	//	return blscrypto.SerializedSignature{}, err
+	//}
+	//defer signature.Destroy()
+	//signatureBytes, err := signature.Serialize()
+	//if err != nil {
+	//	return blscrypto.SerializedSignature{}, err
+	//}
+	//
+	//return blscrypto.SerializedSignatureFromBytes(signatureBytes)
 }
 
 // GetPublicKey Retrieve the ECDSA public key for a given account.

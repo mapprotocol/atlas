@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/rlp"
+	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
 	"math/big"
 	"reflect"
 
@@ -17,12 +19,12 @@ import (
 )
 
 const (
-	BLSCryptoType     = 2
+	BLSCryptoType     = 1
 	BN256Curve        = 1
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
-	PUBLICKEYBYTES    = 96
-	SIGNATUREBYTES    = 48
+	PUBLICKEYBYTES    = 33
+	SIGNATUREBYTES    = 129
 	EPOCHENTROPYBYTES = 16
 )
 
@@ -89,6 +91,7 @@ func EncodeEpochSnarkData(newValSet []SerializedPublicKey, maximumNonSigners uin
 }
 
 func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
+	fmt.Println("sl", len(serializedSignature))
 	if len(serializedSignature) != SIGNATUREBYTES {
 		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
 	}
@@ -110,11 +113,11 @@ type BLSCryptoSelector interface {
 func CryptoType() BLSCryptoSelector {
 	switch BLSCryptoType {
 	case BN256Curve:
-		//curve := bn256.BN256{}
-		return nil //curve
-	case BLS12377Curve:
-		curve := BLS12377{}
+		curve := BN256{}
 		return curve
+	case BLS12377Curve:
+		//curve := BLS12377{}
+		return nil //curve
 	case BLS12381Curve:
 		//curve := BLS12381{}
 		return nil //curve
@@ -296,4 +299,117 @@ func (BLS12377) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
 		return nil, err
 	}
 	return uncompressedBytes, nil
+}
+
+type BN256 struct{}
+
+func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
+	return crypto.FromECDSA(privateKeyECDSA), nil
+}
+
+func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
+	pk, err := bn256_dusk_network.PrivateToPublic(privateKeyBytes)
+	pubKeyBytesFixed := SerializedPublicKey{}
+	copy(pubKeyBytesFixed[:], pk)
+	return pubKeyBytesFixed, err
+}
+
+func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+	sigma := bn256_dusk_network.Signature{}
+	err := sigma.Unmarshal(signature)
+	if err != nil {
+		return err
+	}
+
+	var pks []*bn256_dusk_network.PublicKey
+	for _, v := range publicKeys {
+		var pk2 bn256_dusk_network.PublicKey
+		err = pk2.Decompress(v[:])
+		if err != nil {
+			return err
+		}
+		pks = append(pks, &pk2)
+	}
+
+	apk, err := bn256_dusk_network.AggregateApk(pks)
+	if err != nil {
+		return err
+	}
+
+	err = bn256_dusk_network.Verify(apk, message, &sigma)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
+	var signs bn256_dusk_network.Signature
+	err := signs.Unmarshal(signatures[0])
+	if err != nil {
+		return nil, err
+	}
+	for i := 1; i < len(signatures); i++ {
+		var sign bn256_dusk_network.Signature
+		err := sign.Unmarshal(signatures[i])
+		if err != nil {
+			return nil, err
+		}
+		signs.Aggregate(&sign)
+	}
+	return signs.Marshal(), nil
+}
+
+func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+	var sign bn256_dusk_network.Signature
+	err := sign.Unmarshal(signature)
+	if err != nil {
+		return err
+	}
+
+	var pk bn256_dusk_network.PublicKey
+	err = pk.Decompress(publicKey[:])
+	if err != nil {
+		return err
+	}
+
+	err = bn256_dusk_network.Verify(bn256_dusk_network.NewApk(&pk), message, &sign)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (BN256) EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash bls.EpochEntropy) ([]byte, []byte, error) {
+	type pack1 struct {
+		newValSet         []SerializedPublicKey
+		maximumNonSigners uint32
+		maxValidators     uint32
+		epochIndex        uint16
+	}
+
+	type pack2 struct {
+		round      uint8
+		blockHash  bls.EpochEntropy
+		parentHash bls.EpochEntropy
+	}
+
+	ret1, err := rlp.EncodeToBytes(pack1{newValSet, maximumNonSigners, maxValidators, epochIndex})
+	if err != nil {
+		return nil, nil, err
+	}
+	ret2, err := rlp.EncodeToBytes(pack2{round, blockHash, parentHash})
+	if err != nil {
+		return nil, nil, err
+	}
+	return ret1, ret2, nil
+}
+
+func (BN256) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
+	var pk bn256_dusk_network.PublicKey
+	err := pk.Decompress(serialized[:])
+	if err != nil {
+		return nil, err
+	}
+	return pk.Marshal(), nil
 }
