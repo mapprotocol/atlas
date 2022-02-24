@@ -119,8 +119,12 @@ type MarkerInfo struct {
 	Validators []AccoutInfo
 }
 
-func UnmarshalMarkerConfig() {
+func UnmarshalMarkerConfig(ctx *cli.Context) {
 	keyDir := fmt.Sprintf("../atlas/marker/config/markerConfig.json")
+	if ctx.IsSet("markerCfg") {
+		keyDir = ctx.String("markerCfg")
+	}
+
 	data, err := ioutil.ReadFile(keyDir)
 	if err != nil {
 		log.Crit(" readFile Err:", "err:", err.Error())

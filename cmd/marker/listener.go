@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
+	"sort"
 
 	"github.com/mapprotocol/atlas/cmd/marker/config"
 	"github.com/mapprotocol/atlas/cmd/marker/connections"
@@ -23,9 +24,10 @@ import (
 )
 
 var (
-	GetIndexError   = errors.New("get Index nil(no Address)")
-	isRegister      = false
-	isContinueError = true
+	GetIndexError          = errors.New("get Index nil(no Address)")
+	NoTargetValidatorError = errors.New("not find target validator")
+	isRegister             = false
+	isContinueError        = true
 )
 
 type Writer interface {
@@ -151,7 +153,7 @@ var queryRegisteredValidatorSignersCommand = cli.Command{
 
 var getValidatorCommand = cli.Command{
 	Name:   "getValidator",
-	Usage:  "getValidator Info",
+	Usage:  "Validator Info",
 	Action: MigrateFlags(getValidator),
 	Flags:  Flags,
 }
@@ -354,7 +356,14 @@ func deregisterValidator(_ *cli.Context, core *listener) error {
 func vote(_ *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
-	greater, lesser := getGreaterLesser(core, core.cfg.TargetAddress)
+	//greater, lesser := getGreaterLesser(core, core.cfg.TargetAddress)
+	greater, lesser, err := getGL(core, core.cfg.TargetAddress)
+	if err != nil {
+		log.Error("vote", "err", err)
+		return err
+	}
+	//fmt.Println("=== greater ===", greater.String())
+	//fmt.Println("=== lesser ===", lesser.String())
 	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
 	log.Info("=== vote Validator ===", "admin", core.cfg.From, "voteTargetValidator", core.cfg.TargetAddress.String(), "vote MAP Num", core.cfg.VoteNum.String())
 
@@ -919,7 +928,134 @@ func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
 }
 
 //-------------------- getLesser getGreater -------
-//@return  Greater Lesser
+func getGreaterLesser1(core *listener, target common.Address) (common.Address, common.Address, *big.Int) {
+	type ret struct {
+		Validators interface{} // indexed
+		Values     interface{}
+	}
+	var t ret
+	electionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	f := func(output []byte) {
+		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
+		if err != nil {
+			isContinueError = false
+			log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
+		}
+	}
+	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	Validators := (t.Validators).([]common.Address)
+	//Values := (t.Values).([]*big.Int)
+	index := big.NewInt(-1)
+
+	for i := 0; i < len(Validators); i++ {
+		if bytes.Equal(Validators[i].Bytes(), target.Bytes()) && big.NewInt(-1).CmpAbs(index) == 0 {
+			index = big.NewInt(int64(i))
+		}
+		//log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
+	}
+	l := len(Validators)
+	if l > 1 {
+		// first one
+		if big.NewInt(0).CmpAbs(index) == 0 {
+			return params.ZeroAddress, Validators[1], index
+		}
+		//last  one
+		index1 := len(Validators) - 1
+		index2 := big.NewInt(int64(index1))
+		if index.CmpAbs(index2) == 0 {
+			return Validators[index1], params.ZeroAddress, index
+		}
+		return Validators[0], params.ZeroAddress, index
+	} else if l == 1 {
+		return params.ZeroAddress, params.ZeroAddress, index
+	} else {
+		panic("Validators len must be biggest than 0 ")
+		return params.ZeroAddress, params.ZeroAddress, index
+	}
+}
+
+func GetIndex(target common.Address, list []common.Address) (*big.Int, error) {
+	//fmt.Println("=== target ===", target.String())
+	for index, v := range list {
+		//fmt.Println("=== list ===", v.String())
+		if bytes.Equal(target.Bytes(), v.Bytes()) {
+			return big.NewInt(int64(index)), nil
+		}
+	}
+	return nil, GetIndexError
+}
+
+type voteTotal struct {
+	Validator common.Address
+	Value     *big.Int
+}
+
+func getGL(core *listener, target common.Address) (common.Address, common.Address, error) {
+	type ret struct {
+		Validators interface{} // indexed
+		Values     interface{}
+	}
+	var t ret
+	electionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	f := func(output []byte) {
+		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
+		if err != nil {
+			isContinueError = false
+			log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
+		}
+	}
+	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	validators := (t.Validators).([]common.Address)
+	votes := (t.Values).([]*big.Int)
+	voteTotals := make([]voteTotal, len(validators))
+	for i, addr := range validators {
+		voteTotals[i] = voteTotal{addr, votes[i]}
+	}
+	//for i, v := range voteTotals {
+	//	fmt.Println("=== ", i, "===", v.Validator.String(), v.Value.String())
+	//}
+
+	voteNum := core.cfg.VoteNum
+
+	for _, voteTotal := range voteTotals {
+
+		if voteTotal.Validator == target {
+			if big.NewInt(0).CmpAbs(voteNum) > 0 {
+				voteTotal.Value.Add(voteTotal.Value, voteNum)
+			}
+			break
+		}
+
+		// Sorting in descending order is necessary to match the order on-chain.
+		// TODO: We could make this more efficient by only moving the newly vote member.
+		sort.SliceStable(voteTotals, func(j, k int) bool {
+			return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
+		})
+
+		lesser := params.ZeroAddress
+		greater := params.ZeroAddress
+		for j, voteTotal := range voteTotals {
+			if voteTotal.Validator == target {
+				if j > 0 {
+					greater = voteTotals[j-1].Validator
+				}
+				if j+1 < len(voteTotals) {
+					lesser = voteTotals[j+1].Validator
+				}
+				break
+			}
+		}
+		return greater, lesser, nil
+	}
+	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
+}
+
 func getGreaterLesser(core *listener, target common.Address) (common.Address, common.Address) {
 	type ret struct {
 		Validators interface{} // indexed
@@ -980,64 +1116,4 @@ func getGreaterLesser(core *listener, target common.Address) (common.Address, co
 	} else {
 		return params.ZeroAddress, params.ZeroAddress
 	}
-}
-
-func getGreaterLesser1(core *listener, target common.Address) (common.Address, common.Address, *big.Int) {
-	type ret struct {
-		Validators interface{} // indexed
-		Values     interface{}
-	}
-	var t ret
-	electionAddress := core.cfg.ElectionParameters.ElectionAddress
-	abiElection := core.cfg.ElectionParameters.ElectionABI
-	f := func(output []byte) {
-		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
-		if err != nil {
-			isContinueError = false
-			log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
-		}
-	}
-	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	Validators := (t.Validators).([]common.Address)
-	//Values := (t.Values).([]*big.Int)
-	index := big.NewInt(-1)
-
-	for i := 0; i < len(Validators); i++ {
-		if bytes.Equal(Validators[i].Bytes(), target.Bytes()) && big.NewInt(-1).CmpAbs(index) == 0 {
-			index = big.NewInt(int64(i))
-		}
-		//log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
-	}
-	l := len(Validators)
-	if l > 1 {
-		// first one
-		if big.NewInt(0).CmpAbs(index) == 0 {
-			return params.ZeroAddress, Validators[1], index
-		}
-		//last  one
-		index1 := len(Validators) - 1
-		index2 := big.NewInt(int64(index1))
-		if index.CmpAbs(index2) == 0 {
-			return Validators[index1], params.ZeroAddress, index
-		}
-		return Validators[0], params.ZeroAddress, index
-	} else if l == 1 {
-		return params.ZeroAddress, params.ZeroAddress, index
-	} else {
-		panic("Validators len must be biggest than 0 ")
-		return params.ZeroAddress, params.ZeroAddress, index
-	}
-}
-
-func GetIndex(target common.Address, list []common.Address) (*big.Int, error) {
-	//fmt.Println("=== target ===", target.String())
-	for index, v := range list {
-		//fmt.Println("=== list ===", v.String())
-		if bytes.Equal(target.Bytes(), v.Bytes()) {
-			return big.NewInt(int64(index)), nil
-		}
-	}
-	return nil, GetIndexError
 }
