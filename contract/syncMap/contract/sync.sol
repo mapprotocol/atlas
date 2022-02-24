@@ -61,6 +61,7 @@ contract sync {
         rootAccount = msg.sender;
         epochLength = _epochLength;
         maxSyncNum = 10;
+        nowNumber == 0;
         nowEpoch = 0;
         initFirstBlock(firstBlock);
     }
