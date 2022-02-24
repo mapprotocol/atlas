@@ -277,11 +277,7 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	log.Info("=== commision ===", "commision", commision)
 	isRegister = true
-	greater, lesser, err := getGL(core, core.cfg.From)
-	if err != nil {
-		log.Error("registerValidator", "err", err)
-		return err
-	}
+	greater, lesser := getGreaterLesser(core, core.cfg.From)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
 	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
@@ -1058,4 +1054,66 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 		return greater, lesser, nil
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
+}
+
+func getGreaterLesser(core *listener, target common.Address) (common.Address, common.Address) {
+	type ret struct {
+		Validators interface{} // indexed
+		Values     interface{}
+	}
+	var t ret
+	electionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	f := func(output []byte) {
+		err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
+		if err != nil {
+			isContinueError = false
+			log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
+		}
+	}
+	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	Validators := (t.Validators).([]common.Address)
+	Values := (t.Values).([]*big.Int)
+	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
+
+	for i := 0; i < len(Validators); i++ {
+		if bytes.Equal(Validators[i].Bytes(), target.Bytes()) {
+			amount.Add(amount, Values[i])
+		}
+		//log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
+	}
+
+	firstOne := true
+	LastOne := true
+	for i := 0; i < len(Validators); i++ {
+		if Values[i].CmpAbs(amount) > 0 && firstOne {
+			firstOne = false
+		}
+		if Values[i].CmpAbs(amount) < 0 && LastOne {
+			LastOne = false
+		}
+		//log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
+	}
+	l := len(Validators)
+	if isRegister {
+		firstOne = false
+		LastOne = true
+	}
+	if l > 1 {
+		if firstOne {
+			if bytes.Equal(core.cfg.TargetAddress.Bytes(), Validators[0].Bytes()) {
+				return params.ZeroAddress, Validators[1]
+			}
+			return params.ZeroAddress, Validators[0]
+		}
+		index := len(Validators) - 1
+		if LastOne {
+			return Validators[index], params.ZeroAddress
+		}
+		return Validators[0], params.ZeroAddress
+	} else {
+		return params.ZeroAddress, params.ZeroAddress
+	}
 }
