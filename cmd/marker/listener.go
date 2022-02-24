@@ -376,7 +376,7 @@ func vote(_ *cli.Context, core *listener) error {
 		log.Error("vote", "err", err)
 		return err
 	}
-	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
+	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1))
 	log.Info("=== vote Validator ===", "admin", core.cfg.From, "voteTargetValidator", core.cfg.TargetAddress.String(), "vote MAP Num", core.cfg.VoteNum.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "vote", core.cfg.TargetAddress, amount, lesser, greater)
 	go core.writer.ResolveMessage(m)
@@ -425,7 +425,7 @@ func revokePending(_ *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	validator := core.cfg.TargetAddress
-	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1))
 
 	greater, lesser, _ := getGLSub(core, LockedNum, validator)
 	list := _getValidatorsVotedForByAccount(core, core.cfg.From)
@@ -458,7 +458,7 @@ func revokeActive(_ *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	validator := core.cfg.TargetAddress
-	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1))
 	greater, lesser, err := getGLSub(core, LockedNum, validator)
 	if err != nil {
 		log.Error("revokeActive", "err", err)
@@ -818,7 +818,7 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	core.waitUntilMsgHandled(1)
 	result := ret.(*big.Int)
 	log.Info("result", "getTotalVotes", result)
-	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1e18))
+	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1))
 	//var ret interface{}
 	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	//abiValidators := core.cfg.ValidatorParameters.ValidatorABI
@@ -883,7 +883,7 @@ func getPendingWithdrawals(_ *cli.Context, core *listener) error {
 
 //--------------------- locked Map ------------------------
 func lockedMAP(_ *cli.Context, core *listener) error {
-	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1))
 	log.Info("=== Lock  gold ===")
 	log.Info("Lock  gold", "amount", lockedGold.String())
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
@@ -894,7 +894,7 @@ func lockedMAP(_ *cli.Context, core *listener) error {
 	return nil
 }
 func unlockedMAP(_ *cli.Context, core *listener) error {
-	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1))
 	log.Info("=== unLock validator gold ===")
 	log.Info("unLock validator gold", "amount", lockedGold, "admin", core.cfg.From)
 	LockedGoldAddress := core.cfg.LockedGoldParameters.LockedGoldAddress
@@ -905,7 +905,7 @@ func unlockedMAP(_ *cli.Context, core *listener) error {
 	return nil
 }
 func relockMAP(_ *cli.Context, core *listener) error {
-	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
+	lockedGold := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1))
 	index := core.cfg.RelockIndex
 	log.Info("=== relockMAP validator gold ===")
 	log.Info("relockMAP validator gold", "amount", lockedGold)
@@ -1050,7 +1050,7 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 	//	fmt.Println("=== ", i, "===", v.Validator.String(), v.Value.String())
 	//}
 
-	voteNum := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
+	voteNum := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1))
 	for _, voteTotal := range voteTotals {
 		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
 			if big.NewInt(0).Cmp(voteNum) < 0 {
