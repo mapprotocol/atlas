@@ -33,6 +33,7 @@ var (
 		config.RelockIndexFlag,
 		config.TargetAddressFlag,
 		config.ValidatorAddressFlag,
+		config.MAPValueFlag,
 		config.GasLimitFlag,
 	}
 )

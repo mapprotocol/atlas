@@ -105,6 +105,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(LockedNumFlag.Name) {
 		config.LockedNum = big.NewInt(ctx.Int64(LockedNumFlag.Name))
 	}
+	if ctx.IsSet(MAPValueFlag.Name) {
+		config.LockedNum = big.NewInt(ctx.Int64(MAPValueFlag.Name))
+	}
 	if ctx.IsSet(WithdrawIndexFlag.Name) {
 		config.WithdrawIndex = big.NewInt(ctx.Int64(WithdrawIndexFlag.Name))
 	}
