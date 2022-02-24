@@ -119,10 +119,12 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 		}
 		_config, err := config.AssemblyConfig(ctx)
 		if err != nil {
+			cli.ShowAppHelpAndExit(ctx, 1)
 			panic(err)
 		}
 		err = startLogger(ctx, _config)
 		if err != nil {
+			cli.ShowAppHelpAndExit(ctx, 1)
 			panic(err)
 		}
 		core := NewListener(ctx, _config)
