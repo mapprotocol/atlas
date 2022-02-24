@@ -7,8 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
-	"sort"
-
 	"github.com/mapprotocol/atlas/cmd/marker/config"
 	"github.com/mapprotocol/atlas/cmd/marker/connections"
 	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
@@ -17,6 +15,7 @@ import (
 	"github.com/mapprotocol/atlas/helper/decimal"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
+	"sort"
 
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
@@ -1021,37 +1020,34 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 	//	fmt.Println("=== ", i, "===", v.Validator.String(), v.Value.String())
 	//}
 
-	voteNum := core.cfg.VoteNum
-
+	voteNum := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
 	for _, voteTotal := range voteTotals {
-
-		if voteTotal.Validator == target {
-			if big.NewInt(0).CmpAbs(voteNum) > 0 {
+		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
+			if big.NewInt(0).CmpAbs(voteNum) < 0 {
 				voteTotal.Value.Add(voteTotal.Value, voteNum)
 			}
+			// Sorting in descending order is necessary to match the order on-chain.
+			// TODO: We could make this more efficient by only moving the newly vote member.
+			sort.SliceStable(voteTotals, func(j, k int) bool {
+				return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
+			})
+
+			lesser := params.ZeroAddress
+			greater := params.ZeroAddress
+			for j, voteTotal := range voteTotals {
+				if voteTotal.Validator == target {
+					if j > 0 {
+						greater = voteTotals[j-1].Validator
+					}
+					if j+1 < len(voteTotals) {
+						lesser = voteTotals[j+1].Validator
+					}
+					break
+				}
+			}
+			return greater, lesser, nil
 			break
 		}
-
-		// Sorting in descending order is necessary to match the order on-chain.
-		// TODO: We could make this more efficient by only moving the newly vote member.
-		sort.SliceStable(voteTotals, func(j, k int) bool {
-			return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
-		})
-
-		lesser := params.ZeroAddress
-		greater := params.ZeroAddress
-		for j, voteTotal := range voteTotals {
-			if voteTotal.Validator == target {
-				if j > 0 {
-					greater = voteTotals[j-1].Validator
-				}
-				if j+1 < len(voteTotals) {
-					lesser = voteTotals[j+1].Validator
-				}
-				break
-			}
-		}
-		return greater, lesser, nil
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
 }
