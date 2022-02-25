@@ -201,10 +201,10 @@ func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptim
 	}
 	sum := big.NewInt(0)
 	for i, v := range uptimes {
-		sum.Add(sum, v)
 		if ignores[i] {
 			continue
 		}
+		sum.Add(sum, v)
 		sum.Add(sum, PledgeMultiplier)
 	}
 	return sum, nil
