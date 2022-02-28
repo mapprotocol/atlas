@@ -69,15 +69,14 @@ contract sync {
     //the first block is used for init params,
     //it was operated specially. 
     function initFirstBlock(bytes memory firstBlock) private{
+        require(nowNumber == 0);
         blockHeader memory bh = decodeHeaderPart1(firstBlock);
         bytes memory extra = splitExtra(bh.extraData);
         istanbulExtra memory ist = decodeExtraData(extra);
 
         keyNum = ist.addedPubKey.length;
         nowNumber = bh.number;
-        require(nowNumber == 0);
         allkey[nowEpoch] = new bytes[](keyNum);
-
         for(uint8 i = 0;i<keyNum;i++){
             allkey[nowEpoch][i] = ist.addedPubKey[i];
         }
@@ -309,10 +308,6 @@ contract sync {
         return (ret,sum);
     }
 
-    // function verifyAggregatedSeal(bytes memory aggregatedSeal,bytes memory seal) private pure returns (bool){
-    // }
-
-
     function verifySign(bytes memory seal,bytes32 hash,address coinbase) public pure returns (bool){
         //Signature storaged in extraData sub 27 after proposer signed.
         //So signature need to add 27 when verify it.
@@ -342,75 +337,6 @@ contract sync {
        return newExtra;
     }
 
-    function cutAgg(bytes memory hb,bytes memory agg) public pure returns(bytes memory data){
-        require(hb.length < 65535,"the lenght of header rlpcode is too long.");
-        require(hb.length > agg.length,"params error.");
-
-        uint datalen = agg.length-2;
-        uint index = 0;
-        uint target;
-        //the escaSeal rlpcode will be replace of nil,the length of seal will become 1 byte. the aggregatedSeal rlpcode as same as the escaSeal.
-        //when the length of header rlpcode more than 257,it will add 1 byte.
-        uint len = hb.length - datalen + 1; //+3
-        if(len>257){
-            data = new bytes(len);
-            data[index] = bytes1(uint8(249));
-            index++;
-            data[index] = bytes2(uint16(len-3))[0];
-            index++;
-            data[index] = bytes2(uint16(len-3))[1];
-            index++;
-            //emit log("pre 3 byte",len);
-        }else{
-            data = new bytes(len-1);
-            data[index] = bytes1(uint8(248));
-            index++;
-            data[index] = bytes1(uint8(len-2));
-            index++;
-            //emit log("pre 2 byte",len);
-        }
-        //emit log("len",len);
-        
-        //it use Brute-Force arithmetic for looking for target.
-        for (uint i=0;i<hb.length;i++) {
-		    for (uint j=0;j<datalen;j++) {
-			    if(i+j == hb.length) {
-                    //emit log("fail",j);
-				    return hb;
-			    }
-			    if(hb[i+j] != agg[j+2]) {
-                    //emit log("not match",i);
-				    break;
-			    }
-			    if(j == datalen-1) {
-				    target = i;
-			    }
-		    }
-	    }
-        //emit log("target",target);
-
-        uint k;
-        if (hb.length>257){
-            k=3;
-        }else{
-            k=2;
-        }
-        
-        for(;k<hb.length;k++) {
-            if (k == target){
-                data[k] = bytes1(uint8(128));
-                index++;
-            }
-            if (k<target||k>target+datalen){
-                data[index] = hb[k];
-                index++;
-            }
-        }
-        //emit log("index",index);
-
-        return data;
-    }   
-
     function encodeAgg(bytes memory signature,uint round,uint bitmap) public pure returns (bytes memory output){
         bytes memory output1 = RLPEncode.encodeUint(round);//round
         bytes memory output2 = RLPEncode.encodeBytes(signature);//signature
@@ -434,4 +360,85 @@ contract sync {
         }
     }
 
+    function setPre(uint hbLen,uint sealLen)public pure returns(bytes memory pre,uint len){
+        if(sealLen<257 && hbLen>257){
+            len = hbLen-sealLen-2;
+            pre = new bytes(2);
+            pre[0] = bytes1(uint8(248));
+            pre[1] = bytes1(uint8(len)); //h-s+nil(1)-pre(3)
+        }else if(sealLen>257 && hbLen>257){
+            len = hbLen-sealLen-2;
+            pre = new bytes(3);
+            pre[0] = bytes1(uint8(249));
+            pre[1] = bytes2(uint16(len))[0]; //h-s+nil(1)-pre(3)
+            pre[2] = bytes2(uint16(len))[1];
+        }else{
+            len = hbLen-sealLen-1;
+            pre = new bytes(2);
+            pre[0] = bytes1(uint8(248));
+            pre[1] = bytes1(uint8(len)); //h-s+nil(1)-pre(2)
+        }
+        return (pre,pre.length+len);//dataLen+preLen
+    }
+
+    function bfsearch(bytes memory hb,bytes memory seal)public pure returns(uint){
+        for (uint i=0;i<hb.length;i++) {
+            for (uint j=0;j<seal.length;j++) {
+                if(i+j == hb.length) {
+                    //emit log("match end",i);
+                    return 0;
+                }
+                if(hb[i+j] != seal[j]) {
+                    //emit log("not match",i);
+                    break;
+                }
+                if(j == seal.length-1) {
+                    //emit log("match ok",i);
+                    return i;
+                }
+            }
+        }
+        return 0;
+    }
+
+    function cutRlpData(bytes memory pre,bytes memory hb,uint rlpSealLen,uint returnLen,uint index)public pure returns(bytes memory data){
+        uint count = 0;
+        uint start = 2;
+        data = new bytes(returnLen);
+        for (uint i=0;i<pre.length;i++){
+            data[count] = pre[count];
+            count++;
+        }
+        if (hb.length > 257){
+            start = 3;
+        }
+        for(;start<hb.length;start++) {
+            if (count>=returnLen){
+                require(count<=returnLen,"fail with cutting data.");
+                return data;
+            }
+            //require(count<=returnLen,"fail with cutting data.");
+            if (start == index){
+                data[start] = bytes1(uint8(128));
+            }
+            if (start>index&&start<index+rlpSealLen){
+                continue;
+            }else{
+                data[count] = hb[start];
+                count++;
+            }
+        }
+        return data;
+    }
+
+    function cutSeal(bytes memory hb,bytes memory seal) public pure returns(bytes memory data){
+        require(hb.length < 65535,"the lenght of header rlpcode is too long.");
+        require(hb.length > seal.length,"params error.");
+
+        bytes memory pre;
+        uint256 len;
+        (pre,len) = setPre(hb.length,seal.length);
+        uint256 index = bfsearch(hb,seal);
+        return cutRlpData(pre,hb,seal.length,len,index);
+    }
 }
