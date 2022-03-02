@@ -5,9 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
 	"log"
 
-	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/accounts"
@@ -64,28 +64,40 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
+	//privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//defer privateKey.Destroy()
+	//
+	//signature, err := privateKey.SignPoP(a.Address.Bytes())
+	//if err != nil {
+	//	return nil, err
+	//}
+	//defer signature.Destroy()
+	//
+	//signatureBytes, err := signature.Serialize()
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+	key := bn256_dusk_network.NewKey(a.PrivateKey.D)
+	keybytes := crypto.FromECDSA(a.PrivateKey)
+	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 	if err != nil {
 		return nil, err
 	}
-	defer privateKey.Destroy()
-
-	signature, err := privateKey.SignPoP(a.Address.Bytes())
+	pubkey := bn256_dusk_network.PublicKey{}
+	pubkey.Decompress(pkbytes[:])
+	signature, err := bn256_dusk_network.Sign(&key, &pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}
-	defer signature.Destroy()
-
-	signatureBytes, err := signature.Serialize()
-	if err != nil {
-		return nil, err
-	}
-	return signatureBytes, nil
+	return signature.Marshal(), nil
 }
 
 // BLSPublicKey returns the bls public key
