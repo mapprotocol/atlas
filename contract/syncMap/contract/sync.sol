@@ -26,7 +26,7 @@ contract sync {
     mapping(uint256 => bytes) private allHeader;
 
     struct istanbulAggregatedSeal{
-        //uint256   round;
+        uint256   round;
         bytes     signature;
         uint256   bitmap;
     }
@@ -34,8 +34,8 @@ contract sync {
     struct istanbulExtra{
         //address[] validators;
         bytes  seal;
-        istanbulAggregatedSeal  aggregatedSeals;
-        istanbulAggregatedSeal  parentAggregatedSeals;
+        istanbulAggregatedSeal  aggregatedSeal;
+        istanbulAggregatedSeal  parentAggregatedSeal;
         uint256  removeList;
         bytes[]  addedPubKey;
     }
@@ -61,13 +61,12 @@ contract sync {
         rootAccount = msg.sender;
         epochLength = _epochLength;
         maxSyncNum = 10;
-        nowNumber == 0;
         nowEpoch = 0;
         initFirstBlock(firstBlock);
     }
 
     //the first block is used for init params,
-    //it was operated specially. 
+    //it was operated specially.
     function initFirstBlock(bytes memory firstBlock) private{
         blockHeader memory bh = decodeHeaderPart1(firstBlock);
         bytes memory extra = splitExtra(bh.extraData);
@@ -92,7 +91,7 @@ contract sync {
         for (uint i=0;i<keys.length;i++){
             emit setParams("setBLSPublickKey",keys[i]);
             allkey[epoch][i] = keys[i];
-        }    
+        }
     }
 
     function setMaxSyncNum(uint8 max) public{
@@ -137,36 +136,35 @@ contract sync {
         //bh.txHash = bytes32(item3.toBytes());
         //bh.receipHash = bytes32(item4.toBytes());
         bh.number = item6.toUint();
-        bh.extraData = item10.toBytes(); 
+        bh.extraData = item10.toBytes();
         return bh;
     }
 
     //function decodeHeaderPart2(bytes memory rlpBytes,blockHeader memory bh)public pure returns(blockHeader memory){
-        //RLPReader.RLPItem[] memory ls = rlpBytes.toRlpItem().toList();
-        //RLPReader.RLPItem memory item5 = ls[5]; //bloom
-        //RLPReader.RLPItem memory item7 = ls[7]; //gasLimit
-        //RLPReader.RLPItem memory item8 = ls[8]; //gasUsed
-        //RLPReader.RLPItem memory item9 = ls[9]; //time
-        //RLPReader.RLPItem memory item11 = ls[11]; //mixDigest
-        //RLPReader.RLPItem memory item12 = ls[12]; //nonce
-        //RLPReader.RLPItem memory item13 = ls[13]; //baseFee
+    //RLPReader.RLPItem[] memory ls = rlpBytes.toRlpItem().toList();
+    //RLPReader.RLPItem memory item5 = ls[5]; //bloom
+    //RLPReader.RLPItem memory item7 = ls[7]; //gasLimit
+    //RLPReader.RLPItem memory item8 = ls[8]; //gasUsed
+    //RLPReader.RLPItem memory item9 = ls[9]; //time
+    //RLPReader.RLPItem memory item11 = ls[11]; //mixDigest
+    //RLPReader.RLPItem memory item12 = ls[12]; //nonce
+    //RLPReader.RLPItem memory item13 = ls[13]; //baseFee
 
-        //bh.bloom = item5.toBytes();
-        //bh.gasLimit = item7.toUint();
-        //bh.gasUsed = item8.toUint();
-        //bh.time = item9.toUint();
-        //bh.mixDigest  = bytes32(item11.toBytes());
-        //bh.nonce  = item12.toBytes();
-        //bh.baseFee = item13.toUint();
-        //return bh;
+    //bh.bloom = item5.toBytes();
+    //bh.gasLimit = item7.toUint();
+    //bh.gasUsed = item8.toUint();
+    //bh.time = item9.toUint();
+    //bh.mixDigest  = bytes32(item11.toBytes());
+    //bh.nonce  = item12.toBytes();
+    //bh.baseFee = item13.toUint();
+    //return bh;
     //}
 
 
-    function verifymoreHeaders(bytes[] memory moreRlpHeader,bytes[] memory moreHeaderBytes/*,bytes32[] moreBlockHash*/)public returns(uint,bool){
-        require(moreHeaderBytes.length == moreRlpHeader.length);
-        require(maxSyncNum > moreHeaderBytes.length);
+    function verifymoreHeaders(bytes[] memory moreRlpHeader)public returns(uint,bool){
+        require(maxSyncNum > moreRlpHeader.length);
         for(uint i=0;i<moreRlpHeader.length;i++){
-            bool ret = verifyHeader(moreRlpHeader[i],moreHeaderBytes[i]/*,moreBlockHash[i]*/);
+            bool ret = verifyHeader(moreRlpHeader[i]);
             if (ret == false){
                 return (i,false);
             }
@@ -175,7 +173,7 @@ contract sync {
     }
 
     //the input data is the header after rlp encode within seal by proposer and aggregated seal by validators.
-    function verifyHeader(bytes memory rlpHeader,bytes memory escaMsg/*,bytes32 blockHash*/) public returns(bool){
+    function verifyHeader(bytes memory rlpHeader) public returns(bool){
         bool ret = true;
 
         //it only decode data about validation,so that reduce storage and calculation.
@@ -185,56 +183,59 @@ contract sync {
         istanbulExtra memory ist = decodeExtraData(extra);
 
         //the escaMsg is the hash of the header without seal by proposer and aggregated seal by validators.
-        //bytes memory escaMsg = cutSealAndAgg(rlpHeader);
-        bytes32 HeaderSignHash = keccak256(abi.encodePacked(escaMsg));
+        bytes memory blsMsg = cutSeal(rlpHeader,ist.seal);
+        bytes memory rlpAggregatedSeal = encodeAgg(ist.aggregatedSeal.signature,ist.aggregatedSeal.round,ist.aggregatedSeal.bitmap);
+        bytes memory ecdsaMsg = cutSeal(blsMsg,rlpAggregatedSeal);
+        bytes32 ecdsaSignMsg = keccak256(abi.encodePacked(ecdsaMsg));
         //the esca seal signed by proposer
-        ret = verifySign(ist.seal,HeaderSignHash,bh.coinbase);
+        ret = verifySign(ist.seal,ecdsaSignMsg,bh.coinbase);
         if (ret == false) {
             revert("verifyEscaSign fail");
             //return false;
         }
-        emit log("verifyEscaSign pass",true);
+        // emit log("verifyEscaSign pass",true);
 
-        
-        //the blockHash is the hash of the header without aggregated seal by validators.
-        //bytes memory blockHash = cutAgg(rlpHeader);
-        if (bh.number%epochLength == 0){
-            //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blockHash);
-            //it need to update validators at first block of new epoch.
-            changeValidators(ist.removeList,ist.addedPubKey);
-            emit log("changeValidators pass",true);
-        }else{
-            //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blockHash);
-        }
-        // if (ret == false) {
-        //     revert("verifyBlsSign fail");
-        //     //return false;
+
+        // //the blockHash is the hash of the header without aggregated seal by validators.
+        // //bytes memory blockHash = cutAgg(rlpHeader);
+        // if (bh.number%epochLength == 0){
+        //     bytes32 blsSignMsg = keccak256(abi.encodePacked(blsMsg));
+        //     //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blsSignMsg);
+        //     //it need to update validators at first block of new epoch.
+        //     changeValidators(ist.removeList,ist.addedPubKey);
+        //     emit log("changeValidators pass",true);
+        // }else{
+        //     //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.aggregatedSeals.Signature,blsSignMsg);
         // }
+        // // if (ret == false) {
+        // //     revert("verifyBlsSign fail");
+        // //     //return false;
+        // // }
 
-        //the parent seal need to pks of last epoch to verify parent seal,if block number is the first block or the second block at new epoch.
-        //because, the parent seal of the first block and the second block is signed by validitors of last epoch.
-        //and it need to not verify, when the block number is less than 2, the block is no parent seal. 
-        // if (blockNumber > 1) {
-        //     if ((blockNumber-1)%epochLength == 0 || (blockNumber)%epochLength == 0){
-        //         ret = verifyAggregatedSeal(allkey[nowEpoch-1],ist.parentAggregatedSeals.Signature,bh.parentHash);
+        // //the parent seal need to pks of last epoch to verify parent seal,if block number is the first block or the second block at new epoch.
+        // //because, the parent seal of the first block and the second block is signed by validitors of last epoch.
+        // //and it need to not verify, when the block number is less than 2, the block is no parent seal.
+        // if (bh.number > 1) {
+        //     if ((bh.number-1)%epochLength == 0 || (bh.number)%epochLength == 0){
+        //         //ret = verifyAggregatedSeal(allkey[nowEpoch-1],ist.parentAggregatedSeals.Signature,bh.parentHash);
         //     }else{
-        //         ret = verifyAggregatedSeal(allkey[nowEpoch],ist.parentAggregatedSeals.Signature,bh.parentHash);
+        //         //ret = verifyAggregatedSeal(allkey[nowEpoch],ist.parentAggregatedSeals.Signature,bh.parentHash);
         //     }
         //     if (ret == false) {
         //         revert("verifyBlsSign fail");
         //         //return false;
         //     }
         // }
-        
-        nowNumber = nowNumber + 1;
-        //if(nowNumber+1 != bh.number){
-        //    revert("number error");
-        //    //return false;
-        //}
-        allHeader[nowNumber] = rlpHeader;
-        emit log("verifyHeader pass",true);
+
+        // nowNumber = nowNumber + 1;
+        // //if(nowNumber+1 != bh.number){
+        // //    revert("number error");
+        // //    //return false;
+        // //}
+        // allHeader[nowNumber] = rlpHeader;
+        // emit log("verifyHeader pass",true);
         return ret;
-    } 
+    }
 
     function decodeExtraData(bytes memory rlpBytes) public pure returns(istanbulExtra memory ist){
         RLPReader.RLPItem[] memory ls = rlpBytes.toRlpItem().toList();
@@ -243,7 +244,7 @@ contract sync {
         RLPReader.RLPItem memory item3 = ls[3];
         RLPReader.RLPItem memory item4 = ls[4];
         RLPReader.RLPItem memory item5 = ls[5];
-        
+
         //Usually, the length of BLS pk is 98 bytes.
         //According to its length, it can calculate the number of pk.
         if (item1.len > 98){
@@ -256,20 +257,22 @@ contract sync {
 
         ist.removeList = item2.toUint();
         ist.seal = item3.toBytes();
-        ist.aggregatedSeals.signature = item4.toList()[1].toBytes();
-        ist.aggregatedSeals.bitmap = item4.toList()[0].toUint();
-        ist.parentAggregatedSeals.signature = item5.toList()[1].toBytes();
-        ist.parentAggregatedSeals.bitmap = item5.toList()[0].toUint();
-        
-        return  ist;                    
+        ist.aggregatedSeal.round = item4.toList()[2].toUint();
+        ist.aggregatedSeal.signature = item4.toList()[1].toBytes();
+        ist.aggregatedSeal.bitmap = item4.toList()[0].toUint();
+        ist.parentAggregatedSeal.round = item5.toList()[2].toUint();
+        ist.parentAggregatedSeal.signature = item5.toList()[1].toBytes();
+        ist.parentAggregatedSeal.bitmap = item5.toList()[0].toUint();
+
+        return  ist;
     }
 
-    //the function will select legal validators from old validator and add new validators.   
+    //the function will select legal validators from old validator and add new validators.
     function changeValidators(uint256 removedVal,bytes[] memory addVal) public view returns(bytes[] memory ret){
         (uint[] memory list,uint8 oldVal) = readRemoveList(removedVal);
-        ret = new bytes[](oldVal+addVal.length); 
+        ret = new bytes[](oldVal+addVal.length);
         uint j=0;
-        //if value is 1, the related address will be not validaor at nest epoch. 
+        //if value is 1, the related address will be not validaor at nest epoch.
         for(uint i=0;i<list.length;i++){
             if (list[i] == 0){
                 ret[j] = allkey[nowEpoch][i];
@@ -283,11 +286,10 @@ contract sync {
         //require(j<101,"the number of validators is more than 100")
         return ret;
     }
-    
 
-    //it return binary data and the number of validator in the list. 
+    //it return binary data and the number of validator in the list.
     function readRemoveList(uint256 r) public view returns(uint[] memory ret,uint8 sum){
-        //the function transfer uint to binary.  
+        //the function transfer uint to binary.
         sum = 0;
         ret = new uint[](keyNum);
         for(uint i=0;r>0;i++){
@@ -309,10 +311,6 @@ contract sync {
         return (ret,sum);
     }
 
-    // function verifyAggregatedSeal(bytes memory aggregatedSeal,bytes memory seal) private pure returns (bool){
-    // }
-
-
     function verifySign(bytes memory seal,bytes32 hash,address coinbase) public pure returns (bool){
         //Signature storaged in extraData sub 27 after proposer signed.
         //So signature need to add 27 when verify it.
@@ -331,85 +329,16 @@ contract sync {
     }
 
     function splitExtra(bytes memory extra) internal pure returns (bytes memory newExtra){
-       //extraData rlpcode is storaged from No.32 byte to latest byte.
-       //So, the extraData need to reduce 32 bytes at the beginning.
-       newExtra = new bytes(extra.length - 32);
-       uint n = 0;
-       for(uint i=32;i<extra.length;i++){
-           newExtra[n] = extra[i];
-           n = n + 1; 
-       }
-       return newExtra;
+        //extraData rlpcode is storaged from No.32 byte to latest byte.
+        //So, the extraData need to reduce 32 bytes at the beginning.
+        newExtra = new bytes(extra.length - 32);
+        uint n = 0;
+        for(uint i=32;i<extra.length;i++){
+            newExtra[n] = extra[i];
+            n = n + 1;
+        }
+        return newExtra;
     }
-
-    function cutAgg(bytes memory hb,bytes memory agg) public pure returns(bytes memory data){
-        require(hb.length < 65535,"the lenght of header rlpcode is too long.");
-        require(hb.length > agg.length,"params error.");
-
-        uint datalen = agg.length-2;
-        uint index = 0;
-        uint target;
-        //the escaSeal rlpcode will be replace of nil,the length of seal will become 1 byte. the aggregatedSeal rlpcode as same as the escaSeal.
-        //when the length of header rlpcode more than 257,it will add 1 byte.
-        uint len = hb.length - datalen + 1; //+3
-        if(len>257){
-            data = new bytes(len);
-            data[index] = bytes1(uint8(249));
-            index++;
-            data[index] = bytes2(uint16(len-3))[0];
-            index++;
-            data[index] = bytes2(uint16(len-3))[1];
-            index++;
-            //emit log("pre 3 byte",len);
-        }else{
-            data = new bytes(len-1);
-            data[index] = bytes1(uint8(248));
-            index++;
-            data[index] = bytes1(uint8(len-2));
-            index++;
-            //emit log("pre 2 byte",len);
-        }
-        //emit log("len",len);
-        
-        //it use Brute-Force arithmetic for looking for target.
-        for (uint i=0;i<hb.length;i++) {
-		    for (uint j=0;j<datalen;j++) {
-			    if(i+j == hb.length) {
-                    //emit log("fail",j);
-				    return hb;
-			    }
-			    if(hb[i+j] != agg[j+2]) {
-                    //emit log("not match",i);
-				    break;
-			    }
-			    if(j == datalen-1) {
-				    target = i;
-			    }
-		    }
-	    }
-        //emit log("target",target);
-
-        uint k;
-        if (hb.length>257){
-            k=3;
-        }else{
-            k=2;
-        }
-        
-        for(;k<hb.length;k++) {
-            if (k == target){
-                data[k] = bytes1(uint8(128));
-                index++;
-            }
-            if (k<target||k>target+datalen){
-                data[index] = hb[k];
-                index++;
-            }
-        }
-        //emit log("index",index);
-
-        return data;
-    }   
 
     function encodeAgg(bytes memory signature,uint round,uint bitmap) public pure returns (bytes memory output){
         bytes memory output1 = RLPEncode.encodeUint(round);//round
@@ -432,6 +361,126 @@ contract sync {
             output[index] = output3[i];
             index++;
         }
+    }
+
+    function setPre(uint hbLen,uint sealLen)public pure returns(bytes memory pre,uint len){
+        if(sealLen<257 && hbLen>257){
+            len = hbLen-sealLen-2;
+            pre = new bytes(2);
+            pre[0] = bytes1(uint8(248));
+            pre[1] = bytes1(uint8(len)); //h-s+nil(1)-pre(3)
+        }else if(sealLen>257 && hbLen>257){
+            len = hbLen-sealLen-2;
+            pre = new bytes(3);
+            pre[0] = bytes1(uint8(249));
+            pre[1] = bytes2(uint16(len))[0]; //h-s+nil(1)-pre(3)
+            pre[2] = bytes2(uint16(len))[1];
+        }else{
+            len = hbLen-sealLen-1;
+            pre = new bytes(2);
+            pre[0] = bytes1(uint8(248));
+            pre[1] = bytes1(uint8(len)); //h-s+nil(1)-pre(2)
+        }
+        return (pre,len+pre.length);//dataLen+preLen
+    }
+
+    function bfsearch(bytes memory hb,bytes memory seal)public pure returns(uint){
+        for (uint i=0;i<hb.length;i++) {
+            for (uint j=0;j<seal.length;j++) {
+                if(i+j == hb.length) {
+                    //emit log("match end",i);
+                    return 0;
+                }
+                if(hb[i+j] != seal[j]) {
+                    //emit log("not match",i);
+                    break;
+                }
+                if(j == seal.length-1) {
+                    //emit log("match ok",i);
+                    return i;
+                }
+            }
+        }
+        return 0;
+    }
+
+    function cutRlpData(bytes memory pre,bytes memory hb,uint rlpSealLen,uint returnLen,uint index)public pure returns(bytes memory data){
+        uint count = 0;
+        uint start = 2;
+        data = new bytes(returnLen);
+        for (uint i=0;i<pre.length;i++){
+            data[count] = pre[count];
+            count++;
+        }
+        if (hb.length > 257){
+            start = 3;
+        }
+        for(;start<hb.length;start++) {
+            if (count>=returnLen){
+                return data;
+            }
+            //require(count<=returnLen,"fail with cutting data.");
+            if (start == index){
+                data[start] = bytes1(uint8(128));
+            }
+            if (start>index&&start<index+rlpSealLen){
+                continue;
+            }else{
+                data[count] = hb[start];
+                count++;
+            }
+        }
+        return data;
+    }
+
+    function cutSeal(bytes memory hb,bytes memory seal) public pure returns(bytes memory data){
+        require(hb.length < 65535,"the lenght of header rlpcode is too long.");
+        require(hb.length > seal.length,"params error.");
+
+        bytes memory pre;
+        uint256 len;
+        (pre,len) = setPre(hb.length,seal.length);
+        uint256 index = bfsearch(hb,seal);
+        return cutRlpData(pre,hb,seal.length,len,index);
+    }
+
+    event log(string s,bytes b);
+    function test1(bytes memory rlpHeader) public returns(bool){
+        bool ret = true;
+        //it only decode data about validation,so that reduce storage and calculation.
+        blockHeader memory bh = decodeHeaderPart1(rlpHeader);
+        //bh = decodeHeaderPart2(rlpHeader,bh);
+        bytes memory extra = splitExtra(bh.extraData);
+        istanbulExtra memory ist = decodeExtraData(extra);
+        //the escaMsg is the hash of the header without seal by proposer and aggregated seal by validators.
+        bytes memory blsMsg = cutSeal(rlpHeader,ist.seal);
+        bytes memory rlpAggregatedSeal = encodeAgg(ist.aggregatedSeal.signature,ist.aggregatedSeal.round,ist.aggregatedSeal.bitmap);
+        emit log("extra",extra);
+        emit log("blsMsg",blsMsg);
+        emit log("rlpAggregatedSeal",rlpAggregatedSeal);
+        return ret;
+    }
+
+    function test2(bytes memory rlpHeader) public returns(bool){
+        bool ret = true;
+        //it only decode data about validation,so that reduce storage and calculation.
+        blockHeader memory bh = decodeHeaderPart1(rlpHeader);
+        //bh = decodeHeaderPart2(rlpHeader,bh);
+        bytes memory extra = splitExtra(bh.extraData);
+        istanbulExtra memory ist = decodeExtraData(extra);
+
+        //the escaMsg is the hash of the header without seal by proposer and aggregated seal by validators.
+        bytes memory blsMsg = cutSeal(rlpHeader,ist.seal);
+        bytes memory rlpAggregatedSeal = encodeAgg(ist.aggregatedSeal.signature,ist.aggregatedSeal.round,ist.aggregatedSeal.bitmap);
+        bytes memory ecdsaMsg = cutSeal(blsMsg,rlpAggregatedSeal);
+        bytes32 ecdsaSignMsg = keccak256(abi.encodePacked(ecdsaMsg));
+        //the esca seal signed by proposer
+        ret = verifySign(ist.seal,ecdsaSignMsg,bh.coinbase);
+        if (ret == false) {
+            revert("verifyEscaSign fail");
+            //return false;
+        }
+        return ret;
     }
 
 }
