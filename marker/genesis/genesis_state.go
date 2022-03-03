@@ -163,11 +163,11 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 func (ctx *deployContext) fundAdminAccount() {
 	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
 	// validators
-	ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
-	ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
+	//ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -312,17 +312,6 @@ func (ctx *deployContext) deployElection() error {
 			newBigInt(ctx.genesisConfig.Election.MaxElectableValidators),
 			ctx.genesisConfig.Election.MaxVotesPerAccount,
 			ctx.genesisConfig.Election.ElectabilityThreshold.BigInt(),
-		)
-	})
-}
-
-func (ctx *deployContext) deployGasPriceMinimum() error {
-	return ctx.deployCoreContract("GasPriceMinimum", func(contract *contract.EVMBackend) error {
-		return contract.SimpleCall("initialize",
-			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.GasPriceMinimum.MinimumFloor,
-			ctx.genesisConfig.GasPriceMinimum.TargetDensity.BigInt(),
-			ctx.genesisConfig.GasPriceMinimum.AdjustmentSpeed.BigInt(),
 		)
 	})
 }
@@ -661,36 +650,36 @@ func (ctx *deployContext) verifyState() error {
 	//fmt.Println("=== getPendingVotersForValidator ===",voters.([]common.Address))
 
 	//activeAllPending
-	var success bool
-	cList := []common.Address{common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")}
-	if _, err := ctx.contract("Election").Query(&success, "activeAllPending", &cList); err != nil {
-		fmt.Println("err:", err)
-		return err
-	}
-	fmt.Println("=== activeAllPending ===", success)
-
-	var voters interface{}
-	validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	if _, err := ctx.contract("Election").Query(&voters, "getPendingVotersForValidator", validatorAddr); err != nil {
-		fmt.Println("err:", err)
-		return err
-	}
-	fmt.Println("=== getPendingVotersForValidator ===", voters.([]common.Address))
-
-	var value *big.Int
-	var epoch *big.Int
-
-	pendingInfo := &[]interface{}{
-		&value,
-		&epoch,
-	}
-
-	validatorAddr1 := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	if _, err := ctx.contract("Election").Query(pendingInfo, "pendingInfo", validatorAddr1, validatorAddr1); err != nil {
-		fmt.Println("err:", err)
-		return err
-	}
-	fmt.Println("=== pendingInfo  value===", value.String())
-	fmt.Println("=== pendingInfo  epoch===", epoch.String())
+	//var success bool
+	//cList := []common.Address{common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")}
+	//if _, err := ctx.contract("Election").Query(&success, "activeAllPending", &cList); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== activeAllPending ===", success)
+	//
+	//var voters interface{}
+	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//if _, err := ctx.contract("Election").Query(&voters, "getPendingVotersForValidator", validatorAddr); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== getPendingVotersForValidator ===", voters.([]common.Address))
+	//
+	//var value *big.Int
+	//var epoch *big.Int
+	//
+	//pendingInfo := &[]interface{}{
+	//	&value,
+	//	&epoch,
+	//}
+	//
+	//validatorAddr1 := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	//if _, err := ctx.contract("Election").Query(pendingInfo, "pendingInfo", validatorAddr1, validatorAddr1); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+	//fmt.Println("=== pendingInfo  value===", value.String())
+	//fmt.Println("=== pendingInfo  epoch===", epoch.String())
 	return nil
 }
