@@ -25,10 +25,10 @@ func BaseConfig() *Config {
 		Validators: ValidatorsParameters{
 
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
-				Value: bigIntStr("10000000000000000000000"), // 10k Map 10000
+				Value: bigIntStr("1000000000000000000000000"), //1000,000e18
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
 				//Duration: 60 * Day,
-				Duration: 1, //todo zhangwei
+				Duration: 1,
 			},
 			ValidatorScoreExponent:        10,
 			ValidatorScoreAdjustmentSpeed: fixed("1"),
@@ -49,12 +49,15 @@ func BaseConfig() *Config {
 		},
 
 		EpochRewards: EpochRewardsParameters{
-			MaxValidatorEpochPayment: bigIntStr("160000000000000000000000"), //160K map
-			CommunityRewardFraction:  fixed("0.5"),
-			CommunityPartner:         common.Address{},
+			//300,000,000(one year award)/6000,000(number a year)  30000(one epoch number)
+			//a epoch award 1,500,000map
+			//MaxValidatorEpochPayment = 1,500,000map *(2/3)
+			MaxValidatorEpochPayment: bigIntStr("1000000000000000000000000"),
+			CommunityRewardFraction:  fixed("0.1"),
+			CommunityPartner:         common.HexToAddress("0x5ad473726671C40D4dF675A570f09610d7d39E70"),
 		},
 		LockedGold: LockedGoldParameters{
-			UnlockingPeriod: 1,
+			UnlockingPeriod: 60,
 		},
 		Random: RandomParameters{
 			RandomnessBlockRetentionWindow: 720,
