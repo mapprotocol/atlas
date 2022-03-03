@@ -268,6 +268,12 @@ var setValidatorLockedGoldRequirementsCommand = cli.Command{
 	Action: MigrateFlags(setValidatorLockedGoldRequirements),
 	Flags:  Flags,
 }
+var setImplementationCommand = cli.Command{
+	Name:   "setImplementation",
+	Usage:  "Sets the address of the implementation contract.",
+	Action: MigrateFlags(setImplementation),
+	Flags:  Flags,
+}
 
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
@@ -935,6 +941,18 @@ func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	log.Info("=== setValidatorLockedGoldRequirements ===", "admin", core.cfg.From.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "setValidatorLockedGoldRequirements", value, duration)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func setImplementation(_ *cli.Context, core *listener) error {
+	//implementation := common.HexToAddress("0x000000000000000000000000000000000000F012")
+	implementation := core.cfg.TargetAddress
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	ProxyAbi := mapprotocol.AbiFor("Proxy")
+	log.Info("=== setImplementation ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "_setImplementation", implementation)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
