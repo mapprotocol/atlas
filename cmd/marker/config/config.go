@@ -93,6 +93,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
 	}
+	if ctx.IsSet(ContractAddressFlag.Name) {
+		config.TargetAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))
+	}
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
 	}
