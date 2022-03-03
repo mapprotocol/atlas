@@ -33,6 +33,7 @@ var (
 		config.RelockIndexFlag,
 		config.TargetAddressFlag,
 		config.ValidatorAddressFlag,
+		config.ContractAddressFlag,
 		config.MAPValueFlag,
 		config.GasLimitFlag,
 	}
@@ -88,6 +89,7 @@ func init() {
 		getAccountLockedGoldRequirementCommand,
 		getPendingWithdrawalsCommand,
 		setValidatorLockedGoldRequirementsCommand,
+		setImplementationCommand,
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
