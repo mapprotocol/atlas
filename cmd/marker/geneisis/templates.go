@@ -1,7 +1,6 @@
 package genesis
 
 import (
-	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"math/big"
 	"math/rand"
 
@@ -95,15 +94,8 @@ func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config,
 		RequestTimeout: 3000,
 	})
 
-	// 10 billion gas limit, set super high on purpose
-	genesisConfig.Blockchain.BlockGasLimit = 1000000000
-
 	// Add balances to developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())
-
-	// Disable gas price min being updated
-	genesisConfig.GasPriceMinimum.TargetDensity = fixed.MustNew("0.9999")
-	genesisConfig.GasPriceMinimum.AdjustmentSpeed = fixed.MustNew("0")
 
 	return genesisConfig, nil
 }

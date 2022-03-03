@@ -15,13 +15,6 @@ func BaseConfig() *Config {
 	fixed := fixed.MustNew
 
 	return &Config{
-
-		GasPriceMinimum: GasPriceMinimumParameters{
-			MinimumFloor:    bigInt(100000000),
-			AdjustmentSpeed: fixed("0.5"),
-			TargetDensity:   fixed("0.5"),
-		},
-
 		Validators: ValidatorsParameters{
 
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
@@ -47,7 +40,6 @@ func BaseConfig() *Config {
 			MaxVotesPerAccount:     bigInt(10),
 			ElectabilityThreshold:  fixed("0.001"),
 		},
-
 		EpochRewards: EpochRewardsParameters{
 			//300,000,000(one year award)/6000,000(number a year)  30000(one epoch number)
 			//a epoch award 1,500,000map
@@ -63,11 +55,6 @@ func BaseConfig() *Config {
 			RandomnessBlockRetentionWindow: 720,
 		},
 		GoldToken: GoldTokenParameters{},
-		Blockchain: BlockchainParameters{
-			Version:                 Version{1, 0, 0},
-			GasForNonGoldCurrencies: 50000,
-			BlockGasLimit:           13000000,
-		},
 		DoubleSigningSlasher: DoubleSigningSlasherParameters{
 			Reward:  bigIntStr("1000000000000000000000"), // 1000 cGLD
 			Penalty: bigIntStr("9000000000000000000000"), // 9000 cGLD
