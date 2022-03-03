@@ -21,7 +21,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/celo-org/celo-bls-go/bls"
+	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	ed25519 "github.com/hdevalence/ed25519consensus"
@@ -1381,24 +1382,17 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	addressBytes := input[:common.AddressLength]
 
 	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
-	publicKey, err := bls.DeserializePublicKeyCached(publicKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-	defer publicKey.Destroy()
+	publicKey := bn256_dusk_network.PublicKey{}
+	publicKey.Decompress(publicKeyBytes)
+	apk := bn256_dusk_network.NewApk(&publicKey)
 
 	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
-	signature, err := bls.DeserializeSignature(signatureBytes)
+	signature := bn256_dusk_network.Signature{}
+	signature.Unmarshal(signatureBytes)
+	err := bn256_dusk_network.Verify(apk, addressBytes, &signature)
 	if err != nil {
 		return nil, err
 	}
-	defer signature.Destroy()
-
-	err = publicKey.VerifyPoP(addressBytes, signature)
-	if err != nil {
-		return nil, err
-	}
-
 	return true32Byte, nil
 }
 
