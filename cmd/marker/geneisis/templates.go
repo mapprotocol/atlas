@@ -54,7 +54,7 @@ func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, er
 	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
 		Epoch:          Epoch,
 		ProposerPolicy: 2,
-		LookbackWindow: 3,
+		LookbackWindow: 12,
 		BlockPeriod:    1,
 		RequestTimeout: 3000,
 	})
@@ -93,6 +93,8 @@ func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config,
 		BlockPeriod:    5,
 		RequestTimeout: 3000,
 	})
+	// 10 billion gas limit, set super high on purpose
+	genesisConfig.Blockchain.BlockGasLimit = 1000000000
 
 	// Add balances to developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())

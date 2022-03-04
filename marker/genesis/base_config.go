@@ -55,6 +55,11 @@ func BaseConfig() *Config {
 			RandomnessBlockRetentionWindow: 720,
 		},
 		GoldToken: GoldTokenParameters{},
+		Blockchain: BlockchainParameters{
+			Version:                 Version{1, 0, 0},
+			GasForNonGoldCurrencies: 50000,
+			BlockGasLimit:           13000000,
+		},
 		DoubleSigningSlasher: DoubleSigningSlasherParameters{
 			Reward:  bigIntStr("1000000000000000000000"), // 1000 cGLD
 			Penalty: bigIntStr("9000000000000000000000"), // 9000 cGLD

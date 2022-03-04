@@ -32,6 +32,7 @@ type Config struct {
 	Validators           ValidatorsParameters
 	Election             ElectionParameters
 	EpochRewards         EpochRewardsParameters
+	Blockchain           BlockchainParameters
 	Random               RandomParameters
 	DoubleSigningSlasher DoubleSigningSlasherParameters
 	DowntimeSlasher      DowntimeSlasherParameters
