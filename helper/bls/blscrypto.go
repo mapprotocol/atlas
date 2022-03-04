@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rlp"
-	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
+	bn256 "github.com/mapprotocol/bn256/bls"
 	"math/big"
 	"reflect"
 
@@ -308,22 +308,22 @@ func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 }
 
 func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
-	pk, err := bn256_dusk_network.PrivateToPublic(privateKeyBytes)
+	pk, err := bn256.PrivateToPublic(privateKeyBytes)
 	pubKeyBytesFixed := SerializedPublicKey{}
 	copy(pubKeyBytesFixed[:], pk)
 	return pubKeyBytesFixed, err
 }
 
 func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	sigma := bn256_dusk_network.Signature{}
+	sigma := bn256.Signature{}
 	err := sigma.Unmarshal(signature)
 	if err != nil {
 		return err
 	}
 
-	var pks []*bn256_dusk_network.PublicKey
+	var pks []*bn256.PublicKey
 	for _, v := range publicKeys {
-		var pk2 bn256_dusk_network.PublicKey
+		var pk2 bn256.PublicKey
 		err = pk2.Decompress(v[:])
 		if err != nil {
 			return err
@@ -331,12 +331,12 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 		pks = append(pks, &pk2)
 	}
 
-	apk, err := bn256_dusk_network.AggregateApk(pks)
+	apk, err := bn256.AggregateApk(pks)
 	if err != nil {
 		return err
 	}
 
-	err = bn256_dusk_network.Verify(apk, message, &sigma)
+	err = bn256.Verify(apk, message, &sigma)
 	if err != nil {
 		return err
 	}
@@ -344,13 +344,13 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 }
 
 func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
-	var signs bn256_dusk_network.Signature
+	var signs bn256.Signature
 	err := signs.Unmarshal(signatures[0])
 	if err != nil {
 		return nil, err
 	}
 	for i := 1; i < len(signatures); i++ {
-		var sign bn256_dusk_network.Signature
+		var sign bn256.Signature
 		err := sign.Unmarshal(signatures[i])
 		if err != nil {
 			return nil, err
@@ -361,19 +361,19 @@ func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
 }
 
 func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	var sign bn256_dusk_network.Signature
+	var sign bn256.Signature
 	err := sign.Unmarshal(signature)
 	if err != nil {
 		return err
 	}
 
-	var pk bn256_dusk_network.PublicKey
+	var pk bn256.PublicKey
 	err = pk.Decompress(publicKey[:])
 	if err != nil {
 		return err
 	}
 
-	err = bn256_dusk_network.Verify(bn256_dusk_network.NewApk(&pk), message, &sign)
+	err = bn256.Verify(bn256.NewApk(&pk), message, &sign)
 	if err != nil {
 		return err
 	}
@@ -406,7 +406,7 @@ func (BN256) EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumN
 }
 
 func (BN256) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
-	var pk bn256_dusk_network.PublicKey
+	var pk bn256.PublicKey
 	err := pk.Decompress(serialized[:])
 	if err != nil {
 		return nil, err

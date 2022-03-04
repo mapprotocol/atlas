@@ -37,6 +37,7 @@ require (
 	github.com/keep-network/keep-core v1.3.1
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/loinfish/azure-storage-go v0.0.1
+	github.com/mapprotocol/bn256 v0.2.2
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mattn/go-runewidth v0.0.10 // indirect

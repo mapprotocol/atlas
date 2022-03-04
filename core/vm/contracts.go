@@ -21,7 +21,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
+	"github.com/mapprotocol/bn256/bls"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -1382,14 +1382,14 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	addressBytes := input[:common.AddressLength]
 
 	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
-	publicKey := bn256_dusk_network.PublicKey{}
+	publicKey := bls.PublicKey{}
 	publicKey.Decompress(publicKeyBytes)
-	apk := bn256_dusk_network.NewApk(&publicKey)
+	apk := bls.NewApk(&publicKey)
 
 	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
-	signature := bn256_dusk_network.Signature{}
+	signature := bls.Signature{}
 	signature.Unmarshal(signatureBytes)
-	err := bn256_dusk_network.Verify(apk, addressBytes, &signature)
+	err := bls.Verify(apk, addressBytes, &signature)
 	if err != nil {
 		return nil, err
 	}
