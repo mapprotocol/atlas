@@ -11,7 +11,7 @@ import (
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
+	bn256 "github.com/mapprotocol/bn256/bls"
 	"io/ioutil"
 	"math/big"
 	"testing"
@@ -119,7 +119,7 @@ func TestMakeKeyFromJson1(t *testing.T) {
 	key, _ := keystore.DecryptKey(keyjson, password)
 	privateKey := key.PrivateKey
 
-	blsPublicKey, _ := bn256_dusk_network.PrivateToPublic(crypto.FromECDSA(privateKey))
+	blsPublicKey, _ := bn256.PrivateToPublic(crypto.FromECDSA(privateKey))
 
 	from := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
@@ -133,7 +133,7 @@ func TestMakeKeyFromJson1(t *testing.T) {
 	pubKeyBytesFixed := blscrypto.SerializedPublicKey{}
 	copy(pubKeyBytesFixed[:], blsPublicKey)
 
-	var pk bn256_dusk_network.PublicKey
+	var pk bn256.PublicKey
 	err = pk.Decompress(blsPublicKey[:])
 	if err != nil {
 		fmt.Println("err", err)
