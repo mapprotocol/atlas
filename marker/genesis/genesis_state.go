@@ -104,7 +104,11 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 
 		// 08 deployRandom
 		ctx.deployRandom,
-		// 09 Elect Validators
+
+		// 09 BlockchainParameters
+		ctx.deployBlockchainParameters,
+
+		// 10 Elect Validators
 		ctx.electValidators,
 	}
 
@@ -227,6 +231,19 @@ func (ctx *deployContext) deployCoreContract(name string, initialize func(contra
 func (ctx *deployContext) deployRegistry() error {
 	return ctx.deployCoreContract("Registry", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize")
+	})
+}
+
+func (ctx *deployContext) deployBlockchainParameters() error {
+	return ctx.deployCoreContract("BlockchainParameters", func(contract *contract.EVMBackend) error {
+		return contract.SimpleCall("initialize",
+			big.NewInt(ctx.genesisConfig.Blockchain.Version.Major),
+			big.NewInt(ctx.genesisConfig.Blockchain.Version.Minor),
+			big.NewInt(ctx.genesisConfig.Blockchain.Version.Patch),
+			newBigInt(ctx.genesisConfig.Blockchain.GasForNonGoldCurrencies),
+			newBigInt(ctx.genesisConfig.Blockchain.BlockGasLimit),
+			newBigInt(ctx.genesisConfig.Istanbul.LookbackWindow),
+		)
 	})
 }
 
@@ -681,5 +698,12 @@ func (ctx *deployContext) verifyState() error {
 	//}
 	//fmt.Println("=== pendingInfo  value===", value.String())
 	//fmt.Println("=== pendingInfo  epoch===", epoch.String())
+
+	//var b bool
+	//if _, err := ctx.contract("GoldToken").Query(&b, "mint", common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), big.NewInt(10000)); err != nil {
+	//	fmt.Println("err:", err)
+	//	return err
+	//}
+
 	return nil
 }
