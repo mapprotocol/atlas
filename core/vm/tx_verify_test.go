@@ -3,27 +3,26 @@ package vm
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
+	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/core/state"
 	"log"
 	"math/big"
 	"testing"
 
+	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/memorydb"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"gopkg.in/urfave/cli.v1"
 
-	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/chains/txverify"
-	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	atlastypes "github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 )
@@ -64,13 +63,13 @@ var ReceiptsJSON = `[
 ]`
 
 var (
-	blockNumber      = big.NewInt(11025084)
-	txIndex     uint = 6
-	fromAddr         = common.HexToAddress("0x0000000000000000000000002252c2b255d20515666ae1a1fafd95b977886097")
-	toAddr           = common.HexToAddress("0x0000000000000000000000002252c2b255d20515666ae1a1fafd95b977886097")
+	blockNumber      = big.NewInt(11768672)
+	txIndex     uint = 35
+	fromAddr         = common.HexToAddress("0x000000000000000000000000a9024d80366a7cc34698c05d6a19fcf7e3f1ad34")
+	toAddr           = common.HexToAddress("0x0000000000000000000000002e9b4be739453cddbb3641fb61052ba46873d41f")
 	SendValue        = big.NewInt(10)
 	srcChain         = big.NewInt(3)
-	dstChain         = big.NewInt(211)
+	dstChain         = big.NewInt(212)
 	routerAddr       = common.HexToAddress("0x23dd5a89c3ea51601b0674a4fa6ec6b3b14d0b7a")
 	coinAddr         = common.HexToAddress("0x23dd5a89c3ea51601b0674a4fa6ec6b3b14d0b7a")
 )
@@ -82,11 +81,11 @@ type TxParams struct {
 }
 
 type TxProve struct {
-	Tx               *TxParams
-	Receipt          *types.Receipt
-	Prove            light.NodeList
-	BlockNumber      uint64
-	TransactionIndex uint
+	Tx          *TxParams
+	Receipt     *types.Receipt
+	Prove       light.NodeList
+	BlockNumber uint64
+	TxIndex     uint
 }
 
 func dialConn() *ethclient.Client {
@@ -105,6 +104,12 @@ func dialAtlasConn() *ethclient.Client {
 		log.Fatalf("Failed to connect to the eth: %v", err)
 	}
 	return conn
+}
+
+func getStateDB() *state.StateDB {
+	finalDb := rawdb.NewMemoryDatabase()
+	finalState, _ := state.New(common.Hash{}, state.NewDatabase(finalDb), nil)
+	return finalState
 }
 
 func getTransactionsHashByBlockNumber(conn *ethclient.Client, number *big.Int) []common.Hash {
@@ -177,10 +182,10 @@ func getTxProve() []byte {
 			To:    toAddr.Bytes(),
 			Value: SendValue,
 		},
-		Receipt:          receipts[txIndex],
-		Prove:            proof.NodeList(),
-		BlockNumber:      blockNumber.Uint64(),
-		TransactionIndex: txIndex,
+		Receipt:     receipts[txIndex],
+		Prove:       proof.NodeList(),
+		BlockNumber: blockNumber.Uint64(),
+		TxIndex:     txIndex,
 	}
 
 	input, err := rlp.EncodeToBytes(txProve)
@@ -197,19 +202,21 @@ func TestReceiptsRootAndProof(t *testing.T) {
 		router   = common.HexToAddress("0xd6199276959b95a68c1ee30e8569f5fe060903a6")
 	)
 
-	group, err := chains.ChainType2ChainGroup(rawdb.ChainType(srcChain.Uint64()))
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(srcChain.Uint64()))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	set := flag.NewFlagSet("test", 0)
-	chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
+	//set := flag.NewFlagSet("test", 0)
+	//chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
 
-	v, err := txverify.Factory(group)
+	v, err := interfaces.VerifyFactory(group)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := v.Verify(router, srcChain, dstChain, getTxProve()); err != nil {
+	//db := rawdb.NewMemoryDatabase()
+	//sdb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	if err := v.Verify(getStateDB(), router, srcChain, dstChain, getTxProve()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -245,5 +252,13 @@ func call(client *ethclient.Client, from, toAddress common.Address, input []byte
 
 func TestAddr(t *testing.T) {
 	fmt.Println("============================== addr: ", params.TxVerifyAddress)
+
+}
+
+func TestEventHash(t *testing.T) {
+	// LogSwapOut(bytes32 hash, address indexed token, address indexed from, address indexed to, uint amount, uint fromChainID, uint toChainID)
+	event := "LogSwapOut(bytes32,address,address,address,uint256,uint256,uint256)"
+	eventHash := crypto.Keccak256Hash([]byte(event))
+	t.Log("event hash: ", eventHash) // 0xcfdd266a10c21b3f2a2da4a807706d3f3825d37ca51d341eef4dce804212a8a3
 
 }

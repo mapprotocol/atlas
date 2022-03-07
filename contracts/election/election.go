@@ -16,31 +16,30 @@
 package election
 
 import (
-	"math/big"
-	"sort"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
+	"math/big"
+	"sort"
 )
 
 var (
-	electValidatorSignersMethod                   = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electValidatorSigners", params.MaxGasForElectValidators)
-	getElectableValidatorsMethod                  = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getElectableValidators", params.MaxGasForGetElectableValidators)
-	electNValidatorSignersMethod                  = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electNValidatorSigners", params.MaxGasForElectNValidatorSigners)
-	getTotalVotesForEligibleValidatorGroupsMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getTotalVotesForEligibleValidatorGroups", params.MaxGasForGetEligibleValidatorGroupsVoteTotals)
-	getGroupEpochRewardsMethod                    = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getGroupEpochRewards", params.MaxGasForGetGroupEpochRewards)
-	distributeEpochRewardsMethod                  = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "distributeEpochRewards", params.MaxGasForDistributeEpochRewards)
+	electValidatorSignersMethod              = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electValidatorSigners", params.MaxGasForElectValidators)
+	getElectableValidatorsMethod             = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getElectableValidators", params.MaxGasForGetElectableValidators)
+	electNValidatorSignersMethod             = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "electNValidatorSigners", params.MaxGasForElectNValidatorSigners)
+	getTotalVotesForEligibleValidatorsMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getTotalVotesForEligibleValidators", params.MaxGasForGetEligibleValidatorsVoteTotals)
+	distributeEpochVotersRewardsMethod       = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "distributeEpochVotersRewards", params.MaxGasForDistributeVoterEpochRewards)
+
+	activeAllPendingMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "activeAllPending", params.MaxGasForActiveAllPending)
 )
 
 func GetElectedValidators(vmRunner vm.EVMRunner) ([]common.Address, error) {
 	// Get the new epoch's validator set
 	var newValSet []common.Address
 	err := electValidatorSignersMethod.Query(vmRunner, &newValSet)
-
 	if err != nil {
 		return nil, err
 	}
@@ -55,71 +54,54 @@ func ElectNValidatorSigners(vmRunner vm.EVMRunner, additionalAboveMaxElectable i
 	if err != nil {
 		return nil, err
 	}
-
 	// Run the validator election for up to maxElectable + getTotalVotesForEligibleValidatorGroup
 	var electedValidators []common.Address
 	err = electNValidatorSignersMethod.Query(vmRunner, &electedValidators, minElectableValidators, maxElectableValidators.Add(maxElectableValidators, big.NewInt(additionalAboveMaxElectable)))
 	if err != nil {
 		return nil, err
 	}
-
 	return electedValidators, nil
-
 }
 
 type voteTotal struct {
-	Group common.Address
-	Value *big.Int
+	Validator common.Address
+	Value     *big.Int
 }
 
-func getTotalVotesForEligibleValidatorGroups(vmRunner vm.EVMRunner) ([]voteTotal, error) {
-	var groups []common.Address
+func getTotalVotesForEligibleValidators(vmRunner vm.EVMRunner) ([]voteTotal, error) {
+	var validators []common.Address
 	var values []*big.Int
-	err := getTotalVotesForEligibleValidatorGroupsMethod.Query(vmRunner, &[]interface{}{&groups, &values})
+	err := getTotalVotesForEligibleValidatorsMethod.Query(vmRunner, &[]interface{}{&validators, &values})
 	if err != nil {
 		return nil, err
 	}
 
-	voteTotals := make([]voteTotal, len(groups))
-	for i, group := range groups {
-		log.Trace("Got group vote total", "group", group, "value", values[i])
-		voteTotals[i].Group = group
+	voteTotals := make([]voteTotal, len(validators))
+	for i, validator := range validators {
+		log.Trace("Got Validator vote total", "Validator", validator, "value", values[i])
+		voteTotals[i].Validator = validator
 		voteTotals[i].Value = values[i]
 	}
 	return voteTotals, err
 }
 
-func getGroupEpochRewards(vmRunner vm.EVMRunner, group common.Address, maxRewards *big.Int, uptimes []*big.Int) (*big.Int, error) {
-	var groupEpochRewards *big.Int
-	err := getGroupEpochRewardsMethod.Query(vmRunner, &groupEpochRewards, group, maxRewards, uptimes)
-	if err != nil {
-		return nil, err
-	}
-	return groupEpochRewards, nil
-}
-
-func DistributeEpochRewards(vmRunner vm.EVMRunner, groups []common.Address, maxTotalRewards *big.Int, uptimes map[common.Address][]*big.Int) (*big.Int, error) {
+func DistributeEpochRewards(vmRunner vm.EVMRunner, validators []common.Address, rewards map[common.Address]*big.Int) (*big.Int, error) {
 	totalRewards := big.NewInt(0)
-	voteTotals, err := getTotalVotesForEligibleValidatorGroups(vmRunner)
+	voteTotals, err := getTotalVotesForEligibleValidators(vmRunner)
 	if err != nil {
 		return totalRewards, err
 	}
 
-	rewards := make([]*big.Int, len(groups))
-	for i, group := range groups {
-		reward, err := getGroupEpochRewards(vmRunner, group, maxTotalRewards, uptimes[group])
-		if err != nil {
-			return totalRewards, err
+	for _, validator := range validators {
+		reward := rewards[validator]
+		if rewards[validator] == nil {
+			reward = big.NewInt(0)
 		}
-		rewards[i] = reward
-		log.Debug("Reward for group voters", "reward", reward, "group", group.String())
-	}
-
-	for i, group := range groups {
-		reward := rewards[i]
 		for _, voteTotal := range voteTotals {
-			if voteTotal.Group == group {
-				voteTotal.Value.Add(voteTotal.Value, reward)
+			if voteTotal.Validator == validator {
+				if rewards[validator] != nil {
+					voteTotal.Value.Add(voteTotal.Value, rewards[validator])
+				}
 				break
 			}
 		}
@@ -133,21 +115,30 @@ func DistributeEpochRewards(vmRunner vm.EVMRunner, groups []common.Address, maxT
 		lesser := params.ZeroAddress
 		greater := params.ZeroAddress
 		for j, voteTotal := range voteTotals {
-			if voteTotal.Group == group {
+			if voteTotal.Validator == validator {
 				if j > 0 {
-					greater = voteTotals[j-1].Group
+					greater = voteTotals[j-1].Validator
 				}
 				if j+1 < len(voteTotals) {
-					lesser = voteTotals[j+1].Group
+					lesser = voteTotals[j+1].Validator
 				}
 				break
 			}
 		}
-		err := distributeEpochRewardsMethod.Execute(vmRunner, nil, common.Big0, group, reward, lesser, greater)
+		err := distributeEpochVotersRewardsMethod.Execute(vmRunner, nil, common.Big0, validator, reward, lesser, greater)
 		if err != nil {
 			return totalRewards, err
 		}
 		totalRewards.Add(totalRewards, reward)
 	}
 	return totalRewards, nil
+}
+func ActiveAllPending(vmRunner vm.EVMRunner, validators []common.Address) (bool, error) {
+	// Automatic activation
+	var success bool
+	err := activeAllPendingMethod.Execute(vmRunner, &success, common.Big0, validators)
+	if err != nil {
+		return false, err
+	}
+	return success, nil
 }

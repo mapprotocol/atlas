@@ -20,6 +20,7 @@ package utils
 import (
 	"crypto/ecdsa"
 	"fmt"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"io"
 	"io/ioutil"
 	"math"
@@ -224,15 +225,7 @@ var (
 		Usage: "Megabytes of memory allocated to bloom-filter for pruning",
 		Value: 2048,
 	}
-	TxFeeRecipientFlag = cli.StringFlag{
-		Name:  "tx-fee-recipient",
-		Usage: "Public address for block transaction fees and gateway fees",
-		Value: "0",
-	}
-	//OverrideLondonFlag = cli.Uint64Flag{
-	//	Name:  "override.london",
-	//	Usage: "Manually specify London fork-block, overriding the bundled setting",
-	//}
+
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
 		Name:  "light.serve",
@@ -393,6 +386,10 @@ var (
 		Name:  "miner.validator",
 		Usage: "Public address for participation in consensus",
 		Value: "0",
+	}
+	MinerBLSPublicKeyFlag = cli.StringFlag{
+		Name:  "miner.BLSPublicKey",
+		Usage: "bls public key is used for the dev net",
 	}
 	MinerExtraDataFlag = cli.StringFlag{
 		Name:  "miner.extradata",
@@ -1508,24 +1505,23 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			// when we're definitely concerned with only one account.
 			passphrase = list[0]
 		}
-		// setValidator has been called above, configuring the miner address from command line flags.
+		var blsPk blscrypto.SerializedPublicKey
 		if cfg.Miner.Etherbase != (common.Address{}) {
 			developer = accounts.Account{Address: cfg.Miner.Etherbase}
-		} else if accs := ks.Accounts(); len(accs) > 0 {
-			developer = ks.Accounts()[0]
-		} else {
-			developer, err = ks.NewAccount(passphrase)
-			if err != nil {
-				Fatalf("Failed to create developer account: %v", err)
-			}
 		}
-		if err := ks.Unlock(developer, passphrase); err != nil {
+		s := ctx.GlobalString(MinerBLSPublicKeyFlag.Name)
+		err = blsPk.UnmarshalText([]byte(s))
+		if err != nil {
+			Fatalf("Failed to set developer BLSPublicKey: %v", err)
+		}
+
+		if err = ks.Unlock(developer, passphrase); err != nil {
 			Fatalf("Failed to unlock developer account: %v", err)
 		}
 		log.Info("Using developer account", "address", developer.Address)
 
 		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = atlaschain.DevnetGenesisBlock(developer.Address)
+		cfg.Genesis = atlaschain.DevnetGenesisBlock(developer.Address, blsPk)
 		if ctx.GlobalIsSet(DataDirFlag.Name) {
 			// Check if we have an already initialized chain and fall back to
 			// that if so. Otherwise we need to generate a new genesis spec.
@@ -1796,22 +1792,5 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 // command line flags or from the keystore if CLI indexed.
 // `TxFeeRecipient` is the address earned block transaction fees are sent to.
 func setTxFeeRecipient(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
-	if ctx.GlobalIsSet(TxFeeRecipientFlag.Name) {
-		if !ctx.GlobalIsSet(MinerValidatorFlag.Name) {
-			Fatalf("`etherbase` and `tx-fee-recipient` flag should not be used together. `miner.validator` and `tx-fee-recipient` constitute both of `etherbase`' functions")
-		}
-		txFeeRecipient := ctx.GlobalString(TxFeeRecipientFlag.Name)
-
-		// Convert the txFeeRecipient into an address and configure it
-		if txFeeRecipient != "" {
-			account, err := MakeAddress(ks, txFeeRecipient)
-			if err != nil {
-				Fatalf("Invalid txFeeRecipient: %v", err)
-			}
-			cfg.TxFeeRecipient = account.Address
-		}
-	} else {
-		// Backwards compatibility. If the miner was set by the "etherbase" flag, both should have the same info
-		cfg.TxFeeRecipient = cfg.Miner.Etherbase
-	}
+	cfg.TxFeeRecipient = cfg.Miner.Etherbase
 }

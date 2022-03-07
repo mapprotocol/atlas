@@ -11,8 +11,7 @@ import (
 
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/txverify"
-	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -116,17 +115,17 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if bytes.Equal(args.Coin.Bytes(), common.Address{}.Bytes()) {
 		return nil, errors.New("router address is empty")
 	}
-	if !chains.IsSupportedChain(rawdb.ChainType(args.DstChain.Uint64())) {
+	if !(chains.IsSupportedChain(chains.ChainType(args.SrcChain.Uint64())) || chains.IsSupportedChain(chains.ChainType(args.DstChain.Uint64()))) {
 		return nil, ErrNotSupportChain
 	}
-	group, err := chains.ChainType2ChainGroup(rawdb.ChainType(args.SrcChain.Uint64()))
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.SrcChain.Uint64()))
 	if err != nil {
 		return nil, err
 	}
 
-	v, err := txverify.Factory(group)
+	v, err := interfaces.VerifyFactory(group)
 	if err != nil {
 		return nil, err
 	}
-	return nil, v.Verify(args.Router, args.SrcChain, args.DstChain, args.TxProve)
+	return nil, v.Verify(evm.StateDB, args.Router, args.SrcChain, args.DstChain, args.TxProve)
 }

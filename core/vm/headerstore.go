@@ -2,20 +2,14 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
-	"github.com/mapprotocol/atlas/chains/headers/ethereum"
-	ve "github.com/mapprotocol/atlas/chains/validates/ethereum"
-	"github.com/mapprotocol/atlas/core/rawdb"
+	"github.com/mapprotocol/atlas/chains/interfaces"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -23,8 +17,6 @@ const (
 	Save          = "save"
 	CurNbrAndHash = "currentNumberAndHash"
 )
-
-const TimesLimit = 3
 
 // HeaderStore contract ABI
 var (
@@ -52,29 +44,30 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	case CurNbrAndHash:
 		ret, err = currentNumberAndHash(evm, contract, data)
 	default:
-		log.Warn("run contract failed, invalid method name", "method.name", method.Name)
+		log.Warn("run header store contract failed, invalid method name", "method.name", method.Name)
 		return ret, errors.New("invalid method name")
 	}
 
 	if err != nil {
-		log.Error("run contract failed", "method.name", method.Name, "error", err)
+		log.Error("run header store contract failed", "method.name", method.Name, "error", err)
+	} else {
+		log.Info("run header store contract succeed", "method.name", method.Name)
 	}
 
 	return ret, err
 }
 
 func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	// check if the relayer is registered in the current epoch
-	if !IsInCurrentEpoch(evm.StateDB, contract.CallerAddress) {
-		return nil, errors.New("invalid work epoch, please register first")
-	}
-
-	// decode
 	args := struct {
 		From    *big.Int
 		To      *big.Int
 		Headers []byte
 	}{}
+
+	// check if the relayer is registered in the current epoch
+	if !IsInCurrentEpoch(evm.StateDB, contract.CallerAddress) {
+		return nil, errors.New("invalid work epoch, please register first")
+	}
 
 	method, _ := abiHeaderStore.Methods[Save]
 	unpack, err := method.Inputs.Unpack(input)
@@ -85,66 +78,44 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
+	if len(args.Headers) == 0 {
+		return nil, errors.New("headers cannot be empty")
+	}
 	// check if it is a supported chain
-	fromChain := rawdb.ChainType(args.From.Uint64())
-	toChain := rawdb.ChainType(args.To.Uint64())
+	fromChain := chains.ChainType(args.From.Uint64())
+	toChain := chains.ChainType(args.To.Uint64())
 	if !(chains.IsSupportedChain(fromChain) || chains.IsSupportedChain(toChain)) {
 		return nil, ErrNotSupportChain
 	}
 
-	var hs []*ethereum.Header
-	if err := rlp.DecodeBytes(args.Headers, &hs); err != nil {
-		log.Error("rlp decode failed.", "err", err)
-		return nil, ErrRLPDecode
-	}
-
-	// validate header
-	header := new(ve.Validate)
-	start := time.Now()
-	if _, err := header.ValidateHeaderChain(fromChain, hs); err != nil {
-		log.Error("ValidateHeaderChain failed.", "err", err)
-		return nil, err
-	}
-
-	// calc synchronization information
-	headerStore := NewHeaderStore()
-	err = headerStore.Load(evm.StateDB, params.HeaderStoreAddress)
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.From.Uint64()))
 	if err != nil {
-		log.Error("header store load error", "error", err)
 		return nil, err
 	}
 
-	var total uint64
-	for _, h := range hs {
-		if headerStore.GetReceiveTimes(h.Number.Uint64()) >= TimesLimit {
-			return nil, fmt.Errorf("the number of synchronizations has reached the limit(%d)", TimesLimit)
-		}
-		total++
-		headerStore.IncrReceiveTimes(h.Number.Uint64())
+	chain, err := interfaces.ChainFactory(group)
+	if err != nil {
+		return nil, err
 	}
+	if _, err := chain.ValidateHeaderChain(evm.StateDB, args.Headers, chains.ChainType(args.From.Uint64())); err != nil {
+		log.Error("failed to validate header chain", "error", err)
+		return nil, err
+	}
+
+	inserted, err := chain.InsertHeaders(evm.StateDB, args.Headers)
+	if err != nil {
+		log.Error("failed to write headers", "error", err)
+		return nil, err
+	}
+
 	epochID, err := GetCurrentEpochID(evm)
 	if err != nil {
 		return nil, err
 	}
-	headerStore.AddSyncTimes(epochID, total, contract.CallerAddress)
-
-	// store block header
-	store, err := chainsdb.GetStoreMgr(fromChain)
-	if err != nil {
+	if err := chain.StoreSyncTimes(evm.StateDB, epochID, contract.CallerAddress, inserted); err != nil {
+		log.Error("failed to save sync times", "error", err)
 		return nil, err
 	}
-	if _, err := store.InsertHeaderChain(hs, start); err != nil {
-		log.Error("InsertHeaderChain failed.", "err", err)
-		return nil, err
-	}
-
-	// store synchronization information
-	err = headerStore.Store(evm.StateDB, params.HeaderStoreAddress)
-	if err != nil {
-		log.Error("store state error", "error", err)
-		return nil, err
-	}
-	log.Info("save contract execution complete")
 	return nil, nil
 }
 
@@ -161,13 +132,15 @@ func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byt
 		return nil, err
 	}
 
-	v := new(ve.Validate)
-	c := rawdb.ChainType(args.ChainID.Uint64())
-	number, err := v.GetCurrentHeaderNumber(c)
+	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.ChainID.Uint64()))
 	if err != nil {
 		return nil, err
 	}
-	hash, err := v.GetHashByNumber(c, number)
+	hs, err := interfaces.HeaderStoreFactory(group)
+	if err != nil {
+		return nil, err
+	}
+	number, hash, err := hs.GetCurrentNumberAndHash(evm.StateDB)
 	if err != nil {
 		return nil, err
 	}

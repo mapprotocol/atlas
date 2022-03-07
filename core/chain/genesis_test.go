@@ -27,14 +27,13 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {
-	fmt.Println("address:",common.Address{}.String())
-	EmptyRootHash0 := types.DeriveSha(types.Transactions{},trie.NewStackTrie(nil))
+	fmt.Println("address:", common.Address{}.String())
+	EmptyRootHash0 := types.DeriveSha(types.Transactions{}, trie.NewStackTrie(nil))
 	fmt.Println(EmptyRootHash0)
 	block := DefaultGenesisBlock().ToBlock(nil)
 	if block.Hash() != params2.MainnetGenesisHash {
@@ -42,7 +41,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 	}
 	block = DefaultTestnetGenesisBlock().ToBlock(nil)
 	if block.Hash() != params2.TestnetGenesisHash {
-		t.Errorf("wrong ropsten genesis hash, got %v, want %v", block.Hash(), params.RopstenGenesisHash)
+		t.Errorf("wrong ropsten genesis hash, got %v, want %v", block.Hash(), params2.TestnetGenesisHash)
 	}
 }
 

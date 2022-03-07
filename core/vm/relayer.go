@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
@@ -332,14 +333,14 @@ func getPeriodHeight(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	return ret, nil
 }
 
-func addLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
+func addLockedBalance(db types.StateDB, addr common.Address, amount *big.Int) {
 	db.SetLockedBalance(addr, new(big.Int).Add(db.GetLockedBalance(addr), amount))
 }
 
-func subLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
+func subLockedBalance(db types.StateDB, addr common.Address, amount *big.Int) {
 	db.SetLockedBalance(addr, new(big.Int).Sub(db.GetLockedBalance(addr), amount))
 }
 
-func GenesisAddLockedBalance(db StateDB, addr common.Address, amount *big.Int) {
+func GenesisAddLockedBalance(db types.StateDB, addr common.Address, amount *big.Int) {
 	db.SetLockedBalance(addr, new(big.Int).Add(db.GetLockedBalance(addr), amount))
 }

@@ -43,7 +43,7 @@ import (
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/params/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 )
 
 // ErrPairingPasswordNeeded is returned if opening the smart card requires pairing with a pairing

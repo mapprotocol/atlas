@@ -26,6 +26,7 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 
 	"github.com/mapprotocol/atlas/core/state"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -89,8 +90,8 @@ func TestEIP2200(t *testing.T) {
 		statedb.Finalise(true) // Push the state into the "original" slot
 
 		vmctx := BlockContext{
-			CanTransfer: func(StateDB, common.Address, *big.Int) bool { return true },
-			Transfer:    func(StateDB, common.Address, common.Address, *big.Int) {},
+			CanTransfer: func(types.StateDB, common.Address, *big.Int) bool { return true },
+			Transfer:    func(*EVM, common.Address, common.Address, *big.Int) {},
 		}
 		vmenv := NewEVM(vmctx, TxContext{}, statedb, params.AllEthashProtocolChanges, Config{ExtraEips: []int{2200}})
 

@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -32,6 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"gopkg.in/olebedev/go-duktape.v3"
 
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 )
 
@@ -188,7 +189,7 @@ func (sw *stackWrapper) pushObject(vm *duktape.Context) {
 
 // dbWrapper provides a JavaScript wrapper around vm.Database.
 type dbWrapper struct {
-	db vm.StateDB
+	db types.StateDB
 }
 
 // pushObject assembles a JSVM object wrapping a swappable database and pushes it

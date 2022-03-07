@@ -1,0 +1,21 @@
+{
+  "AdminAddress": "0x1c0edab88dbb72b119039c4d14b1663525b3ac15",
+  "Validators": [
+    {
+      "Account": "D:/root/data_ibft1/keystore/UTC--2021-09-08T08-00-15.473724074Z--1c0edab88dbb72b119039c4d14b1663525b3ac15",
+      "Password": ""
+    },
+    {
+      "Account": "D:/root/data_ibft1/keystore/UTC--2021-09-08T10-12-17.687481942Z--16fdbcac4d4cc24dca47b9b80f58155a551ca2af",
+      "Password": ""
+    },
+    {
+      "Account": "D:/root/data_ibft1/keystore/UTC--2021-09-08T10-16-18.520295371Z--2dc45799000ab08e60b7441c36fcc74060ccbe11",
+      "Password": ""
+    },
+    {
+      "Account": "D:/root/data_ibft1/keystore/UTC--2021-09-08T10-16-35.698273293Z--6c5938b49bacde73a8db7c3a7da208846898bff5",
+      "Password": ""
+    }
+  ]
+}

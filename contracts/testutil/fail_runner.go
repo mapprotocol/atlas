@@ -5,7 +5,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/vm"
+
+	"github.com/mapprotocol/atlas/core/types"
 )
 
 // ErrFailingRunner error for FailingVmRunner
@@ -29,7 +30,7 @@ func (fvm FailingVmRunner) Query(recipient common.Address, input []byte, gas uin
 func (fvm FailingVmRunner) StopGasMetering()  {}
 func (fvm FailingVmRunner) StartGasMetering() {}
 
-func (fvm FailingVmRunner) GetStateDB() vm.StateDB {
+func (fvm FailingVmRunner) GetStateDB() types.StateDB {
 	return &mockStateDB{
 		isContract: func(a common.Address) bool {
 			return true

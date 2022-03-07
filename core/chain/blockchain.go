@@ -1451,7 +1451,7 @@ func (bc *BlockChain) writeKnownBlock(block *types.Block) error {
 }
 
 // NewEVMRunner creates the System's EVMRunner for given header & sttate
-func (bc *BlockChain) NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner {
+func (bc *BlockChain) NewEVMRunner(header *types.Header, state types.StateDB) vm.EVMRunner {
 	return vmcontext.NewEVMRunner(bc, header, state)
 }
 
@@ -1486,7 +1486,6 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		}
 
 		lookbackWindow := istEngine.LookbackWindow(block.Header(), state)
-
 		uptimeMonitor := uptime.NewMonitor(store.New(bc.db), bc.chainConfig.Istanbul.Epoch, lookbackWindow)
 		err = uptimeMonitor.ProcessBlock(block)
 		if err != nil {

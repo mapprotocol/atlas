@@ -39,8 +39,8 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/mapprotocol/atlas/params/bls"
 )
 
 // ErrorReporter is the intersection of the testing.B and testing.T interfaces.
@@ -377,7 +377,7 @@ func generateValidators(n int) ([]istanbul.ValidatorData, [][]byte, []*ecdsa.Pri
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
 		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-		blsPublicKey, _ := bls.PrivateToPublic(blsPrivateKey)
+		blsPublicKey, _ := bls.CryptoType().PrivateToPublic(blsPrivateKey)
 		vals = append(vals, istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
 			BLSPublicKey: blsPublicKey,

@@ -8,8 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/core/types"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"io/ioutil"
 	"math/big"
 	"testing"
 )
@@ -67,29 +69,41 @@ func TestMakeValidator(t *testing.T) {
 
 func TestMakeKey(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
-	blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-	blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+	blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(privateKey)
+	blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
 	bp, _ := blsPublicKey.MarshalText()
 	from := crypto.PubkeyToAddress(privateKey.PublicKey)
-	fmt.Println("address:", from)
 	privHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
+	fmt.Println("address:", from)
 	fmt.Println("private key:    ", privHex)
-	pkHash := common.Bytes2Hex(bp)
-	fmt.Println("bls public key: ", pkHash)
+	fmt.Printf("bls public key: %s\n", bp)
 
-	//keyfile := "../../data3/keystore/UTC--2021-08-06T03-32-55.462419725Z--d0d471aaea6bc0321e9c7f7696aac6c8626d1420"
-	//password := ""
-	//keyjson, err := ioutil.ReadFile(keyfile)
-	//if err != nil {
-	//	fmt.Printf("failed to read the keyfile at '%s': %v", keyfile, err)
-	//}
-	//key, _ := keystore.DecryptKey(keyjson, password)
-	//priKey := key.PrivateKey
-	//privKeyHex := hex.EncodeToString(blsPrivateKey)
-	//fmt.Println("bls private key:", privKeyHex)
-	//pubkeyHash := common.Bytes2Hex(crypto.FromECDSAPub(&privateKey.PublicKey))
-	//fmt.Println("public key:     ", pubkeyHash)
+	privKeyHex := hex.EncodeToString(blsPrivateKey)
+	pubkeyHash := common.Bytes2Hex(crypto.FromECDSAPub(&privateKey.PublicKey))
+	fmt.Println("bls private key:", privKeyHex)
+	fmt.Println("public key:     ", pubkeyHash)
 }
-func TestMakeBLSPublicKey(t *testing.T) {
 
+func TestMakeKeyFromJson(t *testing.T) {
+	keyfile := "../datenode/keystore/UTC--2021-12-02T07-27-59.482004300Z--1f39d97a8f697502884fe01cf23dba4eb66e0481"
+	password := ""
+	keyjson, err := ioutil.ReadFile(keyfile)
+	if err != nil {
+		fmt.Printf("failed to read the keyfile at '%s': %v", keyfile, err)
+	}
+	key, _ := keystore.DecryptKey(keyjson, password)
+	privateKey := key.PrivateKey
+	blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(privateKey)
+	blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
+	bp, _ := blsPublicKey.MarshalText()
+	from := crypto.PubkeyToAddress(privateKey.PublicKey)
+	privHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
+	fmt.Println("address:", from)
+	fmt.Println("private key:    ", privHex)
+	fmt.Printf("bls public key: %s\n", bp)
+
+	privKeyHex := hex.EncodeToString(blsPrivateKey)
+	pubkeyHash := common.Bytes2Hex(crypto.FromECDSAPub(&privateKey.PublicKey))
+	fmt.Println("bls private key:", privKeyHex)
+	fmt.Println("public key:     ", pubkeyHash)
 }

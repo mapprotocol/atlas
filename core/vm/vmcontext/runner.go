@@ -26,7 +26,7 @@ type evmRunnerContext interface {
 	State() (*state.StateDB, error)
 }
 
-func NewEVMRunner(chain evmRunnerContext, header *types.Header, state vm.StateDB) vm.EVMRunner {
+func NewEVMRunner(chain evmRunnerContext, header *types.Header, state types.StateDB) vm.EVMRunner {
 
 	return &evmRunner{
 		state: state,
@@ -41,7 +41,7 @@ func NewEVMRunner(chain evmRunnerContext, header *types.Header, state vm.StateDB
 
 type evmRunner struct {
 	newEVM func(from common.Address) *vm.EVM
-	state  vm.StateDB
+	state  types.StateDB
 
 	dontMeterGas bool
 }
@@ -82,6 +82,26 @@ func (ev *evmRunner) StartGasMetering() {
 }
 
 // GetStateDB implements Backend.GetStateDB
-func (ev *evmRunner) GetStateDB() vm.StateDB {
+func (ev *evmRunner) GetStateDB() types.StateDB {
 	return ev.state
+}
+
+// SharedEVMRunner is an evm runner that REUSES an evm
+// This MUST NOT BE USED, but it's here for backward compatibility
+// purposes
+type SharedEVMRunner struct{ *vm.EVM }
+
+func (sev *SharedEVMRunner) Execute(recipient common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, err error) {
+	ret, _, err = sev.Call(vm.AccountRef(VMAddress), recipient, input, gas, value)
+	return ret, err
+}
+
+func (sev *SharedEVMRunner) ExecuteFrom(sender, recipient common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, err error) {
+	ret, _, err = sev.Call(vm.AccountRef(sender), recipient, input, gas, value)
+	return ret, err
+}
+
+func (sev *SharedEVMRunner) Query(recipient common.Address, input []byte, gas uint64) (ret []byte, err error) {
+	ret, _, err = sev.StaticCall(vm.AccountRef(VMAddress), recipient, input, gas)
+	return ret, err
 }

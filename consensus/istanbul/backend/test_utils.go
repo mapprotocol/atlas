@@ -24,8 +24,8 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 // in this test, we can set n to 1, and it means we can process Istanbul and commit a
@@ -119,8 +119,8 @@ func getGenesisAndKeys(n int, isFullChain bool) (*chain.Genesis, []*ecdsa.Privat
 			nodeKeys[i], _ = crypto.GenerateKey()
 			addr = crypto.PubkeyToAddress(nodeKeys[i].PublicKey)
 		}
-		blsPrivateKey, _ := blscrypto.ECDSAToBLS(nodeKeys[i])
-		blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+		blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(nodeKeys[i])
+		blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
 		validators[i] = istanbul.ValidatorData{
 			Address:      addr,
 			BLSPublicKey: blsPublicKey,
@@ -261,8 +261,8 @@ func newTestValidatorSet(n int) (istanbul.ValidatorSet, []*ecdsa.PrivateKey) {
 	validators := make([]istanbul.ValidatorData, n)
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
-		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
-		blsPublicKey, _ := blscrypto.PrivateToPublic(blsPrivateKey)
+		blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(privateKey)
+		blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
 		keys[i] = privateKey
 		validators[i] = istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
@@ -314,7 +314,7 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 	}
 
 	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
-		privateKeyBytes, err := blscrypto.ECDSAToBLS(key)
+		privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(key)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}

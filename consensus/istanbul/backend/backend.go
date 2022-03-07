@@ -50,8 +50,8 @@ import (
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 )
 
 var (

@@ -91,7 +91,7 @@ func (um *Monitor) ComputeValidatorsUptime(epoch uint64, valSetSize int) ([]*big
 			uptimes = append(uptimes, params.Fixidity1)
 			continue
 		}
-
+		//new_score = uptime ** exponent * adjustmentSpeed + old_score * (1 - adjustmentSpeed)
 		numerator := big.NewInt(0).Mul(big.NewInt(int64(entry.UpBlocks)), params.Fixidity1)
 		uptimes = append(uptimes, big.NewInt(0).Div(numerator, big.NewInt(int64(totalMonitoredBlocks))))
 	}
@@ -152,7 +152,7 @@ func updateUptime(uptime *Uptime, blockNumber uint64, bitmap *big.Int, lookbackW
 	currentLookbackWindow := newWindowEndingAt(blockNumber, lookbackWindowSize)
 
 	for i := 0; i < len(uptime.Entries); i++ {
-		if bitmap.Bit(i) == 1 {
+		if bitmap.Bit(i) == 1 { //exist
 			// validator signature present => update their latest signed block
 			uptime.Entries[i].LastSignedBlock = blockNumber
 		}

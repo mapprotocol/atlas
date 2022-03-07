@@ -11,8 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	
+
 	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/params"
 )
@@ -322,13 +323,13 @@ func TestStateDB(t *testing.T) {
 
 	fmt.Println("------------------------------")
 	statedb.GetOrNewStateObject(params.RelayerAddress)
-	hs := NewHeaderStore()
+	hs := ethereum.NewHeaderSync()
 	//hs.epoch2reward[11233] = big.NewInt(11233)
-	if err := hs.Store(statedb, params.RelayerAddress); err != nil {
+	if err := hs.Store(statedb); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	//hs.epoch2reward[2] = big.NewInt(2)
-	if err := hs.Load(statedb, params.RelayerAddress); err != nil {
+	if err := hs.Load(statedb); err != nil {
 		log.Crit("store failed, ", "err", err)
 	}
 	fmt.Println(reg)

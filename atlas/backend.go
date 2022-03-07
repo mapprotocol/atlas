@@ -20,12 +20,6 @@ package atlas
 import (
 	"errors"
 	"fmt"
-	"math/big"
-	"runtime"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -36,6 +30,11 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"math/big"
+	"runtime"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
@@ -314,7 +313,7 @@ func makeExtraData(extra []byte) []byte {
 // APIs return the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *Ethereum) APIs() []rpc.API {
-	apis := atlasapi.GetAPIs(s.APIBackend)
+	apis := atlasapi.GetAPIs(s.APIBackend, s.engine)
 
 	// Append any APIs exposed explicitly by the consensus engine
 	apis = append(apis, s.engine.APIs(s.BlockChain())...)

@@ -20,9 +20,11 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/abstract"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 )
 
 // NewEVMBlockContext creates a new context for use in the EVM.
@@ -41,17 +43,27 @@ func NewEVMBlockContext(header *types.Header, chain abstract.ChainContext, autho
 	if header.BaseFee != nil {
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
-	return vm.BlockContext{
-		CanTransfer: CanTransfer,
-		Transfer:    Transfer,
-		GetHash:     GetHashFn(header, chain),
-		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(header.Number),
-		Time:        new(big.Int).SetUint64(header.Time),
-		Difficulty:  new(big.Int).Set(header.Number),
-		BaseFee:     baseFee,
-		GasLimit:    header.GasLimit,
+	ctx := vm.BlockContext{
+		CanTransfer:          CanTransfer,
+		Transfer:             vmcontext.TobinTransfer,
+		GetHash:              GetHashFn(header, chain),
+		Coinbase:             beneficiary,
+		BlockNumber:          new(big.Int).Set(header.Number),
+		Time:                 new(big.Int).SetUint64(header.Time),
+		Difficulty:           new(big.Int).Set(header.Number),
+		BaseFee:              baseFee,
+		GasLimit:             header.GasLimit,
+		GetRegisteredAddress: vmcontext.GetRegisteredAddress,
 	}
+
+	if chain != nil {
+		ctx.EpochSize = chain.Engine().EpochSize()
+		ctx.GetValidators = chain.Engine().GetValidators
+	} else {
+		ctx.GetValidators = func(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator { return nil }
+		ctx.GetHeaderByNumber = func(uint64) *types.Header { panic("evm context without blockchain context") }
+	}
+	return ctx
 }
 
 // NewEVMTxContext creates a new transaction context for a single transaction.
@@ -98,12 +110,12 @@ func GetHashFn(ref *types.Header, chain abstract.ChainContext) func(n uint64) co
 
 // CanTransfer checks whether there are enough funds in the address' account to make a transfer.
 // This does not take the necessary gas in to account to make the transfer valid.
-func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
+func CanTransfer(db types.StateDB, addr common.Address, amount *big.Int) bool {
 	return db.GetBalance(addr).Cmp(amount) >= 0
 }
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
-func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+func Transfer(db types.StateDB, sender, recipient common.Address, amount *big.Int) {
 	db.SubBalance(sender, amount)
 	db.AddBalance(recipient, amount)
 }

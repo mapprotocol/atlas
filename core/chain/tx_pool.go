@@ -34,7 +34,6 @@ import (
 
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
-	"github.com/mapprotocol/atlas/contracts/currency"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -153,7 +152,7 @@ type blockChain interface {
 	GetBlock(hash common.Hash, number uint64) *types.Block
 	StateAt(root common.Hash) (*state.StateDB, error)
 
-	NewEVMRunner(header *types.Header, state vm.StateDB) vm.EVMRunner
+	NewEVMRunner(header *types.Header, state types.StateDB) vm.EVMRunner
 	SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
 }
 
@@ -252,12 +251,12 @@ type TxPool struct {
 	eip2718  bool // Fork indicator whether we are using EIP-2718 type transactions.
 	eip1559  bool // Fork indicator whether we are using EIP-1559 type transactions.
 
-	currentState    *state.StateDB // Current state in the blockchain head
+	currentState *state.StateDB // Current state in the blockchain head
 	// todo ibft compare
-	currentVMRunner vm.EVMRunner   // Current EVMRunner
-	pendingNonces   *txNoncer      // Pending state tracking virtual nonces
-	currentMaxGas   uint64         // Current gas limit for transaction caps
-	currentCtx      atomic.Value   // Current block context (holds a txPoolContext)
+	currentVMRunner vm.EVMRunner // Current EVMRunner
+	pendingNonces   *txNoncer    // Pending state tracking virtual nonces
+	currentMaxGas   uint64       // Current gas limit for transaction caps
+	currentCtx      atomic.Value // Current block context (holds a txPoolContext)
 
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *txJournal  // Journal of local transaction to back up to disk
@@ -679,23 +678,23 @@ func ValidateTransactorBalanceCoversTx(tx *types.Transaction, from common.Addres
 			"value", tx.Value(), "fee currency", tx.FeeCurrency(), "balance", currentState.GetBalance(from))
 		return errors.New("insufficient funds for gas * price + value + gatewayFee")
 	} else if tx.FeeCurrency() != nil {
-		feeCurrencyBalance, err := currency.GetBalanceOf(currentVMRunner, from, *tx.FeeCurrency())
-
-		if err != nil {
-			log.Debug("validateTx error in getting fee currency balance", "feeCurrency", tx.FeeCurrency(), "error", err)
-			return err
-		}
+		//feeCurrencyBalance, err := currency.GetBalanceOf(currentVMRunner, from, *tx.FeeCurrency())
+		//
+		//if err != nil {
+		//	log.Debug("validateTx error in getting fee currency balance", "feeCurrency", tx.FeeCurrency(), "error", err)
+		//	return err
+		//}
 
 		// This is required to match the logic in canPayFee() state_transition.go
 		//   - Prior to E hardfork: we require the balance to be strictly greater than the fee,
 		//     which means we reject the transaction if balance <= fee
 		//   - After E hardfork: we require the balance to be greater than or equal to the fee,
 		//     which means we reject the transaction if balance < fee
-		fee := tx.Fee()
-		if (eHardfork && feeCurrencyBalance.Cmp(fee) < 0) || (!eHardfork && feeCurrencyBalance.Cmp(fee) <= 0) {
-			log.Debug("validateTx insufficient fee currency", "feeCurrency", tx.FeeCurrency(), "feeCurrencyBalance", feeCurrencyBalance)
-			return errors.New("insufficient funds for gas * price + value + gatewayFee")
-		}
+		//fee := tx.Fee()
+		//if (eHardfork && feeCurrencyBalance.Cmp(fee) < 0) || (!eHardfork && feeCurrencyBalance.Cmp(fee) <= 0) {
+		//	log.Debug("validateTx insufficient fee currency", "feeCurrency", tx.FeeCurrency(), "feeCurrencyBalance", feeCurrencyBalance)
+		//	return errors.New("insufficient funds for gas * price + value + gatewayFee")
+		//}
 
 		if currentState.GetBalance(from).Cmp(tx.Value()) < 0 {
 			log.Debug("validateTx insufficient funds", "balance", currentState.GetBalance(from).String())
@@ -736,7 +735,7 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (replaced bool, err e
 		// todo ibft upgrade???
 		// todo ibft cancel
 		if !isLocal && pool.priced.Underpriced(tx) {
-		//if !isLocal && pool.priced.Underpriced(tx, pool.locals) {
+			//if !isLocal && pool.priced.Underpriced(tx, pool.locals) {
 			log.Trace("Discarding underpriced transaction", "hash", hash, "gasTipCap", tx.GasTipCap(), "gasFeeCap", tx.GasFeeCap())
 			underpricedTxMeter.Mark(1)
 			return false, ErrUnderpriced
@@ -1370,7 +1369,7 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 	// atomic store of the new txPoolContext
 	newCtx := txPoolContext{
 		NewBlockContext(pool.currentVMRunner),
-		currency.NewManager(pool.currentVMRunner),
+		//currency.NewManager(pool.currentVMRunner),
 	}
 	pool.currentCtx.Store(newCtx)
 
@@ -1937,7 +1936,6 @@ func numSlots(tx *types.Transaction) int {
 // BlockContext represents contextual information about the blockchain state
 // for a given block
 type BlockContext struct {
-	whitelistedCurrencies     map[common.Address]struct{}
 	gasForAlternativeCurrency uint64
 }
 
@@ -1946,26 +1944,13 @@ type BlockContext struct {
 // state MUST be pointing to header's stateRoot
 func NewBlockContext(vmRunner vm.EVMRunner) BlockContext {
 	gasForAlternativeCurrency := blockchain_parameters.GetIntrinsicGasForAlternativeFeeCurrencyOrDefault(vmRunner)
-
-	whitelistedCurrenciesArr, err := currency.CurrencyWhitelist(vmRunner)
-	if err != nil {
-		whitelistedCurrenciesArr = []common.Address{}
-	}
-
-	whitelistedCurrencies := make(map[common.Address]struct{}, len(whitelistedCurrenciesArr))
-	for _, currency := range whitelistedCurrenciesArr {
-		whitelistedCurrencies[currency] = struct{}{}
-	}
-
 	return BlockContext{
-		whitelistedCurrencies:     whitelistedCurrencies,
 		gasForAlternativeCurrency: gasForAlternativeCurrency,
 	}
 }
 
 type txPoolContext struct {
 	BlockContext
-	*currency.CurrencyManager
 }
 
 func (pool *TxPool) ctx() *txPoolContext {

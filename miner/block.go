@@ -16,6 +16,7 @@ import (
 	"github.com/mapprotocol/atlas/contracts/random"
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/chain"
+	ethChain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -44,11 +45,9 @@ func prepareBlock(w *worker) (*blockState, error) {
 
 	timestamp := time.Now().Unix()
 	parent := w.chain.CurrentBlock()
-
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
 	}
-
 	num := parent.Number()
 	header := &types.Header{
 		ParentHash: parent.Hash(),
@@ -107,7 +106,6 @@ func prepareBlock(w *worker) (*blockState, error) {
 		if !ok {
 			log.Crit("Istanbul consensus engine must be in use for the randomness beacon")
 		}
-
 		lastCommitment, err := random.GetLastCommitment(vmRunner, w.validator)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get last commitment: %w", err)
@@ -334,15 +332,7 @@ func (b *blockState) finalizeAndAssemble(w *worker) (*types.Block, error) {
 		}
 	}
 
-	if len(b.state.GetLogs(common.Hash{})) > 0 {
-		receipt := types.NewReceipt(nil, false, 0)
-		receipt.Logs = b.state.GetLogs(common.Hash{})
-		for i := range receipt.Logs {
-			receipt.Logs[i].TxIndex = uint(len(b.receipts))
-		}
-		receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
-		b.receipts = append(b.receipts, receipt)
-	}
+	b.receipts = ethChain.AddBlockReceipt(b.receipts, b.state, block.Hash())
 
 	return block, nil
 }

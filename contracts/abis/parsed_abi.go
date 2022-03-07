@@ -12,12 +12,10 @@ import (
 var (
 	Registry             *abi.ABI = mustParseAbi("Registry", RegistryStr)
 	BlockchainParameters *abi.ABI = mustParseAbi("BlockchainParameters", BlockchainParametersStr)
-	SortedOracles        *abi.ABI = mustParseAbi("SortedOracles", SortedOraclesStr)
 	ERC20                *abi.ABI = mustParseAbi("ERC20", ERC20Str)
 	FeeCurrency          *abi.ABI = mustParseAbi("FeeCurrency", FeeCurrencyStr)
 	Elections            *abi.ABI = mustParseAbi("Elections", ElectionsStr)
 	EpochRewards         *abi.ABI = mustParseAbi("EpochRewards", EpochRewardsStr)
-	Freezer              *abi.ABI = mustParseAbi("Freezer", FreezerStr)
 	GasPriceMinimum      *abi.ABI = mustParseAbi("GasPriceMinimum", GasPriceMinimumStr)
 	GoldToken            *abi.ABI = mustParseAbi("GoldToken", GoldTokenStr)
 	Random               *abi.ABI = mustParseAbi("Random", RandomStr)
@@ -34,11 +32,9 @@ func mustParseAbi(name, abiStr string) *abi.ABI {
 
 var byRegistryId = map[common.Hash]*abi.ABI{
 	params.BlockchainParametersRegistryId: BlockchainParameters,
-	params.SortedOraclesRegistryId:        SortedOracles,
 	params.FeeCurrencyWhitelistRegistryId: FeeCurrency,
 	params.ElectionRegistryId:             Elections,
 	params.EpochRewardsRegistryId:         EpochRewards,
-	params.FreezerRegistryId:              Freezer,
 	params.GasPriceMinimumRegistryId:      GasPriceMinimum,
 	params.GoldTokenRegistryId:            GoldToken,
 	params.RandomRegistryId:               Random,

@@ -1,0 +1,220 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "_p1",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_p2",
+						"type": "bytes"
+					}
+				],
+				"name": "addOnCurveE1",
+				"outputs": [
+					{
+						"internalType": "bytes",
+						"name": "",
+						"type": "bytes"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "_publicKey1",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_publicKey2",
+						"type": "bytes"
+					}
+				],
+				"name": "aggregatedPublicKey",
+				"outputs": [],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "verified",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "_p",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "verifyAggregatedHash",
+				"outputs": [
+					{
+						"internalType": "bytes",
+						"name": "",
+						"type": "bytes"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "_aggregatedPublicKey",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_partPublicKey",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_message",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_partSignature",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_signersBitmask",
+						"type": "uint256"
+					}
+				],
+				"name": "verifyMultisignature",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "_publicKey",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_message",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_signature",
+						"type": "bytes"
+					}
+				],
+				"name": "verifySignature",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes",
+						"name": "_publicKey",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_message",
+						"type": "bytes"
+					},
+					{
+						"internalType": "bytes",
+						"name": "_signature",
+						"type": "bytes"
+					}
+				],
+				"name": "verifySignaturePoint",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"bn256/BlsSignatureTest.sol": "BlsSignatureTest"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"bn256/BlsSignatureTest.sol": {
+			"keccak256": "0xa9bca2f0f27a9a6838f73b83fbb84fd380172f33e41437b5c352e5e867ad6ab5",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://3d0a0e34509c3cafc61501c043c443465efceeb5fd6fee3eb1259383c0671a62",
+				"dweb:/ipfs/QmYQpVEXZ4EYzBdio9SnKgjpYjURqgBH5wTXk99e5K8FCq"
+			]
+		},
+		"bn256/BlsSignatureVerification.sol": {
+			"keccak256": "0x98bf82b39b6e1026bef492cd88605885a199412f90c3a271b8e6c1b3b1fc457d",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://052a1ad39cf5753acb6e1b5cd1598fa6f27ef1fd3ed82d76c93e91475e034507",
+				"dweb:/ipfs/QmetPJ7p8FUtzUxYGkhi8juVWzKGq6uDY8M1Rr3DD2f5j1"
+			]
+		},
+		"bn256/ModUtils.sol": {
+			"keccak256": "0x52655602ea749a4503a21d0219432debf7234db7d47af67d753865ac096f3ae8",
+			"license": "Apache-2.0",
+			"urls": [
+				"bzz-raw://57ac4f3a1caea1309cedaba51ca44b1427ffdc0bd27dc9b00db263cdcc9b44e9",
+				"dweb:/ipfs/QmYUmb5GZ3Lm8kDK4ZmctfFrupP1Jpcat7URc3iHSC6Wjp"
+			]
+		}
+	},
+	"version": 1
+}

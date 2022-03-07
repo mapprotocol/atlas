@@ -33,8 +33,8 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -246,7 +246,7 @@ func GetAggregatedSeal(seals MessageSet, round *big.Int) (types.IstanbulAggregat
 		bitmap.SetBit(bitmap, int(j), 1)
 	}
 
-	asig, err := blscrypto.AggregateSignatures(committedSeals)
+	asig, err := blscrypto.CryptoType().AggregateSignatures(committedSeals)
 	if err != nil {
 		return types.IstanbulAggregatedSeal{}, err
 	}
@@ -278,7 +278,7 @@ func UnionOfSeals(aggregatedSignature types.IstanbulAggregatedSeal, seals Messag
 		}
 	}
 
-	asig, err := blscrypto.AggregateSignatures(committedSeals)
+	asig, err := blscrypto.CryptoType().AggregateSignatures(committedSeals)
 	if err != nil {
 		return types.IstanbulAggregatedSeal{}, err
 	}
@@ -421,7 +421,7 @@ func GetAggregatedEpochValidatorSetSeal(blockNumber, epoch uint64, seals Message
 		bitmap.SetBit(bitmap, int(j), 1)
 	}
 
-	asig, err := blscrypto.AggregateSignatures(epochSeals)
+	asig, err := blscrypto.CryptoType().AggregateSignatures(epochSeals)
 	if err != nil {
 		return types.IstanbulEpochValidatorSetSeal{}, err
 	}

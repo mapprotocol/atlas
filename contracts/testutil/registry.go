@@ -14,7 +14,7 @@ type RegistryMock struct {
 func (rm *RegistryMock) GetAddressFor(id common.Hash) common.Address {
 	addr, ok := rm.Contracts[id]
 	if !ok {
-		return common.ZeroAddress
+		return params.ZeroAddress
 	}
 	return addr
 }

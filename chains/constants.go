@@ -1,17 +1,19 @@
 package chains
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
-	"github.com/mapprotocol/atlas/core/rawdb"
 	params2 "github.com/mapprotocol/atlas/params"
 )
 
 const (
-	ChainTypeMAP     rawdb.ChainType = rawdb.ChainType(params2.MainNetChainID)
-	ChainTypeETH     rawdb.ChainType = 1
-	ChainTypeETHTest rawdb.ChainType = 3 // start 800
-	ChainTypeETHDev  rawdb.ChainType = 10
+	ChainTypeMAP     ChainType = ChainType(params2.MainNetChainID)
+	ChainTypeMAPTest ChainType = ChainType(params2.TestNetChainID)
+	ChainTypeMAPDev  ChainType = ChainType(params2.DevNetChainID)
+	ChainTypeETH     ChainType = 1
+	ChainTypeETHTest ChainType = 3
+	ChainTypeETHDev  ChainType = 10
 )
 
 const (
@@ -19,28 +21,35 @@ const (
 	ChainGroupETH = 1001
 )
 
-var ChainTypeList = []rawdb.ChainType{
+var ChainTypeList = []ChainType{
 	ChainTypeMAP,
+	ChainTypeMAPTest,
+	ChainTypeMAPDev,
 	ChainTypeETH,
 	ChainTypeETHTest,
 	ChainTypeETHDev,
 }
 
-var chainType2ChainGroup = map[rawdb.ChainType]ChainGroup{
-	ChainTypeMAP:     ChainGroupMAP,
+var chainType2ChainGroup = map[ChainType]ChainGroup{
 	ChainTypeETH:     ChainGroupETH,
 	ChainTypeETHDev:  ChainGroupETH,
 	ChainTypeETHTest: ChainGroupETH,
 }
 
-var chainType2LondonBlock = map[rawdb.ChainType]*big.Int{
+var chainType2LondonBlock = map[ChainType]*big.Int{
 	ChainTypeETH:     big.NewInt(12_965_000),
 	ChainTypeETHTest: big.NewInt(10_499_401),
 }
 
+var (
+	EthereumHeaderStoreAddress = common.BytesToAddress([]byte("EthereumHeaderStoreAddress"))
+	EthereumHeaderSyncAddress  = common.BytesToAddress([]byte("EthereumHeaderSyncInfoAddress"))
+)
+
+type ChainType uint64
 type ChainGroup uint64
 
-func IsSupportedChain(chain rawdb.ChainType) bool {
+func IsSupportedChain(chain ChainType) bool {
 	for _, c := range ChainTypeList {
 		if c == chain {
 			return true
@@ -49,7 +58,7 @@ func IsSupportedChain(chain rawdb.ChainType) bool {
 	return false
 }
 
-func ChainType2ChainGroup(chain rawdb.ChainType) (ChainGroup, error) {
+func ChainType2ChainGroup(chain ChainType) (ChainGroup, error) {
 	group, ok := chainType2ChainGroup[chain]
 	if !ok {
 		return 0, ErrNotSupportChain
@@ -57,7 +66,7 @@ func ChainType2ChainGroup(chain rawdb.ChainType) (ChainGroup, error) {
 	return group, nil
 }
 
-func ChainType2LondonBlock(chain rawdb.ChainType) (*big.Int, error) {
+func ChainType2LondonBlock(chain ChainType) (*big.Int, error) {
 	lb, ok := chainType2LondonBlock[chain]
 	if !ok {
 		return nil, ErrNotSupportChain

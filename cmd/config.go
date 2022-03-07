@@ -32,7 +32,6 @@ import (
 	"github.com/mapprotocol/atlas/apis/atlasapi"
 	"github.com/mapprotocol/atlas/atlas/catalyst"
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
-	"github.com/mapprotocol/atlas/chains/chainsdb"
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/cmd/utils"
 	params2 "github.com/mapprotocol/atlas/params"
@@ -151,7 +150,8 @@ func makeFullNode(ctx *cli.Context) (*node.Node, atlasapi.Backend) {
 	//	cfg.Eth.OverrideLondon = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideLondonFlag.Name))
 	//}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
-	chainsdb.NewStoreDb(ctx, cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles)
+	// todo init header store
+	//chainsdb.NewStoreDb(ctx, cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles)
 	// Configure catalyst.
 	if ctx.GlobalBool(utils.CatalystFlag.Name) {
 		if eth == nil {

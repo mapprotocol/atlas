@@ -8,7 +8,7 @@ import (
 	"io"
 	"math/big"
 
-	blscrypto "github.com/mapprotocol/atlas/params/bls"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 )
 
 var (
