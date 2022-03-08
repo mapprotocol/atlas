@@ -33,7 +33,7 @@ func RunContract(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	case "getRelayerBalance":
 		ret, err = getBalance(evm, contract, data)
 	case "getRelayer":
-		ret, err = getRelayer(evm, contract, data)
+		ret, err = getRelayerOld(evm, contract, data)
 	case "getPeriodHeight":
 		ret, err = getPeriodHeight(evm, contract, data)
 	case "withdraw":
@@ -256,7 +256,7 @@ func getBalance(evm *EVM, contract *Contract, input []byte) (ret []byte, err err
 }
 
 //query your account is registered or not, is relayer or not
-func getRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+func getRelayerOld(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	method, _ := relayerABI.Methods["getRelayer"]
 	output, err := method.Inputs.Unpack(input)
 	args := struct {

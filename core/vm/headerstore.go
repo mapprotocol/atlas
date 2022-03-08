@@ -1,11 +1,13 @@
 package vm
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/mapprotocol/atlas/chains"
@@ -16,6 +18,8 @@ import (
 const (
 	Save          = "save"
 	CurNbrAndHash = "currentNumberAndHash"
+	SetRelayer    = "setRelayer"
+	GetRelayer    = "getRelayer"
 )
 
 // HeaderStore contract ABI
@@ -25,8 +29,9 @@ var (
 
 // SyncGas defines all method gas
 var SyncGas = map[string]uint64{
-	//Save:          0,
 	CurNbrAndHash: 42000,
+	SetRelayer:    2100,
+	GetRelayer:    0,
 }
 
 // RunHeaderStore execute atlas header store contract
@@ -43,6 +48,10 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 		ret, err = save(evm, contract, data)
 	case CurNbrAndHash:
 		ret, err = currentNumberAndHash(evm, contract, data)
+	case SetRelayer:
+		ret, err = setRelayer(evm, contract, data)
+	case GetRelayer:
+		ret, err = getRelayer(evm)
 	default:
 		log.Warn("run header store contract failed, invalid method name", "method.name", method.Name)
 		return ret, errors.New("invalid method name")
@@ -64,9 +73,8 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		Headers []byte
 	}{}
 
-	// check if the relayer is registered in the current epoch
-	if !IsInCurrentEpoch(evm.StateDB, contract.CallerAddress) {
-		return nil, errors.New("invalid work epoch, please register first")
+	if err := validateRelayer(evm, contract.CallerAddress); err != nil {
+		return nil, err
 	}
 
 	method, _ := abiHeaderStore.Methods[Save]
@@ -145,4 +153,39 @@ func currentNumberAndHash(evm *EVM, contract *Contract, input []byte) (ret []byt
 		return nil, err
 	}
 	return method.Outputs.Pack(new(big.Int).SetUint64(number), hash.Bytes())
+}
+
+func setRelayer(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	adminHash := evm.StateDB.GetState(params.RegistryProxyAddress, params.ProxyOwnerStorageLocation)
+	if !bytes.Equal(contract.CallerAddress.Bytes(), adminHash[12:]) {
+		return nil, errors.New("forbidden")
+	}
+
+	args := struct {
+		Relayer common.Address
+	}{}
+	method := abiHeaderStore.Methods[SetRelayer]
+	unpack, err := method.Inputs.Unpack(input)
+	if err != nil {
+		return nil, err
+	}
+	if err := method.Inputs.Copy(&args, unpack); err != nil {
+		return nil, err
+	}
+	evm.StateDB.SetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]), args.Relayer.Bytes())
+	return nil, nil
+}
+
+func getRelayer(evm *EVM) (ret []byte, err error) {
+	method := abiHeaderStore.Methods[GetRelayer]
+	relayerBytes := evm.StateDB.GetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]))
+	return method.Outputs.Pack(common.BytesToAddress(relayerBytes))
+}
+
+func validateRelayer(evm *EVM, caller common.Address) error {
+	adminAddrBytes := evm.StateDB.GetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]))
+	if !bytes.Equal(caller.Bytes(), adminAddrBytes) {
+		return errors.New("invalid relayer")
+	}
+	return nil
 }
