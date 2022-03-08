@@ -27,7 +27,6 @@ type Config struct {
 	Hardforks        HardforkConfig        `json:"hardforks"`
 	GenesisTimestamp uint64                `json:"genesisTimestamp"`
 
-	GasPriceMinimum      GasPriceMinimumParameters
 	LockedGold           LockedGoldParameters
 	GoldToken            GoldTokenParameters
 	Validators           ValidatorsParameters
@@ -171,13 +170,6 @@ type GoldTokenParameters struct {
 // RandomParameters are the initial configuration parameters for Random
 type RandomParameters struct {
 	RandomnessBlockRetentionWindow uint64 `json:"randomnessBlockRetentionWindow"`
-}
-
-// GasPriceMinimumParameters are the initial configuration parameters for GasPriceMinimum
-type GasPriceMinimumParameters struct {
-	MinimumFloor    *big.Int     `json:"minimumFloor"`
-	TargetDensity   *fixed.Fixed `json:"targetDensity"`
-	AdjustmentSpeed *fixed.Fixed `json:"adjustmentSpeed"`
 }
 
 type GasPriceMinimumParametersMarshaling struct {
