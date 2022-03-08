@@ -27,10 +27,10 @@ var genesisMsgHash = bytes.Repeat([]byte{0x00}, 32)
 //var genesisMsgHash = common.HexToHash("ecc833a7747eaa8327335e8e0c6b6d8aa3a38d0063591e43ce116ccf5c89753e")
 
 var ValidatorsAT []env.Account
-var AdminAT env.Account
+var AdminAddr common.Address
 
 // CreateCommonGenesisConfig generates a config starting point which templates can then customize further
-func CreateCommonGenesisConfig(chainID *big.Int, adminAccountAddress common.Address, istanbulConfig params.IstanbulConfig) *Config {
+func CreateCommonGenesisConfig(chainID *big.Int, istanbulConfig params.IstanbulConfig) *Config {
 	genesisConfig := BaseConfig()
 	genesisConfig.ChainID = chainID
 	genesisConfig.GenesisTimestamp = uint64(time.Now().Unix())
@@ -67,7 +67,7 @@ func GenerateGenesis(ctx *cli.Context, accounts *env.AccountsConfig, cfg *Config
 	return &chain.Genesis{
 		Config:    cfg.ChainConfig(),
 		ExtraData: extraData,
-		Coinbase:  AdminAT.Address,
+		Coinbase:  AdminAddr,
 		Timestamp: cfg.GenesisTimestamp,
 		Alloc:     genesisAlloc,
 	}, nil
@@ -115,8 +115,8 @@ type AccoutInfo struct {
 }
 
 type MarkerInfo struct {
-	AdminInfo  AccoutInfo
-	Validators []AccoutInfo
+	AdminAddress string
+	Validators   []AccoutInfo
 }
 
 func UnmarshalMarkerConfig(ctx *cli.Context) {
@@ -138,7 +138,7 @@ func UnmarshalMarkerConfig(ctx *cli.Context) {
 		tt = append(tt, v)
 	}
 	ValidatorsAT = loadPrivate(tt)
-	AdminAT = loadPrivate([]AccoutInfo{markerCfg.AdminInfo})[0]
+	AdminAddr = common.HexToAddress(markerCfg.AdminAddress)
 }
 func loadPrivate(paths []AccoutInfo) []env.Account {
 	num := len(paths)

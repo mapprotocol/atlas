@@ -46,7 +46,7 @@ func newDeployment(genesisConfig *Config, accounts *env.AccountsConfig, buildPat
 	logger := log.New("obj", "deployment")
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
-	adminAddress := AdminAT.Address
+	adminAddress := AdminAddr
 
 	logger.Info("New deployment", "admin_address", adminAddress.Hex())
 	return &deployContext{
@@ -162,9 +162,9 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 	return genesisAlloc, nil
 }
 
-// Initialize AdminAT
+// Initialize AdminAddr
 func (ctx *deployContext) fundAdminAccount() {
-	ctx.statedb.SetBalance(AdminAT.Address, new(big.Int).Set(adminGoldBalance))
+	ctx.statedb.SetBalance(AdminAddr, new(big.Int).Set(adminGoldBalance))
 	// validators
 	//ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
 	//ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
@@ -193,7 +193,7 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 
 	logger.Info("Deploy Proxy")
 	ctx.statedb.SetCode(proxyAddress, proxyByteCode)
-	ctx.statedb.SetState(proxyAddress, params.ProxyOwnerStorageLocation, AdminAT.Address.Hash())
+	ctx.statedb.SetState(proxyAddress, params.ProxyOwnerStorageLocation, AdminAddr.Hash())
 
 	logger.Info("Deploy Implementation")
 	ctx.statedb.SetCode(implAddress, bytecode)

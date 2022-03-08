@@ -51,7 +51,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 
 func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
 
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
 		Epoch:          Epoch,
 		ProposerPolicy: 2,
 		LookbackWindow: 12,
@@ -86,7 +86,7 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
 		Epoch:          1000,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
@@ -123,7 +123,7 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
+	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
 		Epoch:          Epoch,
 		ProposerPolicy: 2,
 		LookbackWindow: 3,
