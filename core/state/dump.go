@@ -201,12 +201,96 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 	return nextKey
 }
 
+func (s *StateDB) DumpToCollectorGenerateJson(c DumpCollector, conf *DumpConfig) (nextKey []byte) {
+	// Sanitize the input to allow nil configs
+	if conf == nil {
+		conf = new(DumpConfig)
+	}
+	var (
+		missingPreimages int
+		accounts         uint64
+		start            = time.Now()
+		logged           = time.Now()
+	)
+	log.Info("Trie dumping started", "root", s.trie.Hash())
+	c.OnRoot(s.trie.Hash())
+
+	it := trie.NewIterator(s.trie.NodeIterator(conf.Start))
+	for it.Next() {
+		var data types.StateAccount
+		if err := rlp.DecodeBytes(it.Value, &data); err != nil {
+			panic(err)
+		}
+		account := DumpAccount{
+			Balance:   data.Balance.String(),
+			Nonce:     data.Nonce,
+			Root:      data.Root[:],
+			CodeHash:  data.CodeHash,
+			SecureKey: it.Key,
+		}
+		addrBytes := s.trie.GetKey(it.Key)
+		if addrBytes == nil {
+			// Preimage missing
+			missingPreimages++
+			if conf.OnlyWithAddresses {
+				continue
+			}
+			account.SecureKey = it.Key
+		}
+		addr := common.BytesToAddress(addrBytes)
+		obj := newObject(s, addr, data)
+		if !conf.SkipCode {
+			account.Code = obj.Code(s.db)
+		}
+		if !conf.SkipStorage {
+			account.Storage = make(map[common.Hash]string)
+			storageIt := trie.NewIterator(obj.getTrie(s.db).NodeIterator(nil))
+			for storageIt.Next() {
+				_, content, _, err := rlp.Split(storageIt.Value)
+				if err != nil {
+					log.Error("Failed to decode the value returned by iterator", "error", err)
+					continue
+				}
+				account.Storage[common.BytesToHash(s.trie.GetKey(storageIt.Key))] = common.Bytes2Hex(content)
+			}
+		}
+		c.OnAccount(addr, account)
+		accounts++
+		if time.Since(logged) > 8*time.Second {
+			log.Info("Trie dumping in progress", "at", it.Key, "accounts", accounts,
+				"elapsed", common.PrettyDuration(time.Since(start)))
+			logged = time.Now()
+		}
+		//if conf.Max > 0 && accounts >= conf.Max {
+		//	if it.Next() {
+		//		nextKey = it.Key
+		//	}
+		//	break
+		//}
+	}
+	if missingPreimages > 0 {
+		log.Warn("Dump incomplete due to missing preimages", "missing", missingPreimages)
+	}
+	log.Info("Trie dumping complete", "accounts", accounts,
+		"elapsed", common.PrettyDuration(time.Since(start)))
+
+	return nextKey
+}
+
 // RawDump returns the entire state an a single large object
 func (s *StateDB) RawDump(opts *DumpConfig) Dump {
 	dump := &Dump{
 		Accounts: make(map[common.Address]DumpAccount),
 	}
 	s.DumpToCollector(dump, opts)
+	return *dump
+}
+
+func (s *StateDB) RawDumpGenerateJson(opts *DumpConfig) Dump {
+	dump := &Dump{
+		Accounts: make(map[common.Address]DumpAccount),
+	}
+	s.DumpToCollectorGenerateJson(dump, opts)
 	return *dump
 }
 
