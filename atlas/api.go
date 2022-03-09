@@ -19,9 +19,11 @@ package atlas
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"runtime"
@@ -298,6 +300,61 @@ func (api *PublicDebugAPI) DumpBlock(blockNr rpc.BlockNumber) (state.Dump, error
 		return state.Dump{}, err
 	}
 	return stateDb.RawDump(opts), nil
+}
+
+func (api *PublicDebugAPI) DumpBlockGenerateJson(blockNr rpc.BlockNumber) (bool, error) {
+	opts := &state.DumpConfig{
+		OnlyWithAddresses: true,
+	}
+	var block *types.Block
+	if blockNr == rpc.LatestBlockNumber {
+		block = api.eth.blockchain.CurrentBlock()
+	} else {
+		block = api.eth.blockchain.GetBlockByNumber(uint64(blockNr))
+	}
+	if block == nil {
+		return false, fmt.Errorf("block #%d not found", blockNr)
+	}
+	stateDb, err := api.eth.BlockChain().StateAt(block.Root())
+	if err != nil {
+		return false, err
+	}
+
+	dump := stateDb.RawDumpGenerateJson(opts).Accounts
+	genesisAlloc := make(map[common.Address]chain.GenesisAccount)
+	for acc, dumpAcc := range dump {
+		var account chain.GenesisAccount
+
+		if dumpAcc.Balance != "" {
+			account.Balance, _ = new(big.Int).SetString(dumpAcc.Balance, 10)
+		}
+
+		if dumpAcc.Code != nil {
+			account.Code = dumpAcc.Code
+		}
+
+		if len(dumpAcc.Storage) > 0 {
+			account.Storage = make(map[common.Hash]common.Hash)
+			for k, v := range dumpAcc.Storage {
+				account.Storage[k] = common.HexToHash(v)
+			}
+		}
+
+		genesisAlloc[acc] = account
+
+	}
+	err = WriteJson(genesisAlloc, "./dumpStateDb.json")
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+func WriteJson(in interface{}, filepath string) error {
+	byteValue, err := json.MarshalIndent(in, " ", " ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filepath, byteValue, 0644)
 }
 
 // PrivateDebugAPI is the collection of Ethereum full node APIs exposed over
