@@ -274,6 +274,7 @@ func initEthereumStore(state *state.StateDB) {
 		if err := hs.Store(state); err != nil {
 			log.Crit("store header store failed, ", "error", err)
 		}
+		state.SetCode(params.HeaderStoreAddress, params.HeaderStoreAddress[:])
 	}
 }
 
