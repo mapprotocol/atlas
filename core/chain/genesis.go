@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	ethparams "github.com/ethereum/go-ethereum/params"
-
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
@@ -399,7 +398,14 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
-	ga := genesisRegisterProxyContract()
+	ga := genesisPreContract()
+	l := len(ga)
+	log.Info("genesisPreContract", "address count", l)
+	ga1 := genesisRegisterProxyContract()
+	for addr, allc := range ga1 {
+		// add genesis contract to allc
+		ga[addr] = allc
+	}
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
 	ga[preAddr] = GenesisAccount{Balance: balance0}
