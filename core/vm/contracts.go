@@ -21,7 +21,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/celo-org/celo-bls-go/bls"
+	"github.com/mapprotocol/bn256/bls"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	ed25519 "github.com/hdevalence/ed25519consensus"
@@ -1381,24 +1382,17 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	addressBytes := input[:common.AddressLength]
 
 	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
-	publicKey, err := bls.DeserializePublicKeyCached(publicKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-	defer publicKey.Destroy()
+	publicKey := bls.PublicKey{}
+	publicKey.Decompress(publicKeyBytes)
+	apk := bls.NewApk(&publicKey)
 
 	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
-	signature, err := bls.DeserializeSignature(signatureBytes)
+	signature := bls.Signature{}
+	signature.Unmarshal(signatureBytes)
+	err := bls.Verify(apk, addressBytes, &signature)
 	if err != nil {
 		return nil, err
 	}
-	defer signature.Destroy()
-
-	err = publicKey.VerifyPoP(addressBytes, signature)
-	if err != nil {
-		return nil, err
-	}
-
 	return true32Byte, nil
 }
 
