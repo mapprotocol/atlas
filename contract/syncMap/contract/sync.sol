@@ -53,22 +53,22 @@ contract sync {
 
     event log(string s,bytes e);
 
-    // constructor(bytes memory firstBlock) {
-    //     rootAccount = msg.sender;
-    //     epochLength = 20;
-    //     nowEpoch = 0;
-    //     initFirstBlock(firstBlock);
-    // }
+     constructor(bytes memory firstBlock) {
+         rootAccount = msg.sender;
+         epochLength = 20;
+         nowEpoch = 0;
+         initFirstBlock(firstBlock);
+     }
 
     //the first block is used for init params,
     //it was operated specially.
     function initFirstBlock(bytes memory firstBlock) private{
-        require(nowNumber == 0);
         decodeHeader(firstBlock);
         istanbulExtra memory ist = decodeExtraData(bh.extraData);
 
         keyNum = ist.addedPubKey.length;
         nowNumber = bh.number;
+        require(nowNumber == 0);
         allkey[nowEpoch] = new bytes[](keyNum);
         for(uint8 i = 0;i<keyNum;i++){
             allkey[nowEpoch][i] = ist.addedPubKey[i];
