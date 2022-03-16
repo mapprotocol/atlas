@@ -54,7 +54,7 @@ var newEnvFlag = cli.StringFlag{
 }
 
 var markerCfgFlag = cli.StringFlag{
-	Name:  "markerCfg",
+	Name:  "markercfg",
 	Usage: "marker config path",
 }
 

@@ -136,9 +136,9 @@ type MarkerInfo struct {
 }
 
 func UnmarshalMarkerConfig(ctx *cli.Context) {
-	keyDir := fmt.Sprintf("../atlas/marker/config/markerconfig.json")
+	keyDir := fmt.Sprintf("../atlas/marker/config/markerConfig.json")
 	if ctx.IsSet("markercfg") {
-		keyDir = ctx.String("markerCfg")
+		keyDir = ctx.String("markercfg")
 	}
 
 	data, err := ioutil.ReadFile(keyDir)
