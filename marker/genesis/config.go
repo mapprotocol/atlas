@@ -45,29 +45,30 @@ func (cfg *Config) Save(filepath string) error {
 
 // ChainConfig returns the chain config objt for the blockchain
 func (cfg *Config) ChainConfig() *params.ChainConfig {
-	return &params.ChainConfig{
-		ChainID:             cfg.ChainID,
-		HomesteadBlock:      common.Big0,
-		EIP150Block:         common.Big0,
-		EIP150Hash:          common.Hash{},
-		EIP155Block:         common.Big0,
-		EIP158Block:         common.Big0,
-		ByzantiumBlock:      common.Big0,
-		ConstantinopleBlock: common.Big0,
-		PetersburgBlock:     common.Big0,
-		IstanbulBlock:       common.Big0,
-
-		//ChurritoBlock: cfg.Hardforks.ChurritoBlock,
-		DonutBlock: cfg.Hardforks.DonutBlock,
-
-		Istanbul: &params.IstanbulConfig{
-			Epoch:          cfg.Istanbul.Epoch,
-			ProposerPolicy: cfg.Istanbul.ProposerPolicy,
-			LookbackWindow: cfg.Istanbul.LookbackWindow,
-			BlockPeriod:    cfg.Istanbul.BlockPeriod,
-			RequestTimeout: cfg.Istanbul.RequestTimeout,
-		},
-	}
+	//return &params.ChainConfig{
+	//	ChainID:             cfg.ChainID,
+	//	HomesteadBlock:      common.Big0,
+	//	EIP150Block:         common.Big0,
+	//	EIP150Hash:          common.Hash{},
+	//	EIP155Block:         common.Big0,
+	//	EIP158Block:         common.Big0,
+	//	ByzantiumBlock:      common.Big0,
+	//	ConstantinopleBlock: common.Big0,
+	//	PetersburgBlock:     common.Big0,
+	//	IstanbulBlock:       common.Big0,
+	//
+	//	//ChurritoBlock: cfg.Hardforks.ChurritoBlock,
+	//	DonutBlock: cfg.Hardforks.DonutBlock,
+	//
+	//	Istanbul: &params.IstanbulConfig{
+	//		Epoch:          cfg.Istanbul.Epoch,
+	//		ProposerPolicy: cfg.Istanbul.ProposerPolicy,
+	//		LookbackWindow: cfg.Istanbul.LookbackWindow,
+	//		BlockPeriod:    cfg.Istanbul.BlockPeriod,
+	//		RequestTimeout: cfg.Istanbul.RequestTimeout,
+	//	},
+	//}
+	return params.MainnetChainConfig
 }
 
 // HardforkConfig contains atlas hardforks activation blocks

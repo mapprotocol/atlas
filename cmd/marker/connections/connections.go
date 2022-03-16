@@ -14,6 +14,7 @@ func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, strin
 	ip := config.Ip     //utils.RPCListenAddrFlag.Name)
 	port := config.Port //utils.RPCPortFlag.Name)
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
+	//url := "https://poc2-rpc.maplabs.io"
 	conn, err := ethclient.Dial(url)
 	if err != nil {
 		logger.Error("Failed to connect to the Atlaschain client: %v", err)

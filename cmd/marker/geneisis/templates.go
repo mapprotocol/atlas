@@ -6,7 +6,6 @@ import (
 
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/marker/genesis"
-	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -51,13 +50,14 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 
 func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
 
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
-		Epoch:          Epoch,
-		ProposerPolicy: 2,
-		LookbackWindow: 12,
-		BlockPeriod:    1,
-		RequestTimeout: 3000,
-	})
+	//genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
+	//	Epoch:          Epoch,
+	//	ProposerPolicy: 2,
+	//	LookbackWindow: 12,
+	//	BlockPeriod:    1,
+	//	RequestTimeout: 3000,
+	//})
+	genesisConfig := genesis.CreateCommonGenesisConfig()
 
 	// Add balances to developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())
@@ -86,13 +86,14 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
-		Epoch:          1000,
-		ProposerPolicy: 2,
-		LookbackWindow: 3,
-		BlockPeriod:    5,
-		RequestTimeout: 3000,
-	})
+	//genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
+	//	Epoch:          1000,
+	//	ProposerPolicy: 2,
+	//	LookbackWindow: 3,
+	//	BlockPeriod:    5,
+	//	RequestTimeout: 3000,
+	//})
+	genesisConfig := genesis.CreateCommonGenesisConfig()
 	// 10 billion gas limit, set super high on purpose
 	genesisConfig.Blockchain.BlockGasLimit = 1000000000
 
@@ -123,16 +124,8 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, params.IstanbulConfig{
-		Epoch:          Epoch,
-		ProposerPolicy: 2,
-		LookbackWindow: 3,
-		BlockPeriod:    1,
-		RequestTimeout: 3000,
-	})
-
+	genesisConfig := genesis.CreateCommonGenesisConfig()
 	// Add balances to validator accounts instead of developer accounts
 	genesis.FundAccounts(genesisConfig, env.Accounts().ValidatorAccounts())
-
 	return genesisConfig, nil
 }
