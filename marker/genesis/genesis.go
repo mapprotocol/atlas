@@ -12,7 +12,6 @@ import (
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	"github.com/mapprotocol/atlas/helper/decimal/token"
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
@@ -30,11 +29,20 @@ var ValidatorsAT []env.Account
 var AdminAddr common.Address
 
 // CreateCommonGenesisConfig generates a config starting point which templates can then customize further
-func CreateCommonGenesisConfig(chainID *big.Int, istanbulConfig params.IstanbulConfig) *Config {
+func CreateCommonGenesisConfig() *Config {
 	genesisConfig := BaseConfig()
-	genesisConfig.ChainID = chainID
+
+	//genesisConfig.ChainID = chainID
+	//genesisConfig.GenesisTimestamp = uint64(time.Now().Unix())
+	//genesisConfig.Istanbul = istanbulConfig
+	//genesisConfig.Hardforks = HardforkConfig{
+	//	ChurritoBlock: common.Big0,
+	//	DonutBlock:    common.Big0,
+	//}
+
+	genesisConfig.ChainID = params.MainnetChainConfig.ChainID
 	genesisConfig.GenesisTimestamp = uint64(time.Now().Unix())
-	genesisConfig.Istanbul = istanbulConfig
+	genesisConfig.Istanbul = *params.MainnetChainConfig.Istanbul
 	genesisConfig.Hardforks = HardforkConfig{
 		ChurritoBlock: common.Big0,
 		DonutBlock:    common.Big0,
@@ -44,33 +52,41 @@ func CreateCommonGenesisConfig(chainID *big.Int, istanbulConfig params.IstanbulC
 }
 
 func FundAccounts(genesisConfig *Config, accounts []env.Account) {
-	goldBalances := make([]Balance, len(accounts))
-	for i, acc := range accounts {
-		goldBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k Atlas
-	}
-	genesisConfig.GoldToken.InitialBalances = goldBalances
+	//goldBalances := make([]Balance, len(accounts))
+	//for i, acc := range accounts {
+	//	goldBalances[i] = Balance{Account: acc.Address, Amount: (*big.Int)(token.MustNew("50000"))} // 50k MAP
+	//}
+	//genesisConfig.GoldToken.InitialBalances = goldBalances
 }
 
 // GenerateGenesis will create a new genesis block with full atlas blockchain already configured
-func GenerateGenesis(ctx *cli.Context, accounts *env.AccountsConfig, cfg *Config, contractsBuildPath string) (*chain.Genesis, error) {
+func GenerateGenesis(_ *cli.Context, accounts *env.AccountsConfig, cfg *Config, contractsBuildPath string) (*chain.Genesis, error) {
 	extraData, err := generateGenesisExtraData(ValidatorsAT)
-	//fmt.Println("extraData: ", hexutil.Encode(extraData))
 	if err != nil {
 		return nil, err
 	}
-
 	genesisAlloc, err := generateGenesisState(accounts, cfg, contractsBuildPath)
 	if err != nil {
 		return nil, err
 	}
+	genesis := chain.DefaultGenesisBlock()
+	genesis.ExtraData = extraData
+	//genesis.Coinbase = AdminAddr
 
-	return &chain.Genesis{
-		Config:    cfg.ChainConfig(),
-		ExtraData: extraData,
-		Coinbase:  AdminAddr,
-		Timestamp: cfg.GenesisTimestamp,
-		Alloc:     genesisAlloc,
-	}, nil
+	alloc := genesis.Alloc
+	for addr, allc := range genesisAlloc {
+		// add genesis contract to allc
+		alloc[addr] = allc
+	}
+	genesis.Alloc = alloc
+	return genesis, nil
+	//return &chain.Genesis{
+	//	Config:    cfg.ChainConfig(),
+	//	ExtraData: extraData,
+	//	Coinbase:  AdminAddr,
+	//	Timestamp: cfg.GenesisTimestamp,
+	//	Alloc:     genesisAlloc,
+	//}, nil
 }
 
 func generateGenesisExtraData(validatorAccounts []env.Account) ([]byte, error) {
@@ -121,8 +137,8 @@ type MarkerInfo struct {
 
 func UnmarshalMarkerConfig(ctx *cli.Context) {
 	keyDir := fmt.Sprintf("../atlas/marker/config/markerConfig.json")
-	if ctx.IsSet("markerCfg") {
-		keyDir = ctx.String("markerCfg")
+	if ctx.IsSet("markercfg") {
+		keyDir = ctx.String("markercfg")
 	}
 
 	data, err := ioutil.ReadFile(keyDir)
