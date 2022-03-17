@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -26,6 +27,10 @@ type Chain struct {
 
 func (c *Chain) ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error) {
 	return c.Validate.ValidateHeaderChain(db, headers, chainType)
+}
+
+func (c *Chain) ResetHeaderStore(db types.StateDB, header []byte, td *big.Int) error {
+	return c.HeaderStore.ResetHeaderStore(db, header, td)
 }
 
 func (c *Chain) InsertHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error) {

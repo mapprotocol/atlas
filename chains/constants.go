@@ -4,13 +4,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
-	params2 "github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
-	ChainTypeMAP     ChainType = ChainType(params2.MainNetChainID)
-	ChainTypeMAPTest ChainType = ChainType(params2.TestNetChainID)
-	ChainTypeMAPDev  ChainType = ChainType(params2.DevNetChainID)
+	//ChainTypeMAP     ChainType = ChainType(params.MainNetChainID)
+	//ChainTypeMAPTest ChainType = ChainType(params.TestNetChainID)
+	//ChainTypeMAPDev  ChainType = ChainType(params.DevNetChainID)
 	ChainTypeETH     ChainType = 1
 	ChainTypeETHTest ChainType = 3
 	ChainTypeETHDev  ChainType = 10
@@ -22,9 +22,9 @@ const (
 )
 
 var ChainTypeList = []ChainType{
-	ChainTypeMAP,
-	ChainTypeMAPTest,
-	ChainTypeMAPDev,
+	//ChainTypeMAP,
+	//ChainTypeMAPTest,
+	//ChainTypeMAPDev,
 	ChainTypeETH,
 	ChainTypeETHTest,
 	ChainTypeETHDev,
@@ -34,6 +34,12 @@ var chainType2ChainGroup = map[ChainType]ChainGroup{
 	ChainTypeETH:     ChainGroupETH,
 	ChainTypeETHDev:  ChainGroupETH,
 	ChainTypeETHTest: ChainGroupETH,
+}
+
+var chainType2ChainID = map[ChainType]uint64{
+	ChainTypeETH:     params.MainNetChainID,
+	ChainTypeETHDev:  params.DevNetChainID,
+	ChainTypeETHTest: params.TestNetChainID,
 }
 
 var chainType2LondonBlock = map[ChainType]*big.Int{
@@ -64,6 +70,14 @@ func ChainType2ChainGroup(chain ChainType) (ChainGroup, error) {
 		return 0, ErrNotSupportChain
 	}
 	return group, nil
+}
+
+func ChainType2ChainID(chain ChainType) (uint64, error) {
+	chainID, ok := chainType2ChainID[chain]
+	if !ok {
+		return 0, ErrNotSupportChain
+	}
+	return chainID, nil
 }
 
 func ChainType2LondonBlock(chain ChainType) (*big.Int, error) {

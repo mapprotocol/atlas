@@ -17,6 +17,7 @@ import (
 
 const (
 	Save          = "save"
+	Reset         = "reset"
 	CurNbrAndHash = "currentNumberAndHash"
 	SetRelayer    = "setRelayer"
 	GetRelayer    = "getRelayer"
@@ -46,6 +47,8 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	switch method.Name {
 	case Save:
 		ret, err = save(evm, contract, data)
+	case Reset:
+		ret, err = reset(evm, contract, data)
 	case CurNbrAndHash:
 		ret, err = currentNumberAndHash(evm, contract, data)
 	case SetRelayer:
@@ -96,7 +99,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, ErrNotSupportChain
 	}
 
-	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.From.Uint64()))
+	group, err := chains.ChainType2ChainGroup(fromChain)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +108,7 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := chain.ValidateHeaderChain(evm.StateDB, args.Headers, chains.ChainType(args.From.Uint64())); err != nil {
+	if _, err := chain.ValidateHeaderChain(evm.StateDB, args.Headers, fromChain); err != nil {
 		log.Error("failed to validate header chain", "error", err)
 		return nil, err
 	}
@@ -122,6 +125,51 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 	}
 	if err := chain.StoreSyncTimes(evm.StateDB, epochID, contract.CallerAddress, inserted); err != nil {
 		log.Error("failed to save sync times", "error", err)
+		return nil, err
+	}
+	return nil, nil
+}
+
+func reset(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	args := struct {
+		From   *big.Int
+		Td     *big.Int
+		Header []byte
+	}{}
+
+	adminHash := evm.StateDB.GetState(params.RegistryProxyAddress, params.ProxyOwnerStorageLocation)
+	if !bytes.Equal(contract.CallerAddress.Bytes(), adminHash[12:]) {
+		return nil, errors.New("forbidden")
+	}
+
+	method, _ := abiHeaderStore.Methods[Reset]
+	unpack, err := method.Inputs.Unpack(input)
+	if err != nil {
+		return nil, err
+	}
+	if err := method.Inputs.Copy(&args, unpack); err != nil {
+		return nil, err
+	}
+
+	from := chains.ChainType(args.From.Uint64())
+	chainID, err := chains.ChainType2ChainID(from)
+	if err != nil {
+		return nil, err
+	}
+	if evm.chainConfig.ChainID.Cmp(new(big.Int).SetUint64(chainID)) != 0 {
+		return nil, errors.New("current chainID does not match the from parameter")
+	}
+
+	group, err := chains.ChainType2ChainGroup(from)
+	if err != nil {
+		return nil, err
+	}
+	hs, err := interfaces.HeaderStoreFactory(group)
+	if err != nil {
+		return nil, err
+	}
+	if err := hs.ResetHeaderStore(evm.StateDB, args.Header, args.Td); err != nil {
+		log.Error("failed to reset header store", "error", err)
 		return nil, err
 	}
 	return nil, nil

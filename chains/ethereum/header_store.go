@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,11 +83,13 @@ func (hs *HeaderStore) delOldHeaders() {
 	})
 
 	delTotal := length - MaxHeaderLimit
-	for i := 0; i < delTotal; i++ {
+	for i := 0; i < delTotal; {
 		number := numbers[i]
 		for _, key := range number2key[number] {
 			delete(hs.Headers, key)
 			delete(hs.TDs, key)
+			log.Info("deleted ethereum header", "number", number)
+			i++
 		}
 	}
 	log.Info("before cleaning up the old ethereum headers", "headers length", length)
@@ -120,12 +121,12 @@ func NewHeaderStore() *HeaderStore {
 	}
 }
 
-func InitHeaderStore(header *Header, td *big.Int) *HeaderStore {
+func InitHeaderStore(state types.StateDB, header *Header, td *big.Int) error {
 	hash := header.Hash()
 	number := header.Number.Uint64()
 	key := headerKey(number, hash)
 
-	return &HeaderStore{
+	h := &HeaderStore{
 		CanonicalNumberToHash: map[uint64]common.Hash{
 			number: hash,
 		},
@@ -138,6 +139,34 @@ func InitHeaderStore(header *Header, td *big.Int) *HeaderStore {
 		CurHash:   hash,
 		CurNumber: number,
 	}
+	return h.Store(state)
+}
+
+func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, td *big.Int) error {
+	var header Header
+	if err := rlp.DecodeBytes(ethHeaders, &header); err != nil {
+		log.Error("rlp decode ethereum header failed.", "err", err)
+		return chains.ErrRLPDecode
+	}
+// pointer given to Decode must not be nil
+	hash := header.Hash()
+	number := header.Number.Uint64()
+	key := headerKey(number, hash)
+
+	h := &HeaderStore{
+		CanonicalNumberToHash: map[uint64]common.Hash{
+			number: hash,
+		},
+		Headers: map[string][]byte{
+			key: encodeHeader(&header),
+		},
+		TDs: map[string]*big.Int{
+			key: td,
+		},
+		CurHash:   hash,
+		CurNumber: number,
+	}
+	return h.Store(state)
 }
 
 func cloneHeaderStore(src *HeaderStore) (dst *HeaderStore, err error) {
@@ -280,8 +309,11 @@ func (hs *HeaderStore) InsertHeaders(db types.StateDB, ethHeaders []byte) ([]*pa
 func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (*headerWriteResult, error) {
 	var headers []*Header
 	if err := rlp.DecodeBytes(ethHeaders, &headers); err != nil {
-		log.Error("rlp decode failed.", "err", err)
+		log.Error("rlp decode ethereum headers failed.", "err", err)
 		return &headerWriteResult{}, chains.ErrRLPDecode
+	}
+	if len(headers) == 0 {
+		return &headerWriteResult{}, nil
 	}
 
 	if err := hs.Load(db); err != nil {
@@ -337,7 +369,8 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (*heade
 		if lastNumber < head {
 			reorg = true
 		} else if lastNumber == head {
-			reorg = rand.Float64() < 0.5
+			//reorg = rand.Float64() < 0.5
+			reorg = true
 		}
 	}
 

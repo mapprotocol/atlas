@@ -1,79 +1,112 @@
 package params
 
+// HeaderStoreABIJSON  header store abi json
+/*
+contract HeaderStore {
+    function save(uint256 from, uint256 to, bytes memory headers) public {}
+    function currentNumberAndHash(uint256 chainID) public returns (uint256 number, bytes memory hash) {}
+    function setRelayer(address relayer) public {}
+    function getRelayer() public returns (address relayer) {}
+    function reset(uint256 from, uint256 td, bytes memory header) public {}
+}
+*/
 const HeaderStoreABIJSON = `[
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "chainID",
-                "type": "uint256"
-            }
-        ],
-        "name": "currentNumberAndHash",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "number",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "hash",
-                "type": "bytes"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "from",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "to",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "headers",
-                "type": "bytes"
-            }
-        ],
-        "name": "save",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "relayer",
-                "type": "address"
-            }
-        ],
-        "name": "setRelayer",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getRelayer",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "relayer",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "chainID",
+				"type": "uint256"
+			}
+		],
+		"name": "currentNumberAndHash",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "number",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "hash",
+				"type": "bytes"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRelayer",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "relayer",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "from",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "td",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "header",
+				"type": "bytes"
+			}
+		],
+		"name": "reset",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "from",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "to",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "headers",
+				"type": "bytes"
+			}
+		],
+		"name": "save",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "relayer",
+				"type": "address"
+			}
+		],
+		"name": "setRelayer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
 ]`
 
 // TxVerifyABIJSON  tx verify abi json

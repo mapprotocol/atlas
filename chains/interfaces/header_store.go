@@ -1,6 +1,8 @@
 package interfaces
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/mapprotocol/atlas/chains"
@@ -15,6 +17,7 @@ type StoreLoad interface {
 }
 
 type IHeaderStore interface {
+	ResetHeaderStore(db types.StateDB, header []byte, td *big.Int) error
 	InsertHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error)
 	GetCurrentNumberAndHash(db types.StateDB) (uint64, common.Hash, error)
 	GetHashByNumber(db types.StateDB, number uint64) (common.Hash, error)
