@@ -398,59 +398,78 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
-	ga := genesisPreContract()
-	l := len(ga)
+	gs := genesisPreContract()
+	l := len(gs)
 	log.Info("poc2", "address count", l)
-	ga1 := genesisRegisterProxyContract()
-	for addr, allc := range ga1 {
+	gs1 := genesisRegisterProxyContract()
+	for addr, allc := range gs1 {
 		// add genesis contract to allc
-		ga[addr] = allc
+		gs[addr] = allc
 	}
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
-	ga[preAddr] = GenesisAccount{Balance: balance0}
+	gs[preAddr] = GenesisAccount{Balance: balance0}
 
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
 		Nonce:     66,
 		ExtraData: hexutil.MustDecode(mainnetExtraData),
 		GasLimit:  20000000,
-		Alloc:     ga,
+		Alloc:     gs,
 	}
 }
 
 // DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
+// owner 0x1c0edab88dbb72b119039c4d14b1663525b3ac15
+// validator1  0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
+// validator2  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
+// validator3  0x2dc45799000ab08e60b7441c36fcc74060ccbe11 password ""
+// validator4  0x6c5938b49bacde73a8db7c3a7da208846898bff5 password ""
+// keystore path  atlas/cmd/testnet_genesis
 func DefaultTestnetGenesisBlock() *Genesis {
-	dr := defaultRelayer()
-	for addr, allc := range genesisRegisterProxyContract() {
+	gs := genesisTestnetPreContract()
+	l := len(gs)
+	log.Info("poc2", "alloc count", l)
+	gs1 := genesisTestnetRegisterProxyContract()
+	for addr, allc := range gs1 {
 		// add genesis contract to allc
-		dr[addr] = allc
+		gs[addr] = allc
 	}
-	// faucet
-	dr[faucetAddr] = GenesisAccount{Balance: faucetBalance}
-	ga := genesisRegisterProxyContract()
-	for k, v := range ga {
-		dr[k] = v
-	}
+	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
+	preAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	gs[preAddr] = GenesisAccount{Balance: balance0}
+
 	return &Genesis{
 		Config:    params.TestnetConfig,
 		Nonce:     66,
 		ExtraData: hexutil.MustDecode(testnetExtraData),
 		GasLimit:  16777216,
-		Alloc:     dr,
+		Alloc:     gs,
 	}
 }
 
 // DevnetGenesisBlock returns the 'geth --dev' genesis block.
+// owner       0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
+// validator1  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
+// keystore path  atlas/cmd/devnet_genesis
 func DevnetGenesisBlock(faucet common.Address, pk blscrypto.SerializedPublicKey) *Genesis {
-	dc := defaultRelayer()
-	defaultBalance, _ := new(big.Int).SetString("100000000000000000000000000", 10)
-	dc[faucet] = GenesisAccount{Balance: defaultBalance}
+	gs := genesisDevnetPreContract()
+	l := len(gs)
+	log.Info("poc2", "alloc count", l)
+	gs1 := genesisDevnetRegisterProxyContract()
+	for addr, allc := range gs1 {
+		// add genesis contract to allc
+		gs[addr] = allc
+	}
+	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
+	preAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	gs[preAddr] = GenesisAccount{Balance: balance0}
 	return &Genesis{
-		Config:    params.DevnetConfig,
-		ExtraData: createDevAlloc(pk, faucet),
+		Config: params.DevnetConfig,
+		//ExtraData: createDevAlloc(pk, faucet),
+		ExtraData: hexutil.MustDecode(devnetExtraData),
 		GasLimit:  11500000,
-		Alloc:     dc,
+		Alloc:     gs,
 	}
 }
 
