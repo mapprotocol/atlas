@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
@@ -25,7 +24,10 @@ var genesisMsgHash = bytes.Repeat([]byte{0x00}, 32)
 
 //var genesisMsgHash = common.HexToHash("ecc833a7747eaa8327335e8e0c6b6d8aa3a38d0063591e43ce116ccf5c89753e")
 
-var ValidatorsAT []env.Account
+var ValidatorsAT []AccoutInfo
+
+//var ValidatorsAT []env.Account
+
 var AdminAddr common.Address
 
 // CreateCommonGenesisConfig generates a config starting point which templates can then customize further
@@ -89,13 +91,13 @@ func GenerateGenesis(_ *cli.Context, accounts *env.AccountsConfig, cfg *Config, 
 	//}, nil
 }
 
-func generateGenesisExtraData(validatorAccounts []env.Account) ([]byte, error) {
+func generateGenesisExtraData(validatorAccounts []AccoutInfo) ([]byte, error) {
 	addresses := make([]common.Address, len(validatorAccounts))
 	blsKeys := make([]blscrypto.SerializedPublicKey, len(validatorAccounts))
 
 	for i := 0; i < len(validatorAccounts); i++ {
 		var err error
-		addresses[i] = validatorAccounts[i].Address
+		addresses[i] = validatorAccounts[i].getAddress()
 		blsKeys[i], err = validatorAccounts[i].BLSPublicKey()
 		if err != nil {
 			return nil, err
@@ -124,10 +126,60 @@ func generateGenesisExtraData(validatorAccounts []env.Account) ([]byte, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-
+//type AccoutInfo struct {
+//	Account  string
+//	Password string
+//}
 type AccoutInfo struct {
-	Account  string
-	Password string
+	Address              string
+	PublicKeyHex         string
+	BLSPubKey            string
+	BLSProofOfPossession string
+}
+
+// MustBLSProofOfPossession variant of BLSProofOfPossession that panics on error
+func (a *AccoutInfo) MustBLSProofOfPossession() []byte {
+	pop, err := a.BLSProofOfPossession_()
+	if err != nil {
+		panic(err)
+	}
+	return pop
+}
+func (a *AccoutInfo) getAddress() common.Address {
+	return common.HexToAddress(a.Address)
+}
+
+// BLSProofOfPossession generates bls proof of possession
+func (a *AccoutInfo) BLSProofOfPossession_() ([]byte, error) {
+	b, err := hexutil.Decode(a.BLSProofOfPossession)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// BLSPublicKey returns the bls public key
+func (a *AccoutInfo) BLSPublicKey() (blscrypto.SerializedPublicKey, error) {
+	//blsPubKey,err := hexutil.Decode(a.BLSPubKey)
+	//if err != nil {
+	//	return blscrypto.SerializedPublicKey{}, err
+	//}
+	var b blscrypto.SerializedPublicKey
+	err := b.UnmarshalText([]byte(a.BLSPubKey))
+	//privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	if err != nil {
+		return blscrypto.SerializedPublicKey{}, err
+	}
+	return b, nil
+}
+
+// PublicKeyHex hex representation of the public key
+func (a *AccoutInfo) PublicKey() []byte {
+	b, err := hexutil.Decode(a.PublicKeyHex)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 type MarkerInfo struct {
@@ -153,30 +205,51 @@ func UnmarshalMarkerConfig(ctx *cli.Context) {
 	for _, v := range (*markerCfg).Validators {
 		tt = append(tt, v)
 	}
-	ValidatorsAT = loadPrivate(tt)
+	//ValidatorsAT = loadPrivate(tt)
+	ValidatorsAT = tt
 	AdminAddr = common.HexToAddress(markerCfg.AdminAddress)
 }
-func loadPrivate(paths []AccoutInfo) []env.Account {
-	num := len(paths)
-	accounts := make([]env.Account, num)
-	for i, v := range paths {
-		path := v.Account
-		keyjson, err := ioutil.ReadFile(path)
-		if err != nil {
-			log.Error("loadPrivate ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
-		}
-		key, err := keystore.DecryptKey(keyjson, v.Password)
-		if err != nil {
-			log.Error("loadPrivate DecryptKey", fmt.Errorf("error decrypting key: %v", err))
-		}
-		priKey1 := key.PrivateKey
-		publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
-		var addr common.Address
-		addr.SetBytes(publicAddr.Bytes())
-		accounts[i] = env.Account{
-			Address:    addr,
-			PrivateKey: priKey1,
-		}
-	}
-	return accounts
-}
+
+//func loadPrivate(paths []AccoutInfo) []env.Account {
+//	num := len(paths)
+//	accounts := make([]env.Account, num)
+//	for i, v := range paths {
+//		path := v.Account
+//		keyjson, err := ioutil.ReadFile(path)
+//		if err != nil {
+//			log.Error("loadPrivate ReadFile", fmt.Errorf("failed to read the keyfile at '%s': %v", path, err))
+//		}
+//		key, err := keystore.DecryptKey(keyjson, v.Password)
+//		if err != nil {
+//			log.Error("loadPrivate DecryptKey", fmt.Errorf("error decrypting key: %v", err))
+//		}
+//		priKey1 := key.PrivateKey
+//		publicAddr := crypto.PubkeyToAddress(priKey1.PublicKey)
+//		var addr common.Address
+//		addr.SetBytes(publicAddr.Bytes())
+//		accounts[i] = env.Account{
+//			Address:    addr,
+//			PrivateKey: priKey1,
+//		}
+//
+//		accountBls := accounts[i]
+//		if err != nil {
+//			log.Error("Failed to create account: %v", err)
+//		}
+//		blsProofOfPossession := accountBls.MustBLSProofOfPossession()
+//		blsPubKey, err := accountBls.BLSPublicKey()
+//		if err != nil {
+//			log.Error("Failed to create account: %v", err)
+//		}
+//		blsPubKeyText, err := blsPubKey.MarshalText()
+//		if err != nil {
+//			log.Error("Failed to create account: %v", err)
+//		}
+//		fmt.Printf("\nYour new key was generated\n\n")
+//		fmt.Printf("Public address of the key:   %s\n", accountBls.Address.Hex())
+//		fmt.Printf("BLS Public address of the key:   %s\n", blsPubKeyText)
+//		fmt.Printf("BLSProofOfPossession:   %s\n", hexutil.Encode(blsProofOfPossession))
+//		fmt.Printf("PublicKeyHex:   %s\n", hexutil.Encode(accountBls.PublicKey()))
+//	}
+//	return accounts
+//}
