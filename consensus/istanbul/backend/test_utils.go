@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core/chain"
+	bn256 "github.com/mapprotocol/bn256/bls"
 	"strings"
 	"time"
 
-	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
@@ -314,28 +314,22 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 	}
 
 	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
-		privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(key)
+		from := crypto.PubkeyToAddress(key.PublicKey)
+		prikey := bn256.NewKey(key.D)
+		keybytes := crypto.FromECDSA(key)
+		pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
-
-		privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+		pubkey := bn256.PublicKey{}
+		pubkey.Decompress(pkbytes[:])
+		signature, err := bn256.Sign(&prikey, &pubkey, from.Bytes())
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
-		defer privateKey.Destroy()
-
-		signature, err := privateKey.SignMessage(data, extraData, useComposite, cip22)
-		if err != nil {
-			return blscrypto.SerializedSignature{}, err
-		}
-		defer signature.Destroy()
-		signatureBytes, err := signature.Serialize()
-		if err != nil {
-			return blscrypto.SerializedSignature{}, err
-		}
-
-		return blscrypto.SerializedSignatureFromBytes(signatureBytes)
+		signature2 := blscrypto.SerializedSignature{}
+		copy(signature2[:], signature.Marshal())
+		return signature2, nil
 	}
 }
 

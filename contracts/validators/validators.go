@@ -20,12 +20,12 @@ import (
 	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
-	blscrypto "github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"
 	"github.com/mapprotocol/atlas/core/vm"
+	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
 )
 
