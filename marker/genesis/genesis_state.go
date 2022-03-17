@@ -332,22 +332,22 @@ func (ctx *deployContext) deployElection() error {
 	})
 }
 
-func (ctx *deployContext) createAccounts(accs []env.Account, namePrefix string) error {
+func (ctx *deployContext) createAccounts(accs []AccoutInfo, namePrefix string) error {
 	accounts := ctx.contract("Accounts")
 
 	for i, acc := range accs {
 		name := fmt.Sprintf("%s %03d", namePrefix, i)
 		ctx.logger.Info("Create account", "address", acc.Address, "name", name)
 
-		if err := accounts.SimpleCallFrom(acc.Address, "createAccount"); err != nil {
+		if err := accounts.SimpleCallFrom(acc.getAddress(), "createAccount"); err != nil {
 			return err
 		}
 
-		if err := accounts.SimpleCallFrom(acc.Address, "setName", name); err != nil {
+		if err := accounts.SimpleCallFrom(acc.getAddress(), "setName", name); err != nil {
 			return err
 		}
 
-		if err := accounts.SimpleCallFrom(acc.Address, "setAccountDataEncryptionKey", acc.PublicKey()); err != nil {
+		if err := accounts.SimpleCallFrom(acc.getAddress(), "setAccountDataEncryptionKey", acc.PublicKey()); err != nil {
 			return err
 		}
 
@@ -367,11 +367,11 @@ func (ctx *deployContext) registerValidators() error {
 	validators := ctx.contract("Validators")
 	commission := ctx.genesisConfig.Validators.Commission.BigInt()
 	for validatorIdx, validator := range validatorAccounts {
-		address := validator.Address
+		address := validator.getAddress()
 		logger := ctx.logger.New("validator", address)
 		prevValidatorAddress := params.ZeroAddress
 		if validatorIdx > 0 {
-			prevValidatorAddress = validatorAccounts[validatorIdx-1].Address
+			prevValidatorAddress = validatorAccounts[validatorIdx-1].getAddress()
 		}
 		ctx.statedb.AddBalance(address, requiredAmount)
 
@@ -414,27 +414,27 @@ func (ctx *deployContext) voteForValidators() error {
 	// hence, we use:
 	//    greater = zero (we become the one with most votes)
 	//    lesser = currentLeader
-	validatorAddress := ValidatorsAT[0].Address
+	validatorAddress := ValidatorsAT[0].getAddress()
 	// special case: only one validator (no lesser or greater)
 	if len(ValidatorsAT) == 1 {
-		voterAddress := ValidatorsAT[0].Address
+		voterAddress := ValidatorsAT[0].getAddress()
 		ctx.logger.Info("Vote for validator", "validator", validatorAddress, "amount", lockedGoldOnValidator)
 		return election.SimpleCallFrom(voterAddress, "vote", validatorAddress, lockedGoldOnValidator, params.ZeroAddress, params.ZeroAddress)
 	}
 
 	// first to vote is validator 0, which is already the leader. Hence lesser should go to validator 1
-	currentLeader := ValidatorsAT[1].Address
+	currentLeader := ValidatorsAT[1].getAddress()
 	for _, voter := range ValidatorsAT {
-		validatorAddress = voter.Address
+		validatorAddress = voter.getAddress()
 		ctx.logger.Info("Vote for validator", "voter", voter.Address, "validator", validatorAddress, "amount", lockedGoldOnValidator)
-		if err := election.SimpleCallFrom(voter.Address, "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
+		if err := election.SimpleCallFrom(voter.getAddress(), "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
 			return err
 		}
 		//if err := election.SimpleCallFrom(voter.Address, "activate", validatorAddress); err != nil {
 		//	return err
 		//}
 		// we now become the currentLeader
-		currentLeader = voter.Address
+		currentLeader = voter.getAddress()
 	}
 	return nil
 }
