@@ -242,7 +242,6 @@ type Handler interface {
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 	if blockNumber.Cmp(big.NewInt(0)) == 0 {
 		initEthereumStore(state)
-		initEthereumSync(state)
 	}
 }
 
@@ -270,16 +269,5 @@ func initEthereumStore(state *state.StateDB) {
 			log.Crit("init header store failed, ", "error", err)
 		}
 		state.SetCode(params.HeaderStoreAddress, params.HeaderStoreAddress[:])
-	}
-}
-
-func initEthereumSync(state *state.StateDB) {
-	key := common.BytesToHash(chains.EthereumHeaderSyncAddress[:])
-	getState := state.GetPOWState(chains.EthereumHeaderSyncAddress, key)
-	if len(getState) == 0 {
-		hs := ethereum.NewHeaderSync()
-		if err := hs.Store(state); err != nil {
-			log.Crit("store header sync failed, ", "error", err)
-		}
 	}
 }

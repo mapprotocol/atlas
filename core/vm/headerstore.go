@@ -113,18 +113,9 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	inserted, err := chain.InsertHeaders(evm.StateDB, args.Headers)
+	_, err = chain.InsertHeaders(evm.StateDB, args.Headers)
 	if err != nil {
 		log.Error("failed to write headers", "error", err)
-		return nil, err
-	}
-
-	epochID, err := GetCurrentEpochID(evm)
-	if err != nil {
-		return nil, err
-	}
-	if err := chain.StoreSyncTimes(evm.StateDB, epochID, contract.CallerAddress, inserted); err != nil {
-		log.Error("failed to save sync times", "error", err)
 		return nil, err
 	}
 	return nil, nil

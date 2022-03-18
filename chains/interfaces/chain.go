@@ -16,13 +16,11 @@ import (
 type IChain interface {
 	IValidate
 	IHeaderStore
-	IHeaderSync
 }
 
 type Chain struct {
 	Validate    IValidate
 	HeaderStore IHeaderStore
-	HeaderSync  IHeaderSync
 }
 
 func (c *Chain) ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error) {
@@ -45,21 +43,12 @@ func (c *Chain) GetHashByNumber(db types.StateDB, number uint64) (common.Hash, e
 	return c.HeaderStore.GetHashByNumber(db, number)
 }
 
-func (c *Chain) StoreSyncTimes(db types.StateDB, epochID uint64, relayer common.Address, headers []*params.NumberHash) error {
-	return c.HeaderSync.StoreSyncTimes(db, epochID, relayer, headers)
-}
-
-func (c *Chain) LoadRelayerSyncTimes(db types.StateDB, epochID uint64, relayer common.Address) (uint64, error) {
-	return c.HeaderSync.LoadRelayerSyncTimes(db, epochID, relayer)
-}
-
 func ChainFactory(group chains.ChainGroup) (IChain, error) {
 	switch group {
 	case chains.ChainGroupETH:
 		return &Chain{
 			Validate:    new(ethereum.Validate),
 			HeaderStore: new(ethereum.HeaderStore),
-			HeaderSync:  new(ethereum.HeaderSync),
 		}, nil
 	}
 
