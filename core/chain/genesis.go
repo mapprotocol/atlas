@@ -36,7 +36,6 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -290,33 +289,10 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		}
 	}
 
-	//////////////////////////////////pro compiled////////////////////////////////////
+	// pre compiled
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(g.Number))
-	register := vm.NewRegisterImpl()
 
-	if g.Config.ChainID.Uint64() == params.TestNetChainID {
-		h := g.Number
-		rms := defaultRelayerMembers()
-		for _, member := range rms {
-			err := register.InsertAccount2(h, member.Coinbase, params.ElectionMinLimitForRegister)
-			if err != nil {
-				log.Error("ToBlock InsertAccount", "error", err)
-			} else {
-				vm.GenesisAddLockedBalance(statedb, member.Coinbase, params.ElectionMinLimitForRegister)
-			}
-		}
-	}
-
-	_, err = register.DoElections(statedb, 1, 0)
-	if err != nil {
-		log.Error("ToBlock DoElections", "error", err)
-	}
-	err = register.Save(statedb, params.RelayerAddress)
-	if err != nil {
-		log.Error("ToBlock IMPL Save", "error", err)
-	}
-	////////////////////////////////////////////////////////////////////////////
 	root := statedb.IntermediateRoot(false)
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),

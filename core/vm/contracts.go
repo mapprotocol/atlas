@@ -26,7 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	ed25519 "github.com/hdevalence/ed25519consensus"
-	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	params2 "github.com/mapprotocol/atlas/params"
@@ -80,7 +79,6 @@ var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{2}): &sha256hash{},
 	common.BytesToAddress([]byte{3}): &ripemd160hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
-	params.RelayerAddress:            &relayer{},
 	params.HeaderStoreAddress:        &store{},
 	params.TxVerifyAddress:           &verify{},
 }
@@ -96,7 +94,6 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{6}): &bn256AddByzantium{},
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulByzantium{},
 	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
-	params.RelayerAddress:            &relayer{},
 	params.HeaderStoreAddress:        &store{},
 	params.TxVerifyAddress:           &verify{},
 }
@@ -113,7 +110,6 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
 	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}): &blake2F{},
-	params.RelayerAddress:            &relayer{},
 	params.HeaderStoreAddress:        &store{},
 	params.TxVerifyAddress:           &verify{},
 
@@ -142,7 +138,6 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
 	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}): &blake2F{},
-	params.RelayerAddress:            &relayer{},
 	params.HeaderStoreAddress:        &store{},
 	params.TxVerifyAddress:           &verify{},
 	///////////////////////////////
@@ -171,7 +166,6 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{16}): &bls12381Pairing{},
 	common.BytesToAddress([]byte{17}): &bls12381MapG1{},
 	common.BytesToAddress([]byte{18}): &bls12381MapG2{},
-	params.RelayerAddress:             &relayer{},
 	params.HeaderStoreAddress:         &store{},
 	params.TxVerifyAddress:            &verify{},
 	////////////////////////////////////
@@ -1124,31 +1118,6 @@ func (c *bls12381MapG2) Run(evm *EVM, contract *Contract, input []byte) ([]byte,
 
 	// Encode the G2 point to 256 bytes
 	return g.EncodePoint(r), nil
-}
-
-type relayer struct{}
-
-func (c *relayer) RequiredGas(input []byte) uint64 {
-	var (
-		abiRegister abi.ABI
-		baseGas     uint64 = 21000
-		method      *abi.Method
-		err         error
-	)
-	method, err = abiRegister.MethodById(input)
-
-	if err != nil {
-		return baseGas
-	}
-	if gas, ok := params.RelayerGas[string(method.Name)]; ok {
-		return gas
-	} else {
-		return baseGas
-	}
-}
-
-func (c *relayer) Run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
-	return RunContract(evm, contract, input)
 }
 
 const gasPerByte = 68

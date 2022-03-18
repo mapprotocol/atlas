@@ -140,11 +140,6 @@ func GetAPIs(apiBackend Backend, engine consensus.Engine) []rpc.API {
 			Service:   NewPrivateAccountAPI(apiBackend, nonceLock),
 			Public:    false,
 		}, {
-			Namespace: "relayer",
-			Version:   "1.0",
-			Service:   NewPublicRelayerAPI(apiBackend),
-			Public:    true,
-		}, {
 			Namespace: "header",
 			Version:   "1.0",
 			Service:   NewPublicHeaderStoreAPI(apiBackend),
