@@ -2,7 +2,6 @@ package genesis
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/helper/decimal/token"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,8 +17,7 @@ import (
 )
 
 var (
-	proxyByteCode    = common.Hex2Bytes("60806040526004361061004a5760003560e01c806303386ba3146101e757806342404e0714610280578063bb913f41146102d7578063d29d44ee14610328578063f7e6af8014610379575b6000600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050600081549050600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610136576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260158152602001807f4e6f20496d706c656d656e746174696f6e20736574000000000000000000000081525060200191505060405180910390fd5b61013f816103d0565b6101b1576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260188152602001807f496e76616c696420636f6e74726163742061646472657373000000000000000081525060200191505060405180910390fd5b60405136810160405236600082376000803683855af43d604051818101604052816000823e82600081146101e3578282f35b8282fd5b61027e600480360360408110156101fd57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019064010000000081111561023a57600080fd5b82018360208201111561024c57600080fd5b8035906020019184600183028401116401000000008311171561026e57600080fd5b909192939192939050505061041b565b005b34801561028c57600080fd5b506102956105c1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b3480156102e357600080fd5b50610326600480360360208110156102fa57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061060d565b005b34801561033457600080fd5b506103776004803603602081101561034b57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506107bd565b005b34801561038557600080fd5b5061038e610871565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b60008060007fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47060001b9050833f915080821415801561041257506000801b8214155b92505050919050565b610423610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146104c3576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b6104cc8361060d565b600060608473ffffffffffffffffffffffffffffffffffffffff168484604051808383808284378083019250505092505050600060405180830381855af49150503d8060008114610539576040519150601f19603f3d011682016040523d82523d6000602084013e61053e565b606091505b508092508193505050816105ba576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252601e8152602001807f696e697469616c697a6174696f6e2063616c6c6261636b206661696c6564000081525060200191505060405180910390fd5b5050505050565b600080600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050805491505090565b610615610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146106b5576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b6000600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050610701826103d0565b610773576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260188152602001807f496e76616c696420636f6e74726163742061646472657373000000000000000081525060200191505060405180910390fd5b8181558173ffffffffffffffffffffffffffffffffffffffff167fab64f92ab780ecbf4f3866f57cee465ff36c89450dcce20237ca7a8d81fb7d1360405160405180910390a25050565b6107c5610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610865576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b61086e816108bd565b50565b600080600160405180807f656970313936372e70726f78792e61646d696e000000000000000000000000008152506013019050604051809103902060001c0360001b9050805491505090565b600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610960576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260118152602001807f6f776e65722063616e6e6f74206265203000000000000000000000000000000081525060200191505060405180910390fd5b6000600160405180807f656970313936372e70726f78792e61646d696e000000000000000000000000008152506013019050604051809103902060001c0360001b90508181558173ffffffffffffffffffffffffffffffffffffffff167f50146d0e3c60aa1d17a70635b05494f864e86144a2201275021014fbf08bafe260405160405180910390a2505056fea165627a7a72305820f4f741dbef8c566cb1690ae708b8ef1113bdb503225629cc1f9e86bd47efd1a40029")
-	adminGoldBalance = token.MustNew("10000000").BigInt() // 10000k Atlas
+	proxyByteCode = common.Hex2Bytes("60806040526004361061004a5760003560e01c806303386ba3146101e757806342404e0714610280578063bb913f41146102d7578063d29d44ee14610328578063f7e6af8014610379575b6000600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050600081549050600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610136576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260158152602001807f4e6f20496d706c656d656e746174696f6e20736574000000000000000000000081525060200191505060405180910390fd5b61013f816103d0565b6101b1576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260188152602001807f496e76616c696420636f6e74726163742061646472657373000000000000000081525060200191505060405180910390fd5b60405136810160405236600082376000803683855af43d604051818101604052816000823e82600081146101e3578282f35b8282fd5b61027e600480360360408110156101fd57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019064010000000081111561023a57600080fd5b82018360208201111561024c57600080fd5b8035906020019184600183028401116401000000008311171561026e57600080fd5b909192939192939050505061041b565b005b34801561028c57600080fd5b506102956105c1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b3480156102e357600080fd5b50610326600480360360208110156102fa57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919050505061060d565b005b34801561033457600080fd5b506103776004803603602081101561034b57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506107bd565b005b34801561038557600080fd5b5061038e610871565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b60008060007fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47060001b9050833f915080821415801561041257506000801b8214155b92505050919050565b610423610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146104c3576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b6104cc8361060d565b600060608473ffffffffffffffffffffffffffffffffffffffff168484604051808383808284378083019250505092505050600060405180830381855af49150503d8060008114610539576040519150601f19603f3d011682016040523d82523d6000602084013e61053e565b606091505b508092508193505050816105ba576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252601e8152602001807f696e697469616c697a6174696f6e2063616c6c6261636b206661696c6564000081525060200191505060405180910390fd5b5050505050565b600080600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050805491505090565b610615610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146106b5576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b6000600160405180807f656970313936372e70726f78792e696d706c656d656e746174696f6e00000000815250601c019050604051809103902060001c0360001b9050610701826103d0565b610773576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260188152602001807f496e76616c696420636f6e74726163742061646472657373000000000000000081525060200191505060405180910390fd5b8181558173ffffffffffffffffffffffffffffffffffffffff167fab64f92ab780ecbf4f3866f57cee465ff36c89450dcce20237ca7a8d81fb7d1360405160405180910390a25050565b6107c5610871565b73ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614610865576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260148152602001807f73656e64657220776173206e6f74206f776e657200000000000000000000000081525060200191505060405180910390fd5b61086e816108bd565b50565b600080600160405180807f656970313936372e70726f78792e61646d696e000000000000000000000000008152506013019050604051809103902060001c0360001b9050805491505090565b600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610960576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260118152602001807f6f776e65722063616e6e6f74206265203000000000000000000000000000000081525060200191505060405180910390fd5b6000600160405180807f656970313936372e70726f78792e61646d696e000000000000000000000000008152506013019050604051809103902060001c0360001b90508181558173ffffffffffffffffffffffffffffffffffffffff167f50146d0e3c60aa1d17a70635b05494f864e86144a2201275021014fbf08bafe260405160405180910390a2505056fea165627a7a72305820f4f741dbef8c566cb1690ae708b8ef1113bdb503225629cc1f9e86bd47efd1a40029")
 )
 
 // deployContext context for deployment
@@ -162,15 +160,8 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 	return genesisAlloc, nil
 }
 
-// Initialize AdminAddr
+// Initialize AdminAddr  You can add MAP to the designated account here
 func (ctx *deployContext) fundAdminAccount() {
-	//ctx.statedb.SetBalance(AdminAddr, new(big.Int).Set(adminGoldBalance))
-	//validators
-	//ctx.statedb.SetBalance(common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0x32cd75ca677e9c37fd989272afa8504cb8f6eb52"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0x3e3429f72450a39ce227026e8ddef331e9973e4d"), new(big.Int).Set(adminGoldBalance))
-	//ctx.statedb.SetBalance(common.HexToAddress("0xce90710a4673b87a6881b0907358119baf0304a5"), new(big.Int).Set(adminGoldBalance))
 }
 
 func (ctx *deployContext) deployLibraries() error {
@@ -430,9 +421,6 @@ func (ctx *deployContext) voteForValidators() error {
 		if err := election.SimpleCallFrom(voter.getAddress(), "vote", validatorAddress, lockedGoldOnValidator, currentLeader, params.ZeroAddress); err != nil {
 			return err
 		}
-		//if err := election.SimpleCallFrom(voter.Address, "activate", validatorAddress); err != nil {
-		//	return err
-		//}
 		// we now become the currentLeader
 		currentLeader = voter.getAddress()
 	}
@@ -466,243 +454,5 @@ func (ctx *deployContext) proxyContract(contractName string) *contract.EVMBacken
 func (ctx *deployContext) verifyState() error {
 	snapshotVersion := ctx.statedb.Snapshot()
 	defer ctx.statedb.RevertToSnapshot(snapshotVersion)
-
-	//var reserveSpenders []common.Address
-	//if _, err := ctx.contract("Reserve").Query(&reserveSpenders, "getExchangeSpenders"); err != nil {
-	//	return err
-	//}
-	//fmt.Printf("Checking getExchangeSpenders. spenders = %s\n", reserveSpenders)
-
-	//var (
-	//	numerator   = new(*big.Int)
-	//	denominator = new(*big.Int)
-	//)
-	//out := &[]interface{}{
-	//	numerator,
-	//	denominator,
-	//}
-	//if _, err := ctx.contract("SortedOracles").Query(out, "medianRate", env.MustProxyAddressFor("StableToken")); err != nil {
-	//	return err
-	//}
-	//fmt.Printf("Checking medianRate. numerator = %s  denominator = %s \n", (*numerator).String(), (*denominator).String())
-
-	//var gasPrice *big.Int
-	//if _, err := ctx.contract("GasPriceMinimum").Query(&gasPrice, "getGasPriceMinimum", env.MustProxyAddressFor("StableToken")); err != nil {
-	//	return err
-	//}
-	//fmt.Printf("Checking gas price minimum. cusdValue = %s\n", gasPrice.String())
-
-	//out := new([]common.Address)
-	//if _, err := ctx.contract("Validators").Query(out, "getRegisteredValidators"); err != nil {
-	//	return err
-	//}
-	//fmt.Println(out)
-
-	//getTopGroupValidators := new([]common.Address)
-	//if _, err := ctx.contract("Validators").Query(getTopGroupValidators, "getTopGroupValidators", common.HexToHash("0xce90710a4673b87a6881b0907358119baf0304a5"), big.NewInt(4)); err != nil {
-	//	return err
-	//}
-	//fmt.Println("getTopGroupValidators", getTopGroupValidators)
-
-	/*
-		var (
-			min   = new(*big.Int)
-			max = new(*big.Int)
-		)
-		out := &[]interface{}{
-			min,
-			max,
-		}
-		if _, err := ctx.contract("Election").Query(out, "getElectableValidators"); err != nil {
-			return err
-		}
-		fmt.Println(*min,*max)
-	*/
-	/*
-		//a:= common.HexToHash("0x49dc7107d41d3c01a9f941a7d9a9f9177349b5521aeb56861470e42cf05da2ee") //Validators common.hash
-		//a:= common.HexToHash("0x235a6f54090e9b94aa4e585a699c4375a2ff8f572c68114d138f0ed121527849") //Election  common.hash
-		a := common.HexToHash("0xb33c3d77234979a288baf651b42d19d8483d5af3e328f9f1fae2bef7b11acd25") //EpochRewards  common.hash
-
-		var ret common.Address
-		if _, err := ctx.contract("Registry").Query(&ret, "getAddressFor", a); err != nil {
-			return err
-		}
-		fmt.Println(ret)
-	*/
-	/*
-		// isFrozen
-		var ret bool
-		if _, err := ctx.contract("Freezer").Query(&ret, "isFrozen",params.EpochRewardsRegistryId); err != nil {
-			return err
-		}
-		fmt.Println(ret)
-	*/
-
-	/*
-		// EpochRewards calculateTargetEpochRewards 计算奖励
-			var validatorEpochReward *big.Int
-			var totalVoterRewards *big.Int
-			var totalCommunityReward *big.Int
-			var totalCarbonOffsettingPartnerReward *big.Int
-			out := &[]interface{}{&validatorEpochReward, &totalVoterRewards, &totalCommunityReward, &totalCarbonOffsettingPartnerReward}
-			_, err := ctx.contract("EpochRewards").Query(out, "calculateTargetEpochRewards")
-			if err != nil {
-				return err
-			}
-			fmt.Println(validatorEpochReward.String(),totalVoterRewards.String(),totalCommunityReward.String(),totalCarbonOffsettingPartnerReward.String())
-	*/
-	//if err := ctx.contract("EpochRewards").SimpleCallFrom(params.ZeroAddress, "updateTargetVotingYield"); err != nil {
-	//	fmt.Println("err:",err)
-	//	return err
-	//}
-
-	/*var (
-		validator = new(*big.Int)
-		community = new(*big.Int)
-	)
-	out := &[]interface{}{
-		validator,
-		community,
-	}
-	if _, err := ctx.contract("EpochRewards").Query(out, "calculateTargetEpochRewards"); err != nil {
-		return err
-	}
-	fmt.Println(*validator, *community)
-
-	validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	totalPayment := new(*big.Int)
-	if _, err := ctx.contract("Validators").Query(totalPayment, "distributeEpochPaymentsFromSigner", validatorAddr, validator); err != nil {
-		fmt.Println("err:", err)
-		return err
-	}
-	fmt.Println(*totalPayment)*/
-
-	/*	//lock
-		_,err := ctx.contract("LockedGold").Call(contract.CallOpts{Origin: common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), Value: big.NewInt(1000)}, "lock")
-		if err != nil {
-			return err
-		}
-		//unlock
-		err = ctx.contract("LockedGold").SimpleCallFrom(common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), "unlock", big.NewInt(100))
-		if err != nil {
-			return err
-		}
-	*/
-	//distributeEpochPaymentsFromSigner
-	//err := ctx.contract("Validators").SimpleCallFrom(common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), "distributeEpochPaymentsFromSigner", common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15"), big.NewInt(100), big.NewInt(100))
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//voterAddr := common.HexToAddress("0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af")
-	//
-	//totalPayment := new(*big.Int)
-	//if _, err := ctx.contract("Election").Query(totalPayment, "getActiveVotesForValidator", validatorAddr,voterAddr); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== totalPayment ===", totalPayment)
-
-	/*	totalPayment := new(*big.Int)
-		if _, err := ctx.contract("Election").Query(totalPayment, "getTotalVotes"); err != nil {
-			fmt.Println("err:", err)
-			return err
-		}
-		fmt.Println("=== totalPayment ===", totalPayment)
-
-		out := new([]common.Address)
-		if _, err := ctx.contract("Election").Query(out, "electNValidatorSigners", big.NewInt(2), big.NewInt(110)); err != nil {
-			return err
-		}
-		fmt.Println(out)*/
-
-	/*
-		var (
-			scoreRet *big.Int
-			isValidator bool
-		)
-		out := &[]interface{}{
-			&scoreRet,
-			&isValidator,
-		}
-
-		validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-		if _, err := ctx.contract("Validators").Query(out, "updateValidatorScoreFromSigner", validatorAddr, big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1e18))); err != nil {
-			fmt.Println("err:", err)
-			return err
-		}
-		fmt.Println(scoreRet,isValidator)*/
-
-	//var totalVotes *big.Int
-	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//if _, err := ctx.contract("Election").Query(&totalVotes, "getActiveVotesForValidator", validatorAddr); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== getActiveVotesForValidator ===",totalVotes)
-	//var totalVotes *big.Int
-	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//if _, err := ctx.contract("Election").Query(&totalVotes, "getActiveVotesForValidatorByAccount", validatorAddr,validatorAddr); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== getActiveVotesForValidatorByAccount ===",totalVotes)
-
-	//var totalVotes *big.Int
-	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//if _, err := ctx.contract("Election").Query(&totalVotes, "getPendingVotesForValidatorByAccount", validatorAddr,validatorAddr); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== getPendingVotesForValidatorByAccount ===",totalVotes)
-
-	//var voters interface{}
-	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//if _, err := ctx.contract("Election").Query(&voters, "getPendingVotersForValidator", validatorAddr); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== getPendingVotersForValidator ===",voters.([]common.Address))
-
-	//activeAllPending
-	//var success bool
-	//cList := []common.Address{common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")}
-	//if _, err := ctx.contract("Election").Query(&success, "activeAllPending", &cList); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== activeAllPending ===", success)
-	//
-	//var voters interface{}
-	//validatorAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//if _, err := ctx.contract("Election").Query(&voters, "getPendingVotersForValidator", validatorAddr); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== getPendingVotersForValidator ===", voters.([]common.Address))
-	//
-	//var value *big.Int
-	//var epoch *big.Int
-	//
-	//pendingInfo := &[]interface{}{
-	//	&value,
-	//	&epoch,
-	//}
-	//
-	//validatorAddr1 := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
-	//if _, err := ctx.contract("Election").Query(pendingInfo, "pendingInfo", validatorAddr1, validatorAddr1); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-	//fmt.Println("=== pendingInfo  value===", value.String())
-	//fmt.Println("=== pendingInfo  epoch===", epoch.String())
-
-	//var b bool
-	//if _, err := ctx.contract("GoldToken").Query(&b, "mint", common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), big.NewInt(10000)); err != nil {
-	//	fmt.Println("err:", err)
-	//	return err
-	//}
-
 	return nil
 }
