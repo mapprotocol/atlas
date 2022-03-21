@@ -333,6 +333,8 @@ func (api *PublicDebugAPI) DumpBlockGenerateJson(blockNr rpc.BlockNumber) (bool,
 			account.Code = dumpAcc.Code
 		}
 
+		account.Nonce = dumpAcc.Nonce
+
 		if len(dumpAcc.Storage) > 0 {
 			account.Storage = make(map[common.Hash]common.Hash)
 			for k, v := range dumpAcc.Storage {
@@ -343,7 +345,7 @@ func (api *PublicDebugAPI) DumpBlockGenerateJson(blockNr rpc.BlockNumber) (bool,
 		genesisAlloc[acc] = account
 
 	}
-	err = WriteJson(genesisAlloc, "./dumpStateDb.json")
+	err = WriteJson(genesisAlloc, "./poc2.json")
 	if err != nil {
 		return false, err
 	}
