@@ -21,7 +21,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/bn256/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -1351,14 +1351,15 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	addressBytes := input[:common.AddressLength]
 
 	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
-	publicKey := bls.PublicKey{}
-	publicKey.Decompress(publicKeyBytes)
-	apk := bls.NewApk(&publicKey)
-
+	publicKey, err := bls.UnmarshalPk(publicKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	apk := bls.NewApk(publicKey)
 	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
 	signature := bls.Signature{}
 	signature.Unmarshal(signatureBytes)
-	err := bls.Verify(apk, addressBytes, &signature)
+	err = bls.Verify(apk, addressBytes, &signature)
 	if err != nil {
 		return nil, err
 	}

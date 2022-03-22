@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core/chain"
-	bn256 "github.com/mapprotocol/bn256/bls"
 	"strings"
 	"time"
 
@@ -315,15 +314,17 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 
 	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
 		from := crypto.PubkeyToAddress(key.PublicKey)
-		prikey := bn256.NewKey(key.D)
+		prikey := blscrypto.NewKey(key.D)
 		keybytes := crypto.FromECDSA(key)
 		pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
-		pubkey := bn256.PublicKey{}
-		pubkey.Decompress(pkbytes[:])
-		signature, err := bn256.Sign(&prikey, &pubkey, from.Bytes())
+		pubkey, err := blscrypto.UnmarshalPk(pkbytes[:])
+		if err != nil {
+			return blscrypto.SerializedSignature{}, err
+		}
+		signature, err := blscrypto.Sign(&prikey, pubkey, from.Bytes())
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}

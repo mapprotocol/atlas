@@ -24,7 +24,7 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
-	bn256 "github.com/mapprotocol/bn256/bls"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -550,9 +550,8 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}
-	pk := bn256.PublicKey{}
-	pk.Decompress(pubkey)
-	sign, err := bn256.Sign(&blskey, &pk, msg)
+	pk, err := bn256.UnmarshalPk(pubkey)
+	sign, err := bn256.Sign(&blskey, pk, msg)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}

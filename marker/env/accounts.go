@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	bn256 "github.com/mapprotocol/bn256/bls"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -91,9 +91,11 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	pubkey := bn256.PublicKey{}
-	pubkey.Decompress(pkbytes[:])
-	signature, err := bn256.Sign(&key, &pubkey, a.Address.Bytes())
+	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
+	if err != nil {
+		return nil, err
+	}
+	signature, err := bn256.Sign(&key, pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}
