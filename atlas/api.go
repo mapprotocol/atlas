@@ -334,7 +334,7 @@ func (api *PublicDebugAPI) DumpBlockGenerateJson(blockNr rpc.BlockNumber) (bool,
 		}
 
 		account.Nonce = dumpAcc.Nonce
-
+		account.PrivateKey = dumpAcc.SecureKey
 		if len(dumpAcc.Storage) > 0 {
 			account.Storage = make(map[common.Hash]common.Hash)
 			for k, v := range dumpAcc.Storage {
