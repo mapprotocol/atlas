@@ -21,7 +21,13 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/core/vm"
 	params2 "github.com/mapprotocol/atlas/params"
+	"io/ioutil"
+	"math/big"
+
+	"github.com/mapprotocol/atlas/core/state"
 	//"math/big"
 	//"reflect"
 	"testing"
@@ -33,8 +39,8 @@ import (
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {
-	fmt.Println("address:",common.Address{}.String())
-	EmptyRootHash0 := types.DeriveSha(types.Transactions{},trie.NewStackTrie(nil))
+	fmt.Println("address:", common.Address{}.String())
+	EmptyRootHash0 := types.DeriveSha(types.Transactions{}, trie.NewStackTrie(nil))
 	fmt.Println(EmptyRootHash0)
 	block := DefaultGenesisBlock().ToBlock(nil)
 	if block.Hash() != params2.MainnetGenesisHash {
@@ -206,4 +212,58 @@ func generateAddr() common.Address {
 
 func Test01(t *testing.T) {
 	generateAddr()
+}
+
+func genesisReadContract(t *testing.T) GenesisAlloc {
+	mainnetAlloc := &GenesisAlloc{}
+	genesisPreContractPath := "D:\\work\\zhangwei812\\atlas\\poc2.json"
+	if common.FileExist(genesisPreContractPath) {
+		t.Logf("loaded the genesisPreContractPath%s%s", "buildpath", genesisPreContractPath)
+		jsonData, err := ioutil.ReadFile(genesisPreContractPath)
+		if err != nil {
+			t.Error("loaded the genesisPreContractPath jsonData err ", "err", err)
+			return *mainnetAlloc
+		}
+		mainnetAlloc.UnmarshalJSON(jsonData)
+	}
+	return *mainnetAlloc
+}
+
+func TestReadPoc2Contracts(t *testing.T) {
+	makaluPoc2Number150Root := "0x7a230bf7e6bbe4bfdfb19a5b7f8ed77cce884baf67b425cc118d5a6d14d5c13a"
+	db := rawdb.NewMemoryDatabase()
+	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
+	if err != nil {
+		panic(err)
+	}
+	g := genesisReadContract(t)
+	for addr, account := range g {
+		statedb.AddBalance(addr, account.Balance)
+		statedb.SetCode(addr, account.Code)
+		statedb.SetNonce(addr, account.Nonce)
+		for key, value := range account.Storage {
+			statedb.SetState(addr, key, value)
+		}
+	}
+
+	//////////////////////////////////pro compiled////////////////////////////////////
+	Number := uint64(0)
+	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(Number))
+	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(Number))
+	register := vm.NewRegisterImpl()
+	_, err = register.DoElections(statedb, 1, 0)
+	if err != nil {
+		t.Error("ToBlock DoElections", "error", err)
+	}
+	err = register.Save(statedb, params2.RelayerAddress)
+	if err != nil {
+		t.Error("ToBlock IMPL Save", "error", err)
+	}
+	////////////////////////////////////////////////////////////////////////////
+	root := statedb.IntermediateRoot(false)
+	t.Logf("root %s", root)
+	if root.String() != makaluPoc2Number150Root {
+		t.Fatalf("root != makaluPoc2Number150Root%s%s", "myroot", root)
+	}
+
 }
