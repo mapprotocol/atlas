@@ -16,8 +16,9 @@ const (
 	BN256Curve        = 1
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
-	PUBLICKEYBYTES    = 33
-	SIGNATUREBYTES    = 129
+	PUBLICKEYBYTES    = 129
+	G1PUBLICKEYBYTES  = 129
+	SIGNATUREBYTES    = 64
 	EPOCHENTROPYBYTES = 16
 )
 
@@ -54,6 +55,23 @@ func (pk *SerializedPublicKey) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(serializedPublicKeyT, input, pk[:])
 }
 
+type SerializedG1PublicKey [G1PUBLICKEYBYTES]byte
+
+// MarshalText returns the hex representation of pk.
+func (pk SerializedG1PublicKey) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(pk[:]).MarshalText()
+}
+
+// UnmarshalText parses a BLS public key in hex syntax.
+func (pk *SerializedG1PublicKey) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("SerializedPublicKey", input, pk[:])
+}
+
+// UnmarshalJSON parses a BLS public key in hex syntax.
+func (pk *SerializedG1PublicKey) UnmarshalJSON(input []byte) error {
+	return hexutil.UnmarshalFixedJSON(serializedPublicKeyT, input, pk[:])
+}
+
 type SerializedSignature [SIGNATUREBYTES]byte
 
 // MarshalText returns the hex representation of sig.
@@ -84,6 +102,7 @@ func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignatu
 type BLSCryptoSelector interface {
 	ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error)
 	PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error)
+	PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, error)
 	VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
 	AggregateSignatures(signatures [][]byte) ([]byte, error)
 	VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
@@ -119,6 +138,11 @@ func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error
 	pubKeyBytesFixed := SerializedPublicKey{}
 	copy(pubKeyBytesFixed[:], pk)
 	return pubKeyBytesFixed, err
+}
+
+func (BN256) PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, error) {
+	pubKeyBytesFixed := SerializedG1PublicKey{}
+	return pubKeyBytesFixed, nil
 }
 
 func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {

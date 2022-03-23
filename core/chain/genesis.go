@@ -525,15 +525,17 @@ func defaultRelayerMembers() []*RelayerMember {
 func createDevAlloc(pk blscrypto.SerializedPublicKey, addr common.Address) []byte {
 	ads := make([]common.Address, 0)
 	apks := make([]blscrypto.SerializedPublicKey, 0)
+	ag1pks := make([]blscrypto.SerializedG1PublicKey, 0)
 	ads = append(ads, addr)
 	apks = append(apks, pk)
 	ist := types.IstanbulExtra{
-		AddedValidators:           ads,
-		AddedValidatorsPublicKeys: apks,
-		RemovedValidators:         big.NewInt(0),
-		Seal:                      []byte(""),
-		AggregatedSeal:            types.IstanbulAggregatedSeal{},
-		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+		AddedValidators:             ads,
+		AddedValidatorsPublicKeys:   apks,
+		AddedValidatorsG1PublicKeys: ag1pks,
+		RemovedValidators:           big.NewInt(0),
+		Seal:                        []byte(""),
+		AggregatedSeal:              types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:        types.IstanbulAggregatedSeal{},
 	}
 	payload, _ := rlp.EncodeToBytes(&ist)
 	finalExtra := append(bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity), payload...)

@@ -120,9 +120,11 @@ func getGenesisAndKeys(n int, isFullChain bool) (*chain.Genesis, []*ecdsa.Privat
 		}
 		blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(nodeKeys[i])
 		blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
+		blsG1PublicKey, _ := blscrypto.CryptoType().PrivateToG1Public(blsPrivateKey)
 		validators[i] = istanbul.ValidatorData{
-			Address:      addr,
-			BLSPublicKey: blsPublicKey,
+			Address:        addr,
+			BLSPublicKey:   blsPublicKey,
+			BLSG1PublicKey: blsG1PublicKey,
 		}
 
 	}
@@ -151,6 +153,7 @@ func AppendValidatorsToGenesisBlock(genesis *chain.Genesis, validators []istanbu
 
 	var addrs []common.Address
 	var publicKeys []blscrypto.SerializedPublicKey
+	var g1publicKeys []blscrypto.SerializedG1PublicKey
 
 	for i := range validators {
 		if (validators[i].BLSPublicKey == blscrypto.SerializedPublicKey{}) {
@@ -158,14 +161,16 @@ func AppendValidatorsToGenesisBlock(genesis *chain.Genesis, validators []istanbu
 		}
 		addrs = append(addrs, validators[i].Address)
 		publicKeys = append(publicKeys, validators[i].BLSPublicKey)
+		g1publicKeys = append(g1publicKeys, validators[i].BLSG1PublicKey)
 	}
 
 	ist := &types.IstanbulExtra{
-		AddedValidators:           addrs,
-		AddedValidatorsPublicKeys: publicKeys,
-		Seal:                      []byte{},
-		AggregatedSeal:            types.IstanbulAggregatedSeal{},
-		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+		AddedValidators:             addrs,
+		AddedValidatorsPublicKeys:   publicKeys,
+		AddedValidatorsG1PublicKeys: g1publicKeys,
+		Seal:                        []byte{},
+		AggregatedSeal:              types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:        types.IstanbulAggregatedSeal{},
 	}
 
 	istPayload, err := rlp.EncodeToBytes(&ist)
