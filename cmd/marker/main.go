@@ -90,6 +90,7 @@ func init() {
 		getPendingWithdrawalsCommand,
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
+		updateBlsPublicKeyCommand,
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
