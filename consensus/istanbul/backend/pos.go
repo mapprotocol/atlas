@@ -71,7 +71,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	var validators_ []common.Address
 	for _, val := range valSet {
 		validators_ = append(validators_, val.Address())
-		sb.logger.Info("Validator elected validator", "validator", val.Address().String())
+		sb.logger.Info("will distributeEpochRewards", "validator", val.Address().String())
 	}
 	//----------------------------- Automatic active -------------------
 	b, err := sb.activeAllPending(vmRunner, validators_)
