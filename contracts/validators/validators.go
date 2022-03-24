@@ -17,6 +17,7 @@ package validators
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
@@ -86,10 +87,12 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 		var blsKey []byte
 		err := getValidatorBlsPublicKeyFromSignerMethod.Query(vmRunner, &blsKey, addr)
 		if err != nil {
+			log.Error("getValidatorBlsPublicKeyFromSignerMethod", blscrypto.PUBLICKEYBYTES, err)
 			return nil, err
 		}
 
 		if len(blsKey) != blscrypto.PUBLICKEYBYTES {
+			log.Error("length of bls public key incorrect. Expected %d, got %d", blscrypto.PUBLICKEYBYTES, len(blsKey))
 			return nil, fmt.Errorf("length of bls public key incorrect. Expected %d, got %d", blscrypto.PUBLICKEYBYTES, len(blsKey))
 		}
 
@@ -98,11 +101,12 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 
 		////////////////////////  BlsG1  ////////////////////////
 		var blsG1Key []byte
-		err = getValidatorBlsPublicKeyFromSignerMethod.Query(vmRunner, &blsKey, addr)
+		err = getValidatorBlsPublicKeyFromSignerMethod.Query(vmRunner, &blsG1Key, addr)
 		if err != nil {
 			return nil, err
 		}
 		if len(blsG1Key) != blscrypto.G1PUBLICKEYBYTES {
+			log.Error("length of blsG1 public key incorrect. Expected %d, got %d", blscrypto.G1PUBLICKEYBYTES, len(blsG1Key))
 			return nil, fmt.Errorf("length of blsG1 public key incorrect. Expected %d, got %d", blscrypto.G1PUBLICKEYBYTES, len(blsG1Key))
 		}
 		blsG1KeyFixedSize := bls.SerializedG1PublicKey{}
