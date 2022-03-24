@@ -281,12 +281,23 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	log.Info("=== Register validator ===")
 	commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	log.Info("=== commision ===", "commision", commision)
+	registerValidatorPre(ctx, core)
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
+	_params := []interface{}{commision, lesser, greater}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func registerValidatorPre(ctx *cli.Context, core *listener) error {
+	//----------------------------- registerValidator ---------------------------------
+	_params := []interface{}{core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidatorPre", _params...)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
