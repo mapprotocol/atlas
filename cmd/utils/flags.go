@@ -20,7 +20,6 @@ package utils
 import (
 	"crypto/ecdsa"
 	"fmt"
-	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"io"
 	"io/ioutil"
 	"math"
@@ -387,10 +386,7 @@ var (
 		Usage: "Public address for participation in consensus",
 		Value: "0",
 	}
-	MinerBLSPublicKeyFlag = cli.StringFlag{
-		Name:  "miner.BLSPublicKey",
-		Usage: "bls public key is used for the dev net",
-	}
+
 	MinerExtraDataFlag = cli.StringFlag{
 		Name:  "miner.extradata",
 		Usage: "Block extra data set by the miner (default = client version)",
@@ -1505,23 +1501,16 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			// when we're definitely concerned with only one account.
 			passphrase = list[0]
 		}
-		var blsPk blscrypto.SerializedPublicKey
 		if cfg.Miner.Etherbase != (common.Address{}) {
 			developer = accounts.Account{Address: cfg.Miner.Etherbase}
 		}
-		s := ctx.GlobalString(MinerBLSPublicKeyFlag.Name)
-		err = blsPk.UnmarshalText([]byte(s))
-		if err != nil {
-			Fatalf("Failed to set developer BLSPublicKey: %v", err)
-		}
-
 		if err = ks.Unlock(developer, passphrase); err != nil {
 			Fatalf("Failed to unlock developer account: %v", err)
 		}
 		log.Info("Using developer account", "address", developer.Address)
 
 		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = atlaschain.DevnetGenesisBlock(developer.Address, blsPk)
+		cfg.Genesis = atlaschain.DevnetGenesisBlock()
 		if ctx.GlobalIsSet(DataDirFlag.Name) {
 			// Check if we have an already initialized chain and fall back to
 			// that if so. Otherwise we need to generate a new genesis spec.
