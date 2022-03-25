@@ -428,7 +428,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 // owner       0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
 // validator1  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
 // keystore path  atlas/cmd/devnet_genesis
-func DevnetGenesisBlock(faucet common.Address, pk blscrypto.SerializedPublicKey) *Genesis {
+func DevnetGenesisBlock() *Genesis {
 	gs := genesisDevnetPreContract()
 	l := len(gs)
 	log.Info("poc2", "alloc count", l)
