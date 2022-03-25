@@ -465,11 +465,8 @@ func revokeActive(_ *cli.Context, core *listener) error {
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	validator := core.cfg.TargetAddress
 	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
-	greater, lesser, err := getGLSub(core, LockedNum, validator)
-	if err != nil {
-		log.Error("revokeActive", "err", err)
-		return err
-	}
+	greater, lesser, _ := getGLSub(core, LockedNum, validator)
+
 	list := _getValidatorsVotedForByAccount(core, core.cfg.From)
 	index, err := GetIndex(validator, list)
 	if err != nil {
