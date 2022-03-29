@@ -1105,7 +1105,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Attestations ABI
+  ]`) // Accounts ABI
 	abis["BlockchainParameters"] = mustParseABI(`[
     {
       "anonymous": false,
@@ -1836,7 +1836,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // DoubleSigningSlasher ABI
+  ]`) // BlockchainParameters ABI
 	abis["GoldToken"] = mustParseABI(`[
     {
       "anonymous": false,
@@ -2391,7 +2391,7 @@ func init() {
       "stateMutability": "view",
       "type": "function"
     }
-  ]`) // Governance ABI
+  ]`) // GoldToken ABI
 	abis["Election"] = mustParseABI(`[
     {
       "inputs": [
