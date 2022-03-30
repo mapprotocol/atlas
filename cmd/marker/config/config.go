@@ -34,7 +34,10 @@ type GoldTokenParameters struct {
 	GoldTokenABI     *abi.ABI
 	GoldTokenAddress common.Address
 }
-
+type TestPoc2 struct {
+	ABI     *abi.ABI
+	Address common.Address
+}
 type Config struct {
 	From       common.Address
 	PublicKey  []byte
@@ -60,6 +63,7 @@ type Config struct {
 	LockedGoldParameters LockedGoldParameters
 	AccountsParameters   AccountsParameters
 	ValidatorParameters  ValidatorParameters
+	TestPoc2Parameters   TestPoc2
 	ElectionParameters   ElectionParameters
 	GoldTokenParameters  GoldTokenParameters
 }
@@ -152,6 +156,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	ElectionAddress := mapprotocol.MustProxyAddressFor("Election")
 	GoldTokenAddress := mapprotocol.MustProxyAddressFor("GoldToken")
 	config.ValidatorParameters.ValidatorAddress = ValidatorAddress
+	config.TestPoc2Parameters.Address = common.HexToAddress("0xb586DC60e9e39F87c9CB8B7D7E30b2f04D40D14c")
 	config.LockedGoldParameters.LockedGoldAddress = LockedGoldAddress
 	config.AccountsParameters.AccountsAddress = AccountsAddress
 	config.ElectionParameters.ElectionAddress = ElectionAddress
@@ -163,6 +168,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	abiElection := mapprotocol.AbiFor("Election")
 	abiGoldToken := mapprotocol.AbiFor("GoldToken")
 	config.ValidatorParameters.ValidatorABI = abiValidators
+	config.TestPoc2Parameters.ABI = mapprotocol.AbiFor("TestPoc2")
 	config.LockedGoldParameters.LockedGoldABI = abiLockedGold
 	config.AccountsParameters.AccountsABI = abiAccounts
 	config.ElectionParameters.ElectionABI = abiElection
