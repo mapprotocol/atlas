@@ -292,6 +292,40 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	return nil
 }
 
+/*
+   Test whether the contract on poc2 can be changed by calling getOrderID() in mapbridgev1
+   Contract address 0xb586DC60e9e39F87c9CB8B7D7E30b2f04D40D14c
+   By calling getorderid () nonce + + on poc2, we can judge whether the contract can be called successfully.
+*/
+
+func TestPoc2_getOrderID(ctx *cli.Context, core *listener) error {
+	log.Info("=== Test ===")
+	_params := []interface{}{common.HexToAddress("a"), common.HexToAddress("a"), common.HexToAddress("b"), big.NewInt(123), big.NewInt(1)}
+	TestAddress := core.cfg.TestPoc2Parameters.Address
+	TestAbi := core.cfg.TestPoc2Parameters.ABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, TestAddress, nil, TestAbi, "getOrderID", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+/*
+   Test whether the contract on poc2 can be changed by calling getOrderID() in mapbridgev1
+   Contract address 0xb586DC60e9e39F87c9CB8B7D7E30b2f04D40D14c
+*/
+
+func TestPoc2_getNonce(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	TestAddress := core.cfg.TestPoc2Parameters.Address
+	TestAbi := core.cfg.TestPoc2Parameters.ABI
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, TestAddress, nil, TestAbi, "nonce")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("test poc 2", "result ", result)
+	return nil
+}
+
 func updateBlsPublicKey(ctx *cli.Context, core *listener) error {
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
