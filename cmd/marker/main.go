@@ -90,6 +90,8 @@ func init() {
 		getPendingWithdrawalsCommand,
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
+		setTargetValidatorEpochPaymentCommand,
+		setTargetRelayerEpochPaymentCommand,
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,

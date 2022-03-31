@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"errors"
+	"github.com/mapprotocol/atlas/core/state"
 	"math/big"
 	"strings"
 
@@ -221,6 +222,13 @@ func getRelayer(evm *EVM) (ret []byte, err error) {
 	return method.Outputs.Pack(common.BytesToAddress(relayerBytes))
 }
 
+/*
+ used for reward to relayer in EpochReward
+*/
+func GetRelayerAddress(state *state.StateDB) common.Address {
+	relayerBytes := state.GetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]))
+	return common.BytesToAddress(relayerBytes)
+}
 func validateRelayer(evm *EVM, caller common.Address) error {
 	adminAddrBytes := evm.StateDB.GetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]))
 	if !bytes.Equal(caller.Bytes(), adminAddrBytes) {
