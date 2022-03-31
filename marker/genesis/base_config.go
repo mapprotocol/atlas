@@ -45,8 +45,10 @@ func BaseConfig() *Config {
 			//a epoch award 1,500,000map
 			//MaxValidatorEpochPayment = 1,500,000map *(2/3)
 			MaxValidatorEpochPayment: bigIntStr("1000000000000000000000000"),
-			CommunityRewardFraction:  fixed("0.1"),
-			CommunityPartner:         common.HexToAddress("0x5ad473726671C40D4dF675A570f09610d7d39E70"),
+			//1,500,000map *(1/3) for relayer = 500,000map
+			MaxRelayerEpochPayment:  bigIntStr("500000000000000000000000"),
+			CommunityRewardFraction: fixed("0.1"),
+			CommunityPartner:        common.HexToAddress("0x5ad473726671C40D4dF675A570f09610d7d39E70"),
 		},
 		LockedGold: LockedGoldParameters{
 			UnlockingPeriod: 60,

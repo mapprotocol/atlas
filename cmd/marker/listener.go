@@ -275,6 +275,19 @@ var setImplementationCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var setTargetValidatorEpochPaymentCommand = cli.Command{
+	Name:   "setValidatorEpochPayment",
+	Usage:  "Sets the target per-epoch payment in MAP  for validators",
+	Action: MigrateFlags(setTargetValidatorEpochPayment),
+	Flags:  Flags,
+}
+var setTargetRelayerEpochPaymentCommand = cli.Command{
+	Name:   "setRelayerEpochPayment",
+	Usage:  "Sets the target per-epoch payment in MAP  for Relayer.",
+	Action: MigrateFlags(setTargetRelayerEpochPayment),
+	Flags:  Flags,
+}
+
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
 	//----------------------------- registerValidator ---------------------------------
@@ -966,7 +979,7 @@ func withdraw(_ *cli.Context, core *listener) error {
 
 //-------------------------- owner ------------------------
 func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
-	value := big.NewInt(int64(core.cfg.Value))
+	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
 	duration := big.NewInt(core.cfg.Duration)
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
@@ -984,6 +997,26 @@ func setImplementation(_ *cli.Context, core *listener) error {
 	ProxyAbi := mapprotocol.AbiFor("Proxy")
 	log.Info("=== setImplementation ===", "admin", core.cfg.From.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "_setImplementation", implementation)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func setTargetValidatorEpochPayment(_ *cli.Context, core *listener) error {
+	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	log.Info("=== setTargetValidatorEpochPayment ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setTargetValidatorEpochPayment", value)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func setTargetRelayerEpochPayment(_ *cli.Context, core *listener) error {
+	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	log.Info("=== setTargetRelayerEpochPayment ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setTargetRelayerEpochPayment", value)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil

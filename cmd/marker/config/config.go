@@ -26,6 +26,10 @@ type ValidatorParameters struct {
 	ValidatorABI     *abi.ABI
 	ValidatorAddress common.Address
 }
+type EpochRewardsParameters struct {
+	EpochRewardsABI     *abi.ABI
+	EpochRewardsAddress common.Address
+}
 type ElectionParameters struct {
 	ElectionABI     *abi.ABI
 	ElectionAddress common.Address
@@ -54,18 +58,19 @@ type Config struct {
 	WithdrawIndex *big.Int
 	RelockIndex   *big.Int
 
-	TargetAddress        common.Address
-	Ip                   string
-	Port                 int
-	GasLimit             int64
-	Verbosity            string
-	NamePrefix           string
-	LockedGoldParameters LockedGoldParameters
-	AccountsParameters   AccountsParameters
-	ValidatorParameters  ValidatorParameters
-	TestPoc2Parameters   TestPoc2
-	ElectionParameters   ElectionParameters
-	GoldTokenParameters  GoldTokenParameters
+	TargetAddress         common.Address
+	Ip                    string
+	Port                  int
+	GasLimit              int64
+	Verbosity             string
+	NamePrefix            string
+	LockedGoldParameters  LockedGoldParameters
+	AccountsParameters    AccountsParameters
+	ValidatorParameters   ValidatorParameters
+	EpochRewardParameters EpochRewardsParameters
+	TestPoc2Parameters    TestPoc2
+	ElectionParameters    ElectionParameters
+	GoldTokenParameters   GoldTokenParameters
 }
 
 func AssemblyConfig(ctx *cli.Context) (*Config, error) {
@@ -155,7 +160,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	AccountsAddress := mapprotocol.MustProxyAddressFor("Accounts")
 	ElectionAddress := mapprotocol.MustProxyAddressFor("Election")
 	GoldTokenAddress := mapprotocol.MustProxyAddressFor("GoldToken")
+	EpochRewardsAddress := mapprotocol.MustProxyAddressFor("EpochRewards")
 	config.ValidatorParameters.ValidatorAddress = ValidatorAddress
+	config.EpochRewardParameters.EpochRewardsAddress = EpochRewardsAddress
 	config.TestPoc2Parameters.Address = common.HexToAddress("0xb586DC60e9e39F87c9CB8B7D7E30b2f04D40D14c")
 	config.LockedGoldParameters.LockedGoldAddress = LockedGoldAddress
 	config.AccountsParameters.AccountsAddress = AccountsAddress
@@ -167,7 +174,10 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	abiAccounts := mapprotocol.AbiFor("Accounts")
 	abiElection := mapprotocol.AbiFor("Election")
 	abiGoldToken := mapprotocol.AbiFor("GoldToken")
+	abiEpochRewards := mapprotocol.AbiFor("EpochRewards")
+
 	config.ValidatorParameters.ValidatorABI = abiValidators
+	config.EpochRewardParameters.EpochRewardsABI = abiEpochRewards
 	config.TestPoc2Parameters.ABI = mapprotocol.AbiFor("TestPoc2")
 	config.LockedGoldParameters.LockedGoldABI = abiLockedGold
 	config.AccountsParameters.AccountsABI = abiAccounts
