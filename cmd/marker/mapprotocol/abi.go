@@ -4197,6 +4197,19 @@ func init() {
           "type": "uint256"
         }
       ],
+      "name": "TargetRelayerEpochPaymentSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "payment",
+          "type": "uint256"
+        }
+      ],
       "name": "TargetValidatorEpochPaymentSet",
       "type": "event"
     },
@@ -4298,6 +4311,36 @@ func init() {
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "epochPayment",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "epochRelayerPayment",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "payable": false,
@@ -4662,21 +4705,6 @@ func init() {
       "type": "function"
     },
     {
-      "constant": true,
-      "inputs": [],
-      "name": "targetValidatorEpochPayment",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "constant": false,
       "inputs": [
         {
@@ -4783,6 +4811,11 @@ func init() {
         },
         {
           "internalType": "uint256",
+          "name": "_targetRelayerEpochPayment",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
           "name": "_communityRewardFraction",
           "type": "uint256"
         },
@@ -4861,6 +4894,27 @@ func init() {
       "type": "function"
     },
     {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTargetRelayerEpochPayment",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "constant": true,
       "inputs": [],
       "name": "getTargetTotalEpochPaymentsInGold",
@@ -4895,6 +4949,11 @@ func init() {
       "inputs": [],
       "name": "calculateTargetEpochRewards",
       "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
         {
           "internalType": "uint256",
           "name": "",

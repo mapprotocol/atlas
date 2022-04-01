@@ -262,6 +262,7 @@ func (ctx *deployContext) deployEpochRewards() error {
 		return contract.SimpleCall("initialize",
 			env.MustProxyAddressFor("Registry"),
 			ctx.genesisConfig.EpochRewards.MaxValidatorEpochPayment,
+			ctx.genesisConfig.EpochRewards.MaxRelayerEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.CommunityPartner,
 		)
