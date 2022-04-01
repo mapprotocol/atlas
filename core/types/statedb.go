@@ -61,11 +61,4 @@ type StateDB interface {
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
 	ForEachPOWStorage(common.Address, func(common.Hash, []byte) bool)
-
-	GetUnlockedBalance(addr common.Address) *big.Int
-	GetLockedBalance(addr common.Address) *big.Int
-	SetLockedBalance(addr common.Address, value *big.Int)
-
-	//GetPOSState(common.Address, common.Hash) []byte
-	//SetPOSState(common.Address, common.Hash, []byte)
 }
