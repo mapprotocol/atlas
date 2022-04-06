@@ -319,8 +319,16 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 
 	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
 		from := crypto.PubkeyToAddress(key.PublicKey)
-		prikey := blscrypto.NewKey(key.D)
-		keybytes := crypto.FromECDSA(key)
+
+		keybytes, err := blscrypto.CryptoType().ECDSAToBLS(key)
+		if err != nil {
+			return blscrypto.SerializedSignature{}, err
+		}
+		prikey, err := blscrypto.DeserializePrivateKey(keybytes)
+		if err != nil {
+			return blscrypto.SerializedSignature{}, err
+		}
+
 		pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
@@ -329,7 +337,7 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
-		signature, err := blscrypto.Sign(&prikey, pubkey, from.Bytes())
+		signature, err := blscrypto.Sign(prikey, pubkey, from.Bytes())
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}

@@ -603,13 +603,10 @@ func DeserializePrivateKey(privateKeyBytes []byte) (*SecretKey, error) {
 }
 
 func (self *SecretKey) Serialize() ([]byte, error) {
-	return self.x.Bytes(),nil
+	return self.x.Bytes(), nil
 }
 func (self *SecretKey) ToPublic() *PublicKey {
 	gx := new(bn256.G2).ScalarBaseMult(new(big.Int).Set(self.x))
 	pk := &PublicKey{gx}
 	return pk
-}
-func NewKey(x *big.Int) SecretKey {
-	return SecretKey{x}
 }

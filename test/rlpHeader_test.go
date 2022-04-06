@@ -390,3 +390,10 @@ func TestEncodeAgg(t *testing.T) {
 	fmt.Println("len:", len(istPayload))
 	fmt.Printf("encode bytes %x\n", istPayload)
 }
+
+func TestYode2(t *testing.T) {
+	a := big.NewInt(0)
+	b := big.NewInt(9)
+	a.SetBytes(b.Bytes())
+	fmt.Println(a, b)
+}

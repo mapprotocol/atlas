@@ -64,30 +64,13 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	//privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer privateKey.Destroy()
-	//
-	//signature, err := privateKey.SignPoP(a.Address.Bytes())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer signature.Destroy()
-	//
-	//signatureBytes, err := signature.Serialize()
-	//if err != nil {
-	//	return nil, err
-	//}
+	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	key, err := bn256.DeserializePrivateKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
 
-	key := bn256.NewKey(a.PrivateKey.D)
-	keybytes := crypto.FromECDSA(a.PrivateKey)
-	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
+	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +78,7 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	signature, err := bn256.Sign(&key, pubkey, a.Address.Bytes())
+	signature, err := bn256.Sign(key, pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}
