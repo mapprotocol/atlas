@@ -49,7 +49,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	validatorVoterReward, communityReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
+	validatorVoterReward, communityReward, relayerReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	var validators_ []common.Address
 	for _, val := range valSet {
 		validators_ = append(validators_, val.Address())
-		sb.logger.Info("Validator elected validator", "validator", val.Address().String())
+		sb.logger.Info("will distributeEpochRewards", "validator", val.Address().String())
 	}
 	//----------------------------- Automatic active -------------------
 	b, err := sb.activeAllPending(vmRunner, validators_)
@@ -105,7 +105,18 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 			return err
 		}
 	}
-
+	// mint to relayer
+	if relayerReward.Cmp(new(big.Int)) != 0 {
+		relayerAddress := vm.GetRelayerAddress(state)
+		if relayerAddress != params.ZeroAddress {
+			if err = gold_token.Mint(vmRunner, relayerAddress, relayerReward); err != nil {
+				log.Error("reward to relayer fail", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
+				return err
+			}
+			log.Info("reward to relayer success", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
+		}
+		log.Info("no relayer to reward")
+	}
 	return nil
 }
 

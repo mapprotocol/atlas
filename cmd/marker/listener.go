@@ -275,6 +275,19 @@ var setImplementationCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var setTargetValidatorEpochPaymentCommand = cli.Command{
+	Name:   "setValidatorEpochPayment",
+	Usage:  "Sets the target per-epoch payment in MAP  for validators",
+	Action: MigrateFlags(setTargetValidatorEpochPayment),
+	Flags:  Flags,
+}
+var setTargetRelayerEpochPaymentCommand = cli.Command{
+	Name:   "setRelayerEpochPayment",
+	Usage:  "Sets the target per-epoch payment in MAP  for Relayer.",
+	Action: MigrateFlags(setTargetRelayerEpochPayment),
+	Flags:  Flags,
+}
+
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
 	//----------------------------- registerValidator ---------------------------------
@@ -289,6 +302,40 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+/*
+   Test whether the contract on poc2 can be changed by calling getOrderID() in mapbridgev1
+   Contract address 0xb586DC60e9e39F87c9CB8B7D7E30b2f04D40D14c
+   By calling getorderid () nonce + + on poc2, we can judge whether the contract can be called successfully.
+*/
+
+func TestPoc2_getOrderID(ctx *cli.Context, core *listener) error {
+	log.Info("=== Test ===")
+	_params := []interface{}{common.HexToAddress("a"), common.HexToAddress("a"), common.HexToAddress("b"), big.NewInt(123), big.NewInt(1)}
+	TestAddress := core.cfg.TestPoc2Parameters.Address
+	TestAbi := core.cfg.TestPoc2Parameters.ABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, TestAddress, nil, TestAbi, "getOrderID", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+/*
+   Test whether the contract on poc2 can be changed by calling getOrderID() in mapbridgev1
+   Contract address 0xb586DC60e9e39F87c9CB8B7D7E30b2f04D40D14c
+*/
+
+func TestPoc2_getNonce(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	TestAddress := core.cfg.TestPoc2Parameters.Address
+	TestAbi := core.cfg.TestPoc2Parameters.ABI
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, TestAddress, nil, TestAbi, "nonce")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("test poc 2", "result ", result)
 	return nil
 }
 
@@ -465,11 +512,8 @@ func revokeActive(_ *cli.Context, core *listener) error {
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	validator := core.cfg.TargetAddress
 	LockedNum := new(big.Int).Mul(core.cfg.LockedNum, big.NewInt(1e18))
-	greater, lesser, err := getGLSub(core, LockedNum, validator)
-	if err != nil {
-		log.Error("revokeActive", "err", err)
-		return err
-	}
+	greater, lesser, _ := getGLSub(core, LockedNum, validator)
+
 	list := _getValidatorsVotedForByAccount(core, core.cfg.From)
 	index, err := GetIndex(validator, list)
 	if err != nil {
@@ -724,7 +768,7 @@ func getPendingInfoForValidator(_ *cli.Context, core *listener) error {
 	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, ElectionAddress, nil, abiElection, "pendingInfo", core.cfg.From, core.cfg.TargetAddress)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	log.Info("getPendingInfoForValidator", "Value", Epoch.(*big.Int), "Epoch", Value.(*big.Int))
+	log.Info("getPendingInfoForValidator", "Epoch", Epoch.(*big.Int), "Epoch", Value.(*big.Int))
 	return nil
 }
 
@@ -935,7 +979,7 @@ func withdraw(_ *cli.Context, core *listener) error {
 
 //-------------------------- owner ------------------------
 func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
-	value := big.NewInt(int64(core.cfg.Value))
+	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
 	duration := big.NewInt(core.cfg.Duration)
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
@@ -953,6 +997,26 @@ func setImplementation(_ *cli.Context, core *listener) error {
 	ProxyAbi := mapprotocol.AbiFor("Proxy")
 	log.Info("=== setImplementation ===", "admin", core.cfg.From.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "_setImplementation", implementation)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func setTargetValidatorEpochPayment(_ *cli.Context, core *listener) error {
+	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	log.Info("=== setTargetValidatorEpochPayment ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setTargetValidatorEpochPayment", value)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func setTargetRelayerEpochPayment(_ *cli.Context, core *listener) error {
+	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	log.Info("=== setTargetRelayerEpochPayment ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setTargetRelayerEpochPayment", value)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil

@@ -32,14 +32,15 @@ var (
 
 // Returns the per validator epoch reward, the total voter reward, the total community reward, and
 // the total carbon offsetting partner award, for the epoch.
-func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, error) {
+func CalculateTargetEpochRewards(vmRunner vm.EVMRunner) (*big.Int, *big.Int, *big.Int, error) {
 	var validatorVoterEpochReward *big.Int
 	var totalCommunityReward *big.Int
-	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorVoterEpochReward, &totalCommunityReward})
+	var relayerReward *big.Int
+	err := calculateTargetEpochRewardsMethod.Query(vmRunner, &[]interface{}{&validatorVoterEpochReward, &totalCommunityReward, &relayerReward})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return validatorVoterEpochReward, totalCommunityReward, nil
+	return validatorVoterEpochReward, totalCommunityReward, relayerReward, nil
 }
 
 // Returns the address of the carbon offsetting partner

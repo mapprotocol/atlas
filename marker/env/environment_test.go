@@ -1,7 +1,6 @@
 package env
 
 import (
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/marker/internal/utils"
@@ -55,7 +54,6 @@ func TestEnvironment_SaveGenesis(t *testing.T) {
 		// Requests mock engine if true
 		Faker: true,
 	}
-	fmt.Println(ChainConfig.ChainID)
 	var genesis chain.Genesis
 	genesis = chain.Genesis{
 		Config:    &ChainConfig,
@@ -74,24 +72,9 @@ func TestEnvironment_SaveGenesis(t *testing.T) {
 		ParentHash: common.HexToHash("456"),
 		//BaseFee:    big.NewInt(44),
 	}
-	fmt.Println(genesis.Number)
-	//type b struct {
-	//	GG *string
-	//}
-	//type a struct {
-	//	Name string
-	//	Age  int
-	//	Jj   *b
-	//}
-	//var pppp = "ppppp"
-	//var bb  = b{GG: &pppp}
-	//var aa = a{
-	//	Name: "name",
-	//	Age:  11,
-	//	Jj:   &bb,
-	//}
+
 	err := utils.WriteJson(&genesis, "D:/root/test/test.json")
 	if err != nil {
-		fmt.Println(err)
+		t.Fatalf("WriteJson", "err", err)
 	}
 }
