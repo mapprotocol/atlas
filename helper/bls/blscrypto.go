@@ -1,8 +1,13 @@
 package bls
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
+	"errors"
+	"github.com/celo-org/celo-bls-go/bls"
+	"math/big"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"reflect"
