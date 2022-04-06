@@ -303,10 +303,66 @@ func (BLS12377) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
 
 type BN256 struct{}
 
+const (
+	MODULUS256 = "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+	MODULUSBITS = 254
+	MODULUSMASK = 63 // == 2**(254-(256-8)) - 1
+)
+//func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
+//	return crypto.FromECDSA(privateKeyECDSA), nil
+//}
 func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
-	return crypto.FromECDSA(privateKeyECDSA), nil
-}
+	for i := 0; i < 256; i++ { // 最多尝试256次
+		modulus := big.NewInt(0)
+		modulus, ok := modulus.SetString(MODULUS256, 10)
+		if !ok {
+			return nil, errors.New("can't parse modulus")
+		}
+		privateKeyECDSABytes := crypto.FromECDSA(privateKeyECDSA)
 
+		keyBytes := []byte("ecdsatobls")
+		keyBytes = append(keyBytes, uint8(i))
+		keyBytes = append(keyBytes, privateKeyECDSABytes...) // keyBytes = "ecdsatobls" || byte(i) || bytes(k)
+
+		privateKeyBLSBytes := crypto.Keccak256(keyBytes) // privateKeyBlsBytes =  keccak256(keyBytes)
+		privateKeyBLSBytes[0] &= MODULUSMASK
+		privateKeyBLSBig := big.NewInt(0)
+		privateKeyBLSBig.SetBytes(privateKeyBLSBytes)
+		if privateKeyBLSBig.Cmp(modulus) >= 0 {
+			continue
+		}
+
+		privateKeyBytes := privateKeyBLSBig.Bytes()
+		for len(privateKeyBytes) < len(privateKeyBLSBytes) {
+			privateKeyBytes = append([]byte{0x00}, privateKeyBytes...)
+		}
+		if !bytes.Equal(privateKeyBLSBytes, privateKeyBytes) {
+			return nil, fmt.Errorf("private key bytes should have been the same: %s, %s", hex.EncodeToString(privateKeyBLSBytes), hex.EncodeToString(privateKeyBytes))
+		}
+		// reverse order, as the BLS library expects little endian
+		for i := len(privateKeyBytes)/2 - 1; i >= 0; i-- {
+			opp := len(privateKeyBytes) - 1 - i
+			privateKeyBytes[i], privateKeyBytes[opp] = privateKeyBytes[opp], privateKeyBytes[i]
+		}
+
+		privateKeyBLS, err := bls.DeserializePrivateKey(privateKeyBytes)
+		if err != nil {
+			return nil, err
+		}
+		defer privateKeyBLS.Destroy()
+		privateKeyBLSBytesFromLib, err := privateKeyBLS.Serialize()
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(privateKeyBytes, privateKeyBLSBytesFromLib) {
+			return nil, errors.New("private key bytes from library should have been the same")
+		}
+
+		return privateKeyBLSBytesFromLib, nil
+	}
+
+	return nil, errors.New("couldn't derive a BLS key from an ECDSA key")
+}
 func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
 	pk, err := bn256_dusk_network.PrivateToPublic(privateKeyBytes)
 	pubKeyBytesFixed := SerializedPublicKey{}
