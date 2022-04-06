@@ -1,19 +1,19 @@
 package bls
 
+import "C"
 import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
-	"io"
-	"math/big"
-
 	"github.com/dusk-network/bn256"
 	"github.com/dusk-network/dusk-crypto/hash"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
+	"io"
+	"math/big"
 )
 
 var (
@@ -597,6 +597,19 @@ func PrivateToPublic(privateKeyBytes []byte) ([]byte, error) {
 	return pk.Marshal(), nil
 }
 
+func DeserializePrivateKey(privateKeyBytes []byte) (*SecretKey, error) {
+	x := new(big.Int).SetBytes(privateKeyBytes)
+	return &SecretKey{x: new(big.Int).Set(x)}, nil
+}
+
+func (self *SecretKey) Serialize() ([]byte, error) {
+	return self.x.Bytes(),nil
+}
+func (self *SecretKey) ToPublic() *PublicKey {
+	gx := new(bn256.G2).ScalarBaseMult(new(big.Int).Set(self.x))
+	pk := &PublicKey{gx}
+	return pk
+}
 func NewKey(x *big.Int) SecretKey {
 	return SecretKey{x}
 }

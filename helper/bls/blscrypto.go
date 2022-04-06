@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"encoding/hex"
-	"fmt"
 	"errors"
-	"github.com/celo-org/celo-bls-go/bls"
-	"math/big"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+	"math/big"
 	"reflect"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -176,11 +175,10 @@ func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 			privateKeyBytes[i], privateKeyBytes[opp] = privateKeyBytes[opp], privateKeyBytes[i]
 		}
 
-		privateKeyBLS, err := bls.DeserializePrivateKey(privateKeyBytes)
+		privateKeyBLS, err := DeserializePrivateKey(privateKeyBytes)
 		if err != nil {
 			return nil, err
 		}
-		defer privateKeyBLS.Destroy()
 		privateKeyBLSBytesFromLib, err := privateKeyBLS.Serialize()
 		if err != nil {
 			return nil, err
