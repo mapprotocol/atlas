@@ -52,7 +52,7 @@ var genesisAddresses = map[string]common.Address{
 	"ExchangeEUR":                addr("0xf025"),
 
 	// Contract Proxies
-	"RegistryProxy":                   addr("0xce10"),
+	"RegistryProxy":                   params.RegistryProxyAddress,
 	"FreezerProxy":                    addr("0xd001"),
 	"FeeCurrencyWhitelistProxy":       addr("0xd002"),
 	"GoldTokenProxy":                  addr("0xd003"),

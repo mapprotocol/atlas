@@ -18,23 +18,23 @@ package backend
 
 import (
 	"errors"
-	"github.com/mapprotocol/atlas/contracts/election"
-	"github.com/mapprotocol/atlas/core/chain"
-	"math/big"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
+	"github.com/mapprotocol/atlas/contracts"
+	"github.com/mapprotocol/atlas/contracts/election"
 	"github.com/mapprotocol/atlas/contracts/epoch_rewards"
 	"github.com/mapprotocol/atlas/contracts/gold_token"
 	"github.com/mapprotocol/atlas/contracts/validators"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
+	"math/big"
+	"time"
 )
 
 func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB) error {
@@ -201,19 +201,21 @@ func (sb *Backend) calculatePaymentScoreDenominator(vmRunner vm.EVMRunner, uptim
 	}
 	sum := big.NewInt(0)
 	for i, v := range uptimes {
-		sum.Add(sum, v)
 		if ignores[i] {
 			continue
 		}
+		sum.Add(sum, v)
 		sum.Add(sum, PledgeMultiplier)
 	}
 	return sum, nil
 }
 func (sb *Backend) distributeVoterRewards(vmRunner vm.EVMRunner, validators []common.Address, rewards map[common.Address]*big.Int) (*big.Int, error) {
+	lockedGoldAddress, err := contracts.GetRegisteredAddress(vmRunner, params.LockedGoldRegistryId)
 	totalReward, err := election.DistributeEpochRewards(vmRunner, validators, rewards)
 	if err != nil {
 		return nil, err
 	}
+	gold_token.Mint(vmRunner, lockedGoldAddress, totalReward)
 	return totalReward, nil
 }
 

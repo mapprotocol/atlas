@@ -242,7 +242,6 @@ type Handler interface {
 func InitHeaderStore(state *state.StateDB, blockNumber *big.Int) {
 	if blockNumber.Cmp(big.NewInt(0)) == 0 {
 		initEthereumStore(state)
-		initEthereumSync(state)
 	}
 }
 
@@ -262,28 +261,13 @@ func initEthereumStore(state *state.StateDB) {
 	if len(getState) == 0 {
 		var header ethereum.Header
 
-		td, ok := new(big.Int).SetString(params.EthereumTestnetGenesisTD, 10)
-		if !ok {
-			log.Crit("parse ethereum testnet td failed")
-		}
 		if err := json.Unmarshal([]byte(params.EthereumTestnetGenesisHeader), &header); err != nil {
 			log.Crit("json unmarshal ethereum testnet header failed", "error", err)
 		}
 
-		hs := ethereum.InitHeaderStore(&header, td)
-		if err := hs.Store(state); err != nil {
-			log.Crit("store header store failed, ", "error", err)
+		if err := ethereum.InitHeaderStore(state, &header, params.EthereumTestnetGenesisTD); err != nil {
+			log.Crit("init header store failed, ", "error", err)
 		}
-	}
-}
-
-func initEthereumSync(state *state.StateDB) {
-	key := common.BytesToHash(chains.EthereumHeaderSyncAddress[:])
-	getState := state.GetPOWState(chains.EthereumHeaderSyncAddress, key)
-	if len(getState) == 0 {
-		hs := ethereum.NewHeaderSync()
-		if err := hs.Store(state); err != nil {
-			log.Crit("store header sync failed, ", "error", err)
-		}
+		state.SetCode(params.HeaderStoreAddress, params.HeaderStoreAddress[:])
 	}
 }

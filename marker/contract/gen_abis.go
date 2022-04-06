@@ -7221,6 +7221,11 @@ func init() {
         },
         {
           "internalType": "bytes",
+          "name": "blsG1Key",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
           "name": "blsPop",
           "type": "bytes"
         }
@@ -7935,12 +7940,23 @@ func init() {
           "internalType": "address",
           "name": "greater",
           "type": "address"
-        },
+        }
+      ],
+      "name": "registerValidator",
+      "outputs": [
         {
-          "internalType": "bytes",
-          "name": "ecdsaPublicKey",
-          "type": "bytes"
-        },
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
         {
           "internalType": "bytes",
           "name": "blsPublicKey",
@@ -7948,11 +7964,21 @@ func init() {
         },
         {
           "internalType": "bytes",
+          "name": "blsG1PublicKey",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
           "name": "blsPop",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "ecdsaPublicKey",
           "type": "bytes"
         }
       ],
-      "name": "registerValidator",
+      "name": "registerValidatorPre",
       "outputs": [
         {
           "internalType": "bool",
@@ -8103,6 +8129,11 @@ func init() {
         },
         {
           "internalType": "bytes",
+          "name": "blsG1PublicKey",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
           "name": "blsPop",
           "type": "bytes"
         }
@@ -8171,6 +8202,11 @@ func init() {
         {
           "internalType": "bytes",
           "name": "blsPublicKey",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "blsG1PublicKey",
           "type": "bytes"
         },
         {
@@ -8283,6 +8319,27 @@ func init() {
       "inputs": [
         {
           "internalType": "address",
+          "name": "signer",
+          "type": "address"
+        }
+      ],
+      "name": "getValidatorBlsG1PublicKeyFromSigner",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "blsG1PublicKey",
+          "type": "bytes"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "account",
           "type": "address"
         }
@@ -8297,6 +8354,11 @@ func init() {
         {
           "internalType": "bytes",
           "name": "blsPublicKey",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "blsG1PublicKey",
           "type": "bytes"
         },
         {

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -85,15 +85,17 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 	//	return nil, err
 	//}
 
-	key := bn256_dusk_network.NewKey(a.PrivateKey.D)
+	key := bn256.NewKey(a.PrivateKey.D)
 	keybytes := crypto.FromECDSA(a.PrivateKey)
 	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 	if err != nil {
 		return nil, err
 	}
-	pubkey := bn256_dusk_network.PublicKey{}
-	pubkey.Decompress(pkbytes[:])
-	signature, err := bn256_dusk_network.Sign(&key, &pubkey, a.Address.Bytes())
+	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
+	if err != nil {
+		return nil, err
+	}
+	signature, err := bn256.Sign(&key, pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}

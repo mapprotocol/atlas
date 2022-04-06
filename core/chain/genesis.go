@@ -32,12 +32,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	ethparams "github.com/ethereum/go-ethereum/params"
-
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -291,33 +289,10 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		}
 	}
 
-	//////////////////////////////////pro compiled////////////////////////////////////
+	// pre compiled
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(g.Number))
-	register := vm.NewRegisterImpl()
 
-	if g.Config.ChainID.Uint64() == params.TestNetChainID {
-		h := g.Number
-		rms := defaultRelayerMembers()
-		for _, member := range rms {
-			err := register.InsertAccount2(h, member.Coinbase, params.ElectionMinLimitForRegister)
-			if err != nil {
-				log.Error("ToBlock InsertAccount", "error", err)
-			} else {
-				vm.GenesisAddLockedBalance(statedb, member.Coinbase, params.ElectionMinLimitForRegister)
-			}
-		}
-	}
-
-	_, err = register.DoElections(statedb, 1, 0)
-	if err != nil {
-		log.Error("ToBlock DoElections", "error", err)
-	}
-	err = register.Save(statedb, params.RelayerAddress)
-	if err != nil {
-		log.Error("ToBlock IMPL Save", "error", err)
-	}
-	////////////////////////////////////////////////////////////////////////////
 	root := statedb.IntermediateRoot(false)
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
@@ -399,52 +374,78 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
-	ga := genesisRegisterProxyContract()
+	gs := genesisPreContract()
+	l := len(gs)
+	log.Info("poc2", "address count", l)
+	gs1 := genesisRegisterProxyContract()
+	for addr, allc := range gs1 {
+		// add genesis contract to allc
+		gs[addr] = allc
+	}
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
-	ga[preAddr] = GenesisAccount{Balance: balance0}
+	gs[preAddr] = GenesisAccount{Balance: balance0}
 
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
 		Nonce:     66,
 		ExtraData: hexutil.MustDecode(mainnetExtraData),
 		GasLimit:  20000000,
-		Alloc:     ga,
+		Alloc:     gs,
 	}
 }
 
 // DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
+// owner 0x1c0edab88dbb72b119039c4d14b1663525b3ac15
+// validator1  0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
+// validator2  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
+// validator3  0x2dc45799000ab08e60b7441c36fcc74060ccbe11 password ""
+// validator4  0x6c5938b49bacde73a8db7c3a7da208846898bff5 password ""
+// keystore path  atlas/cmd/testnet_genesis
 func DefaultTestnetGenesisBlock() *Genesis {
-	dr := defaultRelayer()
-	for addr, allc := range genesisRegisterProxyContract() {
+	gs := genesisTestnetPreContract()
+	l := len(gs)
+	log.Info("poc2", "alloc count", l)
+	gs1 := genesisTestnetRegisterProxyContract()
+	for addr, allc := range gs1 {
 		// add genesis contract to allc
-		dr[addr] = allc
+		gs[addr] = allc
 	}
-	// faucet
-	dr[faucetAddr] = GenesisAccount{Balance: faucetBalance}
-	ga := genesisRegisterProxyContract()
-	for k, v := range ga {
-		dr[k] = v
-	}
+	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
+	preAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	gs[preAddr] = GenesisAccount{Balance: balance0}
+
 	return &Genesis{
 		Config:    params.TestnetConfig,
 		Nonce:     66,
 		ExtraData: hexutil.MustDecode(testnetExtraData),
 		GasLimit:  16777216,
-		Alloc:     dr,
+		Alloc:     gs,
 	}
 }
 
 // DevnetGenesisBlock returns the 'geth --dev' genesis block.
+// owner       0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
+// validator1  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
+// keystore path  atlas/cmd/devnet_genesis
 func DevnetGenesisBlock(faucet common.Address, pk blscrypto.SerializedPublicKey) *Genesis {
-	dc := defaultRelayer()
-	defaultBalance, _ := new(big.Int).SetString("100000000000000000000000000", 10)
-	dc[faucet] = GenesisAccount{Balance: defaultBalance}
+	gs := genesisDevnetPreContract()
+	l := len(gs)
+	log.Info("poc2", "alloc count", l)
+	gs1 := genesisDevnetRegisterProxyContract()
+	for addr, allc := range gs1 {
+		// add genesis contract to allc
+		gs[addr] = allc
+	}
+	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
+	preAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
+	gs[preAddr] = GenesisAccount{Balance: balance0}
 	return &Genesis{
-		Config:    params.DevnetConfig,
-		ExtraData: createDevAlloc(pk, faucet),
+		Config: params.DevnetConfig,
+		//ExtraData: createDevAlloc(pk, faucet),
+		ExtraData: hexutil.MustDecode(devnetExtraData),
 		GasLimit:  11500000,
-		Alloc:     dc,
+		Alloc:     gs,
 	}
 }
 
@@ -524,15 +525,17 @@ func defaultRelayerMembers() []*RelayerMember {
 func createDevAlloc(pk blscrypto.SerializedPublicKey, addr common.Address) []byte {
 	ads := make([]common.Address, 0)
 	apks := make([]blscrypto.SerializedPublicKey, 0)
+	ag1pks := make([]blscrypto.SerializedG1PublicKey, 0)
 	ads = append(ads, addr)
 	apks = append(apks, pk)
 	ist := types.IstanbulExtra{
-		AddedValidators:           ads,
-		AddedValidatorsPublicKeys: apks,
-		RemovedValidators:         big.NewInt(0),
-		Seal:                      []byte(""),
-		AggregatedSeal:            types.IstanbulAggregatedSeal{},
-		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+		AddedValidators:             ads,
+		AddedValidatorsPublicKeys:   apks,
+		AddedValidatorsG1PublicKeys: ag1pks,
+		RemovedValidators:           big.NewInt(0),
+		Seal:                        []byte(""),
+		AggregatedSeal:              types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:        types.IstanbulAggregatedSeal{},
 	}
 	payload, _ := rlp.EncodeToBytes(&ist)
 	finalExtra := append(bytes.Repeat([]byte{0x00}, types.IstanbulExtraVanity), payload...)

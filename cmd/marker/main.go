@@ -33,6 +33,7 @@ var (
 		config.RelockIndexFlag,
 		config.TargetAddressFlag,
 		config.ValidatorAddressFlag,
+		config.ContractAddressFlag,
 		config.MAPValueFlag,
 		config.GasLimitFlag,
 	}
@@ -88,6 +89,8 @@ func init() {
 		getAccountLockedGoldRequirementCommand,
 		getPendingWithdrawalsCommand,
 		setValidatorLockedGoldRequirementsCommand,
+		setImplementationCommand,
+		updateBlsPublicKeyCommand,
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
@@ -104,7 +107,7 @@ func main() {
 	}
 }
 
-var OriginCommandHelpTemplate string = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...] {{if .Description}}{{.Description}} {{end}}{{if .Subcommands}} SUBCOMMANDS:     {{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}     {{end}}{{end}}{{if .Flags}} OPTIONS: {{range $.Flags}}{{"\t"}}{{.}} {{end}} {{end}}`
+var OriginCommandHelpTemplate string = `{{.Name}}{{if .Subcommands}} command{{end}}{{if .Flags}} [command options]{{end}} [arguments...] {{if .Description}}{{.Description}} {{end}}{{if .Subcommands}} SUBCOMMANDS:     {{range .Subcommands}}{{.Name}}{{with .ShortName}}, {{.}}{{end}}{{ "\t" }}{{.Usage}}     {{end}}{{end}}{{if .Flags}} {{"\n"}}OPTIONS: {{range $.Flags}}{{"\n\t"}}{{.}} {{end}} {{end}}`
 
 func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.Context) error {
 	return func(ctx *cli.Context) error {
@@ -119,10 +122,12 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 		}
 		_config, err := config.AssemblyConfig(ctx)
 		if err != nil {
+			cli.ShowAppHelpAndExit(ctx, 1)
 			panic(err)
 		}
 		err = startLogger(ctx, _config)
 		if err != nil {
+			cli.ShowAppHelpAndExit(ctx, 1)
 			panic(err)
 		}
 		core := NewListener(ctx, _config)

@@ -10,7 +10,7 @@ const (
 	MainNetChainID uint64 = 214
 	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
-	Epoch          uint64 = 20
+	Epoch          uint64 = 30000
 )
 
 // network id
@@ -23,8 +23,8 @@ const (
 // Genesis hashes to enforce below configs on.
 var (
 	MainnetGenesisHash = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
-	TestnetGenesisHash = common.HexToHash("0xfc7c54a959dc7b00c5ba13d9bae0eccae4946f8169e0b8a89bd50a4ed8fae203")
-	DevnetGenesisHash  = common.HexToHash("0xbdb60a85ba40c846fd02cb683b112d72a74751c96fe6b337ee631b6542cf6f9b")
+	TestnetGenesisHash = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
+	DevnetGenesisHash  = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
 )
 
 var (
@@ -70,7 +70,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		Istanbul: &IstanbulConfig{
-			Epoch:          80,
+			Epoch:          20000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,

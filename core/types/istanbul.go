@@ -67,7 +67,8 @@ type IstanbulExtra struct {
 	// AddedValidators are the validators that have been added in the block
 	AddedValidators []common.Address
 	// AddedValidatorsPublicKeys are the BLS public keys for the validators added in the block
-	AddedValidatorsPublicKeys []blscrypto.SerializedPublicKey
+	AddedValidatorsPublicKeys   []blscrypto.SerializedPublicKey
+	AddedValidatorsG1PublicKeys []blscrypto.SerializedG1PublicKey
 	// RemovedValidators is a bitmap having an active bit for each removed validator in the block
 	RemovedValidators *big.Int
 	// Seal is an ECDSA signature by the proposer
@@ -83,6 +84,7 @@ func (ist *IstanbulExtra) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, []interface{}{
 		ist.AddedValidators,
 		ist.AddedValidatorsPublicKeys,
+		ist.AddedValidatorsG1PublicKeys,
 		ist.RemovedValidators,
 		ist.Seal,
 		&ist.AggregatedSeal,
@@ -93,17 +95,18 @@ func (ist *IstanbulExtra) EncodeRLP(w io.Writer) error {
 // DecodeRLP implements rlp.Decoder, and load the istanbul fields from a RLP stream.
 func (ist *IstanbulExtra) DecodeRLP(s *rlp.Stream) error {
 	var istanbulExtra struct {
-		AddedValidators           []common.Address
-		AddedValidatorsPublicKeys []blscrypto.SerializedPublicKey
-		RemovedValidators         *big.Int
-		Seal                      []byte
-		AggregatedSeal            IstanbulAggregatedSeal
-		ParentAggregatedSeal      IstanbulAggregatedSeal
+		AddedValidators             []common.Address
+		AddedValidatorsPublicKeys   []blscrypto.SerializedPublicKey
+		AddedValidatorsG1PublicKeys []blscrypto.SerializedG1PublicKey
+		RemovedValidators           *big.Int
+		Seal                        []byte
+		AggregatedSeal              IstanbulAggregatedSeal
+		ParentAggregatedSeal        IstanbulAggregatedSeal
 	}
 	if err := s.Decode(&istanbulExtra); err != nil {
 		return err
 	}
-	ist.AddedValidators, ist.AddedValidatorsPublicKeys, ist.RemovedValidators, ist.Seal, ist.AggregatedSeal, ist.ParentAggregatedSeal = istanbulExtra.AddedValidators, istanbulExtra.AddedValidatorsPublicKeys, istanbulExtra.RemovedValidators, istanbulExtra.Seal, istanbulExtra.AggregatedSeal, istanbulExtra.ParentAggregatedSeal
+	ist.AddedValidators, ist.AddedValidatorsPublicKeys, ist.AddedValidatorsG1PublicKeys, ist.RemovedValidators, ist.Seal, ist.AggregatedSeal, ist.ParentAggregatedSeal = istanbulExtra.AddedValidators, istanbulExtra.AddedValidatorsPublicKeys, istanbulExtra.AddedValidatorsG1PublicKeys, istanbulExtra.RemovedValidators, istanbulExtra.Seal, istanbulExtra.AggregatedSeal, istanbulExtra.ParentAggregatedSeal
 	return nil
 }
 

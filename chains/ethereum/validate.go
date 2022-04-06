@@ -27,7 +27,7 @@ type Validate struct{}
 func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error) {
 	var chain []*Header
 	if err := rlp.DecodeBytes(headers, &chain); err != nil {
-		log.Error("rlp decode failed.", "err", err)
+		log.Error("rlp decode ethereum headers failed.", "err", err)
 		return 0, chains.ErrRLPDecode
 	}
 
@@ -66,6 +66,10 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainTy
 
 	if firstNumber.Uint64() > currentNumber+1 {
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
+	}
+
+	if firstNumber.Uint64() <= currentNumber - MaxHeaderLimit + 1 {
+		return 0, fmt.Errorf("obsolete block, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
 	abort, results := v.VerifyHeaders(hs, chain, chainType)

@@ -204,11 +204,9 @@ func (oracle *Oracle) SuggestTipCap(ctx context.Context) (*big.Int, error) {
 		sort.Sort(bigIntArray(results))
 		price = results[(len(results)-1)*oracle.percentile/100]
 	}
-	//if price.Cmp(DefaultMaxPrice) > 0 {
-	//	price = new(big.Int).Set(DefaultMaxPrice)
-	//} else if price.Cmp(DefaultMinPrice) == -1 {
-	//	price = new(big.Int).Set(DefaultMinPrice)
-	//}
+	if price.Cmp(DefaultMaxPrice) > 0 {
+		price = new(big.Int).Set(DefaultMaxPrice)
+	}
 	oracle.cacheLock.Lock()
 	oracle.lastHead = headHash
 	oracle.lastPrice = price

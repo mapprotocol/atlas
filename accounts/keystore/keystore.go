@@ -24,7 +24,7 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
-	bn256_dusk_network "github.com/mapprotocol/atlas/helper/bn256_dusk-network"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -545,14 +545,13 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}
-	blskey := bn256_dusk_network.NewKey(privateKey.D)
-	pubkey, err := bn256_dusk_network.PrivateToPublic(privateKeyBytes)
+	blskey := bn256.NewKey(privateKey.D)
+	pubkey, err := bn256.PrivateToPublic(privateKeyBytes)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}
-	pk := bn256_dusk_network.PublicKey{}
-	pk.Decompress(pubkey)
-	sign, err := bn256_dusk_network.Sign(&blskey, &pk, msg)
+	pk, err := bn256.UnmarshalPk(pubkey)
+	sign, err := bn256.Sign(&blskey, pk, msg)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}

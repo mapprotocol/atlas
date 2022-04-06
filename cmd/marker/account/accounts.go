@@ -3,12 +3,12 @@ package account
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"io/ioutil"
 )
 
@@ -29,28 +29,21 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	key := bn256.NewKey(a.PrivateKey.D)
+	keybytes := crypto.FromECDSA(a.PrivateKey)
+	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 	if err != nil {
 		return nil, err
 	}
-
-	privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
+	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
 	if err != nil {
 		return nil, err
 	}
-	defer privateKey.Destroy()
-
-	signature, err := privateKey.SignPoP(a.Address.Bytes())
+	signature, err := bn256.Sign(&key, pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}
-	defer signature.Destroy()
-
-	signatureBytes, err := signature.Serialize()
-	if err != nil {
-		return nil, err
-	}
-	return signatureBytes, nil
+	return signature.Marshal(), nil
 }
 
 // BLSPublicKey returns the bls public key

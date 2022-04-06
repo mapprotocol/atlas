@@ -35,6 +35,7 @@ import (
 type defaultValidator struct {
 	address                  common.Address
 	blsPublicKey             blscrypto.SerializedPublicKey
+	blsG1PublicKey           blscrypto.SerializedG1PublicKey
 	uncompressedBlsPublicKey []byte
 }
 
@@ -42,21 +43,24 @@ func newValidatorFromDataWithBLSKeyCache(data *istanbul.ValidatorDataWithBLSKeyC
 	return &defaultValidator{
 		address:                  data.Address,
 		blsPublicKey:             data.BLSPublicKey,
+		blsG1PublicKey:           data.BLSG1PublicKey,
 		uncompressedBlsPublicKey: data.UncompressedBLSPublicKey,
 	}
 }
 
 func newValidatorFromData(data *istanbul.ValidatorData) *defaultValidator {
 	return &defaultValidator{
-		address:      data.Address,
-		blsPublicKey: data.BLSPublicKey,
+		address:        data.Address,
+		blsPublicKey:   data.BLSPublicKey,
+		blsG1PublicKey: data.BLSG1PublicKey,
 	}
 }
 
 func (val *defaultValidator) AsData() *istanbul.ValidatorData {
 	return &istanbul.ValidatorData{
-		Address:      val.address,
-		BLSPublicKey: val.blsPublicKey,
+		Address:        val.address,
+		BLSPublicKey:   val.blsPublicKey,
+		BLSG1PublicKey: val.blsG1PublicKey,
 	}
 }
 
@@ -64,13 +68,17 @@ func (val *defaultValidator) AsDataWithBLSKeyCache() *istanbul.ValidatorDataWith
 	return &istanbul.ValidatorDataWithBLSKeyCache{
 		Address:                  val.address,
 		BLSPublicKey:             val.blsPublicKey,
+		BLSG1PublicKey:           val.blsG1PublicKey,
 		UncompressedBLSPublicKey: val.uncompressedBlsPublicKey,
 	}
 }
 
 func (val *defaultValidator) Address() common.Address                     { return val.address }
 func (val *defaultValidator) BLSPublicKey() blscrypto.SerializedPublicKey { return val.blsPublicKey }
-func (val *defaultValidator) String() string                              { return val.Address().String() }
+func (val *defaultValidator) BLSG1PublicKey() blscrypto.SerializedG1PublicKey {
+	return val.blsG1PublicKey
+}
+func (val *defaultValidator) String() string { return val.Address().String() }
 
 func (val *defaultValidator) BLSPublicKeyUncompressed() []byte {
 	if len(val.uncompressedBlsPublicKey) == 0 {
@@ -84,6 +92,7 @@ func (val *defaultValidator) Copy() istanbul.Validator {
 	return &defaultValidator{
 		address:                  val.address,
 		blsPublicKey:             val.blsPublicKey,
+		blsG1PublicKey:           val.blsG1PublicKey,
 		uncompressedBlsPublicKey: val.uncompressedBlsPublicKey,
 	}
 }

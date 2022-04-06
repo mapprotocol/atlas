@@ -27,7 +27,6 @@ type Config struct {
 	Hardforks        HardforkConfig        `json:"hardforks"`
 	GenesisTimestamp uint64                `json:"genesisTimestamp"`
 
-	GasPriceMinimum      GasPriceMinimumParameters
 	LockedGold           LockedGoldParameters
 	GoldToken            GoldTokenParameters
 	Validators           ValidatorsParameters
@@ -46,29 +45,7 @@ func (cfg *Config) Save(filepath string) error {
 
 // ChainConfig returns the chain config objt for the blockchain
 func (cfg *Config) ChainConfig() *params.ChainConfig {
-	return &params.ChainConfig{
-		ChainID:             cfg.ChainID,
-		HomesteadBlock:      common.Big0,
-		EIP150Block:         common.Big0,
-		EIP150Hash:          common.Hash{},
-		EIP155Block:         common.Big0,
-		EIP158Block:         common.Big0,
-		ByzantiumBlock:      common.Big0,
-		ConstantinopleBlock: common.Big0,
-		PetersburgBlock:     common.Big0,
-		IstanbulBlock:       common.Big0,
-
-		//ChurritoBlock: cfg.Hardforks.ChurritoBlock,
-		DonutBlock: cfg.Hardforks.DonutBlock,
-
-		Istanbul: &params.IstanbulConfig{
-			Epoch:          cfg.Istanbul.Epoch,
-			ProposerPolicy: cfg.Istanbul.ProposerPolicy,
-			LookbackWindow: cfg.Istanbul.LookbackWindow,
-			BlockPeriod:    cfg.Istanbul.BlockPeriod,
-			RequestTimeout: cfg.Istanbul.RequestTimeout,
-		},
-	}
+	return params.MainnetChainConfig
 }
 
 // HardforkConfig contains atlas hardforks activation blocks
@@ -171,13 +148,6 @@ type GoldTokenParameters struct {
 // RandomParameters are the initial configuration parameters for Random
 type RandomParameters struct {
 	RandomnessBlockRetentionWindow uint64 `json:"randomnessBlockRetentionWindow"`
-}
-
-// GasPriceMinimumParameters are the initial configuration parameters for GasPriceMinimum
-type GasPriceMinimumParameters struct {
-	MinimumFloor    *big.Int     `json:"minimumFloor"`
-	TargetDensity   *fixed.Fixed `json:"targetDensity"`
-	AdjustmentSpeed *fixed.Fixed `json:"adjustmentSpeed"`
 }
 
 type GasPriceMinimumParametersMarshaling struct {

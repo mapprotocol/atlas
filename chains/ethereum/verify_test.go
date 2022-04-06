@@ -16,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+
+	"github.com/mapprotocol/atlas/core/state"
 )
 
 var ReceiptsJSON = `[
@@ -165,7 +167,9 @@ func TestVerify_Verify(t *testing.T) {
 		txIndex      uint
 		receiptsJSON string
 		txParams     *TxParams
+		statedb      *state.StateDB
 	}
+	getStateDB()
 	tests := []struct {
 		name            string
 		args            args
@@ -186,6 +190,7 @@ func TestVerify_Verify(t *testing.T) {
 					To:    common.HexToAddress("0x970e05ffbb2c4a3b80082e82b24f48a29a9c7651").Bytes(),
 					Value: big.NewInt(588),
 				},
+				statedb: getStateDB(),
 			},
 			wantErr:         false,
 			wantReceiptHash: common.HexToHash("0x27022c6416c6a79e82c97f1d25f90b8543ea15fc5adfe11ec941d5ab0dec6d28"),
@@ -201,7 +206,7 @@ func TestVerify_Verify(t *testing.T) {
 			//set := flag.NewFlagSet("test", 0)
 			//chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
 			txProve := getTxProve(tt.args.blockNumber, tt.args.txIndex, tt.args.receiptsJSON, tt.args.txParams)
-			if err := new(Verify).Verify(tt.args.router, tt.args.srcChain, tt.args.dstChain, txProve); (err != nil) != tt.wantErr {
+			if err := new(Verify).Verify(tt.args.statedb, tt.args.router, tt.args.srcChain, tt.args.dstChain, txProve); (err != nil) != tt.wantErr {
 				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

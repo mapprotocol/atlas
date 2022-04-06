@@ -54,7 +54,7 @@ var newEnvFlag = cli.StringFlag{
 }
 
 var markerCfgFlag = cli.StringFlag{
-	Name:  "markerCfg",
+	Name:  "markercfg",
 	Usage: "marker config path",
 }
 
@@ -100,12 +100,6 @@ func envFromTemplate(ctx *cli.Context, workdir string) (*env.Environment, *genes
 	if ctx.IsSet("validators") {
 		env.Accounts().NumValidators = ctx.Int("validators")
 	}
-	if ctx.IsSet("dev.accounts") {
-		env.Accounts().NumDeveloperAccounts = ctx.Int("dev.accounts")
-	}
-	if ctx.IsSet("mnemonic") {
-		env.Accounts().Mnemonic = ctx.String("mnemonic")
-	}
 
 	// Genesis config
 	genesisConfig, err := template.createGenesisConfig(env)
@@ -113,24 +107,11 @@ func envFromTemplate(ctx *cli.Context, workdir string) (*env.Environment, *genes
 		return nil, nil, err
 	}
 
-	// Overrides
-	if ctx.IsSet("epoch") {
-		genesisConfig.Istanbul.Epoch = ctx.Uint64("epoch")
-	}
-	if ctx.IsSet("blockperiod") {
-		genesisConfig.Istanbul.BlockPeriod = ctx.Uint64("blockperiod")
-	}
-	if ctx.IsSet("blockgaslimit") {
-		genesisConfig.Blockchain.BlockGasLimit = ctx.Uint64("blockgaslimit")
-	}
-
 	return env, genesisConfig, nil
 }
 
 func createGenesis(ctx *cli.Context) error {
-	////////////////////////////////////////////////////////////////////////
 	genesis.UnmarshalMarkerConfig(ctx)
-	////////////////////////////////////////////////////////////////////////
 	var workdir string
 	var err error
 	if ctx.IsSet(newEnvFlag.Name) {

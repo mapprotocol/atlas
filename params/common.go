@@ -20,6 +20,7 @@ var (
 	MinBaseFee         = big.NewInt(1000 * ethparams.GWei)
 	InvalidFee         = big.NewInt(65535)
 	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
+	NewRelayerAddress     = common.BytesToAddress([]byte("relayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
 	TxVerifyAddress    = common.BytesToAddress([]byte("txVerifyAddress"))
 )
@@ -123,6 +124,11 @@ var (
 
 const (
 	MaximumExtraDataSize uint64 = 32 // Maximum size extra data may be after Genesis.
+)
+
+var (
+	RegistryProxyAddress = common.HexToAddress("0xce10")
+	ProxyOwnerStorageLocation = common.HexToHash("0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103")
 )
 
 func makeRegistryId(contractName string) [32]byte {

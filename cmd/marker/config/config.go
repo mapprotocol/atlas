@@ -40,6 +40,7 @@ type Config struct {
 	PublicKey  []byte
 	PrivateKey *ecdsa.PrivateKey
 	BlsPub     blscrypto.SerializedPublicKey
+	BlsG1Pub   blscrypto.SerializedPublicKey
 	BLSProof   []byte
 	Value      uint64
 	Duration   int64
@@ -93,6 +94,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
 	}
+	if ctx.IsSet(ContractAddressFlag.Name) {
+		config.TargetAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))
+	}
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
 	}
@@ -141,6 +145,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config.From = _account.Address
 	config.PrivateKey = _account.PrivateKey
 	config.BlsPub = blsPub
+	config.BlsG1Pub = blsPub
 	config.BLSProof = _account.MustBLSProofOfPossession()
 
 	ValidatorAddress := mapprotocol.MustProxyAddressFor("Validators")

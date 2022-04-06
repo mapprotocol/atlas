@@ -1,13 +1,11 @@
 package genesis
 
 import (
-	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"math/big"
 	"math/rand"
 
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/marker/genesis"
-	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -51,18 +49,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e localEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
-		Epoch:          Epoch,
-		ProposerPolicy: 2,
-		LookbackWindow: 3,
-		BlockPeriod:    1,
-		RequestTimeout: 3000,
-	})
-
-	// Add balances to developer accounts
-	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())
-
+	genesisConfig := genesis.CreateCommonGenesisConfig()
 	return genesisConfig, nil
 }
 
@@ -87,23 +74,9 @@ func (e loadtestEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e loadtestEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
-		Epoch:          1000,
-		ProposerPolicy: 2,
-		LookbackWindow: 3,
-		BlockPeriod:    5,
-		RequestTimeout: 3000,
-	})
-
+	genesisConfig := genesis.CreateCommonGenesisConfig()
 	// 10 billion gas limit, set super high on purpose
 	genesisConfig.Blockchain.BlockGasLimit = 1000000000
-
-	// Add balances to developer accounts
-	genesis.FundAccounts(genesisConfig, env.Accounts().DeveloperAccounts())
-
-	// Disable gas price min being updated
-	genesisConfig.GasPriceMinimum.TargetDensity = fixed.MustNew("0.9999")
-	genesisConfig.GasPriceMinimum.AdjustmentSpeed = fixed.MustNew("0")
 
 	return genesisConfig, nil
 }
@@ -129,16 +102,6 @@ func (e monorepoEnv) createEnv(workdir string) (*env.Environment, error) {
 }
 
 func (e monorepoEnv) createGenesisConfig(env *env.Environment) (*genesis.Config, error) {
-	genesisConfig := genesis.CreateCommonGenesisConfig(env.Config.ChainID, genesis.AdminAT.Address, params.IstanbulConfig{
-		Epoch:          Epoch,
-		ProposerPolicy: 2,
-		LookbackWindow: 3,
-		BlockPeriod:    1,
-		RequestTimeout: 3000,
-	})
-
-	// Add balances to validator accounts instead of developer accounts
-	genesis.FundAccounts(genesisConfig, env.Accounts().ValidatorAccounts())
-
+	genesisConfig := genesis.CreateCommonGenesisConfig()
 	return genesisConfig, nil
 }

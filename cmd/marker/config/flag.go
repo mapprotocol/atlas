@@ -90,7 +90,11 @@ var (
 		Usage: "validator address",
 		Value: "",
 	}
-
+	ContractAddressFlag = cli.StringFlag{
+		Name:  "contractAddress",
+		Usage: "set contract Address",
+		Value: "",
+	}
 	GasLimitFlag = cli.Int64Flag{
 		Name:  "gasLimit",
 		Usage: "use for sendContractTransaction gasLimit",

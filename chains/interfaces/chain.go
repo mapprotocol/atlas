@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -15,17 +16,19 @@ import (
 type IChain interface {
 	IValidate
 	IHeaderStore
-	IHeaderSync
 }
 
 type Chain struct {
 	Validate    IValidate
 	HeaderStore IHeaderStore
-	HeaderSync  IHeaderSync
 }
 
 func (c *Chain) ValidateHeaderChain(db types.StateDB, headers []byte, chainType chains.ChainType) (int, error) {
 	return c.Validate.ValidateHeaderChain(db, headers, chainType)
+}
+
+func (c *Chain) ResetHeaderStore(db types.StateDB, header []byte, td *big.Int) error {
+	return c.HeaderStore.ResetHeaderStore(db, header, td)
 }
 
 func (c *Chain) InsertHeaders(db types.StateDB, headers []byte) ([]*params.NumberHash, error) {
@@ -40,21 +43,12 @@ func (c *Chain) GetHashByNumber(db types.StateDB, number uint64) (common.Hash, e
 	return c.HeaderStore.GetHashByNumber(db, number)
 }
 
-func (c *Chain) StoreSyncTimes(db types.StateDB, epochID uint64, relayer common.Address, headers []*params.NumberHash) error {
-	return c.HeaderSync.StoreSyncTimes(db, epochID, relayer, headers)
-}
-
-func (c *Chain) LoadRelayerSyncTimes(db types.StateDB, epochID uint64, relayer common.Address) (uint64, error) {
-	return c.HeaderSync.LoadRelayerSyncTimes(db, epochID, relayer)
-}
-
 func ChainFactory(group chains.ChainGroup) (IChain, error) {
 	switch group {
 	case chains.ChainGroupETH:
 		return &Chain{
 			Validate:    new(ethereum.Validate),
 			HeaderStore: new(ethereum.HeaderStore),
-			HeaderSync:  new(ethereum.HeaderSync),
 		}, nil
 	}
 
