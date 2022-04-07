@@ -36,7 +36,7 @@ func TestECDSAToBLS2(t *testing.T) {
 	popBytes := pop.Marshal()
 	t.Logf("pop: %x", popBytes)
 
-	err := Verify(&Apk{publicKeyBLS},address,pop)
+	err := Verify(NewApk(publicKeyBLS),address,pop)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -58,7 +58,7 @@ func TestECDSAToBLS3(t *testing.T) {
 	popBytes := pop.Marshal()
 	t.Logf("pop: %x", popBytes)
 
-	err := Verify(&Apk{publicKeyBLS},address,pop)
+	err := Verify(NewApk(publicKeyBLS),address,pop)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -82,13 +82,35 @@ func TestECDSAToBLS4(t *testing.T) {
 	popBytes := pop.Marshal()
 	t.Logf("pop: %x", popBytes)
 
-	err := Verify(&Apk{pub},address,pop)
+	err := Verify(NewApk(pub),address,pop)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("finish")
 }
+func TestECDSAToBLS5(t *testing.T) {
+	pub, priv, err1 := GenKeyPair(rand.Reader)
+	if err1 != nil {
+		fmt.Println("gen failed",err1)
+		return
+	}
+	privBytes,_ := priv.Serialize()
+	t.Logf("private key: %x", privBytes)
+	publicKeyBLS := priv.ToPublic()
+	t.Logf("public key1: %x", publicKeyBLS.Marshal())
+	t.Logf("public key2: %x", pub.Marshal())
 
+	address, _ := hex.DecodeString("4f837096cd8578c1f14c9644692c444bbb614262")
+	pop, _ := UnsafeSign(priv,address)
+	popBytes := pop.Marshal()
+	t.Logf("pop: %x", popBytes)
+
+	err := VerifyUnsafe(pub,address,pop)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finish")
+}
 // TestSignVerify
 func TestSignVerify(t *testing.T) {
 	msg := randomMessage()
