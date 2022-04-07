@@ -29,12 +29,12 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	keybytes := crypto.FromECDSA(a.PrivateKey)
-	key, err := bn256.DeserializePrivateKey(keybytes)
+	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	key, err := bn256.DeserializePrivateKey(privateKey)
 	if err != nil {
 		return nil, err
 	}
-	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
+	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
 	if err != nil {
 		return nil, err
 	}
