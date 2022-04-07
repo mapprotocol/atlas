@@ -35,8 +35,59 @@ func TestECDSAToBLS2(t *testing.T) {
 	pop, _ := Sign(privateKeyBLS,publicKeyBLS,address)
 	popBytes := pop.Marshal()
 	t.Logf("pop: %x", popBytes)
+
+	err := Verify(&Apk{publicKeyBLS},address,pop)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finish")
+}
+func TestECDSAToBLS3(t *testing.T) {
+	c := BN256{}
+	privateKeyECDSA, _ := crypto.HexToECDSA("7f54814b7d0576b474d36853b6797175c41b64900b1531e8437d3724dc90d332")
+	privateKeyBLSBytes, _ := c.ECDSAToBLS(privateKeyECDSA)
+	t.Logf("private key: %x", privateKeyBLSBytes)
+	privateKeyBLS := &SecretKey{ privateKeyECDSA.D}
+	//privateKeyBLS, _ := DeserializePrivateKey(privateKeyBLSBytes)
+	publicKeyBLS := privateKeyBLS.ToPublic()
+	publicKeyBLSBytes := publicKeyBLS.Marshal()
+	t.Logf("public key: %x", publicKeyBLSBytes)
+
+	address, _ := hex.DecodeString("4f837096cd8578c1f14c9644692c444bbb614262")
+	pop, _ := Sign(privateKeyBLS,publicKeyBLS,address)
+	popBytes := pop.Marshal()
+	t.Logf("pop: %x", popBytes)
+
+	err := Verify(&Apk{publicKeyBLS},address,pop)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finish")
 }
 
+func TestECDSAToBLS4(t *testing.T) {
+	pub, priv, err1 := GenKeyPair(rand.Reader)
+	if err1 != nil {
+		fmt.Println("gen failed",err1)
+		return
+	}
+	privBytes,_ := priv.Serialize()
+	t.Logf("private key: %x", privBytes)
+	publicKeyBLS := priv.ToPublic()
+	t.Logf("public key1: %x", publicKeyBLS.Marshal())
+	t.Logf("public key2: %x", pub.Marshal())
+
+	address, _ := hex.DecodeString("4f837096cd8578c1f14c9644692c444bbb614262")
+	pop, _ := Sign(priv,pub,address)
+	popBytes := pop.Marshal()
+	t.Logf("pop: %x", popBytes)
+
+	err := Verify(&Apk{pub},address,pop)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finish")
+}
 
 // TestSignVerify
 func TestSignVerify(t *testing.T) {
