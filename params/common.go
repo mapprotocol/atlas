@@ -1,7 +1,6 @@
 package params
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -13,54 +12,15 @@ import (
 )
 
 var (
-	baseUnit           = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	FbaseUnit          = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	Base               = big.NewInt(1e8)
-	MaxBaseFee         = big.NewInt(5000 * ethparams.GWei)
-	MinBaseFee         = big.NewInt(1000 * ethparams.GWei)
-	InvalidFee         = big.NewInt(65535)
-	RelayerAddress     = common.BytesToAddress([]byte("RelayerAddress"))
-	NewRelayerAddress     = common.BytesToAddress([]byte("relayerAddress"))
+	Base       = big.NewInt(1e8)
+	MaxBaseFee = big.NewInt(5000 * ethparams.GWei)
+	MinBaseFee = big.NewInt(1000 * ethparams.GWei)
+)
+
+var (
+	NewRelayerAddress  = common.BytesToAddress([]byte("relayerAddress"))
 	HeaderStoreAddress = common.BytesToAddress([]byte("headerstoreAddress"))
 	TxVerifyAddress    = common.BytesToAddress([]byte("txVerifyAddress"))
-)
-
-var RelayerGas = map[string]uint64{
-	"getBalance":      450000,
-	"register":        2400000,
-	"append":          2400000,
-	"withdraw":        2520000,
-	"getPeriodHeight": 450000,
-	"getRelayers":     450000,
-}
-
-var (
-	CountInEpoch                       = 100
-	MaxRedeemHeight                    = Epoch
-	NewEpochLength                     = Epoch
-	ElectionPoint               uint64 = 20
-	FirstNewEpochID             uint64 = 1
-	PowForkPoint                uint64 = 0
-	ElectionMinLimitForRegister        = new(big.Int).Mul(big.NewInt(100000), big.NewInt(1e18))
-	MinWorkEfficiency           uint64 = 1 //every relayer sync 1 block at least
-)
-
-var (
-	ErrInvalidParam      = errors.New("Invalid Param")
-	ErrOverEpochID       = errors.New("Over epoch id")
-	ErrNotSequential     = errors.New("epoch id not sequential")
-	ErrInvalidEpochInfo  = errors.New("Invalid epoch info")
-	ErrNotFoundEpoch     = errors.New("cann't found the epoch info")
-	ErrInvalidRegister   = errors.New("Invalid register account")
-	ErrMatchEpochID      = errors.New("wrong match epoch id in a reward block")
-	ErrNotRegister       = errors.New("Not match the register account")
-	ErrNotDelegation     = errors.New("Not match the account")
-	ErrNotMatchEpochInfo = errors.New("the epoch info is not match with accounts")
-	ErrNotElectionTime   = errors.New("not time to election the next relayer")
-	ErrAmountOver        = errors.New("the amount more than register amount")
-	ErrDelegationSelf    = errors.New("wrong")
-	ErrRedeemAmount      = errors.New("wrong redeem amount")
-	ErrForbidAddress     = errors.New("Forbidding Address")
 )
 
 const (
@@ -127,7 +87,7 @@ const (
 )
 
 var (
-	RegistryProxyAddress = common.HexToAddress("0xce10")
+	RegistryProxyAddress      = common.HexToAddress("0xce10")
 	ProxyOwnerStorageLocation = common.HexToHash("0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103")
 )
 

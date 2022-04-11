@@ -20,7 +20,6 @@ package state
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sort"
 	"time"
@@ -1087,25 +1086,4 @@ func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
 func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressPresent bool, slotPresent bool) {
 	return s.accessList.Contains(addr, slot)
-}
-
-////////////////////////////////////////////
-func (s *StateDB) GetUnlockedBalance(addr common.Address) *big.Int {
-	return new(big.Int).Sub(s.GetBalance(addr), s.GetLockedBalance(addr))
-}
-
-func (s *StateDB) GetLockedBalance(addr common.Address) *big.Int {
-	key := lockedKey(addr)
-	return s.GetState(params.RelayerAddress, key).Big()
-}
-
-func (s *StateDB) SetLockedBalance(addr common.Address, value *big.Int) {
-	key := lockedKey(addr)
-	s.SetState(params.RelayerAddress, key, common.BigToHash(value))
-}
-
-func lockedKey(addr common.Address) (h common.Hash) {
-	var lockedPosition = common.BytesToHash([]byte{1})
-	base := append(common.BytesToHash(addr[:]).Bytes(), lockedPosition.Bytes()...)
-	return crypto.Keccak256Hash(base)
 }

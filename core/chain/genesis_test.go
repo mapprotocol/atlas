@@ -348,7 +348,7 @@ var poc3Genesis = `{
 "baseFeePerGas": null
 }`
 
-func Test03(t *testing.T) {
+func TestComparePOC2_3_Genesis(t *testing.T) {
 	bytePoc2, err := json.Marshal(poc2Genesis)
 	if err != nil {
 		t.Fatalf("read poc2 Genesis err%s", err)
@@ -363,4 +363,7 @@ func Test03(t *testing.T) {
 	}
 	//poc2 poc3  chainId、 epoch 、extraData are inconsistent
 	//poc2 One more 000000000000000000000000000000000000ce10 contracts
+}
+func TestPrintPreContractAddr(t *testing.T) {
+	t.Log(params2.HeaderStoreAddress)
 }

@@ -91,6 +91,8 @@ func init() {
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
 		updateBlsPublicKeyCommand,
+		setTargetValidatorEpochPaymentCommand,
+		setTargetRelayerEpochPaymentCommand,
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
