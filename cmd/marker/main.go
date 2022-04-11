@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/mapprotocol/atlas/cmd/marker/config"
-	"github.com/mapprotocol/atlas/cmd/marker/geneisis"
+	"github.com/mapprotocol/atlas/cmd/marker/genesis"
 )
 
 var (
