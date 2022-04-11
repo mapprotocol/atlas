@@ -107,8 +107,8 @@ func Test_ProxiedValidator(t *testing.T) {
 func Test_getKeystoreInfo(t *testing.T) {
 	//path := "D:\\root\\data_ibft1\\keystore\\UTC--2021-09-08T08-00-15.473724074Z--1c0edab88dbb72b119039c4d14b1663525b3ac15"
 	//path := "D:\\root\\data_ibft1\\keystore\\UTC--2021-09-08T10-12-17.687481942Z--16fdbcac4d4cc24dca47b9b80f58155a551ca2af"
-	path := "D:\\root\\data_ibft1\\keystore\\UTC--2021-09-08T10-16-18.520295371Z--2dc45799000ab08e60b7441c36fcc74060ccbe11"
-	//path := "D:\\root\\data_ibft1\\keystore\\UTC--2021-09-08T10-16-35.698273293Z--6c5938b49bacde73a8db7c3a7da208846898bff5"
+	//path := "D:\\root\\data_ibft1\\keystore\\UTC--2021-09-08T10-16-18.520295371Z--2dc45799000ab08e60b7441c36fcc74060ccbe11"
+	path := "D:\\root\\data_ibft1\\keystore\\UTC--2021-09-08T10-16-35.698273293Z--6c5938b49bacde73a8db7c3a7da208846898bff5"
 	Password := ""
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -141,7 +141,8 @@ func Test_getKeystoreInfo(t *testing.T) {
 	}
 	fmt.Printf("\nYour new key was generated\n\n")
 	fmt.Printf("Public address of the key:   %s\n", accountBls.Address.Hex())
+	fmt.Printf("PublicKeyHex:   %s\n", hexutil.Encode(accountBls.PublicKey()))
 	fmt.Printf("BLS Public address of the key:%d   %s\n", len(blsPubKeyText), blsPubKeyText)
 	fmt.Printf("BLSProofOfPossession: %d  %s\n", len(blsProofOfPossession), hexutil.Encode(blsProofOfPossession))
-	fmt.Printf("PublicKeyHex:   %s\n", hexutil.Encode(accountBls.PublicKey()))
+
 }
