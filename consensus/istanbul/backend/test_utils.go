@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core/chain"
-	bn256 "github.com/mapprotocol/bn256/bls"
 	"strings"
 	"time"
 
@@ -121,9 +120,11 @@ func getGenesisAndKeys(n int, isFullChain bool) (*chain.Genesis, []*ecdsa.Privat
 		}
 		blsPrivateKey, _ := blscrypto.CryptoType().ECDSAToBLS(nodeKeys[i])
 		blsPublicKey, _ := blscrypto.CryptoType().PrivateToPublic(blsPrivateKey)
+		blsG1PublicKey, _ := blscrypto.CryptoType().PrivateToG1Public(blsPrivateKey)
 		validators[i] = istanbul.ValidatorData{
-			Address:      addr,
-			BLSPublicKey: blsPublicKey,
+			Address:        addr,
+			BLSPublicKey:   blsPublicKey,
+			BLSG1PublicKey: blsG1PublicKey,
 		}
 
 	}
@@ -152,6 +153,7 @@ func AppendValidatorsToGenesisBlock(genesis *chain.Genesis, validators []istanbu
 
 	var addrs []common.Address
 	var publicKeys []blscrypto.SerializedPublicKey
+	var g1publicKeys []blscrypto.SerializedG1PublicKey
 
 	for i := range validators {
 		if (validators[i].BLSPublicKey == blscrypto.SerializedPublicKey{}) {
@@ -159,14 +161,16 @@ func AppendValidatorsToGenesisBlock(genesis *chain.Genesis, validators []istanbu
 		}
 		addrs = append(addrs, validators[i].Address)
 		publicKeys = append(publicKeys, validators[i].BLSPublicKey)
+		g1publicKeys = append(g1publicKeys, validators[i].BLSG1PublicKey)
 	}
 
 	ist := &types.IstanbulExtra{
-		AddedValidators:           addrs,
-		AddedValidatorsPublicKeys: publicKeys,
-		Seal:                      []byte{},
-		AggregatedSeal:            types.IstanbulAggregatedSeal{},
-		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+		AddedValidators:             addrs,
+		AddedValidatorsPublicKeys:   publicKeys,
+		AddedValidatorsG1PublicKeys: g1publicKeys,
+		Seal:                        []byte{},
+		AggregatedSeal:              types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:        types.IstanbulAggregatedSeal{},
 	}
 
 	istPayload, err := rlp.EncodeToBytes(&ist)
@@ -315,15 +319,25 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 
 	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
 		from := crypto.PubkeyToAddress(key.PublicKey)
-		prikey := bn256.NewKey(key.D)
-		keybytes := crypto.FromECDSA(key)
+
+		keybytes, err := blscrypto.CryptoType().ECDSAToBLS(key)
+		if err != nil {
+			return blscrypto.SerializedSignature{}, err
+		}
+		prikey, err := blscrypto.DeserializePrivateKey(keybytes)
+		if err != nil {
+			return blscrypto.SerializedSignature{}, err
+		}
+
 		pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
-		pubkey := bn256.PublicKey{}
-		pubkey.Decompress(pkbytes[:])
-		signature, err := bn256.Sign(&prikey, &pubkey, from.Bytes())
+		pubkey, err := blscrypto.UnmarshalPk(pkbytes[:])
+		if err != nil {
+			return blscrypto.SerializedSignature{}, err
+		}
+		signature, err := blscrypto.Sign(prikey, pubkey, from.Bytes())
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}

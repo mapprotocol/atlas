@@ -21,7 +21,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/bn256/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -1345,20 +1345,22 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	//   publicKey: 96 bytes, representing the public key (defined as a const in bls package)
 	//   signature: 48 bytes, representing the signature on `address` (defined as a const in bls package)
 	// the total length of input required is the sum of these constants
-	if len(input) != common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES {
+	if len(input) != common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.G1PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES {
 		return nil, ErrInputLength
 	}
 	addressBytes := input[:common.AddressLength]
 
 	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
-	publicKey := bls.PublicKey{}
-	publicKey.Decompress(publicKeyBytes)
-	apk := bls.NewApk(&publicKey)
+	publicKey, err := bls.UnmarshalPk(publicKeyBytes)
+	if err != nil {
+		return nil, err
+	}
 
-	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
+	apk := bls.NewApk(publicKey)
+	signatureBytes := input[common.AddressLength+blscrypto.G1PUBLICKEYBYTES+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.G1PUBLICKEYBYTES+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
 	signature := bls.Signature{}
 	signature.Unmarshal(signatureBytes)
-	err := bls.Verify(apk, addressBytes, &signature)
+	err = bls.Verify(apk, addressBytes, &signature)
 	if err != nil {
 		return nil, err
 	}

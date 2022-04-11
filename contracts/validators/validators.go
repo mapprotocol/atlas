@@ -17,6 +17,7 @@ package validators
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/helper/bls"
 	"math/big"
 
@@ -38,13 +39,14 @@ type ValidatorContractData struct {
 }
 
 var (
-	getRegisteredValidatorSignersMethod      = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getRegisteredValidatorSigners", params.MaxGasForGetRegisteredValidators)
-	getRegisteredValidatorsMethod            = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getRegisteredValidators", params.MaxGasForGetRegisteredValidators)
-	getValidatorBlsPublicKeyFromSignerMethod = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidatorBlsPublicKeyFromSigner", params.MaxGasForGetValidator)
-	getPledgeMultiplierInRewardMethod        = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getPledgeMultiplierInReward", params.MaxGasForGetPledgeMultiplierInReward)
-	getValidatorMethod                       = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidator", params.MaxGasForGetValidator)
-	updateValidatorScoreFromSignerMethod     = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "updateValidatorScoreFromSigner", params.MaxGasForUpdateValidatorScore)
-	distributeEpochPaymentsFromSignerMethod  = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "distributeEpochPaymentsFromSigner", params.MaxGasForDistributeEpochPayment)
+	getRegisteredValidatorSignersMethod        = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getRegisteredValidatorSigners", params.MaxGasForGetRegisteredValidators)
+	getRegisteredValidatorsMethod              = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getRegisteredValidators", params.MaxGasForGetRegisteredValidators)
+	getValidatorBlsPublicKeyFromSignerMethod   = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidatorBlsPublicKeyFromSigner", params.MaxGasForGetValidator)
+	getValidatorBlsG1PublicKeyFromSignerMethod = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidatorBlsG1PublicKeyFromSigner", params.MaxGasForGetValidator)
+	getPledgeMultiplierInRewardMethod          = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getPledgeMultiplierInReward", params.MaxGasForGetPledgeMultiplierInReward)
+	getValidatorMethod                         = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidator", params.MaxGasForGetValidator)
+	updateValidatorScoreFromSignerMethod       = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "updateValidatorScoreFromSigner", params.MaxGasForUpdateValidatorScore)
+	distributeEpochPaymentsFromSignerMethod    = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "distributeEpochPaymentsFromSigner", params.MaxGasForDistributeEpochPayment)
 )
 
 func RetrieveRegisteredValidatorSigners(vmRunner vm.EVMRunner) ([]common.Address, error) {
@@ -85,17 +87,36 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 		var blsKey []byte
 		err := getValidatorBlsPublicKeyFromSignerMethod.Query(vmRunner, &blsKey, addr)
 		if err != nil {
+			log.Error("getValidatorBlsPublicKeyFromSignerMethod", blscrypto.PUBLICKEYBYTES, err)
 			return nil, err
 		}
 
 		if len(blsKey) != blscrypto.PUBLICKEYBYTES {
+			log.Error("length of bls public key incorrect. Expected %d, got %d", blscrypto.PUBLICKEYBYTES, len(blsKey))
 			return nil, fmt.Errorf("length of bls public key incorrect. Expected %d, got %d", blscrypto.PUBLICKEYBYTES, len(blsKey))
 		}
+
 		blsKeyFixedSize := bls.SerializedPublicKey{}
 		copy(blsKeyFixedSize[:], blsKey)
+
+		////////////////////////  BlsG1  ////////////////////////
+		var blsG1Key []byte
+		err = getValidatorBlsPublicKeyFromSignerMethod.Query(vmRunner, &blsG1Key, addr)
+		if err != nil {
+			return nil, err
+		}
+		if len(blsG1Key) != blscrypto.G1PUBLICKEYBYTES {
+			log.Error("length of blsG1 public key incorrect. Expected %d, got %d", blscrypto.G1PUBLICKEYBYTES, len(blsG1Key))
+			return nil, fmt.Errorf("length of blsG1 public key incorrect. Expected %d, got %d", blscrypto.G1PUBLICKEYBYTES, len(blsG1Key))
+		}
+		blsG1KeyFixedSize := bls.SerializedG1PublicKey{}
+		copy(blsG1KeyFixedSize[:], blsG1Key)
+		/////////////////////////////////////////////////////////
+
 		validator := istanbul.ValidatorData{
-			Address:      addr,
-			BLSPublicKey: blsKeyFixedSize,
+			Address:        addr,
+			BLSPublicKey:   blsKeyFixedSize,
+			BLSG1PublicKey: blsG1KeyFixedSize,
 		}
 		validatorData = append(validatorData, validator)
 	}

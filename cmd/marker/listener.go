@@ -274,6 +274,12 @@ var setImplementationCommand = cli.Command{
 	Action: MigrateFlags(setImplementation),
 	Flags:  Flags,
 }
+var updateBlsPublicKeyCommand = cli.Command{
+	Name:   "updateBlsPublicKey",
+	Usage:  "updateBlsPublicKey",
+	Action: MigrateFlags(updateBlsPublicKey),
+	Flags:  Flags,
+}
 
 var setTargetValidatorEpochPaymentCommand = cli.Command{
 	Name:   "setValidatorEpochPayment",
@@ -294,12 +300,23 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	log.Info("=== Register validator ===")
 	commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	log.Info("=== commision ===", "commision", commision)
+	registerValidatorPre(ctx, core)
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
+	_params := []interface{}{commision, lesser, greater}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func registerValidatorPre(ctx *cli.Context, core *listener) error {
+	//----------------------------- registerValidator ---------------------------------
+	_params := []interface{}{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidatorPre", _params...)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -346,7 +363,7 @@ func updateBlsPublicKey(ctx *cli.Context, core *listener) error {
 	log.Info("=== commision ===", "commision", commision)
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BLSProof}
+	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
@@ -544,6 +561,7 @@ func getValidator(_ *cli.Context, core *listener) error {
 	type ret struct {
 		EcdsaPublicKey      interface{}
 		BlsPublicKey        interface{}
+		BlsG1PublicKey      interface{}
 		Score               interface{}
 		Signer              interface{}
 		Commission          interface{}
@@ -572,6 +590,7 @@ func getValidator(_ *cli.Context, core *listener) error {
 	}
 	log.Info("", "ecdsaPublicKey", common.BytesToHash(t.EcdsaPublicKey.([]byte)).String())
 	log.Info("", "BlsPublicKey", common.BytesToHash(t.BlsPublicKey.([]byte)).String())
+	log.Info("", "BlsG1PublicKey", common.BytesToHash(t.BlsG1PublicKey.([]byte)).String())
 	log.Info("", "Score", ConvertToFraction(t.Score))
 	log.Info("", "Signer", t.Signer)
 	log.Info("", "Commission", ConvertToFraction(t.Commission))

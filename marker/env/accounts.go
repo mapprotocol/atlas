@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	bn256 "github.com/mapprotocol/bn256/bls"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -64,36 +64,21 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	//privateKeyBytes, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//privateKey, err := bls.DeserializePrivateKey(privateKeyBytes)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer privateKey.Destroy()
-	//
-	//signature, err := privateKey.SignPoP(a.Address.Bytes())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer signature.Destroy()
-	//
-	//signatureBytes, err := signature.Serialize()
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	key := bn256.NewKey(a.PrivateKey.D)
-	keybytes := crypto.FromECDSA(a.PrivateKey)
-	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
+	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	key, err := bn256.DeserializePrivateKey(privateKey)
 	if err != nil {
 		return nil, err
 	}
-	pubkey := bn256.PublicKey{}
-	pubkey.Decompress(pkbytes[:])
-	signature, err := bn256.Sign(&key, &pubkey, a.Address.Bytes())
+
+	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
+	if err != nil {
+		return nil, err
+	}
+	signature, err := bn256.Sign(key, pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}

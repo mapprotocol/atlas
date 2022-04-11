@@ -32,13 +32,15 @@ var (
 )
 
 type ValidatorData struct {
-	Address      common.Address
-	BLSPublicKey blscrypto.SerializedPublicKey
+	Address        common.Address
+	BLSPublicKey   blscrypto.SerializedPublicKey
+	BLSG1PublicKey blscrypto.SerializedG1PublicKey
 }
 
 type ValidatorDataWithBLSKeyCache struct {
 	Address                  common.Address
 	BLSPublicKey             blscrypto.SerializedPublicKey
+	BLSG1PublicKey           blscrypto.SerializedG1PublicKey
 	UncompressedBLSPublicKey []byte
 }
 
@@ -50,6 +52,8 @@ type Validator interface {
 
 	// BLSPublicKey returns the BLS public key (compressed format)
 	BLSPublicKey() blscrypto.SerializedPublicKey
+
+	BLSG1PublicKey() blscrypto.SerializedG1PublicKey
 
 	// BLSPublicKeyUncompressed returns the BLS public key (uncompressed format)
 	BLSPublicKeyUncompressed() []byte

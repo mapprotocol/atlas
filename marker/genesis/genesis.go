@@ -66,23 +66,26 @@ func GenerateGenesis(_ *cli.Context, accounts *env.AccountsConfig, cfg *Config, 
 func generateGenesisExtraData(validatorAccounts []AccoutInfo) ([]byte, error) {
 	addresses := make([]common.Address, len(validatorAccounts))
 	blsKeys := make([]blscrypto.SerializedPublicKey, len(validatorAccounts))
+	blsG1Keys := make([]blscrypto.SerializedG1PublicKey, len(validatorAccounts))
 
 	for i := 0; i < len(validatorAccounts); i++ {
 		var err error
 		addresses[i] = validatorAccounts[i].getAddress()
 		blsKeys[i], err = validatorAccounts[i].BLSPublicKey()
+		blsG1Keys[i], err = validatorAccounts[i].BLSG1PublicKey()
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	istExtra := types.IstanbulExtra{
-		AddedValidators:           addresses,
-		AddedValidatorsPublicKeys: blsKeys,
-		RemovedValidators:         big.NewInt(0),
-		Seal:                      []byte{},
-		AggregatedSeal:            types.IstanbulAggregatedSeal{},
-		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+		AddedValidators:             addresses,
+		AddedValidatorsPublicKeys:   blsKeys,
+		AddedValidatorsG1PublicKeys: blsG1Keys,
+		RemovedValidators:           big.NewInt(0),
+		Seal:                        []byte{},
+		AggregatedSeal:              types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:        types.IstanbulAggregatedSeal{},
 	}
 
 	payload, err := rlp.EncodeToBytes(&istExtra)
@@ -102,6 +105,7 @@ type AccoutInfo struct {
 	Address              string
 	PublicKeyHex         string
 	BLSPubKey            string
+	BLSG1PubKey          string
 	BLSProofOfPossession string
 }
 
@@ -122,6 +126,16 @@ func (a *AccoutInfo) BLSProofOfPossession_() ([]byte, error) {
 	b, err := hexutil.Decode(a.BLSProofOfPossession)
 	if err != nil {
 		return nil, err
+	}
+	return b, nil
+}
+
+// BLSPublicKey returns the bls public key
+func (a *AccoutInfo) BLSG1PublicKey() (blscrypto.SerializedG1PublicKey, error) {
+	var b blscrypto.SerializedG1PublicKey
+	err := b.UnmarshalText([]byte(a.BLSG1PubKey))
+	if err != nil {
+		return blscrypto.SerializedG1PublicKey{}, err
 	}
 	return b, nil
 }

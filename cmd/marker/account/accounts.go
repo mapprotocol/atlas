@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	bn256 "github.com/mapprotocol/bn256/bls"
+	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"io/ioutil"
 )
 
@@ -29,15 +29,20 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	key := bn256.NewKey(a.PrivateKey.D)
-	keybytes := crypto.FromECDSA(a.PrivateKey)
-	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
+	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+	key, err := bn256.DeserializePrivateKey(privateKey)
 	if err != nil {
 		return nil, err
 	}
-	pubkey := bn256.PublicKey{}
-	pubkey.Decompress(pkbytes[:])
-	signature, err := bn256.Sign(&key, &pubkey, a.Address.Bytes())
+	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
+	if err != nil {
+		return nil, err
+	}
+	signature, err := bn256.Sign(key, pubkey, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}

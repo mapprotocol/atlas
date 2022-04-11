@@ -1079,12 +1079,13 @@ func ecrecover(header *types.Header) (common.Address, error) {
 
 func writeEmptyIstanbulExtra(header *types.Header) error {
 	extra := types.IstanbulExtra{
-		AddedValidators:           []common.Address{},
-		AddedValidatorsPublicKeys: []blscrypto.SerializedPublicKey{},
-		RemovedValidators:         big.NewInt(0),
-		Seal:                      []byte{},
-		AggregatedSeal:            types.IstanbulAggregatedSeal{},
-		ParentAggregatedSeal:      types.IstanbulAggregatedSeal{},
+		AddedValidators:             []common.Address{},
+		AddedValidatorsPublicKeys:   []blscrypto.SerializedPublicKey{},
+		AddedValidatorsG1PublicKeys: []blscrypto.SerializedG1PublicKey{},
+		RemovedValidators:           big.NewInt(0),
+		Seal:                        []byte{},
+		AggregatedSeal:              types.IstanbulAggregatedSeal{},
+		ParentAggregatedSeal:        types.IstanbulAggregatedSeal{},
 	}
 	payload, err := rlp.EncodeToBytes(&extra)
 	if err != nil {
@@ -1109,6 +1110,7 @@ func writeValidatorSetDiff(header *types.Header, oldValSet []istanbul.ValidatorD
 
 	addedValidators, removedValidators := istanbul.ValidatorSetDiff(oldValSet, newValSet)
 	addedValidatorsAddresses, addedValidatorsPublicKeys := istanbul.SeparateValidatorDataIntoIstanbulExtra(addedValidators)
+	addedValidatorsG1PublicKeys := make([]blscrypto.SerializedG1PublicKey, 0)
 
 	if len(addedValidators) > 0 || removedValidators.BitLen() > 0 {
 		oldValidatorsAddresses, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(oldValSet)
@@ -1124,6 +1126,7 @@ func writeValidatorSetDiff(header *types.Header, oldValSet []istanbul.ValidatorD
 
 	extra.AddedValidators = addedValidatorsAddresses
 	extra.AddedValidatorsPublicKeys = addedValidatorsPublicKeys
+	extra.AddedValidatorsG1PublicKeys = addedValidatorsG1PublicKeys
 	extra.RemovedValidators = removedValidators
 
 	// update the header's extra with the new diff

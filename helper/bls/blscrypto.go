@@ -1,13 +1,15 @@
 package bls
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/rlp"
-	bn256 "github.com/mapprotocol/bn256/bls"
-	"reflect"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
+	"math/big"
+	"reflect"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -18,8 +20,9 @@ const (
 	BN256Curve        = 1
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
-	PUBLICKEYBYTES    = 33
-	SIGNATUREBYTES    = 129
+	PUBLICKEYBYTES    = 129
+	G1PUBLICKEYBYTES  = 129
+	SIGNATUREBYTES    = 64
 	EPOCHENTROPYBYTES = 16
 )
 
@@ -56,6 +59,23 @@ func (pk *SerializedPublicKey) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(serializedPublicKeyT, input, pk[:])
 }
 
+type SerializedG1PublicKey [G1PUBLICKEYBYTES]byte
+
+// MarshalText returns the hex representation of pk.
+func (pk SerializedG1PublicKey) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(pk[:]).MarshalText()
+}
+
+// UnmarshalText parses a BLS public key in hex syntax.
+func (pk *SerializedG1PublicKey) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("SerializedPublicKey", input, pk[:])
+}
+
+// UnmarshalJSON parses a BLS public key in hex syntax.
+func (pk *SerializedG1PublicKey) UnmarshalJSON(input []byte) error {
+	return hexutil.UnmarshalFixedJSON(serializedPublicKeyT, input, pk[:])
+}
+
 type SerializedSignature [SIGNATUREBYTES]byte
 
 // MarshalText returns the hex representation of sig.
@@ -86,6 +106,7 @@ func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignatu
 type BLSCryptoSelector interface {
 	ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error)
 	PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error)
+	PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, error)
 	VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
 	AggregateSignatures(signatures [][]byte) ([]byte, error)
 	VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
@@ -112,40 +133,99 @@ func CryptoType() BLSCryptoSelector {
 
 type BN256 struct{}
 
+const (
+	MODULUS256 = "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+	MODULUSBITS = 254
+	MODULUSMASK = 63 // == 2**(254-(256-8)) - 1
+)
+//func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
+//	return crypto.FromECDSA(privateKeyECDSA), nil
+//}
 func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
-	return crypto.FromECDSA(privateKeyECDSA), nil
-}
+	for i := 0; i < 256; i++ { // 最多尝试256次
+		modulus := big.NewInt(0)
+		modulus, ok := modulus.SetString(MODULUS256, 10)
+		if !ok {
+			return nil, errors.New("can't parse modulus")
+		}
+		privateKeyECDSABytes := crypto.FromECDSA(privateKeyECDSA)
 
+		keyBytes := []byte("ecdsatobls")
+		keyBytes = append(keyBytes, uint8(i))
+		keyBytes = append(keyBytes, privateKeyECDSABytes...) // keyBytes = "ecdsatobls" || byte(i) || bytes(k)
+
+		privateKeyBLSBytes := crypto.Keccak256(keyBytes) // privateKeyBlsBytes =  keccak256(keyBytes)
+		privateKeyBLSBytes[0] &= MODULUSMASK
+		privateKeyBLSBig := big.NewInt(0)
+		privateKeyBLSBig.SetBytes(privateKeyBLSBytes)
+		if privateKeyBLSBig.Cmp(modulus) >= 0 {
+			continue
+		}
+
+		privateKeyBytes := privateKeyBLSBig.Bytes()
+		for len(privateKeyBytes) < len(privateKeyBLSBytes) {
+			privateKeyBytes = append([]byte{0x00}, privateKeyBytes...)
+		}
+		if !bytes.Equal(privateKeyBLSBytes, privateKeyBytes) {
+			return nil, fmt.Errorf("private key bytes should have been the same: %s, %s", hex.EncodeToString(privateKeyBLSBytes), hex.EncodeToString(privateKeyBytes))
+		}
+		// reverse order, as the BLS library expects little endian
+		for i := len(privateKeyBytes)/2 - 1; i >= 0; i-- {
+			opp := len(privateKeyBytes) - 1 - i
+			privateKeyBytes[i], privateKeyBytes[opp] = privateKeyBytes[opp], privateKeyBytes[i]
+		}
+
+		privateKeyBLS, err := DeserializePrivateKey(privateKeyBytes)
+		if err != nil {
+			return nil, err
+		}
+		privateKeyBLSBytesFromLib, err := privateKeyBLS.Serialize()
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(privateKeyBytes, privateKeyBLSBytesFromLib) {
+			return nil, errors.New("private key bytes from library should have been the same")
+		}
+
+		return privateKeyBLSBytesFromLib, nil
+	}
+
+	return nil, errors.New("couldn't derive a BLS key from an ECDSA key")
+}
 func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
-	pk, err := bn256.PrivateToPublic(privateKeyBytes)
+	pk, err := PrivateToPublic(privateKeyBytes)
 	pubKeyBytesFixed := SerializedPublicKey{}
 	copy(pubKeyBytesFixed[:], pk)
 	return pubKeyBytesFixed, err
 }
 
+func (BN256) PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, error) {
+	pubKeyBytesFixed := SerializedG1PublicKey{}
+	return pubKeyBytesFixed, nil
+}
+
 func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	sigma := bn256.Signature{}
+	sigma := Signature{}
 	err := sigma.Unmarshal(signature)
 	if err != nil {
 		return err
 	}
 
-	var pks []*bn256.PublicKey
+	var pks []*PublicKey
 	for _, v := range publicKeys {
-		var pk2 bn256.PublicKey
-		err = pk2.Decompress(v[:])
+		pk, err := UnmarshalPk(v[:])
 		if err != nil {
 			return err
 		}
-		pks = append(pks, &pk2)
+		pks = append(pks, pk)
 	}
 
-	apk, err := bn256.AggregateApk(pks)
+	apk, err := AggregateApk(pks)
 	if err != nil {
 		return err
 	}
 
-	err = bn256.Verify(apk, message, &sigma)
+	err = Verify(apk, message, &sigma)
 	if err != nil {
 		return err
 	}
@@ -153,13 +233,13 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 }
 
 func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
-	var signs bn256.Signature
+	var signs Signature
 	err := signs.Unmarshal(signatures[0])
 	if err != nil {
 		return nil, err
 	}
 	for i := 1; i < len(signatures); i++ {
-		var sign bn256.Signature
+		var sign Signature
 		err := sign.Unmarshal(signatures[i])
 		if err != nil {
 			return nil, err
@@ -170,19 +250,17 @@ func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
 }
 
 func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	var sign bn256.Signature
+	var sign Signature
 	err := sign.Unmarshal(signature)
 	if err != nil {
 		return err
 	}
-
-	var pk bn256.PublicKey
-	err = pk.Decompress(publicKey[:])
+	pk, err := UnmarshalPk(publicKey[:])
 	if err != nil {
 		return err
 	}
 
-	err = bn256.Verify(bn256.NewApk(&pk), message, &sign)
+	err = Verify(NewApk(pk), message, &sign)
 	if err != nil {
 		return err
 	}
@@ -215,8 +293,7 @@ func (BN256) EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumN
 }
 
 func (BN256) UncompressKey(serialized SerializedPublicKey) ([]byte, error) {
-	var pk bn256.PublicKey
-	err := pk.Decompress(serialized[:])
+	pk, err := UnmarshalPk(serialized[:])
 	if err != nil {
 		return nil, err
 	}
