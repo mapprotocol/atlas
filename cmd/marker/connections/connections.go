@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/cmd/marker/config"
 )
 
@@ -16,6 +17,19 @@ func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, strin
 	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
 	//url := "https://poc2-rpc.maplabs.io"
 	conn, err := ethclient.Dial(url)
+	if err != nil {
+		logger.Error("Failed to connect to the Atlaschain client: %v", err)
+	}
+	return conn, url
+}
+
+func DialRpc(config *config.Config) (*rpc.Client, string) {
+	logger := log.New("func", "dialConn")
+	ip := config.Ip     //utils.RPCListenAddrFlag.Name)
+	port := config.Port //utils.RPCPortFlag.Name)
+	url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
+	//url := "https://poc2-rpc.maplabs.io"
+	conn, err := rpc.Dial(url)
 	if err != nil {
 		logger.Error("Failed to connect to the Atlaschain client: %v", err)
 	}

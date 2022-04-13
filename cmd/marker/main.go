@@ -78,6 +78,7 @@ func init() {
 		queryRegisteredValidatorSignersCommand,
 		getValidatorCommand,
 		getRewardInfoCommand,
+		getVoterRewardInfoCommand,
 		queryNumRegisteredValidatorsCommand,
 		queryTopValidatorsCommand,
 		queryValidatorEligibilityCommand,
@@ -96,6 +97,9 @@ func init() {
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
+
+		//---------------------------------
+		voterMonitorCommand,
 	}
 	app.Flags = Flags
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
@@ -119,7 +123,6 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 				if err != nil {
 					log.Error("MigrateFlags", "=== err ===", err, ctx.IsSet(name))
 				}
-
 			}
 		}
 		_config, err := config.AssemblyConfig(ctx)
