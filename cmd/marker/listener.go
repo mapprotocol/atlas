@@ -158,11 +158,18 @@ var getValidatorCommand = cli.Command{
 }
 
 var getRewardInfoCommand = cli.Command{
-	Name:   "getRewardInfo",
+	Name:   "getValidatorRewardInfo",
 	Usage:  "getValidator Info",
 	Action: MigrateFlags(getRewardInfo),
 	Flags:  Flags,
 }
+var getVoterRewardInfoCommand = cli.Command{
+	Name:   "getVoterRewardInfo",
+	Usage:  "get Voter Reward Information about yourself",
+	Action: MigrateFlags(getVoterRewardInfo),
+	Flags:  Flags,
+}
+
 var queryNumRegisteredValidatorsCommand = cli.Command{
 	Name:   "getNumRegisteredValidators",
 	Usage:  "get Num RegisteredValidators",
@@ -209,6 +216,13 @@ var getActiveVotesForValidatorCommand = cli.Command{
 	Name:   "getActiveVotesForValidator",
 	Usage:  "Returns the total active vote units made for `validator`.",
 	Action: MigrateFlags(getActiveVotesForValidator),
+	Flags:  Flags,
+}
+
+var voterMonitorCommand = cli.Command{
+	Name:   "voterMonitor",
+	Usage:  "Monitor the revenue of voter to a validator",
+	Action: MigrateFlags(pollBlocks),
 	Flags:  Flags,
 }
 
@@ -640,6 +654,51 @@ func getRewardInfo(_ *cli.Context, core *listener) error {
 	log.Info("=== END ===")
 	return nil
 }
+
+func getVoterRewardInfo(ctx *cli.Context, core *listener) error {
+
+	////3.
+	//{
+	//	f := new(big.Float).SetInt(myVotes)
+	//	fSub := new(big.Float).SetInt(allVotes)
+	//	f.Quo(f, fSub)
+	//	log.Info("getExpectFraction", "balance", f)
+	//}
+
+	curBlockNumber, err := core.conn.BlockNumber(context.Background())
+	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
+	//if curBlockNumber < epochSize {
+	//	log.Info("=== current block number less than first epoch number ===", "current", curBlockNumber, "epochSize", epochSize)
+	//}
+	if err != nil {
+		return err
+	}
+	EpochFirst, err := istanbul.GetEpochFirstBlockGivenBlockNumber(curBlockNumber, epochSize)
+	if err != nil {
+		return err
+	}
+	Epoch := istanbul.GetEpochNumber(curBlockNumber, epochSize)
+	electionContractAddress := core.cfg.ElectionParameters.ElectionAddress
+	firstBlock := big.NewInt(int64(1))
+	endBlock := big.NewInt(int64(EpochFirst + 1))
+	log.Info("=== get voter Reward ===", "cur_epoch", Epoch, "epochSize", epochSize, "query first BlockNumber", firstBlock, "query end BlockNumber", endBlock, "validatorContractAddress", electionContractAddress.String(), "admin", core.cfg.From)
+	query := mapprotocol.BuildQuery(electionContractAddress, mapprotocol.EpochRewardsDistributedToVoters, firstBlock, endBlock)
+	// querying for logs
+	logs, err := core.conn.FilterLogs(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		//validator := common.Bytes2Hex(l.Topics[0].Bytes())
+		validator := common.BytesToAddress(l.Topics[1].Bytes())
+		reward := big.NewInt(0).SetBytes(l.Data[:32])
+		log.Info("reward to voters", "validator", validator, "reward", reward)
+	}
+	log.Info("=== END ===")
+
+	return nil
+}
+
 func _getRegisteredValidatorSigners(core *listener) []common.Address {
 	var ValidatorSigners interface{}
 	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
@@ -758,6 +817,7 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
+
 func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
@@ -769,6 +829,7 @@ func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
 	log.Info("getPendingVotersForValidator", "voters", ret.([]common.Address))
 	return nil
 }
+
 func getPendingInfoForValidator(_ *cli.Context, core *listener) error {
 	type ret []interface{}
 	var Value interface{}

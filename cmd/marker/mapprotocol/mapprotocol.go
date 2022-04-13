@@ -14,6 +14,9 @@ type EventSig string
 const (
 	//event ValidatorEpochPaymentDistributed(address indexed validator, uint256 validatorPayment);
 	ValidatorEpochPaymentDistributed EventSig = "ValidatorEpochPaymentDistributed(address,uint256)"
+
+	//event EpochRewardsDistributedToVoters(address indexed voterAddress, uint256 value);
+	EpochRewardsDistributedToVoters EventSig = "EpochRewardsDistributedToVoters(address,uint256)"
 )
 
 type ProposalStatus int
