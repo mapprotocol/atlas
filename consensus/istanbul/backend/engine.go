@@ -405,6 +405,14 @@ func (sb *Backend) Prepare(chain consensus.ChainHeaderReader, header *types.Head
 	}
 }
 
+func address(vs []istanbul.ValidatorData) []common.Address {
+	as := make([]common.Address, 0, len(vs))
+	for _, v := range vs {
+		as = append(as, v.Address)
+	}
+	return as
+}
+
 // UpdateValSetDiff will update the validator set diff in the header, if the mined header is the last block of the epoch
 func (sb *Backend) UpdateValSetDiff(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
 	// If this is the last block of the epoch, then get the validator set diff, to save into the header
@@ -418,9 +426,11 @@ func (sb *Backend) UpdateValSetDiff(chain consensus.ChainHeaderReader, header *t
 				return err
 			}
 
+			log.Info("UpdateValSetDiff", "old", address(snap.validators()), "new", address(newValSet))
 			// add validators in snapshot to extraData's validators section
 			return writeValidatorSetDiff(header, snap.validators(), newValSet)
 		}
+		log.Error("getNewValidatorSet failed", "error", err)
 	}
 	// If it's not the last block or we were unable to pull the new validator set, then the validator set diff should be empty
 	return writeValidatorSetDiff(header, []istanbul.ValidatorData{}, []istanbul.ValidatorData{})
