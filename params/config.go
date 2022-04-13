@@ -70,7 +70,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		Istanbul: &IstanbulConfig{
-			Epoch:          200,
+			Epoch:          60,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
