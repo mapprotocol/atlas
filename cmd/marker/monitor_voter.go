@@ -35,8 +35,7 @@ var ValidatorReward *big.Int
 var epochNum uint64
 
 func pollBlocks(ctx *cli.Context, core *listener) error {
-
-	xlsFile, err := core.initCsv()
+	xlsFile, err := core.initCsv(ctx, core)
 	defer xlsFile.Close()
 	if err != nil {
 		panic("initCsv")
@@ -210,9 +209,9 @@ func getVoterRewardInfo_(curBlockNumber uint64, core *listener) {
 	}
 }
 
-func (l *listener) initCsv() (*os.File, error) {
+func (l *listener) initCsv(ctx *cli.Context, core *listener) (*os.File, error) {
 	strTime := time.Now().Format("20060102150405")
-	filename := fmt.Sprintf("voterInfo%s.csv", strTime)
+	filename := fmt.Sprintf("Voter_Validator_%s_%s_%s.csv", core.cfg.From, core.cfg.TargetAddress, strTime)
 	xlsFile, fErr := os.OpenFile("./"+filename, os.O_RDWR|os.O_CREATE, 0766)
 	if fErr != nil {
 		fmt.Println("Export:created excel file failed ==", fErr)
@@ -220,7 +219,7 @@ func (l *listener) initCsv() (*os.File, error) {
 	}
 	xlsFile.WriteString("\xEF\xBB\xBF")
 	wStr := csv.NewWriter(xlsFile)
-	wStr.Write([]string{"Epoch", "BlockNumber", "voter", "validator", "pendingVote", "activeVote", "validatorReward", "targetReward", "target"})
+	wStr.Write([]string{"Epoch", "BlockNumber", "Voter", "Validator", "PendingVote", "ActiveVote", "ValidatorReward", "CalculateReward", "NextActiveVote"})
 	wStr.Flush()
 	return xlsFile, nil
 }
