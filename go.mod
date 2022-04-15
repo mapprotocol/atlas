@@ -17,8 +17,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1
 	github.com/dop251/goja v0.0.0-20211011172007-d99e4b8cbf48
-	github.com/dusk-network/bn256 v0.5.1-lattices // indirect
-	github.com/dusk-network/dusk-crypto v0.1.3
 	github.com/ethereum/go-ethereum v1.10.10
 	github.com/fatih/color v1.10.0
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
@@ -37,7 +35,6 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/loinfish/azure-storage-go v0.0.1
-	github.com/mapprotocol/bn256 v0.2.2
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mattn/go-runewidth v0.0.10 // indirect
@@ -45,7 +42,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.10.1
 	github.com/peterh/liner v1.2.1
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/tsdb v0.10.0
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rjeczalik/notify v0.9.2
