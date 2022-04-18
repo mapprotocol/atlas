@@ -544,7 +544,7 @@ func DeserializePrivateKey(privateKeyBytes []byte) (*SecretKey, error) {
 
 func (self *SecretKey) Serialize() ([]byte, error) {
 	privateKeyBytes := self.x.Bytes()
-	if len(privateKeyBytes) < 32 {
+	for len(privateKeyBytes) < 32 {
 		privateKeyBytes = append([]byte{0x00}, privateKeyBytes...)
 	}
 	return privateKeyBytes, nil

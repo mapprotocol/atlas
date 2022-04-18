@@ -46,7 +46,7 @@ func TestECDSAToBLS2(t *testing.T) {
 }
 func TestECDSAToBLS3(t *testing.T) {
 	c := BN256{}
-	privateKeyECDSA, _ := crypto.HexToECDSA("7f54814b7d0576b474d36853b6797175c41b64900b1531e8437d3724dc90d332")
+	privateKeyECDSA, _ := crypto.HexToECDSA("de858b9c8a3502d3fc6a74e558078d606ad6d5b6444f43ac69d2ee83adb6baca")
 	privateKeyBLSBytes, _ := c.ECDSAToBLS(privateKeyECDSA)
 	t.Logf("private key: %x", privateKeyBLSBytes)
 	privateKeyBLS := &SecretKey{ privateKeyECDSA.D}
