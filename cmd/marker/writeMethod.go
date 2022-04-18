@@ -23,7 +23,6 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	if err != nil {
 		logger.Error("PendingNonceAt", "error", err)
 	}
-
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	//gasPrice = big.NewInt(1000 000 000 000)
 	if err != nil {
