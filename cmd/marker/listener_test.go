@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -68,13 +67,6 @@ func Test_dumpStateDb(t *testing.T) {
 	if err := WriteJson(genesisAlloc, "D:/work/root/atlasEnv/dumpStateDb.json"); err != nil {
 		t.Fatalf("err==>%s", err)
 	}
-}
-func WriteJson(in interface{}, filepath string) error {
-	byteValue, err := json.MarshalIndent(in, " ", " ")
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(filepath, byteValue, 0644)
 }
 
 func Test_proxy(t *testing.T) {

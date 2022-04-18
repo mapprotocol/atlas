@@ -15,8 +15,10 @@
 package fileutils
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -66,4 +68,12 @@ func Copy(src, dst string) (int64, error) {
 	defer destination.Close()
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
+}
+
+func WriteJson(in interface{}, filepath string) error {
+	byteValue, err := json.MarshalIndent(in, " ", " ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filepath, byteValue, 0644)
 }

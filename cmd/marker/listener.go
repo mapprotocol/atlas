@@ -222,7 +222,7 @@ var getActiveVotesForValidatorCommand = cli.Command{
 var voterMonitorCommand = cli.Command{
 	Name:   "voterMonitor",
 	Usage:  "Monitor the revenue of voter to a validator",
-	Action: MigrateFlags(pollBlocks),
+	Action: MigrateFlags(pre),
 	Flags:  Flags,
 }
 
@@ -950,9 +950,9 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	log.Info("result", "getTotalVotes", result)
 	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1))
 	//var ret interface{}
-	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	//Validator := core.cfg.ValidatorParameters.Validator
 	//abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "calculateEpochScore", updatetime)
+	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, Validator, nil, abiValidators, "calculateEpochScore", updatetime)
 	//go core.writer.ResolveMessage(m)
 	//core.waitUntilMsgHandled(1)
 	//result := ret.(*big.Int)
@@ -971,9 +971,9 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 
 	//updatetime := big.NewInt(90)
 	//var ret interface{}
-	//ValidatorAddress := mapprotocol.MustProxyAddressFor("Random")
+	//Validator := mapprotocol.MustProxyAddressFor("Random")
 	//abiValidators := mapprotocol.AbiFor("Random")
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "getBlockRandomness", updatetime)
+	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, Validator, nil, abiValidators, "getBlockRandomness", updatetime)
 	//go core.writer.ResolveMessage(m)
 	//core.waitUntilMsgHandled(1)
 	//result := ret.(common.Hash)
