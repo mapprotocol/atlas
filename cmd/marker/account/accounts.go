@@ -33,28 +33,28 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
 	if err != nil {
 		privdata := crypto.FromECDSA(a.PrivateKey)
-		fmt.Println("0", hexutil.Encode(privdata))
+		log.Error("ECDSAToBLS", "privdata", hexutil.Encode(privdata))
 		return nil, err
 	}
 	key, err := bn256.DeserializePrivateKey(privateKey)
 	if err != nil {
-		fmt.Println("1")
+		log.Error("DeserializePrivateKey", "err", err)
 		return nil, err
 	}
 	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
 	if err != nil {
 		privdata := crypto.FromECDSA(a.PrivateKey)
-		fmt.Println("2", hexutil.Encode(privdata))
+		log.Error("PrivateToPublic", "err", err, "privdata", hexutil.Encode(privdata), "address", a.Address.String())
 		return nil, err
 	}
 	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
 	if err != nil {
-		fmt.Println("3")
+		log.Error("bn256.UnmarshalPk", "err", err)
 		return nil, err
 	}
 	signature, err := bn256.Sign(key, pubkey, a.Address.Bytes())
 	if err != nil {
-		fmt.Println("4")
+		log.Error("bn256.Sign", "err", err)
 		return nil, err
 	}
 	return signature.Marshal(), nil
