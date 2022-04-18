@@ -157,7 +157,7 @@ func Test_writeInfo(t *testing.T) {
 	xlsFile1, _ := initCsv()
 	xlsFile = xlsFile1
 	writeChan = make(chan []string)
-	writeInfo(0, "1", "1", "1", "1", "1", "1", "1", "1", "1", "1")
+	writeInfo(0, "1", "1", "1", big.NewInt(1234561111111111111), big.NewInt(1234561111111111111), big.NewInt(1234561111111111111), "1", big.NewFloat(1234561111111111111), big.NewFloat(1234561111111111111), "1")
 }
 
 func Test_f(t *testing.T) {

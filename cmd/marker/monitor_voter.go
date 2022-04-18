@@ -20,6 +20,11 @@ import (
 	"time"
 )
 
+var (
+	baseUnit  = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	fbaseUnit = new(big.Float).SetFloat64(float64(baseUnit.Int64()))
+)
+
 func (c *listener) LatestBlock() (*big.Int, error) {
 	bnum, err := c.conn.BlockNumber(context.Background())
 	if err != nil {
@@ -109,7 +114,7 @@ func pollBlocks(ctx *cli.Context, core *listener, key VoterStruct, voterInfo *Vo
 				f1 := new(big.Float).SetInt(big.NewInt(100))
 				f.Mul(f, f1)
 				//{"Epoch", "BlockNumber", "voter", "validator", "vote", "validatorReward", "targetReward", "target"}
-				writeInfo(epochNum, latestBlock.String(), From.String(), TargetAddress.String(), voterInfo.VPending.String(), voterInfo.VActive.String(), vaInfo.ValidatorReward.String(), f.String(), calcuR.String(), nextAVote.String(), fmt.Sprintf("%v", validatorList))
+				writeInfo(epochNum, latestBlock.String(), From.String(), TargetAddress.String(), voterInfo.VPending, voterInfo.VActive, vaInfo.ValidatorReward, f.String(), calcuR, nextAVote, fmt.Sprintf("%v", validatorList))
 
 				query("=== Result ===")
 
@@ -218,7 +223,8 @@ func initCsv() (*os.File, error) {
 	return xlsFile, nil
 }
 
-func writeInfo(epochNum uint64, latestBlock string, From string, TargetAddress string, VPending string, VActive string, ValidatorReward string, f string, calcuR string, nextAVote string, validators string) {
+// voterInfo.VPending, voterInfo.VActive , vaInfo.ValidatorReward, f.String(), calcuR, nextAVote,
+func writeInfo(epochNum uint64, latestBlock string, From string, TargetAddress string, VPending *big.Int, VActive *big.Int, ValidatorReward *big.Int, f string, calcuR *big.Float, nextAVote *big.Float, validators string) {
 	//wStr := csv.NewWriter(xlsFile)
 	f += "%"
 
@@ -231,7 +237,13 @@ func writeInfo(epochNum uint64, latestBlock string, From string, TargetAddress s
 		}
 		wStr.Flush()
 	}()
-	s0 := []string{strconv.FormatUint(epochNum, 10), latestBlock, From, TargetAddress, VPending, VActive, ValidatorReward, f, calcuR, nextAVote, validators}
+
+	VPending1 := fmt.Sprintf("%.4f", ToMapI(VPending)) + " Map"
+	VActive1 := fmt.Sprintf("%.4f", ToMapI(VActive)) + " Map"
+	ValidatorReward1 := fmt.Sprintf("%.4f", ToMapI(ValidatorReward)) + " Map"
+	calcuR1 := fmt.Sprintf("%.4f", ToMapF(calcuR)) + " Map"
+	nextAVote1 := fmt.Sprintf("%.4f", ToMapF(nextAVote)) + " Map"
+	s0 := []string{strconv.FormatUint(epochNum, 10), latestBlock, From, TargetAddress, VPending1, VActive1, ValidatorReward1, f, calcuR1, nextAVote1, validators}
 	writeChan <- s0
 
 }
@@ -243,4 +255,10 @@ func (l *listener) getValidators() []common.Address {
 		log.Error("msg", "err", err)
 	}
 	return ret
+}
+func ToMapI(val *big.Int) *big.Float {
+	return new(big.Float).Quo(new(big.Float).SetInt(val), fbaseUnit)
+}
+func ToMapF(val *big.Float) *big.Float {
+	return new(big.Float).Quo(val, fbaseUnit)
 }
