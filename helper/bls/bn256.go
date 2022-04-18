@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/bn256"
 	cfbn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 	"github.com/pkg/errors"
@@ -523,13 +522,19 @@ func decodeText(data []byte) ([]byte, error) {
 }
 
 func PrivateToPublic(privateKeyBytes []byte) ([]byte, error) {
-	key, err := crypto.ToECDSA(privateKeyBytes)
+	key, err := DeserializePrivateKey(privateKeyBytes)
 	if err != nil {
 		return nil, err
 	}
-	gx := new(bn256.G2).ScalarBaseMult(key.D)
-	pk := PublicKey{gx}
-	return pk.Marshal(), nil
+	pub := key.ToPublic()
+	return pub.Marshal(), nil
+}
+func PrivateToG1Public(privateKeyBytes []byte) ([]byte, error) {
+	key, err := DeserializePrivateKey(privateKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	return key.ToG1Public(), nil
 }
 
 func DeserializePrivateKey(privateKeyBytes []byte) (*SecretKey, error) {
@@ -544,4 +549,9 @@ func (self *SecretKey) ToPublic() *PublicKey {
 	gx := new(bn256.G2).ScalarBaseMult(new(big.Int).Set(self.x))
 	pk := &PublicKey{gx}
 	return pk
+}
+func (self *SecretKey) ToG1Public() []byte {
+	g1pub := new(bn256.G1).ScalarBaseMult(new(big.Int).Set(self.x))
+
+	return g1pub.Marshal()
 }
