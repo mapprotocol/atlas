@@ -543,7 +543,11 @@ func DeserializePrivateKey(privateKeyBytes []byte) (*SecretKey, error) {
 }
 
 func (self *SecretKey) Serialize() ([]byte, error) {
-	return self.x.Bytes(), nil
+	privateKeyBytes := self.x.Bytes()
+	if len(privateKeyBytes) < 32 {
+		privateKeyBytes = append([]byte{0x00}, privateKeyBytes...)
+	}
+	return privateKeyBytes, nil
 }
 func (self *SecretKey) ToPublic() *PublicKey {
 	gx := new(bn256.G2).ScalarBaseMult(new(big.Int).Set(self.x))
