@@ -78,5 +78,5 @@ func Test_CreatAccount(T *testing.T) {
 		fmt.Printf("- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!\n\n")
 		voterAccounts = append(voterAccounts, Info{account.Address.String(), account.URL.Path})
 	}
-	fileutils.WriteJson(voterAccounts, "D:\\work\\zhangwei812\\atlas\\zw_config\\Voters.json")
+	fileutils.WriteJson(voterAccounts, "./voters/Voters.json")
 }
