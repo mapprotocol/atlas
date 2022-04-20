@@ -73,13 +73,6 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		validators_ = append(validators_, val.Address())
 		sb.logger.Info("will distributeEpochRewards", "validator", val.Address().String())
 	}
-	//----------------------------- Automatic active -------------------
-	b, err := sb.activeAllPending(vmRunner, validators_)
-	if err != nil {
-		return err
-	}
-	log.Info("Automatic active", "success", b)
-	//----------------------------------------------------------------------
 
 	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
@@ -117,6 +110,15 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		}
 		log.Info("no relayer to reward")
 	}
+	////----------------------------- Automatic active -------------------
+	b, err := sb.activeAllPending(vmRunner, validators_)
+	if err != nil {
+		return err
+	}
+	log.Info("Automatic active", "success", b)
+	////----------------------------------------------------------------------
+	//
+
 	return nil
 }
 
