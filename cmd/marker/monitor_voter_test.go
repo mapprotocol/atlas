@@ -95,16 +95,16 @@ func Post(url, contentType string, body io.Reader) (result []byte, err error) {
 
 //Send Transtion (Post Way)
 func Test_SendTranstion(t *testing.T) {
-	url := "http://localhost:8545"
-	//url := "http://13.67.118.60:7445"
+	//url := "http://localhost:8545"
+	url := "http://13.67.118.60:7445"
 	conn, err := rpc.Dial(url)
 	if err != nil {
 		t.Error("Failed to connect to the Atlaschain client: ", err)
 	}
-	from := "0x81f02fd21657df80783755874a92c996749777bf"
-	//from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
+	//from := "0x81f02fd21657df80783755874a92c996749777bf"
+	from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
 	var ret bool
-	if err := conn.Call(&ret, "personal_unlockAccount", from, "111111"); err != nil {
+	if err := conn.Call(&ret, "personal_unlockAccount", from, ""); err != nil {
 		log.Error("msg", "err", err)
 	}
 	fmt.Println("personal_unlockAccount", ret)
@@ -121,7 +121,8 @@ func Test_SendTranstion(t *testing.T) {
 	_ = json.Unmarshal(data, &accounts)
 	//0xd3c21bcecceda0000000 100万
 	//0x21e19e0c9bab2400000  1万
-	//0x152d02c7e14af6000000    10万
+	//0x152d02c7e14af6000000 10万
+	//0x43c33c1937564800000  20万
 	for index, v := range accounts {
 		to := v.Account
 		fmt.Println("from  ", from, "to    ", to)
@@ -131,7 +132,7 @@ func Test_SendTranstion(t *testing.T) {
 			"params": []interface{}{map[string]string{
 				"from":  from,
 				"to":    to,
-				"value": "0x152d02c7e14af6000000",
+				"value": "0x43c33c1937564800000",
 			}},
 			"id": 1,
 		}

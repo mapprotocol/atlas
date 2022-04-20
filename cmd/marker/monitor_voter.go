@@ -50,6 +50,9 @@ func pollBlocks(ctx *cli.Context, core *listener, key VoterStruct, voterInfo *Vo
 	var latestBlock *big.Int
 	//var epochLast uint64
 	latestBlock, err := core.LatestBlock()
+	if err != nil {
+		log.Error("", "", err)
+	}
 	epochNum = istanbul.GetEpochNumber(latestBlock.Uint64(), epochSize)
 	voterInfo.epochNum = epochNum
 	query := func(title string) bool {
@@ -95,6 +98,11 @@ func pollBlocks(ctx *cli.Context, core *listener, key VoterStruct, voterInfo *Vo
 		default:
 			time.Sleep(time.Second)
 			latestBlock, err = core.LatestBlock()
+			if err != nil {
+				log.Error("getlatestBlock", "latestBlock", latestBlock)
+				time.Sleep(3 * time.Second)
+				continue
+			}
 			epochNum = istanbul.GetEpochNumber(latestBlock.Uint64(), epochSize)
 			if currentEpoch < epochNum && istanbul.GetNumberWithinEpoch(latestBlock.Uint64(), epochSize) == epochSize-1 {
 				currentEpoch = epochNum
@@ -128,7 +136,7 @@ func pollBlocks(ctx *cli.Context, core *listener, key VoterStruct, voterInfo *Vo
 	return nil
 }
 
-func getActiveVotesForValidatorByAccount_(_ *cli.Context, core *listener, key VoterStruct, voterInfo *VoterInfo) {
+func getActiveVotesForValidatorByAccount_(_ *cli.Context, core *listener, key VoterStruct, voterInfo *VoterInfo) *big.Int {
 	From := key.Voter
 	TargetAddress := key.Validator
 	var ret interface{}
@@ -139,6 +147,7 @@ func getActiveVotesForValidatorByAccount_(_ *cli.Context, core *listener, key Vo
 	core.waitUntilMsgHandled(1)
 	log.Info("", "Active Vote", ret.(*big.Int))
 	voterInfo.VActive = ret.(*big.Int)
+	return voterInfo.VActive
 }
 
 func getPendingInfo_(_ *cli.Context, core *listener, key VoterStruct, voterInfo *VoterInfo) (*big.Int, *big.Int) {

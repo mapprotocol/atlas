@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"time"
 )
 
 // voter key
@@ -85,6 +86,7 @@ func start(ctx *cli.Context, core *listener) error {
 		core := NewListener(ctx, core.cfg)
 		writer := NewWriter(ctx, core.cfg)
 		core.setWriter(writer)
+		time.Sleep(3 * time.Second)
 		go pollBlocks(ctx, core, v, voterMap[v])
 	}
 	select {}
@@ -141,7 +143,7 @@ func voteAutomatic(ctx *cli.Context, coreA *listener) error {
 		voter2validator = append(voter2validator, Voter2validatorInfo{core.cfg.From.String(), core.cfg.TargetAddress.String(), core.cfg.VoteNum.Uint64()})
 		log.Info("vote ", "Index", index, "From", coreA.cfg.From, "TargetAddress", coreA.cfg.TargetAddress)
 	}
-	log.Info("WriteJson  voter2validator", len(voter2validator))
+	log.Info("WriteJson ", " voter2validator", len(voter2validator))
 	WriteJson(voter2validator, "D:\\work\\zhangwei812\\atlas\\zw_config\\Voters2Validator.json")
 	return nil
 }
