@@ -25,8 +25,6 @@ import (
 	"math/big"
 	"time"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
-	celobls "github.com/celo-org/celo-bls-go/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -160,12 +158,19 @@ func (self *testSystemBackend) Gossip(payload []byte, ethMsgCode uint64) error {
 }
 
 func (self *testSystemBackend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
-	privateKey, _ := celobls.DeserializePrivateKey(self.blsKey)
-	defer privateKey.Destroy()
-
-	signature, _ := privateKey.SignMessage(data, extra, useComposite, cip22)
-	defer signature.Destroy()
-	signatureBytes, _ := signature.Serialize()
+	privateKey, err := bls.DeserializePrivateKey(self.blsKey)
+	if err != nil {
+		return bls.SerializedSignature{},err
+	}
+	pubkey := privateKey.ToPublic()
+	if err != nil {
+		return bls.SerializedSignature{},err
+	}
+	signature, err := bls.Sign(privateKey, pubkey, data)
+	if err != nil {
+		return bls.SerializedSignature{}, err
+	}
+	signatureBytes := signature.Marshal()
 
 	return bls.SerializedSignatureFromBytes(signatureBytes)
 }
@@ -376,7 +381,7 @@ func generateValidators(n int) ([]istanbul.ValidatorData, [][]byte, []*ecdsa.Pri
 	keys := make([]*ecdsa.PrivateKey, 0)
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
-		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
+		blsPrivateKey, _ := bls.CryptoType().ECDSAToBLS(privateKey)
 		blsPublicKey, _ := bls.CryptoType().PrivateToPublic(blsPrivateKey)
 		vals = append(vals, istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
