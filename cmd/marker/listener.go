@@ -848,7 +848,7 @@ func getPendingInfoForValidator(_ *cli.Context, core *listener) error {
 	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, ElectionAddress, nil, abiElection, "pendingInfo", core.cfg.From, core.cfg.TargetAddress)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	log.Info("getPendingInfoForValidator", "Epoch", Epoch.(*big.Int), "Epoch", Value.(*big.Int))
+	log.Info("getPendingInfoForValidator", "PendingEpoch", Epoch.(*big.Int), "Balance", Value.(*big.Int))
 	return nil
 }
 

@@ -58,7 +58,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		communityReward = big.NewInt(0)
 	}
 
-	logger.Debug("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward)
+	logger.Info("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward, "relayerReward", relayerReward)
 
 	// The validator set that signs off on the last block of the epoch is the one that we need to
 	// iterate over.

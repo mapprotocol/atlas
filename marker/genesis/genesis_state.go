@@ -186,6 +186,8 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 	ctx.statedb.SetCode(proxyAddress, proxyByteCode)
 	ctx.statedb.SetState(proxyAddress, params.ProxyOwnerStorageLocation, AdminAddr.Hash())
 
+	//fmt.Println("AdminAddr.Hash()",AdminAddr.Hash())
+
 	logger.Info("Deploy Implementation")
 	ctx.statedb.SetCode(implAddress, bytecode)
 
@@ -261,8 +263,7 @@ func (ctx *deployContext) deployEpochRewards() error {
 	err := ctx.deployCoreContract("EpochRewards", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
 			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.EpochRewards.MaxValidatorEpochPayment,
-			ctx.genesisConfig.EpochRewards.MaxRelayerEpochPayment,
+			ctx.genesisConfig.EpochRewards.MaxEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.CommunityPartner,
 		)
