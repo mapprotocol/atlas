@@ -41,12 +41,11 @@ func BaseConfig() *Config {
 			ElectabilityThreshold:  fixed("0.001"),
 		},
 		EpochRewards: EpochRewardsParameters{
-			//300,000,000(one year award)/6000,000(number a year)  30000(one epoch number)
-			//a epoch award 1,500,000map
+			//a epoch award 1,500,000map = 300,000,000(one year award)/6000,000(number a year) *30000(one epoch number)
 			//MaxValidatorEpochPayment = 1,500,000map *(2/3)
-			MaxValidatorEpochPayment: bigIntStr("1000000000000000000000000"),
-			//1,500,000map *(1/3) for relayer = 500,000map
-			MaxRelayerEpochPayment:  bigIntStr("500000000000000000000000"),
+			//MaxRelayerEpochPayment   =   500,000map *(1/3)
+			MaxEpochPayment: bigIntStr("1500000000000000000000000"), //Validator Relayer
+
 			CommunityRewardFraction: fixed("0.1"),
 			CommunityPartner:        common.HexToAddress("0x5ad473726671C40D4dF675A570f09610d7d39E70"),
 		},

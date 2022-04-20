@@ -3932,6 +3932,11 @@ const EpochRewardsStr string = `[
         },
         {
           "internalType": "bytes",
+          "name": "blsG1Key",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
           "name": "blsPop",
           "type": "bytes"
         }
@@ -3967,21 +3972,6 @@ const EpochRewardsStr string = `[
       "constant": true,
       "inputs": [],
       "name": "epochPayment",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "epochRelayerPayment",
       "outputs": [
         {
           "internalType": "uint256",
@@ -4452,12 +4442,7 @@ const EpochRewardsStr string = `[
         },
         {
           "internalType": "uint256",
-          "name": "_targetValidatorEpochPayment",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_targetRelayerEpochPayment",
+          "name": "_targetEpochPayment",
           "type": "uint256"
         },
         {
@@ -4527,28 +4512,7 @@ const EpochRewardsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "setTargetValidatorEpochPayment",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetRelayerEpochPayment",
+      "name": "setTargetEpochPayment",
       "outputs": [
         {
           "internalType": "bool",
