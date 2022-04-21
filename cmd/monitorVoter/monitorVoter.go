@@ -2,14 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
-	ethchain "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
-	"github.com/mapprotocol/atlas/params"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -18,12 +14,17 @@ import (
 	"sort"
 	"time"
 
-	"context"
+	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
+	"github.com/mapprotocol/atlas/helper/fileutils"
+	"github.com/mapprotocol/atlas/params"
+
+	ethchain "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/helper/fileutils"
+	"github.com/ethereum/go-ethereum/rpc"
 	"io"
 	//"fmt"
 )
@@ -31,8 +32,9 @@ import (
 const DefaultGasLimit = 4500000
 
 var (
-	url   = "http://127.0.0.1:7445"
-	msgCh chan struct{} // wait for msg handles
+	url       = "http://127.0.0.1:7445"
+	urlSendTx = "http://13.67.118.60:7445"
+	msgCh     chan struct{} // wait for msg handles
 )
 
 func init() {
@@ -50,13 +52,14 @@ type Voter2validatorInfo struct {
 var voter2validator []Voter2validatorInfo
 
 func main() {
+	log.Info("start")
 	msgCh = make(chan struct{})
 	var accounts []*ecdsa.PrivateKey
 	for i := 0; i < 1000; i++ {
 		priv0, _ := crypto.GenerateKey()
 		accounts = append(accounts, priv0)
 	}
-	conn, err := rpc.Dial(url)
+	conn, err := rpc.Dial(urlSendTx)
 	if err != nil {
 		log.Error("Failed to connect to the Atlaschain client: ", err)
 	}
@@ -73,6 +76,7 @@ func main() {
 	//0x152d02c7e14af6000000 10万
 	//0x43c33c1937564800000  20万
 	// 0x3635c9adc5dea00000  1000
+	//0x14542ba12a337c00000  6000
 	for _, priv := range accounts {
 		to := crypto.PubkeyToAddress(priv.PublicKey)
 		params := map[string]interface{}{
@@ -81,7 +85,7 @@ func main() {
 			"params": []interface{}{map[string]string{
 				"from":  from,
 				"to":    to.String(),
-				"value": "0x21e19e0c9bab2400000",
+				"value": "0x14542ba12a337c00000",
 			}},
 			"id": 1,
 		}
@@ -101,21 +105,29 @@ func main() {
 		fmt.Println("sendRestlt", r.Result)
 	}
 	connEth, err := ethclient.Dial(url)
-	time.Sleep(10 * time.Second)
+	time.Sleep(100 * time.Second)
+
+	conn, err = rpc.Dial(url)
+	if err != nil {
+		log.Error("Failed to connect to the Atlaschain client: ", err)
+	}
 
 	target := getValidators(conn)
-	Index := rand.Int63n(int64(len(target)))
+	l := int64(len(target))
+	randIndex := rand.Int63n(l)
 	i := 0
 	counter := 0
 	for index, priv := range accounts {
 		counter++
 		i %= 5
 		i++ //1 - 5
-		VoteNum := i * 10
-		go createVoter(connEth, priv, big.NewInt(int64(index)), big.NewInt(int64(VoteNum)), target[Index])
-		from := crypto.PubkeyToAddress(priv.PublicKey)
-		to := target[Index]
-		voter2validator = append(voter2validator, Voter2validatorInfo{from.String(), to.String(), uint64(VoteNum)})
+		VoteNum := i * 1000
+		time.Sleep(5 * time.Second)
+		go createVoter(connEth, priv, big.NewInt(int64(index)), big.NewInt(int64(VoteNum)), target[randIndex])
+		from1 := crypto.PubkeyToAddress(priv.PublicKey)
+		to := target[randIndex]
+		log.Info("Info ", "", from1.String(), "", to.String(), "", uint64(VoteNum))
+		voter2validator = append(voter2validator, Voter2validatorInfo{from1.String(), to.String(), uint64(VoteNum)})
 	}
 	log.Info("WriteJson ", " voter2validator", len(voter2validator))
 	fileutils.WriteJson(voter2validator, "./Voters2Validator.json")
@@ -127,30 +139,30 @@ func createVoter(client *ethclient.Client, privateKey *ecdsa.PrivateKey, Name *b
 	from := crypto.PubkeyToAddress(privateKey.PublicKey)
 	toAddress := mapprotocol.MustProxyAddressFor("Accounts")
 	input := mapprotocol.PackInput(mapprotocol.AbiFor("Accounts"), "createAccount")
-	commHash := sendContractTransaction(client, from, toAddress, nil, privateKey, input, DefaultGasLimit)
+	commHash := sendContractTransaction(client, from, toAddress, nil, privateKey, input)
 	getResult(client, commHash, false)
 	input = mapprotocol.PackInput(mapprotocol.AbiFor("Accounts"), "setName", Name.String())
-	commHash = sendContractTransaction(client, from, toAddress, nil, privateKey, input, DefaultGasLimit)
+	commHash = sendContractTransaction(client, from, toAddress, nil, privateKey, input)
 	getResult(client, commHash, false)
 	input = mapprotocol.PackInput(mapprotocol.AbiFor("Accounts"), "setAccountDataEncryptionKey", crypto.FromECDSAPub(&privateKey.PublicKey))
-	commHash = sendContractTransaction(client, from, toAddress, nil, privateKey, input, DefaultGasLimit)
+	commHash = sendContractTransaction(client, from, toAddress, nil, privateKey, input)
 	getResult(client, commHash, false)
 	// lockedMA
 	input = mapprotocol.PackInput(mapprotocol.AbiFor("LockedGold"), "lock")
 	lockedGold := new(big.Int).Mul(VoteNum, big.NewInt(1e18))
 	toAddress = mapprotocol.MustProxyAddressFor("LockedGold")
-	commHash = sendContractTransaction(client, from, toAddress, lockedGold, privateKey, input, DefaultGasLimit)
+	commHash = sendContractTransaction(client, from, toAddress, lockedGold, privateKey, input)
 	getResult(client, commHash, false)
 	//vote
-	l, g, _ := getGL(privateKey, client, target, lockedGold)
+	g, l, _ := getGL(privateKey, client, target, lockedGold)
 	toAddress = mapprotocol.MustProxyAddressFor("Election")
 	input = mapprotocol.PackInput(mapprotocol.AbiFor("Election"), "vote", target, lockedGold, l, g)
-	commHash = sendContractTransaction(client, from, toAddress, nil, privateKey, input, DefaultGasLimit)
+	commHash = sendContractTransaction(client, from, toAddress, nil, privateKey, input)
 	getResult(client, commHash, false)
 	msgCh <- struct{}{}
 }
 
-func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte, gasLimitSeting uint64) common.Hash {
+func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte) common.Hash {
 	// Ensure a valid value field and resolve the account nonce
 	logger := log.New("func", "sendContractTransaction")
 	nonce, err := client.PendingNonceAt(context.Background(), from)
@@ -177,10 +189,6 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	}
 	gasLimit = uint64(DefaultGasLimit)
 
-	if gasLimitSeting != 0 {
-		gasLimit = gasLimitSeting // in units
-	}
-
 	// Create the transaction, sign it and schedule it for execution
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
@@ -202,13 +210,18 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 	logger := log.New("func", "getResult")
 	logger.Info("Please waiting ", " txHash ", txHash.String())
+	i := 0
 	for {
 		time.Sleep(time.Millisecond * 200)
+		i++
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
 		if err != nil {
 			logger.Info("TransactionByHash", "error", err)
 		}
 		if !isPending {
+			break
+		}
+		if i > 20 {
 			break
 		}
 	}
@@ -253,7 +266,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 	}
 }
 func Post(contentType string, body io.Reader) (result []byte, err error) {
-	resp, err := http.Post(url, contentType, body)
+	resp, err := http.Post(urlSendTx, contentType, body)
 	if err != nil {
 		return result, err
 	}
@@ -292,7 +305,7 @@ func getGL(privateKey *ecdsa.PrivateKey, client *ethclient.Client, target common
 	from := crypto.PubkeyToAddress(privateKey.PublicKey)
 	//vote
 	input := mapprotocol.PackInput(mapprotocol.AbiFor("Election"), "getTotalVotesForEligibleValidators")
-	sendContractTransaction(client, from, electionAddress, nil, privateKey, input, DefaultGasLimit)
+	sendContractTransaction(client, from, electionAddress, nil, privateKey, input)
 	header, err := client.HeaderByNumber(context.Background(), nil)
 	msg := ethchain.CallMsg{From: from, To: &electionAddress, Data: input}
 	output, err := client.CallContract(context.Background(), msg, header.Number)
@@ -310,15 +323,15 @@ func getGL(privateKey *ecdsa.PrivateKey, client *ethclient.Client, target common
 	for i, addr := range validators {
 		voteTotals[i] = voteTotal{addr, votes[i]}
 	}
+	//fmt.Println(target, VoteNum)
 	//for i, v := range voteTotals {
 	//	fmt.Println("=== ", i, "===", v.Validator.String(), v.Value.String())
 	//}
 
-	voteNum := new(big.Int).Mul(VoteNum, big.NewInt(1e18))
 	for _, voteTotal := range voteTotals {
 		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
-			if big.NewInt(0).Cmp(voteNum) < 0 {
-				voteTotal.Value.Add(voteTotal.Value, voteNum)
+			if big.NewInt(0).Cmp(VoteNum) < 0 {
+				voteTotal.Value.Add(voteTotal.Value, VoteNum)
 			}
 			// Sorting in descending order is necessary to match the order on-chain.
 			// TODO: We could make this more efficient by only moving the newly vote member.
