@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/helper/fileutils"
 	exec "golang.org/x/sys/execabs"
 	"io"
 	"io/ioutil"
@@ -32,7 +33,7 @@ func Test_NewAccount(t *testing.T) {
 		}
 		voterAccounts = append(voterAccounts, ret)
 	}
-	err = WriteJson(voterAccounts, "./VoterAccounts")
+	err = fileutils.WriteJson(voterAccounts, "./VoterAccounts")
 	if err != nil {
 		t.Error("WriteJson err: ", err)
 	}
@@ -54,7 +55,7 @@ func Test_NewAccount2(t *testing.T) {
 	fmt.Println(addr.String())
 	voterAccounts = append(voterAccounts, VoterInfoT{addr, privHex})
 	fmt.Println(voterAccounts)
-	err := WriteJson(voterAccounts, "./VoterAccounts")
+	err := fileutils.WriteJson(voterAccounts, "./VoterAccounts")
 	if err != nil {
 		t.Error("WriteJson err: ", err)
 	}

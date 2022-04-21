@@ -2,10 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/cmd/marker/config"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 	"math/big"
@@ -51,8 +49,7 @@ type Voter2validatorInfo struct {
 
 var voter2validator []Voter2validatorInfo
 
-func start(ctx *cli.Context, core *listener) error {
-
+func voterMonitor(ctx *cli.Context, core *listener) error {
 	writeChan = make(chan []string)
 	xlsFile1, err := initCsv()
 	xlsFile = xlsFile1
@@ -60,12 +57,8 @@ func start(ctx *cli.Context, core *listener) error {
 	if err != nil {
 		panic("initCsv")
 	}
-	//voterList = []VoterStruct{
-	//	{common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"), common.HexToAddress("0x1c0eDab88dbb72B119039c4d14b1663525b3aC15")},
-	//	{common.HexToAddress("0xdf945e6ffd840ed5787d367708307bd1fa3d40f4"), common.HexToAddress("0x16FdBcAC4D4Cc24DCa47B9b80f58155a551ca2aF")},
-	//}
 
-	configName := "D:\\work\\zhangwei812\\atlas\\zw_config\\Voters2Validator.json"
+	configName := "./Voters2Validator.json"
 
 	data, err := ioutil.ReadFile(configName)
 	if err != nil {
@@ -91,84 +84,4 @@ func start(ctx *cli.Context, core *listener) error {
 	}
 	select {}
 	return nil
-}
-
-type Voters_my struct {
-	Account string
-	Path    string
-}
-
-var voters []Voters_my
-var validators []common.Address
-
-//vote Automatic
-func voteAutomatic(ctx *cli.Context, coreA *listener) error {
-	configName := "D:\\work\\zhangwei812\\atlas\\zw_config\\Voters.json"
-
-	data, err := ioutil.ReadFile(configName)
-	if err != nil {
-		log.Error("compass personInfo config readFile Err", err.Error())
-	}
-	_ = json.Unmarshal(data, &voters)
-	log.Info("voters length:", "l", len(voters))
-
-	validatorsName := "D:\\work\\zhangwei812\\atlas\\zw_config\\Validators.json"
-
-	data, err = ioutil.ReadFile(validatorsName)
-	if err != nil {
-		log.Error("compass personInfo config readFile Err", err.Error())
-	}
-	_ = json.Unmarshal(data, &validators)
-	log.Info("validators length:", "l", len(validators))
-	LenValidator := len(validators)
-	i := 0
-	for index, v := range voters {
-		_config, err := config.AssemblyConfig2(ctx, v.Path, "111111")
-		i %= 5
-		i++ //1 - 5
-		VoteNum := i * 1000
-		_config.LockedNum = big.NewInt(int64(VoteNum))
-		TargetValidatorIndex := index % LenValidator
-		_config.VoteNum = big.NewInt(int64(VoteNum))
-		_config.TargetAddress = validators[TargetValidatorIndex]
-		_config.From = common.HexToAddress(v.Account)
-		if err != nil {
-			return err
-		}
-		coreA.cfg = _config
-		core := NewListener(ctx, _config)
-		writer := NewWriter(ctx, _config)
-		core.setWriter(writer)
-		// Those who do not vote continue to vote
-		if getActiveVotesForValidatorByAccount_(ctx, core, VoterStruct{_config.From, _config.TargetAddress}, &VoterInfo{}).CmpAbs(big.NewInt(0)) == 0 {
-			quicklyVote(ctx, core)
-			voter2validator = append(voter2validator, Voter2validatorInfo{core.cfg.From.String(), core.cfg.TargetAddress.String(), core.cfg.VoteNum.Uint64()})
-		}
-		log.Info("vote ", "Index", index, "From", coreA.cfg.From, "TargetAddress", coreA.cfg.TargetAddress)
-		//quicklyVote(ctx, core)
-	}
-	log.Info("WriteJson ", " voter2validator", len(voter2validator))
-	WriteJson(voter2validator, "D:\\work\\zhangwei812\\atlas\\zw_config\\Voters2Validator.json")
-	return nil
-}
-
-func pre(ctx *cli.Context, core *listener) error {
-	voteAutomatic(ctx, core)
-	return nil
-}
-
-// request validators from remote
-func getValidatorsJson(ctx *cli.Context, core *listener) error {
-	validators := core.getValidators()
-	WriteJson(validators, "D:\\work\\zhangwei812\\atlas\\zw_config\\Validators.json")
-	fmt.Println("getValidatorsJson", len(validators))
-	return nil
-}
-
-func WriteJson(in interface{}, filepath string) error {
-	byteValue, err := json.MarshalIndent(in, " ", " ")
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(filepath, byteValue, 0644)
 }

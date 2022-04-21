@@ -236,7 +236,6 @@ func initCsv() (*os.File, error) {
 func writeInfo(epochNum uint64, latestBlock string, From string, TargetAddress string, VPending *big.Int, VActive *big.Int, ValidatorReward *big.Int, f string, calcuR *big.Float, nextAVote *big.Float, validators string) {
 	//wStr := csv.NewWriter(xlsFile)
 	f += "%"
-
 	wStr := csv.NewWriter(xlsFile)
 	go func() {
 		s := <-writeChan
