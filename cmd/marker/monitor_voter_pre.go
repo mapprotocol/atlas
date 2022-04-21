@@ -139,9 +139,13 @@ func voteAutomatic(ctx *cli.Context, coreA *listener) error {
 		core := NewListener(ctx, _config)
 		writer := NewWriter(ctx, _config)
 		core.setWriter(writer)
-		quicklyVote(ctx, core)
-		voter2validator = append(voter2validator, Voter2validatorInfo{core.cfg.From.String(), core.cfg.TargetAddress.String(), core.cfg.VoteNum.Uint64()})
+		// Those who do not vote continue to vote
+		if getActiveVotesForValidatorByAccount_(ctx, core, VoterStruct{_config.From, _config.TargetAddress}, &VoterInfo{}).CmpAbs(big.NewInt(0)) == 0 {
+			quicklyVote(ctx, core)
+			voter2validator = append(voter2validator, Voter2validatorInfo{core.cfg.From.String(), core.cfg.TargetAddress.String(), core.cfg.VoteNum.Uint64()})
+		}
 		log.Info("vote ", "Index", index, "From", coreA.cfg.From, "TargetAddress", coreA.cfg.TargetAddress)
+		//quicklyVote(ctx, core)
 	}
 	log.Info("WriteJson ", " voter2validator", len(voter2validator))
 	WriteJson(voter2validator, "D:\\work\\zhangwei812\\atlas\\zw_config\\Voters2Validator.json")
@@ -149,7 +153,7 @@ func voteAutomatic(ctx *cli.Context, coreA *listener) error {
 }
 
 func pre(ctx *cli.Context, core *listener) error {
-	start(ctx, core)
+	voteAutomatic(ctx, core)
 	return nil
 }
 
