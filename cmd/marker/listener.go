@@ -222,7 +222,7 @@ var getActiveVotesForValidatorCommand = cli.Command{
 var voterMonitorCommand = cli.Command{
 	Name:   "voterMonitor",
 	Usage:  "Monitor the revenue of voter to a validator",
-	Action: MigrateFlags(pre),
+	Action: MigrateFlags(voterMonitor),
 	Flags:  Flags,
 }
 
@@ -286,6 +286,12 @@ var setImplementationCommand = cli.Command{
 	Name:   "setImplementation",
 	Usage:  "Sets the address of the implementation contract.",
 	Action: MigrateFlags(setImplementation),
+	Flags:  Flags,
+}
+var setOwnerCommand = cli.Command{
+	Name:   "setOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(getOwner),
 	Flags:  Flags,
 }
 var updateBlsPublicKeyCommand = cli.Command{
@@ -1079,6 +1085,36 @@ func setImplementation(_ *cli.Context, core *listener) error {
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "_setImplementation", implementation)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func setOwner(_ *cli.Context, core *listener) error {
+	NewOwner := core.cfg.TargetAddress
+	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress //代理地址
+	ValidatorAddress := common.HexToAddress("0x000000000000000000000000000000000000D012") //地址
+	log.Info("ProxyAddress", "ValidatorAddress", ValidatorAddress, "NewOwner", NewOwner.String())
+	ProxyAbi := mapprotocol.AbiFor("Validators")
+	log.Info("=== setOwner ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "transferOwnership", NewOwner)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+
+	return nil
+}
+
+func getOwner(_ *cli.Context, core *listener) error {
+	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
+	var ret interface{}
+	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress //代理地址
+	ValidatorAbi := core.cfg.ValidatorParameters.ValidatorABI //代理地址
+
+	ValidatorAddress := common.HexToAddress("0x000000000000000000000000000000000000F012") //地址
+	//ValidatorAbi := mapprotocol.AbiFor("Proxy") //代理地址
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, ValidatorAbi, "owner")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("getOwner", "Owner ", result)
 	return nil
 }
 func setTargetValidatorEpochPayment(_ *cli.Context, core *listener) error {

@@ -91,6 +91,7 @@ func init() {
 		getPendingWithdrawalsCommand,
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
+		setOwnerCommand,
 		updateBlsPublicKeyCommand,
 		setTargetValidatorEpochPaymentCommand,
 		setTargetRelayerEpochPaymentCommand,
