@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	"math/rand"
 	"net/http"
 	"os"
 	"sort"
@@ -114,19 +113,24 @@ func main() {
 
 	target := getValidators(conn)
 	l := int64(len(target))
-	randIndex := rand.Int63n(l)
+	//randIndex := rand.Int63n(l)
 	i := 0
+	j := 0
 	counter := 0
 	for index, priv := range accounts {
 		counter++
 		i %= 5
 		i++ //1 - 5
+
+		j++
+		j %= int(l) // j ==0
+
+		to := target[j]
 		VoteNum := i * 1000
 		time.Sleep(5 * time.Second)
-		go createVoter(connEth, priv, big.NewInt(int64(index)), big.NewInt(int64(VoteNum)), target[randIndex])
+		go createVoter(connEth, priv, big.NewInt(int64(index)), big.NewInt(int64(VoteNum)), to)
 		from1 := crypto.PubkeyToAddress(priv.PublicKey)
-		to := target[randIndex]
-		log.Info("Info ", "", from1.String(), "", to.String(), "", uint64(VoteNum))
+		log.Info("Info ", "from1", from1.String(), "to", to.String(), "VoteNum", uint64(VoteNum))
 		voter2validator = append(voter2validator, Voter2validatorInfo{from1.String(), to.String(), uint64(VoteNum)})
 	}
 	log.Info("WriteJson ", " voter2validator", len(voter2validator))
