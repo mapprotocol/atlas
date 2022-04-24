@@ -4989,6 +4989,19 @@ const ValidatorsStr = `[
           "internalType": "address",
           "name": "validator",
           "type": "address"
+        }
+      ],
+      "name": "ValidatorPreDeregistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
         },
         {
           "indexed": true,
@@ -5794,6 +5807,36 @@ const ValidatorsStr = `[
     },
     {
       "constant": false,
+      "inputs": [],
+      "name": "revertRegisterValidator",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "isPendingDeRegisterValidator",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
       "inputs": [
         {
           "internalType": "bytes",
@@ -5951,6 +5994,21 @@ const ValidatorsStr = `[
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "deRegisterAllValidatorsInPending",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "payable": false,
@@ -6299,6 +6357,21 @@ const ValidatorsStr = `[
       "constant": true,
       "inputs": [],
       "name": "getRegisteredValidators",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getDeRegisteredValidatorsT",
       "outputs": [
         {
           "internalType": "address[]",
