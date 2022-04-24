@@ -320,6 +320,10 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	log.Info("=== Register validator ===")
 	commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	log.Info("=== commision ===", "commision", commision)
+	if isPendingDeRegisterValidator(core) {
+		revertRegisterValidator(core)
+		return nil
+	}
 	registerValidatorPre(ctx, core)
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
@@ -340,6 +344,25 @@ func registerValidatorPre(ctx *cli.Context, core *listener) error {
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
+}
+
+func isPendingDeRegisterValidator(core *listener) bool {
+	//----------------------------- isPendingDeRegisterValidator ---------------------------------
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	var ret bool
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "isPendingDeRegisterValidator")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return ret
+}
+func revertRegisterValidator(core *listener) {
+	//----------------------------- isPendingDeRegisterValidator ---------------------------------
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "revertRegisterValidator")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
 }
 
 /*
