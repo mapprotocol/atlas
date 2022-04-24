@@ -94,7 +94,6 @@ func (sig *SerializedSignature) UnmarshalJSON(input []byte) error {
 }
 
 func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
-	fmt.Println("sl", len(serializedSignature))
 	if len(serializedSignature) != SIGNATUREBYTES {
 		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
 	}
