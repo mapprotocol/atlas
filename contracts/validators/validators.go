@@ -47,6 +47,8 @@ var (
 	getValidatorMethod                         = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidator", params.MaxGasForGetValidator)
 	updateValidatorScoreFromSignerMethod       = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "updateValidatorScoreFromSigner", params.MaxGasForUpdateValidatorScore)
 	distributeEpochPaymentsFromSignerMethod    = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "distributeEpochPaymentsFromSigner", params.MaxGasForDistributeEpochPayment)
+	deRegisterValidatorsInPendingMethod        = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "deRegisterAllValidatorsInPending", params.MaxGasForDistributeEpochPayment)
+	getDeRegisteredValidatorsTMethod           = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getDeRegisteredValidatorsT", params.MaxGasForDistributeEpochPayment)
 )
 
 func RetrieveRegisteredValidatorSigners(vmRunner vm.EVMRunner) ([]common.Address, error) {
@@ -144,4 +146,14 @@ func GetPledgeMultiplierInReward(vmRunner vm.EVMRunner) (*big.Int, error) {
 		return nil, err
 	}
 	return pledgeMultiplierInReward, nil
+}
+
+func DeRegisterValidatorsInPending(vmRunner vm.EVMRunner) (*[]common.Address, error) {
+	//var Address0 []common.Address
+	//getDeRegisteredValidatorsTMethod.Query(vmRunner, &Address0)
+	//log.Info("delete ", "Address0", Address0)
+	var Address []common.Address
+	err := deRegisterValidatorsInPendingMethod.Execute(vmRunner, &Address, common.Big0)
+	log.Info("new ", "Address", Address)
+	return &Address, err
 }

@@ -108,16 +108,21 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 			}
 			log.Info("reward to relayer success", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
 		}
-		log.Info("no relayer to reward")
 	}
-	////----------------------------- Automatic active -------------------
+	//----------------------------- deRegister -------------------
+	deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner)
+	if err != nil {
+		return err
+	}
+	log.Info("deRegister AllValidators InPending", "deRegisters", deRegisters)
+
+	//----------------------------- Automatic active -------------------
 	b, err := sb.activeAllPending(vmRunner, validators_)
 	if err != nil {
 		return err
 	}
 	log.Info("Automatic active", "success", b)
-	////----------------------------------------------------------------------
-	//
+	//----------------------------------------------------------------------
 
 	return nil
 }
@@ -238,4 +243,11 @@ func (sb *Backend) activeAllPending(vmRunner vm.EVMRunner, validators []common.A
 		return false, err
 	}
 	return b, nil
+}
+func (sb *Backend) deRegisterAllValidatorsInPending(vmRunner vm.EVMRunner) (*[]common.Address, error) {
+	deValidators, err := validators.DeRegisterValidatorsInPending(vmRunner)
+	if err != nil {
+		return nil, err
+	}
+	return deValidators, nil
 }
