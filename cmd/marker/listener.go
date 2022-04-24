@@ -466,14 +466,14 @@ func createAccount(core *listener) {
 func deregisterValidator(_ *cli.Context, core *listener) error {
 	//----------------------------- deregisterValidator ---------------------------------
 	log.Info("=== deregisterValidator ===")
-	list := _getRegisteredValidatorSigners(core)
-	index, err := GetIndex(core.cfg.From, list)
-	if err != nil {
-		log.Crit("deregisterValidator", "err", err)
-	}
+	//list := _getRegisteredValidatorSigners(core)
+	//index, err := GetIndex(core.cfg.From, list)
+	//if err != nil {
+	//	log.Crit("deregisterValidator", "err", err)
+	//}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator", index)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
