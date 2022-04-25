@@ -32,7 +32,8 @@ func BaseConfig() *Config {
 
 			DowntimeGracePeriod: 0,
 
-			Commission: fixed("0.1"),
+			//Commission: fixed("0.1"),
+			Commission: bigInt(100000), // 0.1 be relative to 1000000
 		},
 		Election: ElectionParameters{
 			MinElectableValidators: 1,

@@ -13,7 +13,6 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/helper/decimal"
-	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"sort"
 
@@ -65,6 +64,13 @@ var registerValidatorCommand = cli.Command{
 	Name:   "register",
 	Usage:  "register validator",
 	Action: MigrateFlags(registerValidator),
+	Flags:  Flags,
+}
+
+var revertRegisterValidatorCommand = cli.Command{
+	Name:   "revertRegister",
+	Usage:  "register validator",
+	Action: MigrateFlags(revertRegisterValidator),
 	Flags:  Flags,
 }
 var quicklyRegisterValidatorCommand = cli.Command{
@@ -318,7 +324,18 @@ var updateBlsPublicKeyCommand = cli.Command{
 	Action: MigrateFlags(updateBlsPublicKey),
 	Flags:  Flags,
 }
-
+var setNextCommissionUpdateCommand = cli.Command{
+	Name:   "setNextCommissionUpdate",
+	Usage:  "set Next Commission Update",
+	Action: MigrateFlags(setNextCommissionUpdate),
+	Flags:  Flags,
+}
+var updateCommissionCommand = cli.Command{
+	Name:   "updateCommission",
+	Usage:  "updateCommission",
+	Action: MigrateFlags(updateCommission),
+	Flags:  Flags,
+}
 var setTargetValidatorEpochPaymentCommand = cli.Command{
 	Name:   "setValidatorEpochPayment",
 	Usage:  "Sets the target per-epoch payment in MAP  for validators",
@@ -336,10 +353,11 @@ var setTargetRelayerEpochPaymentCommand = cli.Command{
 func registerValidator(ctx *cli.Context, core *listener) error {
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	commision := fixed.MustNew(core.cfg.Commission).BigInt()
+	//commision := fixed.MustNew(core.cfg.Commission).BigInt()
+	commision := big.NewInt(0).SetUint64(core.cfg.Commission)
 	log.Info("=== commision ===", "commision", commision)
 	if isPendingDeRegisterValidator(core) {
-		revertRegisterValidator(core)
+		log.Info("the account is in PendingDeRegisterValidator list please use revertRegisterValidator command")
 		return nil
 	}
 	registerValidatorPre(ctx, core)
@@ -374,13 +392,17 @@ func isPendingDeRegisterValidator(core *listener) bool {
 	core.waitUntilMsgHandled(1)
 	return ret
 }
-func revertRegisterValidator(core *listener) {
-	//----------------------------- isPendingDeRegisterValidator ---------------------------------
+func revertRegisterValidator(_ *cli.Context, core *listener) error {
+	if !isPendingDeRegisterValidator(core) {
+		log.Info("revert validator", "msg", "not in the deRegister list")
+		return nil
+	}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "revertRegisterValidator")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
+	return nil
 }
 
 /*
@@ -418,16 +440,31 @@ func TestPoc2_getNonce(_ *cli.Context, core *listener) error {
 }
 
 func updateBlsPublicKey(ctx *cli.Context, core *listener) error {
-	//----------------------------- registerValidator ---------------------------------
-	log.Info("=== Register validator ===")
-	commision := fixed.MustNew(core.cfg.Commission).BigInt()
-	log.Info("=== commision ===", "commision", commision)
-	greater, lesser := registerUseFor(core)
-	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof}
+	log.Info("=== updateBlsPublicKey ===")
+	_params := []interface{}{core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "updateBlsPublicKey", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func setNextCommissionUpdate(_ *cli.Context, core *listener) error {
+	log.Info("=== setNextCommissionUpdate ===", "commission", core.cfg.Commission)
+	Commission := core.cfg.Commission
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "setNextCommissionUpdate", big.NewInt(0).SetUint64(Commission))
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func updateCommission(_ *cli.Context, core *listener) error {
+	log.Info("=== setNextCommissionUpdate ===", "commission", core.cfg.Commission)
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "updateCommission")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
