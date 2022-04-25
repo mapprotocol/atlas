@@ -358,7 +358,7 @@ func (ctx *deployContext) registerValidators() error {
 
 	lockedGold := ctx.contract("LockedGold")
 	validators := ctx.contract("Validators")
-	commission := ctx.genesisConfig.Validators.Commission.BigInt()
+	commission := ctx.genesisConfig.Validators.Commission
 	for validatorIdx, validator := range validatorAccounts {
 		address := validator.getAddress()
 		logger := ctx.logger.New("validator", address)

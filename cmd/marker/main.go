@@ -55,6 +55,7 @@ func init() {
 	app.Commands = []cli.Command{
 		//------ validator -----
 		registerValidatorCommand,
+		revertRegisterValidatorCommand,
 		quicklyRegisterValidatorCommand,
 		deregisterValidatorCommand,
 
@@ -97,6 +98,8 @@ func init() {
 		getProxyContractOwnerCommand,
 		getContractOwnerCommand,
 		updateBlsPublicKeyCommand,
+		setNextCommissionUpdateCommand,
+		updateCommissionCommand,
 		setTargetValidatorEpochPaymentCommand,
 		setTargetRelayerEpochPaymentCommand,
 
