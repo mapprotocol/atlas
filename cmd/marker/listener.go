@@ -289,9 +289,27 @@ var setImplementationCommand = cli.Command{
 	Flags:  Flags,
 }
 var setOwnerCommand = cli.Command{
-	Name:   "setOwner",
+	Name:   "setContractOwner",
 	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
-	Action: MigrateFlags(getOwner),
+	Action: MigrateFlags(setContractOwner),
+	Flags:  Flags,
+}
+var setProxyContractOwnerCommand = cli.Command{
+	Name:   "setProxyContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(setProxyContractOwner),
+	Flags:  Flags,
+}
+var getProxyContractOwnerCommand = cli.Command{
+	Name:   "getProxyContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(getProxyContractOwner),
+	Flags:  Flags,
+}
+var getContractOwnerCommand = cli.Command{
+	Name:   "getContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(getContractOwner),
 	Flags:  Flags,
 }
 var updateBlsPublicKeyCommand = cli.Command{
@@ -466,14 +484,14 @@ func createAccount(core *listener) {
 func deregisterValidator(_ *cli.Context, core *listener) error {
 	//----------------------------- deregisterValidator ---------------------------------
 	log.Info("=== deregisterValidator ===")
-	list := _getRegisteredValidatorSigners(core)
-	index, err := GetIndex(core.cfg.From, list)
-	if err != nil {
-		log.Crit("deregisterValidator", "err", err)
-	}
+	//list := _getRegisteredValidatorSigners(core)
+	//index, err := GetIndex(core.cfg.From, list)
+	//if err != nil {
+	//	log.Crit("deregisterValidator", "err", err)
+	//}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator", index)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -1101,45 +1119,65 @@ func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
 
 func setImplementation(_ *cli.Context, core *listener) error {
 	//implementation := common.HexToAddress("0x000000000000000000000000000000000000F012")
-	implementation := core.cfg.TargetAddress
-	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	implementation := core.cfg.ImplementationAddress
+	ContractAddress := core.cfg.TargetAddress
 	ProxyAbi := mapprotocol.AbiFor("Proxy")
 	log.Info("=== setImplementation ===", "admin", core.cfg.From.String())
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "_setImplementation", implementation)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ContractAddress, nil, ProxyAbi, "_setImplementation", implementation)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
 
-func setOwner(_ *cli.Context, core *listener) error {
+func setContractOwner(_ *cli.Context, core *listener) error {
 	NewOwner := core.cfg.TargetAddress
-	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress //代理地址
-	ValidatorAddress := common.HexToAddress("0x000000000000000000000000000000000000D012") //地址
-	log.Info("ProxyAddress", "ValidatorAddress", ValidatorAddress, "NewOwner", NewOwner.String())
-	ProxyAbi := mapprotocol.AbiFor("Validators")
+	ContractAddress := core.cfg.TargetAddress //代理地址
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	log.Info("ProxyAddress", "ContractAddress", ContractAddress, "NewOwner", NewOwner.String())
 	log.Info("=== setOwner ===", "admin", core.cfg.From.String())
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "transferOwnership", NewOwner)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ContractAddress, nil, abiValidators, "transferOwnership", NewOwner)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-
 	return nil
 }
 
-func getOwner(_ *cli.Context, core *listener) error {
+func setProxyContractOwner(_ *cli.Context, core *listener) error {
+	NewOwner := core.cfg.TargetAddress
+	ContractAddress := core.cfg.TargetAddress //代理地址
+	log.Info("ProxyAddress", "ContractAddress", ContractAddress, "NewOwner", NewOwner.String())
+	ProxyAbi := mapprotocol.AbiFor("Proxy") //代理ABI
+	log.Info("=== setOwner ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ContractAddress, nil, ProxyAbi, "_transferOwnership", NewOwner)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func getProxyContractOwner(_ *cli.Context, core *listener) error {
 	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
 	var ret interface{}
-	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress //代理地址
-	ValidatorAbi := core.cfg.ValidatorParameters.ValidatorABI //代理地址
-
-	ValidatorAddress := common.HexToAddress("0x000000000000000000000000000000000000F012") //地址
-	//ValidatorAbi := mapprotocol.AbiFor("Proxy") //代理地址
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, ValidatorAbi, "owner")
+	ContractAddress := core.cfg.TargetAddress   //代理地址
+	ValidatorAbi := mapprotocol.AbiFor("Proxy") //代理ABI
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "_getOwner")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	result := ret
 	log.Info("getOwner", "Owner ", result)
 	return nil
 }
+
+func getContractOwner(_ *cli.Context, core *listener) error {
+	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
+	var ret interface{}
+	ContractAddress := core.cfg.TargetAddress                 //代理地址
+	ValidatorAbi := core.cfg.ValidatorParameters.ValidatorABI //代理地址
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "owner")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("getOwner", "Owner ", result)
+	return nil
+}
+
 func setTargetValidatorEpochPayment(_ *cli.Context, core *listener) error {
 	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
 	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
