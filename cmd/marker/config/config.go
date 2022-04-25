@@ -60,6 +60,7 @@ type Config struct {
 	RelockIndex   *big.Int
 
 	TargetAddress         common.Address
+	ImplementationAddress common.Address
 	Ip                    string
 	Port                  int
 	GasLimit              int64
@@ -102,6 +103,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
+	}
+	if ctx.IsSet(ImplementationAddressFlag.Name) {
+		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))
 	}
 	if ctx.IsSet(ContractAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))

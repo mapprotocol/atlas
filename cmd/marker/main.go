@@ -36,6 +36,7 @@ var (
 		config.ContractAddressFlag,
 		config.MAPValueFlag,
 		config.GasLimitFlag,
+		config.ImplementationAddressFlag,
 	}
 )
 
@@ -92,6 +93,9 @@ func init() {
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
 		setOwnerCommand,
+		setProxyContractOwnerCommand,
+		getProxyContractOwnerCommand,
+		getContractOwnerCommand,
 		updateBlsPublicKeyCommand,
 		setTargetValidatorEpochPaymentCommand,
 		setTargetRelayerEpochPaymentCommand,
