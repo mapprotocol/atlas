@@ -384,11 +384,15 @@ func (ctx *deployContext) registerValidators() error {
 		}
 		// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
 		pubKey := validator.PublicKey()[1:]
-		err = validators.SimpleCallFrom(address, "registerValidatorPre", blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
-		if err != nil {
-			return err
-		}
-		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress)
+		//err = validators.SimpleCallFrom(address, "registerValidatorPre", blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
+		//if err != nil {
+		//	return err
+		//}
+		bytes := append(blsPub[:], blsG1Pub[:]...)
+		bytes = append(bytes, validator.MustBLSProofOfPossession()...)
+		bytes = append(bytes, pubKey...)
+		//err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
+		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, bytes)
 		if err != nil {
 			return err
 		}

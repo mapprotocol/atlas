@@ -360,23 +360,16 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 		log.Info("the account is in PendingDeRegisterValidator list please use revertRegisterValidator command")
 		return nil
 	}
-	registerValidatorPre(ctx, core)
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater}
+	//_params := []interface{}{commision, lesser, greater,core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
+	bytes := append(core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:]...)
+	bytes = append(bytes, core.cfg.BLSProof...)
+	bytes = append(bytes, core.cfg.PublicKey[1:]...)
+	_params := []interface{}{commision, lesser, greater, bytes}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
-	go core.writer.ResolveMessage(m)
-	core.waitUntilMsgHandled(1)
-	return nil
-}
-func registerValidatorPre(ctx *cli.Context, core *listener) error {
-	//----------------------------- registerValidator ---------------------------------
-	_params := []interface{}{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
-	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
-	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidatorPre", _params...)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -941,7 +934,7 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, common.HexToAddress("0x467da661392F675c8a60C02ad62513d59B00fcf3"))
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
