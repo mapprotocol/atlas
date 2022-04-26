@@ -54,7 +54,7 @@ func main() {
 	log.Info("start")
 	msgCh = make(chan struct{})
 	var accounts []*ecdsa.PrivateKey
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 1000; i++ {
 		priv0, _ := crypto.GenerateKey()
 		accounts = append(accounts, priv0)
 	}
