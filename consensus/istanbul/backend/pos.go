@@ -121,7 +121,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	if err != nil {
 		return err
 	}
-	log.Info("Automatic active", "success", b)
+	log.Info("Automatic active pending voter", "success", b)
 	//----------------------------------------------------------------------
 
 	return nil
