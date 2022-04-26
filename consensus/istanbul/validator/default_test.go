@@ -21,7 +21,6 @@ import (
 	"reflect"
 	"testing"
 
-	blscrypto "github.com/celo-org/celo-blockchain/crypto/bls"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -50,7 +49,7 @@ func testNewValidatorSet(t *testing.T) {
 	b := []byte{}
 	for i := 0; i < ValCnt; i++ {
 		key, _ := crypto.GenerateKey()
-		blsPrivateKey, _ := blscrypto.ECDSAToBLS(key)
+		blsPrivateKey, _ := bls.CryptoType().ECDSAToBLS(key)
 		blsPublicKey, _ := bls.CryptoType().PrivateToPublic(blsPrivateKey)
 		addr := crypto.PubkeyToAddress(key.PublicKey)
 		val := New(addr, blsPublicKey)
@@ -179,7 +178,7 @@ func generateValidators(n int) ([]istanbul.ValidatorData, [][]byte) {
 	keys := make([][]byte, 0)
 	for i := 0; i < n; i++ {
 		privateKey, _ := crypto.GenerateKey()
-		blsPrivateKey, _ := blscrypto.ECDSAToBLS(privateKey)
+		blsPrivateKey, _ := bls.CryptoType().ECDSAToBLS(privateKey)
 		blsPublicKey, _ := bls.CryptoType().PrivateToPublic(blsPrivateKey)
 		vals = append(vals, istanbul.ValidatorData{
 			Address:      crypto.PubkeyToAddress(privateKey.PublicKey),
