@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	bn256 "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"io/ioutil"
 )
 
@@ -29,34 +29,45 @@ func (a *Account) MustBLSProofOfPossession() []byte {
 
 // BLSProofOfPossession generates bls proof of possession
 func (a *Account) BLSProofOfPossession() ([]byte, error) {
-	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
-	key, err := bn256.DeserializePrivateKey(privateKey)
+	privateKey, err := bls.CryptoType().ECDSAToBLS(a.PrivateKey)
 	if err != nil {
+		privdata := crypto.FromECDSA(a.PrivateKey)
+		log.Error("ECDSAToBLS", "privdata", hexutil.Encode(privdata))
 		return nil, err
 	}
-	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
+	key, err := bls.DeserializePrivateKey(privateKey)
 	if err != nil {
+		log.Error("DeserializePrivateKey", "err", err)
 		return nil, err
 	}
-	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
+	//pkbytes, err := bls.CryptoType().PrivateToPublic(privateKey)
+	//if err != nil {
+	//	privdata := crypto.FromECDSA(a.PrivateKey)
+	//	log.Error("PrivateToPublic", "err", err, "privdata", hexutil.Encode(privdata), "address", a.Address.String())
+	//	return nil, err
+	//}
+	//pubkey, err := bls.UnmarshalPk(pkbytes[:])
+	//if err != nil {
+	//	log.Error("bn256.UnmarshalPk", "err", err)
+	//	return nil, err
+	//}
+
+	signature, err := bls.Sign(key, key.ToPublic(), a.Address.Bytes())
 	if err != nil {
-		return nil, err
-	}
-	signature, err := bn256.Sign(key, pubkey, a.Address.Bytes())
-	if err != nil {
+		log.Error("bn256.Sign", "err", err)
 		return nil, err
 	}
 	return signature.Marshal(), nil
 }
 
 // BLSPublicKey returns the bls public key
-func (a *Account) BLSPublicKey() (blscrypto.SerializedPublicKey, error) {
-	privateKey, err := blscrypto.CryptoType().ECDSAToBLS(a.PrivateKey)
+func (a *Account) BLSPublicKey() (bls.SerializedPublicKey, error) {
+	privateKey, err := bls.CryptoType().ECDSAToBLS(a.PrivateKey)
 	if err != nil {
-		return blscrypto.SerializedPublicKey{}, err
+		return bls.SerializedPublicKey{}, err
 	}
 
-	return blscrypto.CryptoType().PrivateToPublic(privateKey)
+	return bls.CryptoType().PrivateToPublic(privateKey)
 }
 
 // PublicKeyHex hex representation of the public key

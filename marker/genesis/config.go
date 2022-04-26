@@ -126,15 +126,14 @@ type ValidatorsParameters struct {
 	CommissionUpdateDelay           uint64                 `json:"commissionUpdateDelay"`
 	PledgeMultiplierInReward        *fixed.Fixed           `json:"pledgeMultiplierInReward"`
 	DowntimeGracePeriod             uint64                 `json:"downtimeGracePeriod"`
-	Commission                      *fixed.Fixed           `json:"commission"` // commission for genesis registered validator
+	Commission                      *big.Int               `json:"commission"` // commission for genesis registered validator
 }
 
 // EpochRewardsParameters are the initial configuration parameters for EpochRewards
 type EpochRewardsParameters struct {
-	MaxValidatorEpochPayment *big.Int       `json:"maxValidatorEpochPayment"`
-	MaxRelayerEpochPayment   *big.Int       `json:"maxRelayerEpochPayment"`
-	CommunityRewardFraction  *fixed.Fixed   `json:"communityRewardFraction"`
-	CommunityPartner         common.Address `json:"communityPartner"`
+	MaxEpochPayment         *big.Int       `json:"maxValidatorEpochPayment"`
+	CommunityRewardFraction *fixed.Fixed   `json:"communityRewardFraction"`
+	CommunityPartner        common.Address `json:"communityPartner"`
 }
 
 type EpochRewardsParametersMarshaling struct {

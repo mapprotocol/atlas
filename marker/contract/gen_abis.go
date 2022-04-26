@@ -3725,6 +3725,11 @@ func init() {
         },
         {
           "internalType": "bytes",
+          "name": "blsG1Key",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
           "name": "blsPop",
           "type": "bytes"
         }
@@ -3760,21 +3765,6 @@ func init() {
       "constant": true,
       "inputs": [],
       "name": "epochPayment",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "epochRelayerPayment",
       "outputs": [
         {
           "internalType": "uint256",
@@ -4245,12 +4235,7 @@ func init() {
         },
         {
           "internalType": "uint256",
-          "name": "_targetValidatorEpochPayment",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_targetRelayerEpochPayment",
+          "name": "_targetEpochPayment",
           "type": "uint256"
         },
         {
@@ -4320,28 +4305,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "setTargetValidatorEpochPayment",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetRelayerEpochPayment",
+      "name": "setTargetEpochPayment",
       "outputs": [
         {
           "internalType": "bool",
@@ -6934,6 +6898,19 @@ func init() {
           "internalType": "address",
           "name": "validator",
           "type": "address"
+        }
+      ],
+      "name": "ValidatorPreDeregistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
         },
         {
           "indexed": true,
@@ -7723,6 +7700,11 @@ func init() {
           "internalType": "address",
           "name": "greater",
           "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "blsBlsG1BlsPopEcdsaPub",
+          "type": "bytes"
         }
       ],
       "name": "registerValidator",
@@ -7739,29 +7721,8 @@ func init() {
     },
     {
       "constant": false,
-      "inputs": [
-        {
-          "internalType": "bytes",
-          "name": "blsPublicKey",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "blsG1PublicKey",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "blsPop",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "ecdsaPublicKey",
-          "type": "bytes"
-        }
-      ],
-      "name": "registerValidatorPre",
+      "inputs": [],
+      "name": "revertRegisterValidator",
       "outputs": [
         {
           "internalType": "bool",
@@ -7771,6 +7732,21 @@ func init() {
       ],
       "payable": false,
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "isPendingDeRegisterValidator",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -7883,19 +7859,28 @@ func init() {
     },
     {
       "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
+      "inputs": [],
       "name": "deregisterValidator",
       "outputs": [
         {
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "deRegisterAllValidatorsInPending",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "payable": false,
@@ -8244,6 +8229,21 @@ func init() {
       "constant": true,
       "inputs": [],
       "name": "getRegisteredValidators",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getDeRegisteredValidatorsT",
       "outputs": [
         {
           "internalType": "address[]",

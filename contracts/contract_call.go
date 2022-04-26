@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -107,8 +108,13 @@ func (bm *BoundMethod) run(vmRunner vm.EVMRunner, result interface{}, readOnly b
 	}
 
 	if err != nil {
-		//message, _ := unpackError(output)
-		//logger.Error("Error invoking evm function: EVM call failure", "input", hexutil.Encode(input), "maxgas", bm.maxGas, "err", err, "message", message)
+		revertReason, err2 := abi.UnpackRevert(output)
+		if err2 == nil {
+			return fmt.Errorf("Revert: %s", revertReason)
+		}
+		message, _ := unpackError(output)
+		logger.Error("Error invoking evm function: EVM call failure", "input", hexutil.Encode(input), "maxgas", bm.maxGas, "err", err, "message", message)
+
 		return err
 	}
 

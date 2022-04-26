@@ -58,7 +58,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		communityReward = big.NewInt(0)
 	}
 
-	logger.Debug("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward)
+	logger.Info("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward, "relayerReward", relayerReward)
 
 	// The validator set that signs off on the last block of the epoch is the one that we need to
 	// iterate over.
@@ -73,13 +73,6 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		validators_ = append(validators_, val.Address())
 		sb.logger.Info("will distributeEpochRewards", "validator", val.Address().String())
 	}
-	//----------------------------- Automatic active -------------------
-	b, err := sb.activeAllPending(vmRunner, validators_)
-	if err != nil {
-		return err
-	}
-	log.Info("Automatic active", "success", b)
-	//----------------------------------------------------------------------
 
 	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
@@ -115,8 +108,22 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 			}
 			log.Info("reward to relayer success", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
 		}
-		log.Info("no relayer to reward")
 	}
+	//----------------------------- deRegister -------------------
+	deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner)
+	if err != nil {
+		return err
+	}
+	log.Info("deRegister AllValidators InPending", "deRegisters", deRegisters)
+
+	//----------------------------- Automatic active -------------------
+	b, err := sb.activeAllPending(vmRunner, validators_)
+	if err != nil {
+		return err
+	}
+	log.Info("Automatic active pending voter", "success", b)
+	//----------------------------------------------------------------------
+
 	return nil
 }
 
@@ -236,4 +243,11 @@ func (sb *Backend) activeAllPending(vmRunner vm.EVMRunner, validators []common.A
 		return false, err
 	}
 	return b, nil
+}
+func (sb *Backend) deRegisterAllValidatorsInPending(vmRunner vm.EVMRunner) (*[]common.Address, error) {
+	deValidators, err := validators.DeRegisterValidatorsInPending(vmRunner)
+	if err != nil {
+		return nil, err
+	}
+	return deValidators, nil
 }

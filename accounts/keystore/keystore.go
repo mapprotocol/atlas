@@ -542,12 +542,15 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 
 	///////////////////////
 	blskey, err := bn256.DeserializePrivateKey(privateKeyBytes)
-	pubkey, err := bn256.PrivateToPublic(privateKeyBytes)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}
-	pk, err := bn256.UnmarshalPk(pubkey)
-	sign, err := bn256.Sign(blskey, pk, msg)
+	//pubkey, err := bn256.PrivateToPublic(privateKeyBytes)
+	//if err != nil {
+	//	return blscrypto.SerializedSignature{}, err
+	//}
+	//pk, err := bn256.UnmarshalPk(pubkey)
+	sign, err := bn256.Sign(blskey, blskey.ToPublic(), msg)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}

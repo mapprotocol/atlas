@@ -3932,6 +3932,11 @@ const EpochRewardsStr string = `[
         },
         {
           "internalType": "bytes",
+          "name": "blsG1Key",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
           "name": "blsPop",
           "type": "bytes"
         }
@@ -3967,21 +3972,6 @@ const EpochRewardsStr string = `[
       "constant": true,
       "inputs": [],
       "name": "epochPayment",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "epochRelayerPayment",
       "outputs": [
         {
           "internalType": "uint256",
@@ -4452,12 +4442,7 @@ const EpochRewardsStr string = `[
         },
         {
           "internalType": "uint256",
-          "name": "_targetValidatorEpochPayment",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_targetRelayerEpochPayment",
+          "name": "_targetEpochPayment",
           "type": "uint256"
         },
         {
@@ -4527,28 +4512,7 @@ const EpochRewardsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "setTargetValidatorEpochPayment",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "setTargetRelayerEpochPayment",
+      "name": "setTargetEpochPayment",
       "outputs": [
         {
           "internalType": "bool",
@@ -5015,6 +4979,19 @@ const ValidatorsStr = `[
         }
       ],
       "name": "ValidatorLockedGoldRequirementsSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "validator",
+          "type": "address"
+        }
+      ],
+      "name": "ValidatorPreDeregistered",
       "type": "event"
     },
     {
@@ -5814,6 +5791,11 @@ const ValidatorsStr = `[
           "internalType": "address",
           "name": "greater",
           "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "blsBlsG1BlsPopEcdsaPub",
+          "type": "bytes"
         }
       ],
       "name": "registerValidator",
@@ -5830,29 +5812,8 @@ const ValidatorsStr = `[
     },
     {
       "constant": false,
-      "inputs": [
-        {
-          "internalType": "bytes",
-          "name": "blsPublicKey",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "blsG1PublicKey",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "blsPop",
-          "type": "bytes"
-        },
-        {
-          "internalType": "bytes",
-          "name": "ecdsaPublicKey",
-          "type": "bytes"
-        }
-      ],
-      "name": "registerValidatorPre",
+      "inputs": [],
+      "name": "revertRegisterValidator",
       "outputs": [
         {
           "internalType": "bool",
@@ -5862,6 +5823,21 @@ const ValidatorsStr = `[
       ],
       "payable": false,
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "isPendingDeRegisterValidator",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -5974,19 +5950,28 @@ const ValidatorsStr = `[
     },
     {
       "constant": false,
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
+      "inputs": [],
       "name": "deregisterValidator",
       "outputs": [
         {
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "deRegisterAllValidatorsInPending",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
         }
       ],
       "payable": false,
@@ -6335,6 +6320,21 @@ const ValidatorsStr = `[
       "constant": true,
       "inputs": [],
       "name": "getRegisteredValidators",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getDeRegisteredValidatorsT",
       "outputs": [
         {
           "internalType": "address[]",

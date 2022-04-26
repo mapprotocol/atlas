@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/mapprotocol/atlas/cmd/marker/config"
-	"github.com/mapprotocol/atlas/cmd/marker/geneisis"
+	"github.com/mapprotocol/atlas/cmd/marker/genesis"
 )
 
 var (
@@ -36,6 +36,7 @@ var (
 		config.ContractAddressFlag,
 		config.MAPValueFlag,
 		config.GasLimitFlag,
+		config.ImplementationAddressFlag,
 	}
 )
 
@@ -54,6 +55,7 @@ func init() {
 	app.Commands = []cli.Command{
 		//------ validator -----
 		registerValidatorCommand,
+		revertRegisterValidatorCommand,
 		quicklyRegisterValidatorCommand,
 		deregisterValidatorCommand,
 
@@ -78,6 +80,7 @@ func init() {
 		queryRegisteredValidatorSignersCommand,
 		getValidatorCommand,
 		getRewardInfoCommand,
+		getVoterRewardInfoCommand,
 		queryNumRegisteredValidatorsCommand,
 		queryTopValidatorsCommand,
 		queryValidatorEligibilityCommand,
@@ -90,12 +93,21 @@ func init() {
 		getPendingWithdrawalsCommand,
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
+		setOwnerCommand,
+		setProxyContractOwnerCommand,
+		getProxyContractOwnerCommand,
+		getContractOwnerCommand,
 		updateBlsPublicKeyCommand,
+		setNextCommissionUpdateCommand,
+		updateCommissionCommand,
 		setTargetValidatorEpochPaymentCommand,
 		setTargetRelayerEpochPaymentCommand,
 
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
+
+		//---------------------------------
+		voterMonitorCommand,
 	}
 	app.Flags = Flags
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
@@ -119,7 +131,6 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 				if err != nil {
 					log.Error("MigrateFlags", "=== err ===", err, ctx.IsSet(name))
 				}
-
 			}
 		}
 		_config, err := config.AssemblyConfig(ctx)

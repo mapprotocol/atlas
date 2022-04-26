@@ -70,15 +70,15 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 		return nil, err
 	}
 
-	pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
-	if err != nil {
-		return nil, err
-	}
-	pubkey, err := bn256.UnmarshalPk(pkbytes[:])
-	if err != nil {
-		return nil, err
-	}
-	signature, err := bn256.Sign(key, pubkey, a.Address.Bytes())
+	//pkbytes, err := blscrypto.CryptoType().PrivateToPublic(privateKey)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//pubkey, err := bn256.UnmarshalPk(pkbytes[:])
+	//if err != nil {
+	//	return nil, err
+	//}
+	signature, err := bn256.Sign(key, key.ToPublic(), a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}

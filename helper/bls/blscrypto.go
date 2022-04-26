@@ -94,7 +94,6 @@ func (sig *SerializedSignature) UnmarshalJSON(input []byte) error {
 }
 
 func SerializedSignatureFromBytes(serializedSignature []byte) (SerializedSignature, error) {
-	fmt.Println("sl", len(serializedSignature))
 	if len(serializedSignature) != SIGNATUREBYTES {
 		return SerializedSignature{}, fmt.Errorf("wrong length for serialized signature: expected %d, got %d", SIGNATUREBYTES, len(serializedSignature))
 	}
@@ -193,15 +192,17 @@ func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 	return nil, errors.New("couldn't derive a BLS key from an ECDSA key")
 }
 func (BN256) PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error) {
-	pk, err := PrivateToPublic(privateKeyBytes)
 	pubKeyBytesFixed := SerializedPublicKey{}
+	pk, err := PrivateToPublic(privateKeyBytes)
 	copy(pubKeyBytesFixed[:], pk)
 	return pubKeyBytesFixed, err
 }
 
 func (BN256) PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, error) {
 	pubKeyBytesFixed := SerializedG1PublicKey{}
-	return pubKeyBytesFixed, nil
+	pk, err := PrivateToG1Public(privateKeyBytes)
+	copy(pubKeyBytesFixed[:], pk)
+	return pubKeyBytesFixed, err
 }
 
 func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {

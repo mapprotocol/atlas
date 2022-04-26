@@ -13,7 +13,6 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/helper/decimal"
-	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"sort"
 
@@ -65,6 +64,13 @@ var registerValidatorCommand = cli.Command{
 	Name:   "register",
 	Usage:  "register validator",
 	Action: MigrateFlags(registerValidator),
+	Flags:  Flags,
+}
+
+var revertRegisterValidatorCommand = cli.Command{
+	Name:   "revertRegister",
+	Usage:  "register validator",
+	Action: MigrateFlags(revertRegisterValidator),
 	Flags:  Flags,
 }
 var quicklyRegisterValidatorCommand = cli.Command{
@@ -158,11 +164,18 @@ var getValidatorCommand = cli.Command{
 }
 
 var getRewardInfoCommand = cli.Command{
-	Name:   "getRewardInfo",
+	Name:   "getValidatorRewardInfo",
 	Usage:  "getValidator Info",
 	Action: MigrateFlags(getRewardInfo),
 	Flags:  Flags,
 }
+var getVoterRewardInfoCommand = cli.Command{
+	Name:   "getVoterRewardInfo",
+	Usage:  "get Voter Reward Information about yourself",
+	Action: MigrateFlags(getVoterRewardInfo),
+	Flags:  Flags,
+}
+
 var queryNumRegisteredValidatorsCommand = cli.Command{
 	Name:   "getNumRegisteredValidators",
 	Usage:  "get Num RegisteredValidators",
@@ -209,6 +222,13 @@ var getActiveVotesForValidatorCommand = cli.Command{
 	Name:   "getActiveVotesForValidator",
 	Usage:  "Returns the total active vote units made for `validator`.",
 	Action: MigrateFlags(getActiveVotesForValidator),
+	Flags:  Flags,
+}
+
+var voterMonitorCommand = cli.Command{
+	Name:   "voterMonitor",
+	Usage:  "Monitor the revenue of voter to a validator",
+	Action: MigrateFlags(voterMonitor),
 	Flags:  Flags,
 }
 
@@ -274,13 +294,48 @@ var setImplementationCommand = cli.Command{
 	Action: MigrateFlags(setImplementation),
 	Flags:  Flags,
 }
+var setOwnerCommand = cli.Command{
+	Name:   "setContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(setContractOwner),
+	Flags:  Flags,
+}
+var setProxyContractOwnerCommand = cli.Command{
+	Name:   "setProxyContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(setProxyContractOwner),
+	Flags:  Flags,
+}
+var getProxyContractOwnerCommand = cli.Command{
+	Name:   "getProxyContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(getProxyContractOwner),
+	Flags:  Flags,
+}
+var getContractOwnerCommand = cli.Command{
+	Name:   "getContractOwner",
+	Usage:  "Transfers ownership of the contract to a new account (`newOwner`).",
+	Action: MigrateFlags(getContractOwner),
+	Flags:  Flags,
+}
 var updateBlsPublicKeyCommand = cli.Command{
 	Name:   "updateBlsPublicKey",
 	Usage:  "updateBlsPublicKey",
 	Action: MigrateFlags(updateBlsPublicKey),
 	Flags:  Flags,
 }
-
+var setNextCommissionUpdateCommand = cli.Command{
+	Name:   "setNextCommissionUpdate",
+	Usage:  "set Next Commission Update",
+	Action: MigrateFlags(setNextCommissionUpdate),
+	Flags:  Flags,
+}
+var updateCommissionCommand = cli.Command{
+	Name:   "updateCommission",
+	Usage:  "updateCommission",
+	Action: MigrateFlags(updateCommission),
+	Flags:  Flags,
+}
 var setTargetValidatorEpochPaymentCommand = cli.Command{
 	Name:   "setValidatorEpochPayment",
 	Usage:  "Sets the target per-epoch payment in MAP  for validators",
@@ -298,12 +353,20 @@ var setTargetRelayerEpochPaymentCommand = cli.Command{
 func registerValidator(ctx *cli.Context, core *listener) error {
 	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	commision := fixed.MustNew(core.cfg.Commission).BigInt()
+	//commision := fixed.MustNew(core.cfg.Commission).BigInt()
+	commision := big.NewInt(0).SetUint64(core.cfg.Commission)
 	log.Info("=== commision ===", "commision", commision)
-	registerValidatorPre(ctx, core)
+	if isPendingDeRegisterValidator(core) {
+		log.Info("the account is in PendingDeRegisterValidator list please use revertRegisterValidator command")
+		return nil
+	}
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater}
+	//_params := []interface{}{commision, lesser, greater,core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
+	bytes := append(core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:]...)
+	bytes = append(bytes, core.cfg.BLSProof...)
+	bytes = append(bytes, core.cfg.PublicKey[1:]...)
+	_params := []interface{}{commision, lesser, greater, bytes}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
@@ -311,12 +374,25 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	core.waitUntilMsgHandled(1)
 	return nil
 }
-func registerValidatorPre(ctx *cli.Context, core *listener) error {
-	//----------------------------- registerValidator ---------------------------------
-	_params := []interface{}{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
+
+func isPendingDeRegisterValidator(core *listener) bool {
+	//----------------------------- isPendingDeRegisterValidator ---------------------------------
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidatorPre", _params...)
+	var ret bool
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "isPendingDeRegisterValidator")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return ret
+}
+func revertRegisterValidator(_ *cli.Context, core *listener) error {
+	if !isPendingDeRegisterValidator(core) {
+		log.Info("revert validator", "msg", "not in the deRegister list")
+		return nil
+	}
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "revertRegisterValidator")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -357,16 +433,31 @@ func TestPoc2_getNonce(_ *cli.Context, core *listener) error {
 }
 
 func updateBlsPublicKey(ctx *cli.Context, core *listener) error {
-	//----------------------------- registerValidator ---------------------------------
-	log.Info("=== Register validator ===")
-	commision := fixed.MustNew(core.cfg.Commission).BigInt()
-	log.Info("=== commision ===", "commision", commision)
-	greater, lesser := registerUseFor(core)
-	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	_params := []interface{}{commision, lesser, greater, core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof}
+	log.Info("=== updateBlsPublicKey ===")
+	_params := []interface{}{core.cfg.PublicKey[1:], core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "updateBlsPublicKey", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func setNextCommissionUpdate(_ *cli.Context, core *listener) error {
+	log.Info("=== setNextCommissionUpdate ===", "commission", core.cfg.Commission)
+	Commission := core.cfg.Commission
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "setNextCommissionUpdate", big.NewInt(0).SetUint64(Commission))
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func updateCommission(_ *cli.Context, core *listener) error {
+	log.Info("=== setNextCommissionUpdate ===", "commission", core.cfg.Commission)
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "updateCommission")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -423,14 +514,14 @@ func createAccount(core *listener) {
 func deregisterValidator(_ *cli.Context, core *listener) error {
 	//----------------------------- deregisterValidator ---------------------------------
 	log.Info("=== deregisterValidator ===")
-	list := _getRegisteredValidatorSigners(core)
-	index, err := GetIndex(core.cfg.From, list)
-	if err != nil {
-		log.Crit("deregisterValidator", "err", err)
-	}
+	//list := _getRegisteredValidatorSigners(core)
+	//index, err := GetIndex(core.cfg.From, list)
+	//if err != nil {
+	//	log.Crit("deregisterValidator", "err", err)
+	//}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator", index)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "deregisterValidator")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -640,6 +731,51 @@ func getRewardInfo(_ *cli.Context, core *listener) error {
 	log.Info("=== END ===")
 	return nil
 }
+
+func getVoterRewardInfo(ctx *cli.Context, core *listener) error {
+
+	////3.
+	//{
+	//	f := new(big.Float).SetInt(myVotes)
+	//	fSub := new(big.Float).SetInt(allVotes)
+	//	f.Quo(f, fSub)
+	//	log.Info("getExpectFraction", "balance", f)
+	//}
+
+	curBlockNumber, err := core.conn.BlockNumber(context.Background())
+	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
+	//if curBlockNumber < epochSize {
+	//	log.Info("=== current block number less than first epoch number ===", "current", curBlockNumber, "epochSize", epochSize)
+	//}
+	if err != nil {
+		return err
+	}
+	EpochFirst, err := istanbul.GetEpochFirstBlockGivenBlockNumber(curBlockNumber, epochSize)
+	if err != nil {
+		return err
+	}
+	Epoch := istanbul.GetEpochNumber(curBlockNumber, epochSize)
+	electionContractAddress := core.cfg.ElectionParameters.ElectionAddress
+	firstBlock := big.NewInt(int64(1))
+	endBlock := big.NewInt(int64(EpochFirst + 1))
+	log.Info("=== get voter Reward ===", "cur_epoch", Epoch, "epochSize", epochSize, "query first BlockNumber", firstBlock, "query end BlockNumber", endBlock, "validatorContractAddress", electionContractAddress.String(), "admin", core.cfg.From)
+	query := mapprotocol.BuildQuery(electionContractAddress, mapprotocol.EpochRewardsDistributedToVoters, firstBlock, endBlock)
+	// querying for logs
+	logs, err := core.conn.FilterLogs(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		//validator := common.Bytes2Hex(l.Topics[0].Bytes())
+		validator := common.BytesToAddress(l.Topics[1].Bytes())
+		reward := big.NewInt(0).SetBytes(l.Data[:32])
+		log.Info("reward to voters", "validator", validator, "reward", reward)
+	}
+	log.Info("=== END ===")
+
+	return nil
+}
+
 func _getRegisteredValidatorSigners(core *listener) []common.Address {
 	var ValidatorSigners interface{}
 	validatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
@@ -758,6 +894,7 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
 	return nil
 }
+
 func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
@@ -769,6 +906,7 @@ func getPendingVotersForValidator(_ *cli.Context, core *listener) error {
 	log.Info("getPendingVotersForValidator", "voters", ret.([]common.Address))
 	return nil
 }
+
 func getPendingInfoForValidator(_ *cli.Context, core *listener) error {
 	type ret []interface{}
 	var Value interface{}
@@ -787,7 +925,7 @@ func getPendingInfoForValidator(_ *cli.Context, core *listener) error {
 	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, ElectionAddress, nil, abiElection, "pendingInfo", core.cfg.From, core.cfg.TargetAddress)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	log.Info("getPendingInfoForValidator", "Epoch", Epoch.(*big.Int), "Epoch", Value.(*big.Int))
+	log.Info("getPendingInfoForValidator", "PendingEpoch", Epoch.(*big.Int), "Balance", Value.(*big.Int))
 	return nil
 }
 
@@ -796,7 +934,7 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, common.HexToAddress("0x467da661392F675c8a60C02ad62513d59B00fcf3"))
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
@@ -889,9 +1027,9 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	log.Info("result", "getTotalVotes", result)
 	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1))
 	//var ret interface{}
-	//ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	//Validator := core.cfg.ValidatorParameters.Validator
 	//abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "calculateEpochScore", updatetime)
+	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, Validator, nil, abiValidators, "calculateEpochScore", updatetime)
 	//go core.writer.ResolveMessage(m)
 	//core.waitUntilMsgHandled(1)
 	//result := ret.(*big.Int)
@@ -910,9 +1048,9 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 
 	//updatetime := big.NewInt(90)
 	//var ret interface{}
-	//ValidatorAddress := mapprotocol.MustProxyAddressFor("Random")
+	//Validator := mapprotocol.MustProxyAddressFor("Random")
 	//abiValidators := mapprotocol.AbiFor("Random")
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ValidatorAddress, nil, abiValidators, "getBlockRandomness", updatetime)
+	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, Validator, nil, abiValidators, "getBlockRandomness", updatetime)
 	//go core.writer.ResolveMessage(m)
 	//core.waitUntilMsgHandled(1)
 	//result := ret.(common.Hash)
@@ -1011,15 +1149,65 @@ func setValidatorLockedGoldRequirements(_ *cli.Context, core *listener) error {
 
 func setImplementation(_ *cli.Context, core *listener) error {
 	//implementation := common.HexToAddress("0x000000000000000000000000000000000000F012")
-	implementation := core.cfg.TargetAddress
-	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	implementation := core.cfg.ImplementationAddress
+	ContractAddress := core.cfg.TargetAddress
 	ProxyAbi := mapprotocol.AbiFor("Proxy")
 	log.Info("=== setImplementation ===", "admin", core.cfg.From.String())
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, ProxyAbi, "_setImplementation", implementation)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ContractAddress, nil, ProxyAbi, "_setImplementation", implementation)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
 }
+
+func setContractOwner(_ *cli.Context, core *listener) error {
+	NewOwner := core.cfg.TargetAddress
+	ContractAddress := core.cfg.TargetAddress //代理地址
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	log.Info("ProxyAddress", "ContractAddress", ContractAddress, "NewOwner", NewOwner.String())
+	log.Info("=== setOwner ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ContractAddress, nil, abiValidators, "transferOwnership", NewOwner)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func setProxyContractOwner(_ *cli.Context, core *listener) error {
+	NewOwner := core.cfg.TargetAddress
+	ContractAddress := core.cfg.TargetAddress //代理地址
+	log.Info("ProxyAddress", "ContractAddress", ContractAddress, "NewOwner", NewOwner.String())
+	ProxyAbi := mapprotocol.AbiFor("Proxy") //代理ABI
+	log.Info("=== setOwner ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ContractAddress, nil, ProxyAbi, "_transferOwnership", NewOwner)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+func getProxyContractOwner(_ *cli.Context, core *listener) error {
+	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
+	var ret interface{}
+	ContractAddress := core.cfg.TargetAddress   //代理地址
+	ValidatorAbi := mapprotocol.AbiFor("Proxy") //代理ABI
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "_getOwner")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("getOwner", "Owner ", result)
+	return nil
+}
+
+func getContractOwner(_ *cli.Context, core *listener) error {
+	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
+	var ret interface{}
+	ContractAddress := core.cfg.TargetAddress                 //代理地址
+	ValidatorAbi := core.cfg.ValidatorParameters.ValidatorABI //代理地址
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "owner")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("getOwner", "Owner ", result)
+	return nil
+}
+
 func setTargetValidatorEpochPayment(_ *cli.Context, core *listener) error {
 	value := new(big.Int).Mul(big.NewInt(int64(core.cfg.Value)), big.NewInt(1e18))
 	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress

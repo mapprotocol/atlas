@@ -186,6 +186,8 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 	ctx.statedb.SetCode(proxyAddress, proxyByteCode)
 	ctx.statedb.SetState(proxyAddress, params.ProxyOwnerStorageLocation, AdminAddr.Hash())
 
+	//fmt.Println("AdminAddr.Hash()",AdminAddr.Hash())
+
 	logger.Info("Deploy Implementation")
 	ctx.statedb.SetCode(implAddress, bytecode)
 
@@ -261,8 +263,7 @@ func (ctx *deployContext) deployEpochRewards() error {
 	err := ctx.deployCoreContract("EpochRewards", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize",
 			env.MustProxyAddressFor("Registry"),
-			ctx.genesisConfig.EpochRewards.MaxValidatorEpochPayment,
-			ctx.genesisConfig.EpochRewards.MaxRelayerEpochPayment,
+			ctx.genesisConfig.EpochRewards.MaxEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.CommunityPartner,
 		)
@@ -357,7 +358,7 @@ func (ctx *deployContext) registerValidators() error {
 
 	lockedGold := ctx.contract("LockedGold")
 	validators := ctx.contract("Validators")
-	commission := ctx.genesisConfig.Validators.Commission.BigInt()
+	commission := ctx.genesisConfig.Validators.Commission
 	for validatorIdx, validator := range validatorAccounts {
 		address := validator.getAddress()
 		logger := ctx.logger.New("validator", address)
@@ -383,11 +384,15 @@ func (ctx *deployContext) registerValidators() error {
 		}
 		// remove the 0x04 prefix from the pub key (we need the 64 bytes variant)
 		pubKey := validator.PublicKey()[1:]
-		err = validators.SimpleCallFrom(address, "registerValidatorPre", blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
-		if err != nil {
-			return err
-		}
-		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress)
+		//err = validators.SimpleCallFrom(address, "registerValidatorPre", blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
+		//if err != nil {
+		//	return err
+		//}
+		bytes := append(blsPub[:], blsG1Pub[:]...)
+		bytes = append(bytes, validator.MustBLSProofOfPossession()...)
+		bytes = append(bytes, pubKey...)
+		//err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
+		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, bytes)
 		if err != nil {
 			return err
 		}

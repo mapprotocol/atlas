@@ -24,7 +24,7 @@ var (
 		Name:  "namePrefix",
 		Usage: "namePrefix",
 	}
-	CommissionFlag = cli.StringFlag{
+	CommissionFlag = cli.Uint64Flag{
 		Name:  "commission",
 		Usage: "register validator param",
 	}
@@ -93,6 +93,11 @@ var (
 	ContractAddressFlag = cli.StringFlag{
 		Name:  "contractAddress",
 		Usage: "set contract Address",
+		Value: "",
+	}
+	ImplementationAddressFlag = cli.StringFlag{
+		Name:  "implementationAddress",
+		Usage: "set implementation Address",
 		Value: "",
 	}
 	GasLimitFlag = cli.Int64Flag{

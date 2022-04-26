@@ -51,7 +51,7 @@ type Config struct {
 	BLSProof   []byte
 	Value      uint64
 	Duration   int64
-	Commission string
+	Commission uint64
 
 	VoteNum       *big.Int
 	TopNum        *big.Int
@@ -60,6 +60,7 @@ type Config struct {
 	RelockIndex   *big.Int
 
 	TargetAddress         common.Address
+	ImplementationAddress common.Address
 	Ip                    string
 	Port                  int
 	GasLimit              int64
@@ -81,7 +82,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	password := "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	config.VoteNum = big.NewInt(int64(0))
 	config.TargetAddress = params.ZeroAddress
-	config.Commission = "0.1"
+	config.Commission = 1000000 //default 1  be relative to 1000,000
 	config.Verbosity = "3"
 	config.NamePrefix = "validator"
 	//-----------------------------------------------------
@@ -92,7 +93,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		password = ctx.String(PasswordFlag.Name)
 	}
 	if ctx.IsSet(CommissionFlag.Name) {
-		config.Commission = ctx.String(CommissionFlag.Name)
+		config.Commission = ctx.Uint64(CommissionFlag.Name)
 	}
 	if ctx.IsSet(VoteNumFlag.Name) {
 		config.VoteNum = big.NewInt(ctx.Int64(VoteNumFlag.Name))
@@ -102,6 +103,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
+	}
+	if ctx.IsSet(ImplementationAddressFlag.Name) {
+		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))
 	}
 	if ctx.IsSet(ContractAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))
@@ -142,20 +146,22 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
 	}
-	_account, err := account.LoadAccount(path, password)
-	if err != nil {
-		return nil, err
+	if path != "" {
+		_account, err := account.LoadAccount(path, password)
+		if err != nil {
+			return nil, err
+		}
+		blsPub, err := _account.BLSPublicKey()
+		if err != nil {
+			return nil, err
+		}
+		config.PublicKey = _account.PublicKey()
+		config.From = _account.Address
+		config.PrivateKey = _account.PrivateKey
+		config.BlsPub = blsPub
+		config.BlsG1Pub = blsPub
+		config.BLSProof = _account.MustBLSProofOfPossession()
 	}
-	blsPub, err := _account.BLSPublicKey()
-	if err != nil {
-		return nil, err
-	}
-	config.PublicKey = _account.PublicKey()
-	config.From = _account.Address
-	config.PrivateKey = _account.PrivateKey
-	config.BlsPub = blsPub
-	config.BlsG1Pub = blsPub
-	config.BLSProof = _account.MustBLSProofOfPossession()
 
 	ValidatorAddress := mapprotocol.MustProxyAddressFor("Validators")
 	LockedGoldAddress := mapprotocol.MustProxyAddressFor("LockedGold")
