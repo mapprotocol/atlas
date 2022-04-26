@@ -1,6 +1,8 @@
 package vmcontext
 
 import (
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -51,7 +53,10 @@ func (ev *evmRunner) Execute(recipient common.Address, input []byte, gas uint64,
 	if ev.dontMeterGas {
 		//evm.StopGasMetering()
 	}
-	ret, _, err = evm.Call(vm.AccountRef(evm.Origin), recipient, input, gas, value)
+	ret, leftOverGas, err := evm.Call(vm.AccountRef(evm.Origin), recipient, input, gas, value)
+	if recipient == mapprotocol.MustProxyAddressFor("Election") {
+		log.Info("Log evm Execute", "recipient", recipient, "leftOverGas", leftOverGas, "gas", gas)
+	}
 	return ret, err
 }
 
