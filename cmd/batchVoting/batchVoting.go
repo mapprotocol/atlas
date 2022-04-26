@@ -32,7 +32,7 @@ const DefaultGasLimit = 4500000
 
 var (
 	url       = "http://127.0.0.1:8545"
-	urlSendTx = "http://127.0.0.1:8545"
+	urlSendTx = "http://13.67.118.60:7445"
 	msgCh     chan struct{} // wait for msg handles
 )
 
