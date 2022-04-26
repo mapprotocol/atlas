@@ -329,15 +329,15 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 			return blscrypto.SerializedSignature{}, err
 		}
 
-		pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
-		if err != nil {
-			return blscrypto.SerializedSignature{}, err
-		}
-		pubkey, err := blscrypto.UnmarshalPk(pkbytes[:])
-		if err != nil {
-			return blscrypto.SerializedSignature{}, err
-		}
-		signature, err := blscrypto.Sign(prikey, pubkey, from.Bytes())
+		//pkbytes, err := blscrypto.CryptoType().PrivateToPublic(keybytes)
+		//if err != nil {
+		//	return blscrypto.SerializedSignature{}, err
+		//}
+		//pubkey, err := blscrypto.UnmarshalPk(pkbytes[:])
+		//if err != nil {
+		//	return blscrypto.SerializedSignature{}, err
+		//}
+		signature, err := blscrypto.Sign(prikey, prikey.ToPublic(), from.Bytes())
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
