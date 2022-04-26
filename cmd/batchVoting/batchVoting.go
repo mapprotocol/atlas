@@ -31,8 +31,8 @@ import (
 const DefaultGasLimit = 4500000
 
 var (
-	url       = "http://127.0.0.1:7445"
-	urlSendTx = "http://13.67.118.60:7445"
+	url       = "http://127.0.0.1:8545"
+	urlSendTx = "http://127.0.0.1:8545"
 	msgCh     chan struct{} // wait for msg handles
 )
 
@@ -54,7 +54,7 @@ func main() {
 	log.Info("start")
 	msgCh = make(chan struct{})
 	var accounts []*ecdsa.PrivateKey
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10000; i++ {
 		priv0, _ := crypto.GenerateKey()
 		accounts = append(accounts, priv0)
 	}
@@ -62,10 +62,10 @@ func main() {
 	if err != nil {
 		log.Error("Failed to connect to the Atlaschain client: ", err)
 	}
-	//from := "0x81f02fd21657df80783755874a92c996749777bf"
-	from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
+	from := "0x81f02fd21657df80783755874a92c996749777bf"
+	//from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
 	var ret bool
-	if err := conn.Call(&ret, "personal_unlockAccount", from, ""); err != nil {
+	if err := conn.Call(&ret, "personal_unlockAccount", from, "111111"); err != nil {
 		log.Error("msg", "err", err)
 	}
 	fmt.Println("personal_unlockAccount", ret)
@@ -127,7 +127,7 @@ func main() {
 
 		to := target[j]
 		VoteNum := i * 1000
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Second)
 		go createVoter(connEth, priv, big.NewInt(int64(index)), big.NewInt(int64(VoteNum)), to)
 		from1 := crypto.PubkeyToAddress(priv.PublicKey)
 		log.Info("Info ", "from1", from1.String(), "to", to.String(), "VoteNum", uint64(VoteNum))
