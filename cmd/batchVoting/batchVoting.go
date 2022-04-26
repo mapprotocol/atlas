@@ -62,10 +62,10 @@ func main() {
 	if err != nil {
 		log.Error("Failed to connect to the Atlaschain client: ", err)
 	}
-	from := "0x81f02fd21657df80783755874a92c996749777bf"
-	//from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
+	//from := "0x81f02fd21657df80783755874a92c996749777bf"
+	from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
 	var ret bool
-	if err := conn.Call(&ret, "personal_unlockAccount", from, "111111"); err != nil {
+	if err := conn.Call(&ret, "personal_unlockAccount", from, ""); err != nil {
 		log.Error("msg", "err", err)
 	}
 	fmt.Println("personal_unlockAccount", ret)
