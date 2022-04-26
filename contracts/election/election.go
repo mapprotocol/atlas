@@ -24,6 +24,7 @@ import (
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"sort"
+	"time"
 )
 
 var (
@@ -33,7 +34,8 @@ var (
 	getTotalVotesForEligibleValidatorsMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getTotalVotesForEligibleValidators", params.MaxGasForGetEligibleValidatorsVoteTotals)
 	distributeEpochVotersRewardsMethod       = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "distributeEpochVotersRewards", params.MaxGasForDistributeVoterEpochRewards)
 
-	activeAllPendingMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "activeAllPending", params.MaxGasForActiveAllPending)
+	activeAllPendingMethod             = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "activeAllPending", params.MaxGasForActiveAllPending)
+	getPendingVotersForValidatorMethod = contracts.NewRegisteredContractMethod(params.ElectionRegistryId, abis.Elections, "getPendingVotersForValidator", params.MaxGasForActiveAllPending)
 )
 
 func GetElectedValidators(vmRunner vm.EVMRunner) ([]common.Address, error) {
@@ -134,11 +136,20 @@ func DistributeEpochRewards(vmRunner vm.EVMRunner, validators []common.Address, 
 	return totalRewards, nil
 }
 func ActiveAllPending(vmRunner vm.EVMRunner, validators []common.Address) (bool, error) {
+	start := time.Now()
+	//debug voters
+	for _, ele := range validators {
+		var voters []common.Address
+		getPendingVotersForValidatorMethod.Query(vmRunner, &voters, ele)
+		log.Info("voters", "validator", ele, "voters", voters)
+	}
+	log.Info("ActiveAllPending", "start", time.Now().Sub(start))
 	// Automatic activation
 	var success bool
 	err := activeAllPendingMethod.Execute(vmRunner, &success, common.Big0, validators)
 	if err != nil {
 		return false, err
 	}
+	log.Info("ActiveAllPending", "end", time.Now().Sub(start))
 	return success, nil
 }
