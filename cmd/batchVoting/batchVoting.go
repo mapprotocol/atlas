@@ -182,7 +182,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 
 	//If the contract surely has code (or code is not needed), estimate the transaction
 
-	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input, GasFeeCap: big.NewInt(3000000000000)}
 	gasLimit, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
 		logger.Error("Contract exec failed", "error", err)
