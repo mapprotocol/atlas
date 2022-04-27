@@ -32,8 +32,9 @@ const DefaultGasLimit = 4500000
 
 var (
 	url       = "http://127.0.0.1:7445"
-	urlSendTx = "http://13.67.118.60:7445"
-	msgCh     chan struct{} // wait for msg handles
+	urlSendTx = "http://127.0.0.1:7445"
+	//urlSendTx = "http://13.67.118.60:7445"
+	msgCh chan struct{} // wait for msg handles
 )
 
 func init() {
@@ -54,7 +55,7 @@ func main() {
 	log.Info("start")
 	msgCh = make(chan struct{})
 	var accounts []*ecdsa.PrivateKey
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10000; i++ {
 		priv0, _ := crypto.GenerateKey()
 		accounts = append(accounts, priv0)
 	}
