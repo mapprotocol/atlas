@@ -13,6 +13,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/helper/decimal"
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"sort"
 
@@ -348,6 +349,12 @@ var setTargetRelayerEpochPaymentCommand = cli.Command{
 	Action: MigrateFlags(setTargetRelayerEpochPayment),
 	Flags:  Flags,
 }
+var setEpochRelayerPaymentFractionCommand = cli.Command{
+	Name:   "setEpochRelayerPaymentFraction",
+	Usage:  "set Epoch Relayer PaymentFraction",
+	Action: MigrateFlags(setEpochRelayerPaymentFraction),
+	Flags:  Flags,
+}
 
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
@@ -363,10 +370,8 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
 	//_params := []interface{}{commision, lesser, greater,core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
-	bytes := append(core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:]...)
-	bytes = append(bytes, core.cfg.BLSProof...)
-	bytes = append(bytes, core.cfg.PublicKey[1:]...)
-	_params := []interface{}{commision, lesser, greater, bytes}
+	validatorParams := [4][]byte{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
+	_params := []interface{}{commision, lesser, greater, validatorParams}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
@@ -934,7 +939,7 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, common.HexToAddress("0x467da661392F675c8a60C02ad62513d59B00fcf3"))
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15"), common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"))
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
@@ -1224,6 +1229,17 @@ func setTargetRelayerEpochPayment(_ *cli.Context, core *listener) error {
 	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
 	log.Info("=== setTargetRelayerEpochPayment ===", "admin", core.cfg.From.String())
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setTargetRelayerEpochPayment", value)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func setEpochRelayerPaymentFraction(_ *cli.Context, core *listener) error {
+	fixed := fixed.MustNew(core.cfg.Fixed).BigInt()
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	log.Info("=== setEpochRelayerPaymentFraction ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setEpochRelayerPaymentFraction", fixed)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil

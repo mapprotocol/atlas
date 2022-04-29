@@ -31,9 +31,10 @@ import (
 const DefaultGasLimit = 4500000
 
 var (
-	url       = "http://127.0.0.1:8545"
-	urlSendTx = "http://127.0.0.1:8545"
-	msgCh     chan struct{} // wait for msg handles
+	url       = "http://127.0.0.1:7445"
+	urlSendTx = "http://127.0.0.1:7445"
+	//urlSendTx = "http://13.67.118.60:7445"
+	msgCh chan struct{} // wait for msg handles
 )
 
 func init() {
@@ -62,10 +63,10 @@ func main() {
 	if err != nil {
 		log.Error("Failed to connect to the Atlaschain client: ", err)
 	}
-	from := "0x81f02fd21657df80783755874a92c996749777bf"
-	//from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
+	//from := "0x81f02fd21657df80783755874a92c996749777bf"
+	from := "0xbe27cf1ed3489b6add51a22ce4b25abd92cac3c8"
 	var ret bool
-	if err := conn.Call(&ret, "personal_unlockAccount", from, "111111"); err != nil {
+	if err := conn.Call(&ret, "personal_unlockAccount", from, ""); err != nil {
 		log.Error("msg", "err", err)
 	}
 	fmt.Println("personal_unlockAccount", ret)
@@ -182,7 +183,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 
 	//If the contract surely has code (or code is not needed), estimate the transaction
 
-	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input}
+	msg := ethchain.CallMsg{From: from, To: &toAddress, GasPrice: gasPrice, Value: value, Data: input, GasFeeCap: big.NewInt(3000000000000)}
 	gasLimit, err = client.EstimateGas(context.Background(), msg)
 	if err != nil {
 		logger.Error("Contract exec failed", "error", err)

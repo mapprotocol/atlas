@@ -1,7 +1,6 @@
 package genesis
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
@@ -14,17 +13,20 @@ func BaseConfig() *Config {
 	bigIntStr := params.MustBigInt
 	fixed := fixed.MustNew
 
+	////a epoch award 1,500,000map = 300,000,000(one year award)/6000,000(number a year) *30000(one epoch number)
+	perNumberReward := new(big.Int).Div(big.NewInt(300000000), big.NewInt(6000000))
+	perEpochReward := new(big.Int).Mul(perNumberReward, big.NewInt(int64(params.Epoch))) //MAP
+	perEpochReward = new(big.Int).Mul(perEpochReward, big.NewInt(1e18))                  //wei
 	return &Config{
 		Validators: ValidatorsParameters{
 
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
 				Value: bigIntStr("1000000000000000000000000"), //1000,000e18
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
-				//Duration: 60 * Day,
-				Duration: 1,
+				Duration: 60 * Day,
 			},
 			ValidatorScoreExponent:        10,
-			ValidatorScoreAdjustmentSpeed: fixed("1"),
+			ValidatorScoreAdjustmentSpeed: fixed("0.2"),
 			PledgeMultiplierInReward:      fixed("1"),
 			CommissionUpdateDelay:         (3 * Day) / 5, // Approximately 3 days with 5s block times
 
@@ -45,13 +47,15 @@ func BaseConfig() *Config {
 			//a epoch award 1,500,000map = 300,000,000(one year award)/6000,000(number a year) *30000(one epoch number)
 			//MaxValidatorEpochPayment = 1,500,000map *(2/3)
 			//MaxRelayerEpochPayment   =   500,000map *(1/3)
-			MaxEpochPayment: bigIntStr("1500000000000000000000000"), //Validator Relayer
+			//MaxEpochPayment: bigIntStr("1500000000000000000000000") , //Validator Relayer
+			MaxEpochPayment: perEpochReward, //Validator Relayer
 
-			CommunityRewardFraction: fixed("0.1"),
-			CommunityPartner:        common.HexToAddress("0x5ad473726671C40D4dF675A570f09610d7d39E70"),
+			CommunityRewardFraction:     fixed("0"),
+			CommunityPartner:            params.ZeroAddress,
+			EpochRelayerPaymentFraction: fixed("0.33333333333333333333"),
 		},
 		LockedGold: LockedGoldParameters{
-			UnlockingPeriod: 60,
+			UnlockingPeriod: 1296000, //15 day
 		},
 		Random: RandomParameters{
 			RandomnessBlockRetentionWindow: 720,

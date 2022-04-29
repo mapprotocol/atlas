@@ -28,7 +28,10 @@ var (
 		Name:  "commission",
 		Usage: "register validator param",
 	}
-
+	RelayerfFlag = cli.StringFlag{
+		Name:  "relayerf",
+		Usage: "register validator param",
+	}
 	VoteNumFlag = cli.Int64Flag{
 		Name:  "voteNum",
 		Usage: "The amount of gold to use to vote",

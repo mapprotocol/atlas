@@ -122,7 +122,7 @@ func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending 
 
 func (w writer) handleUnpackMethodSolveType3(m Message) {
 	header, err := w.conn.HeaderByNumber(context.Background(), nil)
-	msg := ethchain.CallMsg{From: m.from, To: &m.to, Data: m.input}
+	msg := ethchain.CallMsg{From: m.from, To: &m.to, Data: m.input, GasFeeCap: big.NewInt(3000000000000)}
 	output, err := w.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)
@@ -138,7 +138,7 @@ func (w writer) handleUnpackMethodSolveType3(m Message) {
 
 func (w writer) handleUnpackMethodSolveType4(m Message) {
 	header, err := w.conn.HeaderByNumber(context.Background(), nil)
-	msg := ethchain.CallMsg{From: m.from, To: &m.to, Data: m.input}
+	msg := ethchain.CallMsg{From: m.from, To: &m.to, Data: m.input, GasFeeCap: big.NewInt(3000000000000)}
 	output, err := w.conn.CallContract(context.Background(), msg, header.Number)
 	if err != nil {
 		log.Error("method CallContract error", "error", err)

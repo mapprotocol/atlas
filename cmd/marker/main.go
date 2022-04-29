@@ -25,6 +25,7 @@ var (
 		config.DurationFlag,
 		config.PasswordFlag,
 		config.CommissionFlag,
+		config.RelayerfFlag,
 		config.NamePrefixFlag,
 		config.VoteNumFlag,
 		config.TopNumFlag,
@@ -102,7 +103,7 @@ func init() {
 		updateCommissionCommand,
 		setTargetValidatorEpochPaymentCommand,
 		setTargetRelayerEpochPaymentCommand,
-
+		setEpochRelayerPaymentFractionCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 

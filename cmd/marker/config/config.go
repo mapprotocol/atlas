@@ -52,6 +52,7 @@ type Config struct {
 	Value      uint64
 	Duration   int64
 	Commission uint64
+	Fixed      string
 
 	VoteNum       *big.Int
 	TopNum        *big.Int
@@ -85,6 +86,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config.Commission = 1000000 //default 1  be relative to 1000,000
 	config.Verbosity = "3"
 	config.NamePrefix = "validator"
+
 	//-----------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.String(KeyStoreFlag.Name)
@@ -94,6 +96,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(CommissionFlag.Name) {
 		config.Commission = ctx.Uint64(CommissionFlag.Name)
+	}
+	if ctx.IsSet(RelayerfFlag.Name) {
+		config.Fixed = ctx.String(RelayerfFlag.Name)
 	}
 	if ctx.IsSet(VoteNumFlag.Name) {
 		config.VoteNum = big.NewInt(ctx.Int64(VoteNumFlag.Name))
