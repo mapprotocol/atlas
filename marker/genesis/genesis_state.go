@@ -265,6 +265,7 @@ func (ctx *deployContext) deployEpochRewards() error {
 			env.MustProxyAddressFor("Registry"),
 			ctx.genesisConfig.EpochRewards.MaxEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
+			ctx.genesisConfig.EpochRewards.EpochRelayerPaymentFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.CommunityPartner,
 		)
 	})
@@ -388,11 +389,9 @@ func (ctx *deployContext) registerValidators() error {
 		//if err != nil {
 		//	return err
 		//}
-		bytes := append(blsPub[:], blsG1Pub[:]...)
-		bytes = append(bytes, validator.MustBLSProofOfPossession()...)
-		bytes = append(bytes, pubKey...)
+		validatorParams := [4][]byte{blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession()[:], pubKey[:]}
 		//err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
-		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, bytes)
+		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, validatorParams)
 		if err != nil {
 			return err
 		}
