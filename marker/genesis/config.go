@@ -131,9 +131,10 @@ type ValidatorsParameters struct {
 
 // EpochRewardsParameters are the initial configuration parameters for EpochRewards
 type EpochRewardsParameters struct {
-	MaxEpochPayment         *big.Int       `json:"maxValidatorEpochPayment"`
-	CommunityRewardFraction *fixed.Fixed   `json:"communityRewardFraction"`
-	CommunityPartner        common.Address `json:"communityPartner"`
+	MaxEpochPayment             *big.Int       `json:"maxValidatorEpochPayment"`
+	CommunityRewardFraction     *fixed.Fixed   `json:"communityRewardFraction"`
+	EpochRelayerPaymentFraction *fixed.Fixed   `json:"epochRelayerPaymentFraction"`
+	CommunityPartner            common.Address `json:"communityPartner"`
 }
 
 type EpochRewardsParametersMarshaling struct {
