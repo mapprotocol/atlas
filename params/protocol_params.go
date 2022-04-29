@@ -21,7 +21,7 @@ const (
 	MaxGasForDistributeVoterEpochRewards           uint64 = 1 * million
 	MaxGasForElectValidators                       uint64 = 50 * million
 	MaxGasForElectNValidatorSigners                uint64 = 50 * million
-	MaxGasForActiveAllPending                      uint64 = 50000000000 * million
+	MaxGasForActiveAllPending                      uint64 = 5000 * million
 	MaxGasForGetAddressFor                         uint64 = 100 * thousand
 	MaxGasForGetElectableValidators                uint64 = 100 * thousand
 	MaxGasForGetEligibleValidatorsVoteTotals       uint64 = 1 * million
