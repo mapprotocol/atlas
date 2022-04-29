@@ -3573,6 +3573,19 @@ func init() {
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fraction",
+          "type": "uint256"
+        }
+      ],
+      "name": "EpochRelayerPaymentFractionFundSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "previousOwner",
@@ -4244,6 +4257,11 @@ func init() {
           "type": "uint256"
         },
         {
+          "internalType": "uint256",
+          "name": "_epochRelayerPaymentFraction",
+          "type": "uint256"
+        },
+        {
           "internalType": "address",
           "name": "_communityPartner",
           "type": "address"
@@ -4270,6 +4288,27 @@ func init() {
         }
       ],
       "name": "setCommunityRewardFraction",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setEpochRelayerPaymentFraction",
       "outputs": [
         {
           "internalType": "bool",
@@ -7702,9 +7741,9 @@ func init() {
           "type": "address"
         },
         {
-          "internalType": "bytes",
+          "internalType": "bytes[]",
           "name": "blsBlsG1BlsPopEcdsaPub",
-          "type": "bytes"
+          "type": "bytes[]"
         }
       ],
       "name": "registerValidator",
@@ -8229,21 +8268,6 @@ func init() {
       "constant": true,
       "inputs": [],
       "name": "getRegisteredValidators",
-      "outputs": [
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "getDeRegisteredValidatorsT",
       "outputs": [
         {
           "internalType": "address[]",
