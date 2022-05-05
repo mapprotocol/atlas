@@ -133,6 +133,39 @@ func TestSignVerify(t *testing.T) {
 	fmt.Printf("sign len:%d\n", len(sig.Marshal()))
 }
 
+func TestG1pubkeyVerify01(t *testing.T) {
+	msg := randomMessage()
+	pub, priv, err := GenKeyPair(rand.Reader)
+	require.NoError(t, err)
+
+	sig, err := UnsafeSign(priv, msg)
+	require.NoError(t, err)
+	require.NoError(t, VerifyUnsafe(pub, msg, sig))
+
+	g1puk := priv.ToG1Public()
+
+	err = VerifyG1Pk(g1puk,pub.Marshal())
+	require.NoError(t, err)
+
+	pub2, priv2, err2 := GenKeyPair(rand.Reader)
+	require.NoError(t, err2)
+	fmt.Println(hex.EncodeToString(pub2.Marshal()))
+	g1puk2 := priv2.ToG1Public()
+
+	err = VerifyG1Pk(g1puk2,pub.Marshal())
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+func TestG1pubkeyVerify02(t *testing.T) {
+	for i:=0;i<10000;i++ {
+		pub, priv, err := GenKeyPair(rand.Reader)
+		require.NoError(t, err)
+		g1puk := priv.ToG1Public()
+		err = VerifyG1Pk(g1puk,pub.Marshal())
+		require.NoError(t, err)
+	}
+}
 func randomMessage() []byte {
 	msg := make([]byte, 32)
 	_, _ = rand.Read(msg)

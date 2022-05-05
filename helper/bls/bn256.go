@@ -417,7 +417,6 @@ func verify(pk *bn256.G2, msg []byte, sigma *bn256.G1) error {
 
 	return nil
 }
-
 func verifyBatch(pkeys []*bn256.G2, msgList [][]byte, sig *bn256.G1, allowDistinct bool) error {
 	if !allowDistinct && !distinct(msgList) {
 		return errors.New("bls: Messages are not distinct")
@@ -558,4 +557,38 @@ func (self *SecretKey) ToG1Public() []byte {
 	g1pub := new(bn256.G1).ScalarBaseMult(new(big.Int).Set(self.x))
 
 	return g1pub.Marshal()
+}
+func verifyG1Pk(g1pk *bn256.G1,g2pk *bn256.G2) error {
+	pair1 := cfbn256.Pair(g1pk,newG2().ScalarBaseMult(big.NewInt(1))).Marshal()
+	pair2 := cfbn256.Pair(newG1().ScalarBaseMult(big.NewInt(1)),g2pk).Marshal()
+
+	if subtle.ConstantTimeCompare(pair1, pair2) != 1 {
+		msg := fmt.Sprintf(
+			"bls: Invalid g1 pubkey.\n pair1 (length %d): %v...\n pair2 (length %d): %v...",
+			len(pair1),
+			hex.EncodeToString(pair1[0:10]),
+			len(pair2),
+			hex.EncodeToString(pair2[0:10]),
+		)
+		return errors.New(msg)
+	}
+	return nil
+}
+func UnmarshalG1Pk(g1pkmsg []byte) (*bn256.G1,error) {
+	e := newG1()
+	if _, err := e.Unmarshal(g1pkmsg); err != nil {
+		return nil,err
+	}
+	return e,nil
+}
+func VerifyG1Pk(g1pk []byte,g2pk []byte) error {
+	pk1,err := UnmarshalG1Pk(g1pk)
+	if err != nil {
+		return err
+	}
+	pk2,err := UnmarshalPk(g2pk)
+	if err != nil {
+		return err
+	}
+	return verifyG1Pk(pk1,pk2.gx)
 }
