@@ -70,6 +70,16 @@ func (a *Account) BLSPublicKey() (bls.SerializedPublicKey, error) {
 	return bls.CryptoType().PrivateToPublic(privateKey)
 }
 
+// BLSG1PublicKey returns the bls G1 public key
+func (a *Account) BLSG1PublicKey() (bls.SerializedG1PublicKey, error) {
+	privateKey, err := bls.CryptoType().ECDSAToBLS(a.PrivateKey)
+	if err != nil {
+		return bls.SerializedG1PublicKey{}, err
+	}
+
+	return bls.CryptoType().PrivateToG1Public(privateKey)
+}
+
 // PublicKeyHex hex representation of the public key
 func (a *Account) PublicKey() []byte {
 	return crypto.FromECDSAPub(&a.PrivateKey.PublicKey)

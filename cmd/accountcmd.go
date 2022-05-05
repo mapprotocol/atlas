@@ -293,6 +293,12 @@ func accountCreate(ctx *cli.Context) error {
 	}
 	blsPubKeyText, err := blsPubKey.MarshalText()
 
+	blsG1PubKey, err := accountBls.BLSG1PublicKey()
+	if err != nil {
+		utils.Fatalf("Failed to create account: %v", err)
+	}
+
+	blsG1PubKeyText, err := blsG1PubKey.MarshalText()
 	if err != nil {
 		utils.Fatalf("Failed to create account: %v", err)
 	}
@@ -300,6 +306,7 @@ func accountCreate(ctx *cli.Context) error {
 	fmt.Printf("Public address of the key:   %s\n", account.Address.Hex())
 	fmt.Printf("PublicKeyHex:   %s\n", hexutil.Encode(accountBls.PublicKey()))
 	fmt.Printf("BLS Public address of the key:   %s\n", blsPubKeyText)
+	fmt.Printf("BLS G1 Public address of the key:   %s\n", blsG1PubKeyText)
 	fmt.Printf("BLSProofOfPossession:   %s\n", hexutil.Encode(blsProofOfPossession))
 	fmt.Printf("Path of the secret key file: %s\n\n", account.URL.Path)
 	fmt.Printf("- You can share your public address with anyone. Others need it to interact with you.\n")
