@@ -95,7 +95,7 @@ var (
 var (
 	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
 	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
-	defaultMinGasPrice     = big.NewInt(1000 * ethparams.GWei)
+	defaultMinGasPrice  = big.NewInt(100 * ethparams.GWei)
 )
 
 var (
