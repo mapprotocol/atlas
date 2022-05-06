@@ -47,7 +47,7 @@ type Config struct {
 	PublicKey  []byte
 	PrivateKey *ecdsa.PrivateKey
 	BlsPub     blscrypto.SerializedPublicKey
-	BlsG1Pub   blscrypto.SerializedPublicKey
+	BlsG1Pub   blscrypto.SerializedG1PublicKey
 	BLSProof   []byte
 	Value      uint64
 	Duration   int64
@@ -161,11 +161,15 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		blsG1Pub, err := _account.BLSG1PublicKey()
+		if err != nil {
+			return nil, err
+		}
 		config.PublicKey = _account.PublicKey()
 		config.From = _account.Address
 		config.PrivateKey = _account.PrivateKey
 		config.BlsPub = blsPub
-		config.BlsG1Pub = blsPub
+		config.BlsG1Pub = blsG1Pub
 		config.BLSProof = _account.MustBLSProofOfPossession()
 	}
 
