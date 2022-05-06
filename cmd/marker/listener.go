@@ -1058,6 +1058,18 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	//fmt.Println(result.String())
 	return nil
 }
+func getTotalVotesForValidator(_ *cli.Context, core *listener) error {
+	var ret interface{}
+	log.Info("=== getTotalVotesForValidator ===", "admin", core.cfg.From)
+	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getTotalVotesForValidator")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret.(*big.Int)
+	log.Info("=== getTotalVotesForValidator ===", "result", result)
+	return nil
+}
 func getPendingWithdrawals(_ *cli.Context, core *listener) error {
 	type ret []interface{}
 	var Values interface{}
@@ -1271,7 +1283,7 @@ func getGLSub(core *listener, SubValue *big.Int, target common.Address) (common.
 				}
 			}
 			// Sorting in descending order is necessary to match the order on-chain.
-			// TODO: We could make this more efficient by only moving the newly vote member.
+
 			sort.SliceStable(voteTotals, func(j, k int) bool {
 				return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
 			})
@@ -1348,7 +1360,7 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 				voteTotal.Value.Add(voteTotal.Value, voteNum)
 			}
 			// Sorting in descending order is necessary to match the order on-chain.
-			// TODO: We could make this more efficient by only moving the newly vote member.
+
 			sort.SliceStable(voteTotals, func(j, k int) bool {
 				return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
 			})
@@ -1374,6 +1386,37 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 }
 
 func registerUseFor(core *listener) (common.Address, common.Address) {
+	//type ret struct {
+	//	Validators interface{} // indexed
+	//	Values     interface{}
+	//}
+	//var t ret
+	electionAddress := core.cfg.ElectionParameters.ElectionAddress
+	abiElection := core.cfg.ElectionParameters.ElectionABI
+	//f := func(output []byte) {
+	//	err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
+	//	if err != nil {
+	//		isContinueError = false
+	//		log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
+	//	}
+	//}
+	//m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
+	//go core.writer.ResolveMessage(m)
+	//core.waitUntilMsgHandled(1)
+	//Validators := (t.Validators).([]common.Address)
+
+	var ret1 interface{}
+	log.Info("=== getTotalVotesForValidator ===", "admin", core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret1, electionAddress, nil, abiElection, "getTotalVotesForValidator", core.cfg.From)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret1.(*big.Int)
+	log.Info("=== getTotalVotesForValidator ===", "result", result)
+	core.cfg.VoteNum = result
+	G, L, _ := getGL2(core, core.cfg.From)
+	return G, L
+}
+func getGL2(core *listener, target common.Address) (common.Address, common.Address, error) {
 	type ret struct {
 		Validators interface{} // indexed
 		Values     interface{}
@@ -1391,7 +1434,38 @@ func registerUseFor(core *listener) (common.Address, common.Address) {
 	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	Validators := (t.Validators).([]common.Address)
-	index := len(Validators) - 1
-	return Validators[index], params.ZeroAddress
+	validators := (t.Validators).([]common.Address)
+	votes := (t.Values).([]*big.Int)
+	voteTotals := make([]voteTotal, len(validators))
+	for i, addr := range validators {
+		voteTotals[i] = voteTotal{addr, votes[i]}
+	}
+	voteTotals = append(voteTotals, voteTotal{target, core.cfg.VoteNum})
+	for _, voteTotal := range voteTotals {
+		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
+
+			// Sorting in descending order is necessary to match the order on-chain.
+
+			sort.SliceStable(voteTotals, func(j, k int) bool {
+				return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
+			})
+
+			lesser := params.ZeroAddress
+			greater := params.ZeroAddress
+			for j, voteTotal := range voteTotals {
+				if voteTotal.Validator == target {
+					if j > 0 {
+						greater = voteTotals[j-1].Validator
+					}
+					if j+1 < len(voteTotals) {
+						lesser = voteTotals[j+1].Validator
+					}
+					break
+				}
+			}
+			return greater, lesser, nil
+			break
+		}
+	}
+	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
 }
