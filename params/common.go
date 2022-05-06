@@ -14,7 +14,7 @@ import (
 var (
 	Base       = big.NewInt(1e8)
 	MaxBaseFee = big.NewInt(5000 * ethparams.GWei)
-	MinBaseFee = big.NewInt(1000 * ethparams.GWei)
+	MinBaseFee = big.NewInt(100 * ethparams.GWei)
 )
 
 var (
