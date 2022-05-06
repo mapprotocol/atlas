@@ -61,6 +61,7 @@ type Config struct {
 	RelockIndex   *big.Int
 
 	TargetAddress         common.Address
+	ContractAddress       common.Address
 	ImplementationAddress common.Address
 	Ip                    string
 	Port                  int
@@ -113,7 +114,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))
 	}
 	if ctx.IsSet(ContractAddressFlag.Name) {
-		config.TargetAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))
+		config.ContractAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))
 	}
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
