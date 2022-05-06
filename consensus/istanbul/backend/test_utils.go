@@ -131,6 +131,7 @@ func getGenesisAndKeys(n int, isFullChain bool) (*chain.Genesis, []*ecdsa.Privat
 
 	// generate genesis block
 	genesis := chain.DefaultGenesisBlock()
+	genesis.Alloc = nil
 	genesis.Config = params.IstanbulTestChainConfig
 	if !isFullChain {
 		genesis.Config.FullHeaderChainAvailable = false
@@ -318,7 +319,6 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 	}
 
 	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
-		from := crypto.PubkeyToAddress(key.PublicKey)
 
 		keybytes, err := blscrypto.CryptoType().ECDSAToBLS(key)
 		if err != nil {
@@ -337,7 +337,7 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 		//if err != nil {
 		//	return blscrypto.SerializedSignature{}, err
 		//}
-		signature, err := blscrypto.Sign(prikey, prikey.ToPublic(), from.Bytes())
+		signature, err := blscrypto.Sign(prikey, prikey.ToPublic(), data)
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}
