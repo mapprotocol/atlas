@@ -217,7 +217,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 		// Static portion of gas
 		cost = operation.constantGas // For tracing
-		if !contract.UseGas(operation.constantGas) {
+		if !in.evm.dontMeterGas && !contract.UseGas(operation.constantGas) {
 			return nil, ErrOutOfGas
 		}
 
@@ -240,8 +240,8 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// Dynamic portion of gas
 		// consume the gas and return an error if not enough gas is available.
 		// cost is explicitly set so that the capture state defer method can get the proper cost
-		//if !in.evm.dontMeterGas && operation.dynamicGas != nil {
-		if operation.dynamicGas != nil {
+		if !in.evm.dontMeterGas && operation.dynamicGas != nil {
+			//if operation.dynamicGas != nil {
 			var dynamicCost uint64
 			dynamicCost, err = operation.dynamicGas(in.evm, contract, stack, mem, memorySize)
 			cost += dynamicCost // total cost, for debug tracing

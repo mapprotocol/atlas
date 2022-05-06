@@ -51,7 +51,7 @@ type evmRunner struct {
 func (ev *evmRunner) Execute(recipient common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, err error) {
 	evm := ev.newEVM(VMAddress)
 	if ev.dontMeterGas {
-		//evm.StopGasMetering()
+		evm.StopGasMetering()
 	}
 	ret, leftOverGas, err := evm.Call(vm.AccountRef(evm.Origin), recipient, input, gas, value)
 	if recipient == mapprotocol.MustProxyAddressFor("Election") {
@@ -63,7 +63,7 @@ func (ev *evmRunner) Execute(recipient common.Address, input []byte, gas uint64,
 func (ev *evmRunner) ExecuteFrom(sender, recipient common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, err error) {
 	evm := ev.newEVM(sender)
 	if ev.dontMeterGas {
-		//evm.StopGasMetering()
+		evm.StopGasMetering()
 	}
 	ret, _, err = evm.Call(vm.AccountRef(sender), recipient, input, gas, value)
 	return ret, err

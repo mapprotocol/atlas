@@ -102,7 +102,6 @@ func init() {
 		setNextCommissionUpdateCommand,
 		updateCommissionCommand,
 		setTargetValidatorEpochPaymentCommand,
-		setTargetRelayerEpochPaymentCommand,
 		setEpochRelayerPaymentFractionCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
