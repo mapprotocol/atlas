@@ -376,7 +376,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 func DefaultGenesisBlock() *Genesis {
 	gs := genesisPOC2Contract()
 	l := len(gs)
-	log.Info("poc2", "address count", l)
+	log.Info("Writing Main-net poc2 alloc", "alloc count", l)
 	gs1 := genesisRegisterProxyContract()
 	for addr, allc := range gs1 {
 		// add genesis contract to allc
@@ -404,7 +404,7 @@ func DefaultGenesisBlock() *Genesis {
 func DefaultTestnetGenesisBlock() *Genesis {
 	gs := genesisPOC2Contract()
 	l := len(gs)
-	log.Info("poc2", "alloc count", l)
+	log.Info("Writing Test-net poc2 alloc", "alloc count", l)
 	gs1 := genesisTestnetRegisterProxyContract()
 	for addr, allc := range gs1 {
 		// add genesis contract to allc
@@ -430,7 +430,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 func DevnetGenesisBlock() *Genesis {
 	gs := genesisPOC2Contract()
 	l := len(gs)
-	log.Info("poc2", "alloc count", l)
+	log.Info("Writing Dev-net poc2 alloc", "alloc count", l)
 	gs1 := genesisDevnetRegisterProxyContract()
 	for addr, allc := range gs1 {
 		// add genesis contract to allc
