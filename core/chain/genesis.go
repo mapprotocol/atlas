@@ -374,7 +374,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
-	gs := genesisPreContract()
+	gs := genesisPOC2Contract()
 	l := len(gs)
 	log.Info("poc2", "address count", l)
 	gs1 := genesisRegisterProxyContract()
@@ -385,7 +385,6 @@ func DefaultGenesisBlock() *Genesis {
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
-
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
 		Nonce:     66,
@@ -403,7 +402,7 @@ func DefaultGenesisBlock() *Genesis {
 // validator4  0x6c5938b49bacde73a8db7c3a7da208846898bff5 password ""
 // keystore path  atlas/cmd/testnet_genesis
 func DefaultTestnetGenesisBlock() *Genesis {
-	gs := genesisTestnetPreContract()
+	gs := genesisPOC2Contract()
 	l := len(gs)
 	log.Info("poc2", "alloc count", l)
 	gs1 := genesisTestnetRegisterProxyContract()
@@ -429,7 +428,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 // validator1  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
 // keystore path  atlas/cmd/devnet_genesis
 func DevnetGenesisBlock() *Genesis {
-	gs := genesisDevnetPreContract()
+	gs := genesisPOC2Contract()
 	l := len(gs)
 	log.Info("poc2", "alloc count", l)
 	gs1 := genesisDevnetRegisterProxyContract()
