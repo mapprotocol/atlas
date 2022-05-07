@@ -935,7 +935,7 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15"), common.HexToAddress("0x81f02fd21657df80783755874a92c996749777bf"))
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
