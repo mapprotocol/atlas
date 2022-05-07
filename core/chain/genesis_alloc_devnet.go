@@ -16,25 +16,6 @@
 
 package chain
 
-import (
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/helper/fileutils"
-	"io/ioutil"
-)
-
-func genesisDevnetPreContract() GenesisAlloc {
-	mainnetAlloc := &GenesisAlloc{}
-	if fileutils.FileExists(genesisPreContractPath) {
-		log.Info("loaded the genesisPreContractPath", "buildpath", genesisPreContractPath)
-		jsonData, err := ioutil.ReadFile(genesisPreContractPath)
-		if err != nil {
-			log.Error("loaded the genesisPreContractPath jsonData err ", "err", err)
-			return *mainnetAlloc
-		}
-		mainnetAlloc.UnmarshalJSON(jsonData)
-	}
-	return *mainnetAlloc
-}
 func genesisDevnetRegisterProxyContract() GenesisAlloc {
 	mainnetAlloc := &GenesisAlloc{}
 	mainnetAlloc.UnmarshalJSON([]byte(devnetAllocJSON))
