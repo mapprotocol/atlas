@@ -891,7 +891,7 @@ func (sb *Backend) snapshot(chain consensus.ChainHeaderReader, number uint64, ha
 			return nil, errInvalidValidatorSetDiff
 		}
 
-		validators, err := istanbul.CombineIstanbulExtraToValidatorData(istanbulExtra.AddedValidators, istanbulExtra.AddedValidatorsPublicKeys)
+		validators, err := istanbul.CombineIstanbulExtraToValidatorData(istanbulExtra.AddedValidators, istanbulExtra.AddedValidatorsPublicKeys, istanbulExtra.AddedValidatorsG1PublicKeys)
 		if err != nil {
 			log.Error("Cannot construct validators data from istanbul extra")
 			return nil, errInvalidValidatorSetDiff
@@ -1109,12 +1109,11 @@ func writeValidatorSetDiff(header *types.Header, oldValSet []istanbul.ValidatorD
 	}
 
 	addedValidators, removedValidators := istanbul.ValidatorSetDiff(oldValSet, newValSet)
-	addedValidatorsAddresses, addedValidatorsPublicKeys := istanbul.SeparateValidatorDataIntoIstanbulExtra(addedValidators)
-	addedValidatorsG1PublicKeys := make([]blscrypto.SerializedG1PublicKey, 0)
+	addedValidatorsAddresses, addedValidatorsPublicKeys, addedValidatorsG1PublicKeys := istanbul.SeparateValidatorDataIntoIstanbulExtra(addedValidators)
 
 	if len(addedValidators) > 0 || removedValidators.BitLen() > 0 {
-		oldValidatorsAddresses, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(oldValSet)
-		newValidatorsAddresses, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(newValSet)
+		oldValidatorsAddresses, _, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(oldValSet)
+		newValidatorsAddresses, _, _ := istanbul.SeparateValidatorDataIntoIstanbulExtra(newValSet)
 		log.Debug("Setting istanbul header validator fields", "oldValSet", types.ConvertToStringSlice(oldValidatorsAddresses), "newValSet", types.ConvertToStringSlice(newValidatorsAddresses),
 			"addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses), "removedValidators", removedValidators.Text(16))
 	}

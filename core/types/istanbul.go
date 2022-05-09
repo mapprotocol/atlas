@@ -66,7 +66,8 @@ type IstanbulExtra struct {
 	// AddedValidators are the validators that have been added in the block
 	AddedValidators []common.Address
 	// AddedValidatorsPublicKeys are the BLS public keys for the validators added in the block
-	AddedValidatorsPublicKeys   []blscrypto.SerializedPublicKey
+	AddedValidatorsPublicKeys []blscrypto.SerializedPublicKey
+	// AddedValidatorsG1PublicKeys are the BLS public keys for the validators added in the block
 	AddedValidatorsG1PublicKeys []blscrypto.SerializedG1PublicKey
 	// RemovedValidators is a bitmap having an active bit for each removed validator in the block
 	RemovedValidators *big.Int

@@ -515,7 +515,7 @@ func (sb *Backend) NextBlockValidators(proposal istanbul.Proposal) (istanbul.Val
 	}
 	snap = snap.copy()
 
-	addedValidators, err := istanbul.CombineIstanbulExtraToValidatorData(istExtra.AddedValidators, istExtra.AddedValidatorsPublicKeys)
+	addedValidators, err := istanbul.CombineIstanbulExtraToValidatorData(istExtra.AddedValidators, istExtra.AddedValidatorsPublicKeys, istExtra.AddedValidatorsG1PublicKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -693,13 +693,15 @@ func (sb *Backend) verifyValSetDiff(proposal istanbul.Proposal, block *types.Blo
 
 		addedValidatorsAddresses := make([]common.Address, 0, len(addedValidators))
 		addedValidatorsPublicKeys := make([]blscrypto.SerializedPublicKey, 0, len(addedValidators))
+		addedValidatorsG1PublicKeys := make([]blscrypto.SerializedG1PublicKey, 0, len(addedValidators))
 		for _, val := range addedValidators {
 			addedValidatorsAddresses = append(addedValidatorsAddresses, val.Address)
 			addedValidatorsPublicKeys = append(addedValidatorsPublicKeys, val.BLSPublicKey)
+			addedValidatorsG1PublicKeys = append(addedValidatorsG1PublicKeys, val.BLSG1PublicKey)
 		}
 
-		if !istanbul.CompareValidatorSlices(addedValidatorsAddresses, istExtra.AddedValidators) || removedValidators.Cmp(istExtra.RemovedValidators) != 0 || !istanbul.CompareValidatorPublicKeySlices(addedValidatorsPublicKeys, istExtra.AddedValidatorsPublicKeys) {
-			sb.logger.Error("verifyValSetDiff - Invalid val set diff. Comparison failed. ", "got addedValidators", types.ConvertToStringSlice(istExtra.AddedValidators), "got removedValidators", istExtra.RemovedValidators.Text(16), "got addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(istExtra.AddedValidatorsPublicKeys), "expected addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses), "expected removedValidators", removedValidators.Text(16), "expected addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(addedValidatorsPublicKeys))
+		if !istanbul.CompareValidatorSlices(addedValidatorsAddresses, istExtra.AddedValidators) || removedValidators.Cmp(istExtra.RemovedValidators) != 0 || !istanbul.CompareValidatorPublicKeySlices(addedValidatorsPublicKeys, istExtra.AddedValidatorsPublicKeys) || !istanbul.CompareValidatorG1PublicKeySlices(addedValidatorsG1PublicKeys, istExtra.AddedValidatorsG1PublicKeys) {
+			sb.logger.Error("verifyValSetDiff - Invalid val set diff. Comparison failed. ", "got addedValidators", types.ConvertToStringSlice(istExtra.AddedValidators), "got removedValidators", istExtra.RemovedValidators.Text(16), "got addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(istExtra.AddedValidatorsPublicKeys), "got addedValidatorsG1PublicKeys", istanbul.ConvertG1PublicKeysToStringSlice(istExtra.AddedValidatorsG1PublicKeys), "expected addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses), "expected removedValidators", removedValidators.Text(16), "expected addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(addedValidatorsPublicKeys), "expected addedValidatorsG1PublicKeys", istanbul.ConvertG1PublicKeysToStringSlice(addedValidatorsG1PublicKeys))
 			return errInvalidValidatorSetDiff
 		}
 	}

@@ -136,7 +136,7 @@ func (s *Snapshot) apply(headers []*types.Header, db ethdb.Database) (*Snapshot,
 			return nil, err
 		}
 
-		validators, err := istanbul.CombineIstanbulExtraToValidatorData(istExtra.AddedValidators, istExtra.AddedValidatorsPublicKeys)
+		validators, err := istanbul.CombineIstanbulExtraToValidatorData(istExtra.AddedValidators, istExtra.AddedValidatorsPublicKeys, istExtra.AddedValidatorsG1PublicKeys)
 		if err != nil {
 			log.Error("Error in combining addresses and public keys")
 			return nil, errInvalidValidatorSetDiff

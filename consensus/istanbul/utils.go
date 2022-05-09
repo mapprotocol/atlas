@@ -201,10 +201,33 @@ func CompareValidatorPublicKeySlices(valSet1 []blscrypto.SerializedPublicKey, va
 	return true
 }
 
+func CompareValidatorG1PublicKeySlices(valSet1 []blscrypto.SerializedG1PublicKey, valSet2 []blscrypto.SerializedG1PublicKey) bool {
+	if len(valSet1) != len(valSet2) {
+		return false
+	}
+
+	for i := 0; i < len(valSet1); i++ {
+		if valSet1[i] != valSet2[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func ConvertPublicKeysToStringSlice(publicKeys []blscrypto.SerializedPublicKey) []string {
 	publicKeyStrs := []string{}
 	for i := 0; i < len(publicKeys); i++ {
 		publicKeyStrs = append(publicKeyStrs, hex.EncodeToString(publicKeys[i][:]))
+	}
+
+	return publicKeyStrs
+}
+
+func ConvertG1PublicKeysToStringSlice(g1publicKeys []blscrypto.SerializedG1PublicKey) []string {
+	publicKeyStrs := []string{}
+	for i := 0; i < len(g1publicKeys); i++ {
+		publicKeyStrs = append(publicKeyStrs, hex.EncodeToString(g1publicKeys[i][:]))
 	}
 
 	return publicKeyStrs

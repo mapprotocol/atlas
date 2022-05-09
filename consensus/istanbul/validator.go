@@ -171,28 +171,31 @@ type ProposerSelector func(validatorSet ValidatorSet, lastBlockProposer common.A
 
 // ----------------------------------------------------------------------------
 
-func CombineIstanbulExtraToValidatorData(addrs []common.Address, blsPublicKeys []blscrypto.SerializedPublicKey) ([]ValidatorData, error) {
+func CombineIstanbulExtraToValidatorData(addrs []common.Address, blsPublicKeys []blscrypto.SerializedPublicKey, blsG1PublicKeys []blscrypto.SerializedG1PublicKey) ([]ValidatorData, error) {
 	if len(addrs) != len(blsPublicKeys) {
 		return nil, errInvalidValidatorSetDiffSize
 	}
 	validators := []ValidatorData{}
 	for i := range addrs {
 		validators = append(validators, ValidatorData{
-			Address:      addrs[i],
-			BLSPublicKey: blsPublicKeys[i],
+			Address:        addrs[i],
+			BLSPublicKey:   blsPublicKeys[i],
+			BLSG1PublicKey: blsG1PublicKeys[i],
 		})
 	}
 
 	return validators, nil
 }
 
-func SeparateValidatorDataIntoIstanbulExtra(validators []ValidatorData) ([]common.Address, []blscrypto.SerializedPublicKey) {
+func SeparateValidatorDataIntoIstanbulExtra(validators []ValidatorData) ([]common.Address, []blscrypto.SerializedPublicKey, []blscrypto.SerializedG1PublicKey) {
 	addrs := []common.Address{}
 	pubKeys := []blscrypto.SerializedPublicKey{}
+	g1pubKeys := []blscrypto.SerializedG1PublicKey{}
 	for i := range validators {
 		addrs = append(addrs, validators[i].Address)
 		pubKeys = append(pubKeys, validators[i].BLSPublicKey)
+		g1pubKeys = append(g1pubKeys, validators[i].BLSG1PublicKey)
 	}
 
-	return addrs, pubKeys
+	return addrs, pubKeys, g1pubKeys
 }
