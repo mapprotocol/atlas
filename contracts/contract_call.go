@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -90,6 +91,10 @@ func (bm *BoundMethod) run(vmRunner vm.EVMRunner, result interface{}, readOnly b
 	contractAddress, err := bm.resolveAddress(vmRunner)
 	if err != nil {
 		return err
+	}
+	if contractAddress == mapprotocol.MustProxyAddressFor("Election") {
+		vmRunner.StopGasMetering()
+		defer vmRunner.StartGasMetering()
 	}
 
 	logger := log.New("to", contractAddress, "method", bm.method)

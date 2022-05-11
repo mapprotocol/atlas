@@ -103,7 +103,7 @@ func GetValidatorData(vmRunner vm.EVMRunner, validatorAddresses []common.Address
 
 		////////////////////////  BlsG1  ////////////////////////
 		var blsG1Key []byte
-		err = getValidatorBlsPublicKeyFromSignerMethod.Query(vmRunner, &blsG1Key, addr)
+		err = getValidatorBlsG1PublicKeyFromSignerMethod.Query(vmRunner, &blsG1Key, addr)
 		if err != nil {
 			return nil, err
 		}
