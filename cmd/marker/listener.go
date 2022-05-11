@@ -1026,36 +1026,6 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	core.waitUntilMsgHandled(1)
 	result := ret.(*big.Int)
 	log.Info("result", "getTotalVotes", result)
-	//updatetime := big.NewInt(0).Mul(big.NewInt(1000000),big.NewInt(1))
-	//var ret interface{}
-	//Validator := core.cfg.ValidatorParameters.Validator
-	//abiValidators := core.cfg.ValidatorParameters.ValidatorABI
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, Validator, nil, abiValidators, "calculateEpochScore", updatetime)
-	//go core.writer.ResolveMessage(m)
-	//core.waitUntilMsgHandled(1)
-	//result := ret.(*big.Int)
-	//log.Info("111111", "calculateEpochScore1 ", result)
-	//log.Info("111111", "calculateEpochScore1 ", updatetime)
-	//log.Info("222222", "calculateEpochScore2 ", params.MustBigInt("1000000000000000000000000"))
-	//log.Info("222222", "calculateEpochScore2 ", params.MustBigInt("271000000000000000000000"))
-	//log.Info("333333", "calculateEpochScore3 ", fixed.MustNew("0.271").BigInt())
-	//a:=params.MustBigInt("1000000000000000000000000")
-	//fmt.Println(result.Div(result,a))
-	//INFO [01-19|11:00:16.269] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 111111                                   calculateEpochScore1 =1,000,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =1,000,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 222222                                   calculateEpochScore2 =271,000,000,000,000,000,000,000
-	//INFO [01-19|11:00:16.289] 333333                                   calculateEpochScore3 =271,000,000,000,000,000,000,000
-
-	//updatetime := big.NewInt(90)
-	//var ret interface{}
-	//Validator := mapprotocol.MustProxyAddressFor("Random")
-	//abiValidators := mapprotocol.AbiFor("Random")
-	//m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, Validator, nil, abiValidators, "getBlockRandomness", updatetime)
-	//go core.writer.ResolveMessage(m)
-	//core.waitUntilMsgHandled(1)
-	//result := ret.(common.Hash)
-	//fmt.Println(result.String())
 	return nil
 }
 func getTotalVotesForValidator(_ *cli.Context, core *listener) error {
@@ -1198,8 +1168,8 @@ func setProxyContractOwner(_ *cli.Context, core *listener) error {
 func getProxyContractOwner(_ *cli.Context, core *listener) error {
 	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
 	var ret interface{}
-	ContractAddress := core.cfg.TargetAddress   //代理地址
-	ValidatorAbi := mapprotocol.AbiFor("Proxy") //代理ABI
+	ContractAddress := core.cfg.TargetAddress
+	ValidatorAbi := mapprotocol.AbiFor("Proxy")
 	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "_getOwner")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
@@ -1211,8 +1181,8 @@ func getProxyContractOwner(_ *cli.Context, core *listener) error {
 func getContractOwner(_ *cli.Context, core *listener) error {
 	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
 	var ret interface{}
-	ContractAddress := core.cfg.TargetAddress                 //代理地址
-	ValidatorAbi := core.cfg.ValidatorParameters.ValidatorABI //代理地址
+	ContractAddress := core.cfg.TargetAddress
+	ValidatorAbi := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "owner")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
@@ -1269,10 +1239,6 @@ func getGLSub(core *listener, SubValue *big.Int, target common.Address) (common.
 	for i, addr := range validators {
 		voteTotals[i] = voteTotal{addr, votes[i]}
 	}
-	//for i, v := range voteTotals {
-	//	fmt.Println("=== ", i, "===", v.Validator.String(), v.Value.String())
-	//}
-	//fmt.Println("=== target ===", target.String())
 	for _, voteTotal := range voteTotals {
 		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
 			if big.NewInt(0).Cmp(SubValue) < 0 {
@@ -1309,9 +1275,7 @@ func getGLSub(core *listener, SubValue *big.Int, target common.Address) (common.
 }
 
 func GetIndex(target common.Address, list []common.Address) (*big.Int, error) {
-	//fmt.Println("=== target ===", target.String())
 	for index, v := range list {
-		//fmt.Println("=== list ===", v.String())
 		if bytes.Equal(target.Bytes(), v.Bytes()) {
 			return big.NewInt(int64(index)), nil
 		}
@@ -1324,7 +1288,7 @@ type voteTotal struct {
 	Value     *big.Int
 }
 
-//add
+//getLesser getGreater use for register
 func getGL(core *listener, target common.Address) (common.Address, common.Address, error) {
 	type ret struct {
 		Validators interface{} // indexed
@@ -1349,10 +1313,6 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 	for i, addr := range validators {
 		voteTotals[i] = voteTotal{addr, votes[i]}
 	}
-	//for i, v := range voteTotals {
-	//	fmt.Println("=== ", i, "===", v.Validator.String(), v.Value.String())
-	//}
-
 	voteNum := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
 	for _, voteTotal := range voteTotals {
 		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
@@ -1360,7 +1320,6 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 				voteTotal.Value.Add(voteTotal.Value, voteNum)
 			}
 			// Sorting in descending order is necessary to match the order on-chain.
-
 			sort.SliceStable(voteTotals, func(j, k int) bool {
 				return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
 			})
@@ -1386,25 +1345,8 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 }
 
 func registerUseFor(core *listener) (common.Address, common.Address) {
-	//type ret struct {
-	//	Validators interface{} // indexed
-	//	Values     interface{}
-	//}
-	//var t ret
 	electionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
-	//f := func(output []byte) {
-	//	err := abiElection.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
-	//	if err != nil {
-	//		isContinueError = false
-	//		log.Error("getTotalVotesForEligibleValidators setLesserGreater", "err", err)
-	//	}
-	//}
-	//m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
-	//go core.writer.ResolveMessage(m)
-	//core.waitUntilMsgHandled(1)
-	//Validators := (t.Validators).([]common.Address)
-
 	var ret1 interface{}
 	log.Info("=== getTotalVotesForValidator ===", "admin", core.cfg.From)
 	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret1, electionAddress, nil, abiElection, "getTotalVotesForValidator", core.cfg.From)
@@ -1443,9 +1385,7 @@ func getGL2(core *listener, target common.Address) (common.Address, common.Addre
 	voteTotals = append(voteTotals, voteTotal{target, core.cfg.VoteNum})
 	for _, voteTotal := range voteTotals {
 		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
-
 			// Sorting in descending order is necessary to match the order on-chain.
-
 			sort.SliceStable(voteTotals, func(j, k int) bool {
 				return voteTotals[j].Value.Cmp(voteTotals[k].Value) > 0
 			})
