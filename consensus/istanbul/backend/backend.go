@@ -701,7 +701,17 @@ func (sb *Backend) verifyValSetDiff(proposal istanbul.Proposal, block *types.Blo
 		}
 
 		if !istanbul.CompareValidatorSlices(addedValidatorsAddresses, istExtra.AddedValidators) || removedValidators.Cmp(istExtra.RemovedValidators) != 0 || !istanbul.CompareValidatorPublicKeySlices(addedValidatorsPublicKeys, istExtra.AddedValidatorsPublicKeys) || !istanbul.CompareValidatorG1PublicKeySlices(addedValidatorsG1PublicKeys, istExtra.AddedValidatorsG1PublicKeys) {
-			sb.logger.Error("verifyValSetDiff - Invalid val set diff. Comparison failed. ", "got addedValidators", types.ConvertToStringSlice(istExtra.AddedValidators), "got removedValidators", istExtra.RemovedValidators.Text(16), "got addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(istExtra.AddedValidatorsPublicKeys), "got addedValidatorsG1PublicKeys", istanbul.ConvertG1PublicKeysToStringSlice(istExtra.AddedValidatorsG1PublicKeys), "expected addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses), "expected removedValidators", removedValidators.Text(16), "expected addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(addedValidatorsPublicKeys), "expected addedValidatorsG1PublicKeys", istanbul.ConvertG1PublicKeysToStringSlice(addedValidatorsG1PublicKeys))
+			sb.logger.Error("verifyValSetDiff - Invalid val set diff. Comparison failed. ",
+
+				"got addedValidators", types.ConvertToStringSlice(istExtra.AddedValidators),
+				"got removedValidators", istExtra.RemovedValidators.Text(16),
+				"got addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(istExtra.AddedValidatorsPublicKeys),
+				"got addedValidatorsG1PublicKeys", istanbul.ConvertG1PublicKeysToStringSlice(istExtra.AddedValidatorsG1PublicKeys),
+
+				"expected addedValidators", types.ConvertToStringSlice(addedValidatorsAddresses),
+				"expected removedValidators", removedValidators.Text(16),
+				"expected addedValidatorsPublicKeys", istanbul.ConvertPublicKeysToStringSlice(addedValidatorsPublicKeys),
+				"expected addedValidatorsG1PublicKeys", istanbul.ConvertG1PublicKeysToStringSlice(addedValidatorsG1PublicKeys))
 			return errInvalidValidatorSetDiff
 		}
 	}
