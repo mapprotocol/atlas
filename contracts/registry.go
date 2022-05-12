@@ -15,8 +15,8 @@ var getAddressMethod = NewBoundMethod(params.RegistrySmartContractAddress, abis.
 // GetRegisteredAddress returns the address on the registry for a given id
 func GetRegisteredAddress(vmRunner vm.EVMRunner, registryId common.Hash) (common.Address, error) {
 
-	vmRunner.StopGasMetering()
-	defer vmRunner.StartGasMetering()
+	//vmRunner.StopGasMetering()
+	//defer vmRunner.StartGasMetering()
 
 	var contractAddress common.Address
 	err := getAddressMethod.Query(vmRunner, &contractAddress, registryId)

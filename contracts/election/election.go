@@ -136,6 +136,8 @@ func DistributeEpochRewards(vmRunner vm.EVMRunner, validators []common.Address, 
 	return totalRewards, nil
 }
 func ActiveAllPending(vmRunner vm.EVMRunner, validators []common.Address) (bool, error) {
+	vmRunner.StopGasMetering()
+	defer vmRunner.StartGasMetering()
 	start := time.Now()
 	//debug voters
 	for _, ele := range validators {
