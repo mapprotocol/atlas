@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MainNetChainID uint64 = 214
+	MainNetChainID uint64 = 29088
 	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
 	Epoch          uint64 = 1000
