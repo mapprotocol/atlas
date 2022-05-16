@@ -63,6 +63,7 @@ var ReceiptsJSON = `[
 ]`
 
 var (
+	from             = params.ZeroAddress
 	blockNumber      = big.NewInt(11768672)
 	txIndex     uint = 35
 	fromAddr         = common.HexToAddress("0x000000000000000000000000a9024d80366a7cc34698c05d6a19fcf7e3f1ad34")

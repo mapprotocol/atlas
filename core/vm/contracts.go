@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
-	ed25519 "github.com/hdevalence/ed25519consensus"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	params2 "github.com/mapprotocol/atlas/params"
@@ -61,6 +61,27 @@ var (
 	hashHeaderAddress            = atlasPrecompileAddress(9)
 	getParentSealBitmapAddress   = atlasPrecompileAddress(10)
 	getVerifiedSealBitmapAddress = atlasPrecompileAddress(11)
+
+	// New in Donut
+	ed25519Address           = atlasPrecompileAddress(12)
+	b12_381G1AddAddress      = atlasPrecompileAddress(13)
+	b12_381G1MulAddress      = atlasPrecompileAddress(14)
+	b12_381G1MultiExpAddress = atlasPrecompileAddress(15)
+	b12_381G2AddAddress      = atlasPrecompileAddress(16)
+	b12_381G2MulAddress      = atlasPrecompileAddress(17)
+	b12_381G2MultiExpAddress = atlasPrecompileAddress(18)
+	b12_381PairingAddress    = atlasPrecompileAddress(19)
+	b12_381MapFpToG1Address  = atlasPrecompileAddress(20)
+	b12_381MapFp2ToG2Address = atlasPrecompileAddress(21)
+	b12_377G1AddAddress      = atlasPrecompileAddress(22)
+	b12_377G1MulAddress      = atlasPrecompileAddress(23)
+	b12_377G1MultiExpAddress = atlasPrecompileAddress(24)
+	b12_377G2AddAddress      = atlasPrecompileAddress(25)
+	b12_377G2MulAddress      = atlasPrecompileAddress(26)
+	b12_377G2MultiExpAddress = atlasPrecompileAddress(27)
+	b12_377PairingAddress    = atlasPrecompileAddress(28)
+	cip20Address             = atlasPrecompileAddress(29)
+	cip26Address             = atlasPrecompileAddress(30)
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -124,6 +145,8 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 	hashHeaderAddress:            &hashHeader{},
 	getParentSealBitmapAddress:   &getParentSealBitmap{},
 	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
+	// New in Donut hard fork
+	ed25519Address: &ed25519Verify{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
@@ -152,6 +175,8 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	hashHeaderAddress:            &hashHeader{},
 	getParentSealBitmapAddress:   &getParentSealBitmap{},
 	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
+	// New in Donut hard fork
+	ed25519Address: &ed25519Verify{},
 }
 
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
@@ -180,6 +205,8 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 	hashHeaderAddress:            &hashHeader{},
 	getParentSealBitmapAddress:   &getParentSealBitmap{},
 	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
+	// New in Donut hard fork
+	ed25519Address: &ed25519Verify{},
 }
 
 var (
@@ -1360,7 +1387,10 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	apk := bls.NewApk(publicKey)
 	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.G1PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.G1PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
 	signature := bls.Signature{}
-	signature.Unmarshal(signatureBytes)
+	err = signature.Unmarshal(signatureBytes)
+	if err != nil {
+		return nil, err
+	}
 	err = bls.Verify(apk, addressBytes, &signature)
 	if err != nil {
 		return nil, err
