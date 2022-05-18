@@ -52,7 +52,7 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 	//	return nil, err
 	//}
 
-	signature, err := bls.Sign(key, key.ToPublic(), a.Address.Bytes())
+	signature, err := bls.UnsafeSign(key, a.Address.Bytes())
 	if err != nil {
 		log.Error("bn256.Sign", "err", err)
 		return nil, err

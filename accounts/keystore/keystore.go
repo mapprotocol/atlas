@@ -550,7 +550,7 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 	//	return blscrypto.SerializedSignature{}, err
 	//}
 	//pk, err := bn256.UnmarshalPk(pubkey)
-	sign, err := bn256.Sign(blskey, blskey.ToPublic(), msg)
+	sign, err := bn256.UnsafeSign(blskey, msg)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}

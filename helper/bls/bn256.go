@@ -74,7 +74,7 @@ func UnmarshalPk(b []byte) (*PublicKey, error) {
 }
 
 func PerformHash(msg []byte) ([]byte, error) {
-	H := sha3.New256()
+	H := sha3.NewLegacyKeccak256()
 	_, err := H.Write(msg)
 	if err != nil {
 		return nil, err
@@ -465,6 +465,18 @@ func distinct(msgList [][]byte) bool {
 		m[h] = true
 	}
 	return true
+}
+
+func AggregatePK(pks []*PublicKey) *PublicKey {
+	var pub *PublicKey
+	for i, pk := range pks {
+		if i == 0 {
+			pub = pk
+			continue
+		}
+		pub = pub.Aggregate(pk)
+	}
+	return pub
 }
 
 // Aggregate is a shortcut for Public Key aggregation

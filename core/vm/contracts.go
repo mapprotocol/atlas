@@ -1384,14 +1384,14 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 		return nil, err
 	}
 
-	apk := bls.NewApk(publicKey)
+	//apk := bls.NewApk(publicKey)
 	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.G1PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.G1PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
-	signature := bls.Signature{}
+	signature := bls.UnsafeSignature{}
 	err = signature.Unmarshal(signatureBytes)
 	if err != nil {
 		return nil, err
 	}
-	err = bls.Verify(apk, addressBytes, &signature)
+	err = bls.VerifyUnsafe(publicKey, addressBytes, &signature)
 	if err != nil {
 		return nil, err
 	}
