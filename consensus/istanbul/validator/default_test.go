@@ -73,7 +73,8 @@ func testNormalValSet(t *testing.T) {
 	val1 := New(addr1, bls.SerializedPublicKey{})
 	val2 := New(addr2, bls.SerializedPublicKey{})
 
-	validators, _ := istanbul.CombineIstanbulExtraToValidatorData([]common.Address{addr1, addr2}, []bls.SerializedPublicKey{{}, {}})
+	validators, _ := istanbul.CombineIstanbulExtraToValidatorData([]common.Address{addr1, addr2}, []bls.SerializedPublicKey{{}, {}},
+		[]bls.SerializedG1PublicKey{{}, {}})
 	valSet := newDefaultSet(validators)
 	if valSet == nil {
 		t.Errorf("the format of validator set is invalid")
