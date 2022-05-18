@@ -192,6 +192,12 @@ func hashLegacy256(msg []byte) ([]byte, error) {
 	return H.Sum(nil), err
 }
 func TestHash01(t *testing.T) {
+	secret1 := SecretKey{big.NewInt(10099)}
+	pkey1,pkey2 := secret1.ToPublic(),secret1.ToG1Public()
+	fmt.Println("pkey1",hex.EncodeToString(pkey1.Marshal()))
+	fmt.Println("pkey2",hex.EncodeToString(pkey2))
+
+
 	h0,_ := hash256([]byte{1})
 	h1,_ := hashLegacy256([]byte{1})
 
