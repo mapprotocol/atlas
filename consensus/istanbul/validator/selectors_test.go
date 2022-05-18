@@ -44,7 +44,8 @@ func TestStickyProposer(t *testing.T) {
 		validators = append(validators, New(addr, bls.SerializedPublicKey{}))
 	}
 
-	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)))
+	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)),
+		make([]bls.SerializedG1PublicKey,len(addrs)))
 	if err != nil {
 		t.Fatalf("CombineIstanbulExtraToValidatorData(...): %v", err)
 	}
@@ -101,7 +102,8 @@ func TestRoundRobinProposer(t *testing.T) {
 		validators = append(validators, New(addr, bls.SerializedPublicKey{}))
 	}
 
-	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)))
+	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)),
+		make([]bls.SerializedG1PublicKey,len(addrs)))
 	if err != nil {
 		t.Fatalf("CombineIstanbulExtraToValidatorData(...): %v", err)
 	}
@@ -158,7 +160,8 @@ func TestShuffledRoundRobinProposer(t *testing.T) {
 		validators = append(validators, New(addr, bls.SerializedPublicKey{}))
 	}
 
-	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)))
+	v, err := istanbul.CombineIstanbulExtraToValidatorData(addrs, make([]bls.SerializedPublicKey, len(addrs)),
+		make([]bls.SerializedG1PublicKey,len(addrs)))
 	if err != nil {
 		t.Fatalf("CombineIstanbulExtraToValidatorData(...): %v", err)
 	}
