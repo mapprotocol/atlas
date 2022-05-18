@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package core
+package chain
 
 import (
 	"fmt"
@@ -24,10 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"golang.org/x/crypto/sha3"
-
 	"github.com/mapprotocol/atlas/consensus/consensustest"
-	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
@@ -43,16 +40,16 @@ func getBlock(transactions int, uncles int, dataSize int) *types.Block {
 		key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1000000000)
-		gspec   = &chain.Genesis{
+		gspec   = &Genesis{
 			Config: params.TestChainConfig,
-			Alloc:  chain.GenesisAlloc{address: {Balance: funds}},
+			Alloc:  GenesisAlloc{address: {Balance: funds}},
 		}
 		genesis = gspec.MustCommit(db)
 	)
 
 	// We need to generate as many blocks +1 as uncles
-	blocks, _ := chain.GenerateChain(params.TestChainConfig, genesis, engine, db, uncles+1,
-		func(n int, b *chain.BlockGen) {
+	blocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, uncles+1,
+		func(n int, b *BlockGen) {
 			if n == uncles {
 				// Add transactions and stuff on the last block
 				for i := 0; i < transactions; i++ {
@@ -136,68 +133,5 @@ func testRlpIterator(t *testing.T, txs, uncles, datasize int) {
 		if exp := expHashes[i]; got != exp {
 			t.Errorf("testcase %v: hash wrong, got %x, exp %x", desc, got, exp)
 		}
-	}
-}
-
-// BenchmarkHashing compares the speeds of hashing a rlp raw data directly
-// without the unmarshalling/marshalling step
-func BenchmarkHashing(b *testing.B) {
-	// Make a pretty fat block
-	var (
-		bodyRlp  []byte
-		blockRlp []byte
-	)
-	{
-		block := getBlock(200, 2, 50)
-		bodyRlp, _ = rlp.EncodeToBytes(block.Body())
-		blockRlp, _ = rlp.EncodeToBytes(block)
-	}
-	var got common.Hash
-	var hasher = sha3.NewLegacyKeccak256()
-	b.Run("iteratorhashing", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			var hash common.Hash
-			it, err := rlp.NewListIterator(bodyRlp)
-			if err != nil {
-				b.Fatal(err)
-			}
-			it.Next()
-			txs := it.Value()
-			txIt, err := rlp.NewListIterator(txs)
-			if err != nil {
-				b.Fatal(err)
-			}
-			for txIt.Next() {
-				hasher.Reset()
-				hasher.Write(txIt.Value())
-				hasher.Sum(hash[:0])
-				got = hash
-			}
-		}
-	})
-	var exp common.Hash
-	b.Run("fullbodyhashing", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			var body types.Body
-			rlp.DecodeBytes(bodyRlp, &body)
-			for _, tx := range body.Transactions {
-				exp = tx.Hash()
-			}
-		}
-	})
-	b.Run("fullblockhashing", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			var block types.Block
-			rlp.DecodeBytes(blockRlp, &block)
-			for _, tx := range block.Transactions() {
-				tx.Hash()
-			}
-		}
-	})
-	if got != exp {
-		b.Fatalf("hash wrong, got %x exp %x", got, exp)
 	}
 }

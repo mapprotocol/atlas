@@ -38,6 +38,7 @@ type precompiledTest struct {
 	Gas             uint64
 	Name            string
 	NoBenchmark     bool // Benchmark primarily the worst-cases
+	ErrorExpected   bool
 }
 
 // precompiledFailureTest defines the input/error pairs for precompiled
@@ -70,6 +71,80 @@ var allPrecompiles = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{16}):   &bls12381Pairing{},
 	common.BytesToAddress([]byte{17}):   &bls12381MapG1{},
 	common.BytesToAddress([]byte{18}):   &bls12381MapG2{},
+
+	// Atlas Precompiled Contracts
+	transferAddress:              &transfer{},
+	fractionMulExpAddress:        &fractionMulExp{},
+	proofOfPossessionAddress:     &proofOfPossession{},
+	getValidatorAddress:          &getValidator{},
+	numberValidatorsAddress:      &numberValidators{},
+	epochSizeAddress:             &epochSize{},
+	blockNumberFromHeaderAddress: &blockNumberFromHeader{},
+	hashHeaderAddress:            &hashHeader{},
+	getParentSealBitmapAddress:   &getParentSealBitmap{},
+	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
+
+	// New in Donut hard fork
+	ed25519Address:           &ed25519Verify{},
+	b12_381G1AddAddress:      &bls12381G1Add{},
+	b12_381G1MulAddress:      &bls12381G1Mul{},
+	b12_381G1MultiExpAddress: &bls12381G1MultiExp{},
+	b12_381G2AddAddress:      &bls12381G2Add{},
+	b12_381G2MulAddress:      &bls12381G2Mul{},
+	b12_381G2MultiExpAddress: &bls12381G2MultiExp{},
+	b12_381PairingAddress:    &bls12381Pairing{},
+	b12_381MapFpToG1Address:  &bls12381MapG1{},
+	b12_381MapFp2ToG2Address: &bls12381MapG2{},
+	cip26Address:             &getValidatorBLS{},
+}
+
+func testJSON(name, addr string, t *testing.T) {
+	tests, err := loadJSON(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range tests {
+		testPrecompiled(addr, test, t)
+	}
+}
+
+func testJSONFail(name, addr string, t *testing.T) {
+	tests, err := loadJSONFail(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range tests {
+		testPrecompiledFailure(addr, test, t)
+	}
+}
+
+func benchJSON(name, addr string, b *testing.B) {
+	tests, err := loadJSON(name)
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, test := range tests {
+		benchmarkPrecompiled(addr, test, b)
+	}
+}
+func loadJSON(name string) ([]precompiledTest, error) {
+	data, err := ioutil.ReadFile(fmt.Sprintf("testdata/precompiles/%v.json", name))
+	if err != nil {
+		return nil, err
+	}
+	var testcases []precompiledTest
+	err = json.Unmarshal(data, &testcases)
+	return testcases, err
+}
+
+func loadJSONFail(name string) ([]precompiledFailureTest, error) {
+	data, err := ioutil.ReadFile(fmt.Sprintf("testdata/precompiles/%v.json", name))
+	if err != nil {
+		return nil, err
+	}
+	var testcases []precompiledFailureTest
+	err = json.Unmarshal(data, &testcases)
+	return testcases, err
 }
 
 // EIP-152 test vectors
@@ -100,19 +175,29 @@ func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
-	contract := NewContract(nil, nil, big.NewInt(0), 0)
-
 	p := allPrecompiles[common.HexToAddress(addr)]
 	in := common.Hex2Bytes(test.Input)
 	gas := p.RequiredGas(in)
 	t.Run(fmt.Sprintf("%s-Gas=%d", test.Name, gas), func(t *testing.T) {
-		if res, _, err := RunPrecompiledContract(evm, contract, p, in, gas); err != nil {
-			t.Error(err)
-		} else if common.Bytes2Hex(res) != test.Expected {
-			t.Errorf("Expected %v, got %v", test.Expected, common.Bytes2Hex(res))
-		}
-		if expGas := test.Gas; expGas != gas {
-			t.Errorf("%v: gas wrong, expected %d, got %d", test.Name, expGas, gas)
+		contract := NewContract(&dummyContractRef{}, &dummyContractRef{}, new(big.Int), 0)
+		contract = NewContract(contract, AccountRef(common.HexToAddress(addr)), big.NewInt(0), gas)
+		res, _, err := RunPrecompiledContract(evm, contract, p, in, gas)
+		if test.ErrorExpected {
+			if err == nil {
+				t.Errorf("Expected error: %v, but no error occurred", test.Expected)
+			} else if err.Error() != test.Expected {
+				t.Errorf("Expected error: \"%v\", but got \"%v\"", test.Expected, err.Error())
+			}
+		} else {
+			if err != nil {
+				t.Error(err)
+			} else if common.Bytes2Hex(res) != test.Expected {
+				t.Errorf("Expected %v, got %v", test.Expected, common.Bytes2Hex(res))
+			}
+			// TODO: Calculate and add our actual gas to every json file
+			// if expGas := test.Gas; expGas != gas {
+			// 	t.Errorf("%v: gas wrong, expected %d, got %d", test.Name, expGas, gas)
+			// }
 		}
 		// Verify that the precompile did not touch the input buffer
 		exp := common.Hex2Bytes(test.Input)
@@ -149,11 +234,11 @@ func testPrecompiledFailure(addr string, test precompiledFailureTest, t *testing
 	db := rawdb.NewMemoryDatabase()
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
 	evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
-	contract := NewContract(nil, nil, big.NewInt(0), 0)
-
 	p := allPrecompiles[common.HexToAddress(addr)]
 	in := common.Hex2Bytes(test.Input)
 	gas := p.RequiredGas(in)
+	contract := NewContract(&dummyContractRef{}, &dummyContractRef{}, new(big.Int), 0)
+	contract = NewContract(contract, AccountRef(common.HexToAddress(addr)), big.NewInt(0), gas)
 	t.Run(test.Name, func(t *testing.T) {
 		_, _, err := RunPrecompiledContract(evm, contract, p, in, gas)
 		if err.Error() != test.ExpectedError {
@@ -185,7 +270,8 @@ func benchmarkPrecompiled(addr string, test precompiledTest, bench *testing.B) {
 		db := rawdb.NewMemoryDatabase()
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
 		evm := NewEVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
-		contract := NewContract(nil, nil, big.NewInt(0), 0)
+		contract := NewContract(&dummyContractRef{}, &dummyContractRef{}, new(big.Int), 0)
+		contract = NewContract(contract, AccountRef(common.HexToAddress(addr)), big.NewInt(0), reqGas)
 
 		bench.ReportAllocs()
 		start := time.Now()
@@ -294,6 +380,12 @@ func TestPrecompileBlake2FMalformedInput(t *testing.T) {
 		testPrecompiledFailure("09", test, t)
 	}
 }
+
+// Tests the sample inputs from the ed25519 verify check CIP 25
+func TestPrecompiledEd25519Verify(t *testing.T) { testJSON("ed25519Verify", "f3", t) }
+
+// Benchmarks the sample inputs from the ed25519 verify check CIP 25
+func BenchmarkPrecompiledEd25519Verify(b *testing.B) { benchJSON("ed25519Verify", "f3", b) }
 
 func TestPrecompiledEcrecover(t *testing.T) { testJson("ecRecover", "01", t) }
 

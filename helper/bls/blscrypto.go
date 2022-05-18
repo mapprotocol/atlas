@@ -20,8 +20,8 @@ const (
 	BN256Curve        = 1
 	BLS12377Curve     = 2
 	BLS12381Curve     = 3
-	PUBLICKEYBYTES    = 129
-	G1PUBLICKEYBYTES  = 129
+	PUBLICKEYBYTES    = 128
+	G1PUBLICKEYBYTES  = 64
 	SIGNATUREBYTES    = 64
 	EPOCHENTROPYBYTES = 16
 )
@@ -133,10 +133,11 @@ func CryptoType() BLSCryptoSelector {
 type BN256 struct{}
 
 const (
-	MODULUS256 = "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+	MODULUS256  = "21888242871839275222246405745257275088548364400416034343698204186575808495617"
 	MODULUSBITS = 254
 	MODULUSMASK = 63 // == 2**(254-(256-8)) - 1
 )
+
 //func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
 //	return crypto.FromECDSA(privateKeyECDSA), nil
 //}
@@ -206,7 +207,7 @@ func (BN256) PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, e
 }
 
 func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	sigma := Signature{}
+	sigma := UnsafeSignature{}
 	err := sigma.Unmarshal(signature)
 	if err != nil {
 		return err
@@ -221,37 +222,32 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 		pks = append(pks, pk)
 	}
 
-	apk, err := AggregateApk(pks)
-	if err != nil {
-		return err
-	}
+	pk := AggregatePK(pks)
 
-	err = Verify(apk, message, &sigma)
-	if err != nil {
+	if err := VerifyUnsafe(pk, message, &sigma); err != nil {
 		return err
 	}
 	return err
 }
 
 func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
-	var signs Signature
-	err := signs.Unmarshal(signatures[0])
-	if err != nil {
+	signs := &UnsafeSignature{}
+	if err := signs.Unmarshal(signatures[0]); err != nil {
 		return nil, err
 	}
+
 	for i := 1; i < len(signatures); i++ {
-		var sign Signature
-		err := sign.Unmarshal(signatures[i])
-		if err != nil {
+		sign := &UnsafeSignature{}
+		if err := sign.Unmarshal(signatures[i]); err != nil {
 			return nil, err
 		}
-		signs.Aggregate(&sign)
+		signs = UnsafeAggregate(signs, sign)
 	}
 	return signs.Marshal(), nil
 }
 
 func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
-	var sign Signature
+	var sign UnsafeSignature
 	err := sign.Unmarshal(signature)
 	if err != nil {
 		return err
@@ -261,8 +257,7 @@ func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extr
 		return err
 	}
 
-	err = Verify(NewApk(pk), message, &sign)
-	if err != nil {
+	if err := VerifyUnsafe(pk, message, &sign); err != nil {
 		return err
 	}
 	return nil

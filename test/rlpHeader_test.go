@@ -17,7 +17,7 @@ import (
 )
 
 func TestData(t *testing.T) {
-	//url := fmt.Sprintf("https://forno.celo.org")
+	//url := fmt.Sprintf("http://127.0.0.1:7445")
 	//ip := "127.0.0.1" //utils.RPCListenAddrFlag.Name)
 	//port := 7415                //utils.RPCPortFlag.Name)
 	//url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))

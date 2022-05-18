@@ -25,9 +25,7 @@ func getChains(startNum, endNum int64) []*types.Header {
 
 func dialEthConn() (*Client, string) {
 
-	url := fmt.Sprintf("https://forno.celo.org")
-	//url := fmt.Sprintf("https://alfajores-forno.celo-testnet.org")
-	//url := fmt.Sprintf("https://baklava-forno.celo-testnet.org")
+	url := fmt.Sprintf("http://127.0.0.1:7445")
 	conn, err := Dial(url)
 	if err != nil {
 		log.Fatalf("Failed to connect to the Atlaschain client: %v", err)

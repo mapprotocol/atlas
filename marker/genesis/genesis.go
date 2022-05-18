@@ -52,14 +52,9 @@ func GenerateGenesis(_ *cli.Context, accounts *env.AccountsConfig, cfg *Config, 
 	if err != nil {
 		return nil, err
 	}
-	genesis := chain.DefaultGenesisBlock()
+	genesis := chain.UseForGenesisBlock()
 	genesis.ExtraData = extraData
-	alloc := genesis.Alloc
-	for addr, allc := range genesisAlloc {
-		// add genesis contract to allc
-		alloc[addr] = allc
-	}
-	genesis.Alloc = alloc
+	genesis.Alloc = genesisAlloc
 	return genesis, nil
 }
 

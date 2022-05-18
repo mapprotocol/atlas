@@ -448,6 +448,16 @@ func DevnetGenesisBlock() *Genesis {
 	}
 }
 
+// DefaultGenesisBlock returns the Ethereum main net genesis block.
+func UseForGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:    params.MainnetChainConfig,
+		Nonce:     66,
+		ExtraData: hexutil.MustDecode(mainnetExtraData),
+		GasLimit:  20000000,
+	}
+}
+
 func defaultRelayer() GenesisAlloc {
 	balance, _ := new(big.Int).SetString("100000000000000000000000000", 10) //100 million
 	relayer := []common.Address{
