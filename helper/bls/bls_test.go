@@ -4,8 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/sha3"
 	"log"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -170,4 +173,109 @@ func randomMessage() []byte {
 	msg := make([]byte, 32)
 	_, _ = rand.Read(msg)
 	return msg
+}
+
+func hash256(msg []byte) ([]byte, error) {
+	H := sha3.New256()
+	_, err := H.Write(msg)
+	if err != nil {
+		return nil, err
+	}
+	return H.Sum(nil), err
+}
+func hashLegacy256(msg []byte) ([]byte, error) {
+	H := sha3.NewLegacyKeccak256()
+	_, err := H.Write(msg)
+	if err != nil {
+		return nil, err
+	}
+	return H.Sum(nil), err
+}
+func TestHash01(t *testing.T) {
+	h0,_ := hash256([]byte{1})
+	h1,_ := hashLegacy256([]byte{1})
+
+	b0,e := hexutil.Decode("0x1234")
+	if e != nil {
+		fmt.Println(e)
+	}
+
+	h2,_ := hash256(b0)
+	h3,_ := hashLegacy256(b0)
+
+	fmt.Println("h0:",hex.EncodeToString(h0))
+	fmt.Println("h1:",hex.EncodeToString(h1))
+
+	fmt.Println("h2:",hex.EncodeToString(h2))
+	fmt.Println("h3:",hex.EncodeToString(h3))
+}
+
+func Test_UnsafeVerify(t *testing.T) {
+	big1,big2 := big.NewInt(1),big.NewInt(2)
+	message := []byte{1,2,3}
+	//g2pks := make([]*PublicKey, 0, 2)
+
+	secret1,secret2 := SecretKey{big1},SecretKey{big2}
+	g2PublicKey1,g2PublicKey2 := secret1.ToPublic(),secret2.ToPublic()
+
+	// agg pk
+	aggrPubkey := g2PublicKey1.Aggregate(g2PublicKey2)
+
+	// sign
+	sign1, err := UnsafeSign(&secret1, message)
+	if err != nil {
+		panic(err)
+	}
+	sign2, err := UnsafeSign(&secret2, message)
+	if err != nil {
+		panic(err)
+	}
+
+	// agg sign
+	aggSign := UnsafeAggregate(sign1, sign2)
+	if err != nil {
+		panic(err)
+	}
+
+	// verify
+	err = VerifyUnsafe(aggrPubkey, message, aggSign)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Test_Verify(t *testing.T) {
+	big1,big2 := big.NewInt(1),big.NewInt(2)
+	message := []byte{1,2,3}
+	//g2pks := make([]*PublicKey, 0, 2)
+
+	secret1,secret2 := SecretKey{big1},SecretKey{big2}
+	g2PublicKey1,g2PublicKey2 := secret1.ToPublic(),secret2.ToPublic()
+
+	// agg pk
+	aggrPubkey,err := AggregateApk([]*PublicKey{g2PublicKey1,g2PublicKey2})
+	if err != nil {
+		panic(err)
+	}
+	// sign
+	sign1, err := Sign(&secret1,g2PublicKey1, message)
+	if err != nil {
+		panic(err)
+	}
+	sign2, err := Sign(&secret2,g2PublicKey2, message)
+	if err != nil {
+		panic(err)
+	}
+
+	// agg sign
+	aggSign := sign1.Aggregate(sign2)
+	if err != nil {
+		panic(err)
+	}
+
+	// verify
+	err = Verify(aggrPubkey, message, aggSign)
+	if err != nil {
+		panic(err)
+	}
 }

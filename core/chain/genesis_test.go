@@ -21,7 +21,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/consensus"
+	"golang.org/x/crypto/sha3"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -366,4 +368,31 @@ func TestComparePOC2_3_Genesis(t *testing.T) {
 }
 func TestPrintPreContractAddr(t *testing.T) {
 	t.Log(params2.HeaderStoreAddress)
+}
+
+func Test06(t *testing.T) {
+	type txLogs struct{
+		PostStateOrStatus []byte
+		CumulativeGasUsed uint
+		Bloom []byte
+	}
+	p1,_ := hex.DecodeString("2")
+	b1,_ := hex.DecodeString("1")
+	tx1 := txLogs{
+		PostStateOrStatus: p1,
+		CumulativeGasUsed: 1,
+		Bloom: b1,
+	}
+	r1,_ := rlp.EncodeToBytes(tx1)
+	fmt.Println(hex.EncodeToString(r1))
+	fmt.Println(rlpHash(tx1).String())
+}
+
+func rlpHash(x interface{}) (h common.Hash) {
+	hw := sha3.NewLegacyKeccak256()
+	if e := rlp.Encode(hw, x); e != nil {
+		panic(e.Error())
+	}
+	hw.Sum(h[:0])
+	return h
 }
