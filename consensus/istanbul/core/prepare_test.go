@@ -450,17 +450,15 @@ func BenchmarkHandlePrepare(b *testing.B) {
 
 	v0 := sys.backends[0]
 	c := v0.engine.(*core)
-	m, _ := Encode(v0.engine.(*core).current.Subject())
-	msg := istanbul.Message{
-		Code:    istanbul.MsgPrepare,
-		Msg:     m,
-		Address: c.current.ValidatorSet().GetByIndex(uint64(1)).Address(),
-	}
+	msg := istanbul.NewPrepareMessage(
+		v0.engine.(*core).current.Subject(),
+		c.current.ValidatorSet().GetByIndex(uint64(1)).Address(),
+	)
 
 	// benchmarked portion
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := c.handlePrepare(&msg)
+		err := c.handlePrepare(msg)
 		if err != nil {
 			b.Errorf("Error handling the pre-prepare message. err: %v", err)
 		}
