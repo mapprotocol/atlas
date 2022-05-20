@@ -285,3 +285,26 @@ func Test_Verify(t *testing.T) {
 		panic(err)
 	}
 }
+
+func Test02(t *testing.T) {
+	big1 := big.NewInt(1)
+	message := []byte{1}
+
+	secret1 := SecretKey{big1}
+	g2PublicKey1 := secret1.ToPublic()
+
+
+	// sign
+	sign1, err := UnsafeSign(&secret1, message)
+	if err != nil {
+		panic(err)
+	}
+	h,_ := hashLegacy256(message)
+	fmt.Println(hex.EncodeToString(h))
+	fmt.Println(hex.EncodeToString(sign1.Marshal()))
+	// verify
+	err = VerifyUnsafe(g2PublicKey1, message, sign1)
+	if err != nil {
+		panic(err)
+	}
+}
