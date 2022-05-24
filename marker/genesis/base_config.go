@@ -46,7 +46,7 @@ func BaseConfig() *Config {
 		EpochRewards: EpochRewardsParameters{
 			//a epoch award 1,500,000map = 300,000,000(one year award)/6000,000(number a year) *30000(one epoch number)
 			//MaxValidatorEpochPayment = 1,500,000map *(2/3)
-			//MaxRelayerEpochPayment   =   500,000map *(1/3)
+			//MaxRelayerEpochPayment   = 1,500,000map *(1/3)
 			//MaxEpochPayment: bigIntStr("1500000000000000000000000") , //Validator Relayer
 			MaxEpochPayment: perEpochReward, //Validator Relayer
 
