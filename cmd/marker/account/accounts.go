@@ -22,7 +22,7 @@ type Account struct {
 func (a *Account) MustBLSProofOfPossession() []byte {
 	pop, err := a.BLSProofOfPossession()
 	if err != nil {
-		panic(err)
+		log.Error("MustBLSProofOfPossession", "err", err)
 	}
 	return pop
 }
