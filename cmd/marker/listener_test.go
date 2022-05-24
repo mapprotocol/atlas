@@ -143,10 +143,10 @@ func Test_getKeystoreInfo(t *testing.T) {
 			t.Error("Failed to create account", err)
 		}
 		fmt.Printf("\nYour new key was generated\n\n")
-		fmt.Printf("Public address of the key:   %s\n", accountBls.Address.Hex())
-		fmt.Printf("PublicKeyHex:   %s\n", hexutil.Encode(accountBls.PublicKey()))
-		fmt.Printf("BLS Public address of the key:%d   %s\n", len(blsPubKey), blsPubKeyText)
-		fmt.Printf("BLS G1 Public address of the key:%d   %s\n", len(blsG1PubKey), blsG1PubKeyText)
+		fmt.Printf("Address:   %s\n", accountBls.Address.Hex())
+		fmt.Printf("PublicKey:   %s\n", hexutil.Encode(accountBls.PublicKey()))
+		fmt.Printf("BLS Public key:%d   %s\n", len(blsPubKey), blsPubKeyText)
+		fmt.Printf("BLS G1 Public key:%d   %s\n", len(blsG1PubKey), blsG1PubKeyText)
 		fmt.Printf("BLSProofOfPossession: %d  %s\n", len(blsProofOfPossession), hexutil.Encode(blsProofOfPossession))
 		marker.Validators = append(marker.Validators, genesis.AccoutInfo{
 			Address:              accountBls.Address.Hex(),
