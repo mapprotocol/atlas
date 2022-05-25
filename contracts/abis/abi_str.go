@@ -5832,6 +5832,11 @@ const ValidatorsStr = `[
           "type": "address"
         },
         {
+          "internalType": "address",
+          "name": "walletAddress",
+          "type": "address"
+        },
+        {
           "internalType": "bytes[]",
           "name": "blsBlsG1BlsPopEcdsaPub",
           "type": "bytes[]"

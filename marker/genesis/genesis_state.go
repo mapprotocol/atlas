@@ -389,9 +389,10 @@ func (ctx *deployContext) registerValidators() error {
 		//if err != nil {
 		//	return err
 		//}
+		walletAddress := validator.WalletAddress_()
 		validatorParams := [4][]byte{blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession()[:], pubKey[:]}
 		//err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
-		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, validatorParams)
+		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, walletAddress, validatorParams)
 		if err != nil {
 			return err
 		}

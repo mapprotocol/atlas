@@ -102,6 +102,7 @@ type AccoutInfo struct {
 	BLSPubKey            string
 	BLSG1PubKey          string
 	BLSProofOfPossession string
+	WalletAddress        string
 }
 
 // MustBLSProofOfPossession variant of BLSProofOfPossession that panics on error
@@ -152,6 +153,10 @@ func (a *AccoutInfo) PublicKey() []byte {
 		panic(err)
 	}
 	return b
+}
+
+func (a *AccoutInfo) WalletAddress_() common.Address {
+	return common.HexToAddress(a.WalletAddress)
 }
 
 type MarkerInfo struct {
