@@ -59,8 +59,6 @@ func init() {
 		revertRegisterValidatorCommand,
 		quicklyRegisterValidatorCommand,
 		deregisterValidatorCommand,
-		completeSignerAuthorizationCommand,
-		signerToAccountCommand,
 		//------ voter -----
 		voteValidatorCommand,
 		quicklyVoteValidatorCommand,
