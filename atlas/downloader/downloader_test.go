@@ -19,6 +19,7 @@ package downloader
 import (
 	"errors"
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"strings"
 	"sync"
@@ -67,7 +68,9 @@ type downloadTester struct {
 
 	lock sync.RWMutex
 }
-
+func (dl *downloadTester) Config() *params2.ChainConfig {
+	return nil
+}
 // newTester creates a new downloader test mocker.
 func newTester() *downloadTester {
 	tester := &downloadTester{
@@ -149,7 +152,9 @@ func (dl *downloadTester) GetHeaderByHash(hash common.Hash) *types.Header {
 	defer dl.lock.RUnlock()
 	return dl.getHeaderByHash(hash)
 }
-
+func (dl *downloadTester) GetHeaderByNumber(num uint64) *types.Header {
+	return nil
+}
 // getHeaderByHash returns the header if found either within ancients or own blocks)
 // This method assumes that the caller holds at least the read-lock (dl.lock)
 func (dl *downloadTester) getHeaderByHash(hash common.Hash) *types.Header {
