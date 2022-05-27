@@ -108,7 +108,7 @@ type AccoutInfo struct {
 	BLSProofOfPossession string
 }
 
-// MustBLSProofOfPossession variant of BLSProofOfPossession that panics on error //todo zw
+// MustBLSProofOfPossession variant of BLSProofOfPossession that panics on error
 func (a *AccoutInfo) MustBLSProofOfPossession() []byte {
 	pop, err := a.BLSProofOfPossession_()
 	if err != nil {
@@ -120,7 +120,7 @@ func (a *AccoutInfo) getAddress() common.Address {
 	return common.HexToAddress(a.Address)
 }
 
-// BLSProofOfPossession generates bls proof of possession //todo zw
+// BLSProofOfPossession generates bls proof of possession
 func (a *AccoutInfo) BLSProofOfPossession_() ([]byte, error) {
 	signatureBytes, err := hexutil.Decode(a.BLSProofOfPossession)
 	if err != nil {

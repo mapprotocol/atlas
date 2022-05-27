@@ -102,13 +102,13 @@ var signerToAccountCommand = cli.Command{
 }
 var makeECDSASignatureFromSingerCommand = cli.Command{
 	Name:   "makeECDSASignatureFromSinger",
-	Usage:  "Returns the account associated with `signer`.", //todo zw
+	Usage:  "print a ECDSASignature that singer sign the account(validator)",
 	Action: MigrateFlags(makeECDSASignatureFromSinger),
 	Flags:  Flags,
 }
 var makeBLSProofOfPossessionFromSingerCommand = cli.Command{
 	Name:   "makeBLSProofOfPossessionFromSinger",
-	Usage:  "todo z.", //todo zw
+	Usage:  "print a BLSProofOfPossession that singer BLSSign the account(validator)",
 	Action: MigrateFlags(makeBLSProofOfPossessionFromSinger),
 	Flags:  Flags,
 }
@@ -616,13 +616,15 @@ func signerToAccount(_ *cli.Context, core *listener) error {
 	return nil
 }
 
-// note:singer function
+/*
+note:singer function
+print a ECDSASignature that singer sign the account(validator)
+*/
 func makeECDSASignatureFromSinger(_ *cli.Context, core *listener) error {
 	makeECDSASignatureFromSinger_(core)
 	return nil
 }
 func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
-	//singerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
 	singerPriv := core.cfg.SingerPriv
 	priv, err := crypto.ToECDSA(common.FromHex(singerPriv))
 	if err != nil {
@@ -630,8 +632,8 @@ func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
 	}
 	singer := crypto.PubkeyToAddress(priv.PublicKey)
 	fmt.Println("===singer ===", singer)
-	account := core.cfg.From
-	hash := accounts.TextHash(crypto.Keccak256(account[:]))
+	account_ := core.cfg.From
+	hash := accounts.TextHash(crypto.Keccak256(account_[:]))
 	sig, err := crypto.Sign(hash, priv)
 	if err != nil {
 		panic(err)
@@ -641,14 +643,15 @@ func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
 	if err != nil {
 		panic(err)
 	}
-	log.Info("=== recover test ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
-	log.Info("", "ECDSASignature", hexutil.Encode(sig))
+	log.Info("=== test:recover to public  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
+	log.Info("ECDSASignature", "result", hexutil.Encode(sig))
 	return hexutil.Encode(sig), singer
 }
 
 /*
   note:singer function
-  used for makerCfg marker/config/markerConfig.json and cmd/marker/listener.go:553 authorizeValidatorSigner
+  use for makerCfg marker/config/markerConfig.json and cmd/marker/listener.go:553 authorizeValidatorSigner
+  print a BLSProofOfPossession that singer BLSSign the account(validator)
 */
 func makeBLSProofOfPossessionFromSinger(_ *cli.Context, core *listener) error {
 	signature := makeBLSProofOfPossessionFromSinger_(core.cfg.AccountAddress, core)
