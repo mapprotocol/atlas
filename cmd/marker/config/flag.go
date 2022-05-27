@@ -93,6 +93,16 @@ var (
 		Usage: "validator address",
 		Value: "",
 	}
+	SingerPrivFlag = cli.StringFlag{
+		Name:  "singerPriv",
+		Usage: "singer private",
+		Value: "",
+	}
+	AccountAddressFlag = cli.StringFlag{
+		Name:  "accountAddress",
+		Usage: "account address",
+		Value: "",
+	}
 	ContractAddressFlag = cli.StringFlag{
 		Name:  "contractAddress",
 		Usage: "set contract Address",

@@ -344,7 +344,12 @@ func (ctx *deployContext) createAccounts(accs []AccoutInfo, namePrefix string) e
 		if err := accounts.SimpleCallFrom(acc.getAddress(), "setAccountDataEncryptionKey", acc.PublicKey()); err != nil {
 			return err
 		}
-
+		//get r v s
+		r, v, s := acc.ECDSASignature_()
+		// set Singer Address
+		if err := accounts.SimpleCallFrom(acc.getAddress(), "authorizeValidatorSigner", acc.SingerAddress_(), r, v, s); err != nil {
+			return err
+		}
 		// Missing: authorizeAttestationSigner
 	}
 	return nil
@@ -389,10 +394,9 @@ func (ctx *deployContext) registerValidators() error {
 		//if err != nil {
 		//	return err
 		//}
-		walletAddress := validator.WalletAddress_()
 		validatorParams := [4][]byte{blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession()[:], pubKey[:]}
 		//err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, blsPub[:], blsG1Pub[:], validator.MustBLSProofOfPossession(), pubKey)
-		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, walletAddress, validatorParams)
+		err = validators.SimpleCallFrom(address, "registerValidator", commission, params.ZeroAddress, prevValidatorAddress, validatorParams)
 		if err != nil {
 			return err
 		}

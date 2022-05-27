@@ -815,26 +815,6 @@ func init() {
       "constant": false,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "validator",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "walletAddress",
-          "type": "address"
-        }
-      ],
-      "name": "setWalletAddressForRegister",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
           "internalType": "bytes",
           "name": "dataEncryptionKey",
           "type": "bytes"
@@ -8582,11 +8562,6 @@ func init() {
         {
           "internalType": "address",
           "name": "greater",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "walletAddress",
           "type": "address"
         },
         {

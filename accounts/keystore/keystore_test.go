@@ -28,10 +28,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/mapprotocol/atlas/accounts"
 )
 
 var testSigData = make([]byte, 32)

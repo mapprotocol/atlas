@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/helper/fileutils"
 	"github.com/mapprotocol/atlas/marker/genesis"
 
@@ -96,14 +97,16 @@ func Test_ProxiedValidator(t *testing.T) {
 }
 
 // simulation Account new
+//0x1a7559d3ca2e6d4ee76bf97e816c21319e31a8ff58368c747fd8909bf37b48db0fc69bc7c6fffc0665ff1801fb17afe79ae31042411d3eb600ab73bb02f3e8b32fb4218ab8a7018b6300ea6500ef438817eed6c986901eb212d4c6de093ef63020b20eb8e1ed4365d33519cdc1c290ae7a386ff9743c57b1b420be20b94698b7
 func Test_getKeystoreInfo(t *testing.T) {
 	path1 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T08-00-15.473724074Z--1c0edab88dbb72b119039c4d14b1663525b3ac15"
 	path2 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T10-12-17.687481942Z--16fdbcac4d4cc24dca47b9b80f58155a551ca2af"
 	path3 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T10-16-18.520295371Z--2dc45799000ab08e60b7441c36fcc74060ccbe11"
 	path4 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T10-16-35.698273293Z--6c5938b49bacde73a8db7c3a7da208846898bff5"
+	path5 := "/Users/zhangwei/work/atlasEnv/keystore/UTC--2022-05-27T12-24-07.345965000Z--05d0cfd882185deb9b3e0ea7872ad332acb9e31d"
 	marker := genesis.MarkerInfo{}
 	marker.AdminAddress = "0x1c0edab88dbb72b119039c4d14b1663525b3ac15"
-	for _, path := range []string{path1, path2, path3, path4} {
+	for _, path := range []string{path1, path2, path3, path4, path5} {
 		Password := ""
 		keyjson, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -157,4 +160,28 @@ func Test_getKeystoreInfo(t *testing.T) {
 		})
 	}
 	fileutils.WriteJson(marker, "/Users/zhangwei/work/atlas/marker/config/markerConfig.json")
+}
+
+func Test_sign(T *testing.T) {
+	account := common.HexToAddress("0x6621F2b6Da2BEd64b5fFBD6C5b2138547f44C8f9")
+	singerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
+	privECDSA, err := crypto.ToECDSA(common.FromHex(singerPriv))
+	fmt.Println("===singer ===", crypto.PubkeyToAddress(privECDSA.PublicKey))
+	priv, err := bls.DeserializePrivateKey(common.FromHex(singerPriv))
+	if err != nil {
+		panic(err)
+	}
+	pub := priv.ToPublic()
+	if err != nil {
+		panic(err)
+	}
+	pop, _ := bls.UnsafeSign(priv, account.Bytes())
+	popBytes := pop.Marshal()
+	T.Log(":", "pop:", hexutil.Encode(popBytes))
+	// test
+	err = bls.VerifyUnsafe(pub, account.Bytes(), pop)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finish")
 }

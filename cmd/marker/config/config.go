@@ -62,6 +62,8 @@ type Config struct {
 
 	TargetAddress         common.Address
 	ContractAddress       common.Address
+	SingerPriv            string
+	AccountAddress        common.Address //validator
 	ImplementationAddress common.Address
 	Ip                    string
 	Port                  int
@@ -109,6 +111,12 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
+	}
+	if ctx.IsSet(ValidatorAddressFlag.Name) {
+		config.AccountAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
+	}
+	if ctx.IsSet(SingerPrivFlag.Name) {
+		config.SingerPriv = ctx.String(SingerPrivFlag.Name)
 	}
 	if ctx.IsSet(ImplementationAddressFlag.Name) {
 		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))

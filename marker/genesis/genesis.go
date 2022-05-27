@@ -4,19 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/urfave/cli.v1"
+	"io/ioutil"
+	"math/big"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/marker/env"
 	"github.com/mapprotocol/atlas/params"
-	"gopkg.in/urfave/cli.v1"
-	"io/ioutil"
-	"math/big"
-	"time"
 )
 
 // Keccak256 of "The Times 09/Apr/2020 With $2.3 Trillion Injection, Fed’s Plan Far Exceeds Its 2008 Rescue"
@@ -65,7 +67,7 @@ func generateGenesisExtraData(validatorAccounts []AccoutInfo) ([]byte, error) {
 
 	for i := 0; i < len(validatorAccounts); i++ {
 		var err error
-		addresses[i] = validatorAccounts[i].getAddress()
+		addresses[i] = validatorAccounts[i].SingerAddress_()
 		blsKeys[i], err = validatorAccounts[i].BLSPublicKey()
 		blsG1Keys[i], err = validatorAccounts[i].BLSG1PublicKey()
 		if err != nil {
@@ -98,14 +100,15 @@ func generateGenesisExtraData(validatorAccounts []AccoutInfo) ([]byte, error) {
 //From markerConfig.json used for validators and election contract
 type AccoutInfo struct {
 	Address              string
+	SingerAddress        string
+	ECDSASignature       string
 	PublicKeyHex         string
 	BLSPubKey            string
 	BLSG1PubKey          string
 	BLSProofOfPossession string
-	WalletAddress        string
 }
 
-// MustBLSProofOfPossession variant of BLSProofOfPossession that panics on error
+// MustBLSProofOfPossession variant of BLSProofOfPossession that panics on error //todo zw
 func (a *AccoutInfo) MustBLSProofOfPossession() []byte {
 	pop, err := a.BLSProofOfPossession_()
 	if err != nil {
@@ -117,13 +120,15 @@ func (a *AccoutInfo) getAddress() common.Address {
 	return common.HexToAddress(a.Address)
 }
 
-// BLSProofOfPossession generates bls proof of possession
+// BLSProofOfPossession generates bls proof of possession //todo zw
 func (a *AccoutInfo) BLSProofOfPossession_() ([]byte, error) {
-	b, err := hexutil.Decode(a.BLSProofOfPossession)
+	signatureBytes, err := hexutil.Decode(a.BLSProofOfPossession)
 	if err != nil {
 		return nil, err
 	}
-	return b, nil
+	signature := blscrypto.UnsafeSignature{}
+	err = signature.Unmarshal(signatureBytes)
+	return signatureBytes, nil
 }
 
 // BLSPublicKey returns the bls public key
@@ -155,8 +160,19 @@ func (a *AccoutInfo) PublicKey() []byte {
 	return b
 }
 
-func (a *AccoutInfo) WalletAddress_() common.Address {
-	return common.HexToAddress(a.WalletAddress)
+func (a *AccoutInfo) SingerAddress_() common.Address {
+	return common.HexToAddress(a.SingerAddress)
+}
+
+func (a *AccoutInfo) ECDSASignature_() (v uint8, r common.Hash, s common.Hash) {
+	Signature, err := hexutil.Decode(a.ECDSASignature)
+	if err != nil {
+		panic(err)
+	}
+	v = uint8(new(big.Int).SetBytes([]byte{Signature[64] + 27}).Uint64())
+	r = common.BytesToHash(Signature[:32])
+	s = common.BytesToHash(Signature[32:64])
+	return
 }
 
 type MarkerInfo struct {
