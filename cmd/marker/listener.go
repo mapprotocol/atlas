@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -604,15 +603,19 @@ func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
 	return nil
 }
 
+/*
+  Query the account of a target signer
+*/
 func signerToAccount(_ *cli.Context, core *listener) error {
 	//----------------------------- signerToAccount ---------------------------------
+	logger := log.New("func", "signerToAccount")
 	AccountContractAddress := core.cfg.AccountsParameters.AccountsAddress
 	abiAccount := core.cfg.AccountsParameters.AccountsABI
 	var ret common.Address
 	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, AccountContractAddress, nil, abiAccount, "signerToAccount", core.cfg.TargetAddress)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
-	log.Info("signerToAccount", "=== authorizingAccount ===", ret)
+	logger.Info("signerToAccount", "authorizingAccount", ret)
 	return nil
 }
 
@@ -625,13 +628,13 @@ func makeECDSASignatureFromSinger(_ *cli.Context, core *listener) error {
 	return nil
 }
 func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
+	log.Info("=== makeECDSASignatureFromSinger ===")
 	singerPriv := core.cfg.SingerPriv
 	priv, err := crypto.ToECDSA(common.FromHex(singerPriv))
 	if err != nil {
 		panic(err)
 	}
 	singer := crypto.PubkeyToAddress(priv.PublicKey)
-	fmt.Println("===singer ===", singer)
 	account_ := core.cfg.From
 	hash := accounts.TextHash(crypto.Keccak256(account_[:]))
 	sig, err := crypto.Sign(hash, priv)
@@ -643,7 +646,7 @@ func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
 	if err != nil {
 		panic(err)
 	}
-	log.Info("=== test:recover to public  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
+	log.Info("=== singer  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
 	log.Info("ECDSASignature", "result", hexutil.Encode(sig))
 	return hexutil.Encode(sig), singer
 }
@@ -655,11 +658,12 @@ func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
 */
 func makeBLSProofOfPossessionFromSinger(_ *cli.Context, core *listener) error {
 	signature := makeBLSProofOfPossessionFromSinger_(core.cfg.AccountAddress, core)
-	log.Info("", "=== pop === ", hexutil.Encode(signature.Marshal()))
+	log.Info("=== pop ===", "result", hexutil.Encode(signature.Marshal()))
 	return nil
 }
 
 func makeBLSProofOfPossessionFromSinger_(message common.Address, core *listener) *bls.UnsafeSignature {
+	log.Info("=== makeBLSProofOfPossessionFromSinger ===")
 	//account:= common.HexToAddress("0x6621F2b6Da2BEd64b5fFBD6C5b2138547f44C8f9")
 	//singerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
 	singerPriv := core.cfg.SingerPriv
@@ -680,11 +684,11 @@ func makeBLSProofOfPossessionFromSinger_(message common.Address, core *listener)
 	if err != nil {
 		panic(err)
 	}
-	blsPubKeyText, err := publicKey.MarshalText()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("BLS Public key:  %s\n", blsPubKeyText)
+	//blsPubKeyText, err := publicKey.MarshalText()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//log.Info("makeBLSProofOfPossessionFromSinger","BLS Public key", blsPubKeyText)
 	//test
 	if err := bls.VerifyUnsafe(pk, message.Bytes(), signature); err != nil {
 		panic(err)
