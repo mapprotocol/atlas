@@ -624,6 +624,7 @@ note:singer function
 print a ECDSASignature that singer sign the account(validator)
 */
 func makeECDSASignatureFromSinger(_ *cli.Context, core *listener) error {
+	core.cfg.From = core.cfg.TargetAddress
 	makeECDSASignatureFromSinger_(core)
 	return nil
 }
