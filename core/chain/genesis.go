@@ -383,7 +383,7 @@ func DefaultGenesisBlock() *Genesis {
 		gs[addr] = allc
 	}
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
-	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
+	preAddr := common.HexToAddress("0x0cdA4D31FC061699E77aeCb72DB0C7987d9986f7")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
