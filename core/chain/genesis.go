@@ -50,6 +50,13 @@ var (
 	faucetBalance = new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18))
 	// private key: baf7c2008a568f91a75caf45b6e849b953513c10b5f3d73270d40c62a4ff5002
 	tempAddr = common.HexToAddress("0xd13fe09e7a304709b1c4ed6bd3a2d6c272357bbb")
+
+	DefaultGenesisCfg = &Genesis{
+		Config:    params.MainnetChainConfig,
+		Nonce:     66,
+		ExtraData: hexutil.MustDecode(mainnetExtraData),
+		GasLimit:  20000000,
+	}
 )
 
 // Genesis specifies the header fields, state of a genesis block. It also defines hard
@@ -385,13 +392,8 @@ func DefaultGenesisBlock() *Genesis {
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0xc732eFCAA62cBa951d81bB889bB0f8F6e952d70D")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
-	return &Genesis{
-		Config:    params.MainnetChainConfig,
-		Nonce:     66,
-		ExtraData: hexutil.MustDecode(mainnetExtraData),
-		GasLimit:  20000000,
-		Alloc:     gs,
-	}
+	DefaultGenesisCfg.Alloc = gs
+	return DefaultGenesisCfg
 }
 
 // DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
@@ -450,12 +452,7 @@ func DevnetGenesisBlock() *Genesis {
 
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func UseForGenesisBlock() *Genesis {
-	return &Genesis{
-		Config:    params.MainnetChainConfig,
-		Nonce:     66,
-		ExtraData: hexutil.MustDecode(mainnetExtraData),
-		GasLimit:  20000000,
-	}
+	return DefaultGenesisCfg
 }
 
 func defaultRelayer() GenesisAlloc {
