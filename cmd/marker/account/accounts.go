@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/helper/bls"
 	"io/ioutil"
 )
@@ -59,34 +58,6 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 		return nil, err
 	}
 	return signature.Marshal(), nil
-}
-
-// ECDSASignature generates ECDSASignature proof of account
-func (a *Account) ECDSASignature() []byte {
-	privateKey, err := bls.CryptoType().ECDSAToBLS(a.PrivateKey)
-	if err != nil {
-		privdata := crypto.FromECDSA(a.PrivateKey)
-		log.Error("ECDSAToBLS", "privdata", hexutil.Encode(privdata))
-		panic(err)
-	}
-	priv, err := crypto.ToECDSA(privateKey)
-	if err != nil {
-		panic(err)
-	}
-	account_ := crypto.PubkeyToAddress(priv.PublicKey)
-	hash := accounts.TextHash(crypto.Keccak256(account_[:]))
-	sig, err := crypto.Sign(hash, priv)
-	if err != nil {
-		panic(err)
-	}
-	//for test
-	//recoverPubKey, err := crypto.SigToPub(hash, sig)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//log.Info("=== singer  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
-	//log.Info("ECDSASignature", "result", hexutil.Encode(sig))
-	return sig
 }
 
 // BLSPublicKey returns the bls public key
