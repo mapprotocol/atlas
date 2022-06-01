@@ -67,7 +67,7 @@ func generateGenesisExtraData(validatorAccounts []AccoutInfo) ([]byte, error) {
 
 	for i := 0; i < len(validatorAccounts); i++ {
 		var err error
-		addresses[i] = validatorAccounts[i].SingerAddress_()
+		addresses[i] = validatorAccounts[i].SignerAddress_()
 		blsKeys[i], err = validatorAccounts[i].BLSPublicKey()
 		blsG1Keys[i], err = validatorAccounts[i].BLSG1PublicKey()
 		if err != nil {
@@ -100,7 +100,7 @@ func generateGenesisExtraData(validatorAccounts []AccoutInfo) ([]byte, error) {
 //From markerConfig.json used for validators and election contract
 type AccoutInfo struct {
 	Address              string
-	SingerAddress        string
+	SignerAddress        string
 	ECDSASignature       string
 	PublicKeyHex         string
 	BLSPubKey            string
@@ -160,8 +160,8 @@ func (a *AccoutInfo) PublicKey() []byte {
 	return b
 }
 
-func (a *AccoutInfo) SingerAddress_() common.Address {
-	return common.HexToAddress(a.SingerAddress)
+func (a *AccoutInfo) SignerAddress_() common.Address {
+	return common.HexToAddress(a.SignerAddress)
 }
 
 func (a *AccoutInfo) ECDSASignature_() (v uint8, r common.Hash, s common.Hash) {

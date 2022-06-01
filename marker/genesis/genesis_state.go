@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 
@@ -344,13 +345,15 @@ func (ctx *deployContext) createAccounts(accs []AccoutInfo, namePrefix string) e
 		if err := accounts.SimpleCallFrom(acc.getAddress(), "setAccountDataEncryptionKey", acc.PublicKey()); err != nil {
 			return err
 		}
-		//get r v s
-		r, v, s := acc.ECDSASignature_()
-		// set Singer Address
-		if err := accounts.SimpleCallFrom(acc.getAddress(), "authorizeValidatorSigner", acc.SingerAddress_(), r, v, s); err != nil {
-			return err
+		if !bytes.Equal(acc.SignerAddress_().Bytes(), acc.SignerAddress_().Bytes()) {
+			//get r v s
+			r, v, s := acc.ECDSASignature_()
+			// set Signer Address
+			if err := accounts.SimpleCallFrom(acc.getAddress(), "authorizeValidatorSigner", acc.SignerAddress_(), r, v, s); err != nil {
+				return err
+			}
+			// Missing: authorizeAttestationSigner
 		}
-		// Missing: authorizeAttestationSigner
 	}
 	return nil
 }

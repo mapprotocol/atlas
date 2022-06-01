@@ -302,8 +302,11 @@ func accountCreate(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Failed to create account: %v", err)
 	}
+
+	ECDSASignature := accountBls.ECDSASignature()
 	fmt.Printf("\nYour new key was generated\n\n")
 	fmt.Printf("Address:   %s\n", account.Address.Hex())
+	fmt.Printf("ECDSASignature:   %s\n", hexutil.Encode(ECDSASignature))
 	fmt.Printf("PublicKey:   %s\n", hexutil.Encode(accountBls.PublicKey()))
 	fmt.Printf("BLS Public key:   %s\n", blsPubKeyText)
 	fmt.Printf("BLS G1 Public key:   %s\n", blsG1PubKeyText)
