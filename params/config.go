@@ -10,7 +10,7 @@ const (
 	MainNetChainID uint64 = 214
 	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
-	Epoch          uint64 = 30000
+	Epoch          uint64 = 50000
 )
 
 // network id
