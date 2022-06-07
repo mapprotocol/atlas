@@ -99,16 +99,16 @@ var signerToAccountCommand = cli.Command{
 	Action: MigrateFlags(signerToAccount),
 	Flags:  Flags,
 }
-var makeECDSASignatureFromSingerCommand = cli.Command{
-	Name:   "makeECDSASignatureFromSinger",
-	Usage:  "print a ECDSASignature that singer sign the account(validator)",
-	Action: MigrateFlags(makeECDSASignatureFromSinger),
+var makeECDSASignatureFromsignerCommand = cli.Command{
+	Name:   "makeECDSASignatureFromsigner",
+	Usage:  "print a ECDSASignature that signer sign the account(validator)",
+	Action: MigrateFlags(makeECDSASignatureFromsigner),
 	Flags:  Flags,
 }
-var makeBLSProofOfPossessionFromSingerCommand = cli.Command{
-	Name:   "makeBLSProofOfPossessionFromSinger",
-	Usage:  "print a BLSProofOfPossession that singer BLSSign the account(validator)",
-	Action: MigrateFlags(makeBLSProofOfPossessionFromSinger),
+var makeBLSProofOfPossessionFromsignerCommand = cli.Command{
+	Name:   "makeBLSProofOfPossessionFromsigner",
+	Usage:  "print a BLSProofOfPossession that signer BLSSign the account(validator)",
+	Action: MigrateFlags(makeBLSProofOfPossessionFromsigner),
 	Flags:  Flags,
 }
 var deregisterValidatorCommand = cli.Command{
@@ -397,9 +397,9 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 	greater, lesser := registerUseFor(core)
 	//fmt.Println("=== greater, lesser ===", greater, lesser)
 	//_params := []interface{}{commision, lesser, greater,core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
-	if core.cfg.SingerPriv != "" {
-		singerPriv := core.cfg.SingerPriv
-		priv, err := crypto.ToECDSA(common.FromHex(singerPriv))
+	if core.cfg.SignerPriv != "" {
+		SignerPriv := core.cfg.SignerPriv
+		priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
 		if err != nil {
 			panic(err)
 		}
@@ -417,7 +417,7 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 		core.cfg.BlsPub = blsPub
 		core.cfg.BlsG1Pub = blsG1Pub
 		core.cfg.BLSProof = _account.MustBLSProofOfPossession()
-		BLSProofOfPossession := makeBLSProofOfPossessionFromSinger_(core.cfg.From, core)
+		BLSProofOfPossession := makeBLSProofOfPossessionFromsigner_(core.cfg.From, core)
 		core.cfg.BLSProof = BLSProofOfPossession.Marshal()
 	}
 	validatorParams := [4][]byte{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
@@ -489,7 +489,7 @@ func TestPoc2_getNonce(_ *cli.Context, core *listener) error {
 }
 
 /*
-   note : by account not singer
+   note : by account not signer
 */
 func updateBlsPublicKey(ctx *cli.Context, core *listener) error {
 	log.Info("=== updateBlsPublicKey ===")
@@ -527,7 +527,7 @@ func quicklyRegisterValidator(ctx *cli.Context, core *listener) error {
 	//---------------------------- create account ----------------------------------
 	createAccount(core)
 
-	if isContinueError && core.cfg.SingerPriv != "" {
+	if isContinueError && core.cfg.SignerPriv != "" {
 		authorizeValidatorSigner(ctx, core)
 	}
 	//---------------------------- lock ----------------------------------
@@ -578,12 +578,12 @@ func createAccount(core *listener) {
 
 /*
    note:account function before become to be a validator
-   singer sign account
-   need singer private
+   signer sign account
+   need signer private
 */
 func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
-	//singerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
-	SignatureStr, singer := makeECDSASignatureFromSinger_(core) // singer sign account
+	//SignerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
+	SignatureStr, signer := makeECDSASignatureFromsigner_(core) // signer sign account
 	Signature, err := hexutil.Decode(SignatureStr)
 	if err != nil {
 		panic(err)
@@ -597,7 +597,7 @@ func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
 	logger := log.New("func", "authorizeValidatorSigner")
 	logger.Info("authorizeValidatorSigner", "address", core.cfg.From)
 	log.Info("=== authorizeValidatorSigner ===")
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "authorizeValidatorSigner", singer, v, r, s)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "authorizeValidatorSigner", signer, v, r, s)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -620,22 +620,22 @@ func signerToAccount(_ *cli.Context, core *listener) error {
 }
 
 /*
-note:singer function
-print a ECDSASignature that singer sign the account(validator)
+note:signer function
+print a ECDSASignature that signer sign the account(validator)
 */
-func makeECDSASignatureFromSinger(_ *cli.Context, core *listener) error {
+func makeECDSASignatureFromsigner(_ *cli.Context, core *listener) error {
 	core.cfg.From = core.cfg.TargetAddress
-	makeECDSASignatureFromSinger_(core)
+	makeECDSASignatureFromsigner_(core)
 	return nil
 }
-func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
-	log.Info("=== makeECDSASignatureFromSinger ===")
-	singerPriv := core.cfg.SingerPriv
-	priv, err := crypto.ToECDSA(common.FromHex(singerPriv))
+func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
+	log.Info("=== makeECDSASignatureFromsigner ===")
+	SignerPriv := core.cfg.SignerPriv
+	priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
 	if err != nil {
 		panic(err)
 	}
-	singer := crypto.PubkeyToAddress(priv.PublicKey)
+	signer := crypto.PubkeyToAddress(priv.PublicKey)
 	account_ := core.cfg.From
 	hash := accounts.TextHash(crypto.Keccak256(account_[:]))
 	sig, err := crypto.Sign(hash, priv)
@@ -647,28 +647,28 @@ func makeECDSASignatureFromSinger_(core *listener) (string, common.Address) {
 	if err != nil {
 		panic(err)
 	}
-	log.Info("=== singer  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
+	log.Info("=== signer  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
 	log.Info("ECDSASignature", "result", hexutil.Encode(sig))
-	return hexutil.Encode(sig), singer
+	return hexutil.Encode(sig), signer
 }
 
 /*
-  note:singer function
+  note:signer function
   use for makerCfg marker/config/markerConfig.json and cmd/marker/listener.go:553 authorizeValidatorSigner
-  print a BLSProofOfPossession that singer BLSSign the account(validator)
+  print a BLSProofOfPossession that signer BLSSign the account(validator)
 */
-func makeBLSProofOfPossessionFromSinger(_ *cli.Context, core *listener) error {
-	signature := makeBLSProofOfPossessionFromSinger_(core.cfg.AccountAddress, core)
+func makeBLSProofOfPossessionFromsigner(_ *cli.Context, core *listener) error {
+	signature := makeBLSProofOfPossessionFromsigner_(core.cfg.AccountAddress, core)
 	log.Info("=== pop ===", "result", hexutil.Encode(signature.Marshal()))
 	return nil
 }
 
-func makeBLSProofOfPossessionFromSinger_(message common.Address, core *listener) *bls.UnsafeSignature {
-	log.Info("=== makeBLSProofOfPossessionFromSinger ===")
+func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener) *bls.UnsafeSignature {
+	log.Info("=== makeBLSProofOfPossessionFromsigner ===")
 	//account:= common.HexToAddress("0x6621F2b6Da2BEd64b5fFBD6C5b2138547f44C8f9")
-	//singerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
-	singerPriv := core.cfg.SingerPriv
-	privECDSA, err := crypto.ToECDSA(common.FromHex(singerPriv))
+	//SignerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
+	SignerPriv := core.cfg.SignerPriv
+	privECDSA, err := crypto.ToECDSA(common.FromHex(SignerPriv))
 	if err != nil {
 		panic(err)
 	}
@@ -689,7 +689,7 @@ func makeBLSProofOfPossessionFromSinger_(message common.Address, core *listener)
 	//if err != nil {
 	//	panic(err)
 	//}
-	//log.Info("makeBLSProofOfPossessionFromSinger","BLS Public key", blsPubKeyText)
+	//log.Info("makeBLSProofOfPossessionFromsigner","BLS Public key", blsPubKeyText)
 	//test
 	if err := bls.VerifyUnsafe(pk, message.Bytes(), signature); err != nil {
 		panic(err)

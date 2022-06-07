@@ -302,6 +302,7 @@ func accountCreate(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Failed to create account: %v", err)
 	}
+
 	fmt.Printf("\nYour new key was generated\n\n")
 	fmt.Printf("Address:   %s\n", account.Address.Hex())
 	fmt.Printf("PublicKey:   %s\n", hexutil.Encode(accountBls.PublicKey()))

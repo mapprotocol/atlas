@@ -62,7 +62,7 @@ type Config struct {
 
 	TargetAddress         common.Address
 	ContractAddress       common.Address
-	SingerPriv            string
+	SignerPriv            string
 	AccountAddress        common.Address //validator
 	ImplementationAddress common.Address
 	Ip                    string
@@ -115,8 +115,8 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.AccountAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
 	}
-	if ctx.IsSet(SingerPrivFlag.Name) {
-		config.SingerPriv = ctx.String(SingerPrivFlag.Name)
+	if ctx.IsSet(SignerPrivFlag.Name) {
+		config.SignerPriv = ctx.String(SignerPrivFlag.Name)
 	}
 	if ctx.IsSet(ImplementationAddressFlag.Name) {
 		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))

@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/helper/fileutils"
 	"github.com/mapprotocol/atlas/marker/genesis"
@@ -98,15 +99,16 @@ func Test_ProxiedValidator(t *testing.T) {
 
 // simulation Account new
 //0x1a7559d3ca2e6d4ee76bf97e816c21319e31a8ff58368c747fd8909bf37b48db0fc69bc7c6fffc0665ff1801fb17afe79ae31042411d3eb600ab73bb02f3e8b32fb4218ab8a7018b6300ea6500ef438817eed6c986901eb212d4c6de093ef63020b20eb8e1ed4365d33519cdc1c290ae7a386ff9743c57b1b420be20b94698b7
-func Test_getKeystoreInfo(t *testing.T) {
+func Test_autoGenerateMarkerCfg(t *testing.T) {
+	account := []string{"0xB16561A66B6439944DAf0388b5E6a2D3D0a49e12", "0xdC757c8e3b8800d977a34f802131FAA870d264c4", "0x257Cc34FB139A2db4Da96496Be03358d89e52d95", "0xac146d6629F8C3B8F2e830275B583C5402032472"}
 	path1 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T08-00-15.473724074Z--1c0edab88dbb72b119039c4d14b1663525b3ac15"
 	path2 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T10-12-17.687481942Z--16fdbcac4d4cc24dca47b9b80f58155a551ca2af"
 	path3 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T10-16-18.520295371Z--2dc45799000ab08e60b7441c36fcc74060ccbe11"
 	path4 := "/Users/zhangwei/work/atlasEnv/data/data_ibft1/keystore/UTC--2021-09-08T10-16-35.698273293Z--6c5938b49bacde73a8db7c3a7da208846898bff5"
-	path5 := "/Users/zhangwei/work/atlasEnv/keystore/UTC--2022-05-27T12-24-07.345965000Z--05d0cfd882185deb9b3e0ea7872ad332acb9e31d"
+	//path5 := "/Users/zhangwei/work/atlasEnv/keystore/UTC--2022-05-27T12-24-07.345965000Z--05d0cfd882185deb9b3e0ea7872ad332acb9e31d"
 	marker := genesis.MarkerInfo{}
 	marker.AdminAddress = "0x1c0edab88dbb72b119039c4d14b1663525b3ac15"
-	for _, path := range []string{path1, path2, path3, path4, path5} {
+	for i, path := range []string{path1, path2, path3, path4} {
 		Password := ""
 		keyjson, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -128,7 +130,7 @@ func Test_getKeystoreInfo(t *testing.T) {
 		if err != nil {
 			t.Error("Failed to create account: ", err)
 		}
-		blsProofOfPossession := accountBls.MustBLSProofOfPossession()
+		//blsProofOfPossession := accountBls.MustBLSProofOfPossession()
 		blsPubKey, err := accountBls.BLSPublicKey()
 		if err != nil {
 			t.Error("Failed to create account: ", err)
@@ -150,9 +152,33 @@ func Test_getKeystoreInfo(t *testing.T) {
 		fmt.Printf("PublicKey:   %s\n", hexutil.Encode(accountBls.PublicKey()))
 		fmt.Printf("BLS Public key:%d   %s\n", len(blsPubKey), blsPubKeyText)
 		fmt.Printf("BLS G1 Public key:%d   %s\n", len(blsG1PubKey), blsG1PubKeyText)
+
+		// -------------------------- ECDSASignature  ---------------------------------
+		hash := accounts.TextHash(crypto.Keccak256(common.HexToAddress(account[i]).Bytes()))
+		sig, err := crypto.Sign(hash, priKey1)
+		if err != nil {
+			panic(err)
+		}
+		// --------------------------  blsProofOfPossession -----------------------------
+		blsPrivateKey, _ := bls.CryptoType().ECDSAToBLS(priKey1)
+		privateKey, _ := bls.DeserializePrivateKey(blsPrivateKey)
+		signature, err := bls.UnsafeSign(privateKey, common.HexToAddress(account[i]).Bytes())
+		blsProofOfPossession := signature.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		serializedPrivateKey, _ := privateKey.Serialize()
+		publicKey, _ := bls.CryptoType().PrivateToPublic(serializedPrivateKey)
+		pk, err := bls.UnmarshalPk(publicKey[:])
+		//test
+		if err := bls.VerifyUnsafe(pk, common.HexToAddress(account[i]).Bytes(), signature); err != nil {
+			panic(err)
+		}
 		fmt.Printf("BLSProofOfPossession: %d  %s\n", len(blsProofOfPossession), hexutil.Encode(blsProofOfPossession))
 		marker.Validators = append(marker.Validators, genesis.AccoutInfo{
-			Address:              accountBls.Address.Hex(),
+			Address:              account[i],
+			SignerAddress:        accountBls.Address.Hex(),
+			ECDSASignature:       hexutil.Encode(sig),
 			PublicKeyHex:         hexutil.Encode(accountBls.PublicKey()),
 			BLSPubKey:            hexutil.Encode(blsPubKey[:]),
 			BLSG1PubKey:          hexutil.Encode(blsG1PubKey[:]),
