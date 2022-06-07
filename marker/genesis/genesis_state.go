@@ -345,7 +345,7 @@ func (ctx *deployContext) createAccounts(accs []AccoutInfo, namePrefix string) e
 		if err := accounts.SimpleCallFrom(acc.getAddress(), "setAccountDataEncryptionKey", acc.PublicKey()); err != nil {
 			return err
 		}
-		if !bytes.Equal(acc.SignerAddress_().Bytes(), acc.SignerAddress_().Bytes()) {
+		if !bytes.Equal(acc.getAddress().Bytes(), acc.SignerAddress_().Bytes()) {
 			//get r v s
 			r, v, s := acc.ECDSASignature_()
 			// set Signer Address
