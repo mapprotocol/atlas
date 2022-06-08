@@ -20,6 +20,7 @@ var (
 	GoldToken            *abi.ABI = mustParseAbi("GoldToken", GoldTokenStr)
 	Random               *abi.ABI = mustParseAbi("Random", RandomStr)
 	Validators           *abi.ABI = mustParseAbi("Validators", ValidatorsStr)
+	Accounts             *abi.ABI = mustParseAbi("Accounts", AccountsStr)
 )
 
 func mustParseAbi(name, abiStr string) *abi.ABI {
