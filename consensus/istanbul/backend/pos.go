@@ -24,6 +24,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
 	"github.com/mapprotocol/atlas/contracts"
+	"github.com/mapprotocol/atlas/contracts/accounts"
 	"github.com/mapprotocol/atlas/contracts/election"
 	"github.com/mapprotocol/atlas/contracts/epoch_rewards"
 	"github.com/mapprotocol/atlas/contracts/gold_token"
@@ -62,19 +63,17 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 
 	// The validator set that signs off on the last block of the epoch is the one that we need to
 	// iterate over.
-	valSet := sb.GetValidators(big.NewInt(header.Number.Int64()-1), header.ParentHash)
-	if len(valSet) == 0 {
+	signerSet := sb.GetValidators(big.NewInt(header.Number.Int64()-1), header.ParentHash)
+	if len(signerSet) == 0 {
 		err := errors.New("Unable to fetch validator set to update scores and distribute rewards")
 		logger.Error(err.Error())
 		return err
 	}
-	var validators_ []common.Address
-	for _, val := range valSet {
-		validators_ = append(validators_, val.Address())
-		sb.logger.Info("will distributeEpochRewards", "validator", val.Address().String())
+	validators_, err := sb.GetAccountsFromSigners(vmRunner, signerSet)
+	if err != nil {
+		return err
 	}
-
-	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, valSet)
+	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, signerSet)
 	if err != nil {
 		return err
 	}
@@ -83,7 +82,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 	// Reward Validators And voters
-	totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, valSet, validatorVoterReward, scores)
+	totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, signerSet, validators_, validatorVoterReward, scores)
 	if err != nil {
 		return err
 	}
@@ -167,18 +166,17 @@ func (sb *Backend) updateValidatorScores(header *types.Header, state *state.Stat
 /*
 @param maxReward is epochReward for all validators
 */
-func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, valSet []istanbul.Validator, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, map[common.Address]*big.Int, error) {
+func (sb *Backend) distributeValidatorRewards(vmRunner vm.EVMRunner, signerSet []istanbul.Validator, valSets []common.Address, maxReward *big.Int, scoreDenominator *big.Int) (*big.Int, map[common.Address]*big.Int, error) {
 	totalValidatorRewards := big.NewInt(0)
-	voterRewards := make(map[common.Address]*big.Int, len(valSet))
-
-	for _, val := range valSet {
+	voterRewards := make(map[common.Address]*big.Int, len(signerSet))
+	for i, val := range signerSet {
 		sb.logger.Debug("Distributing epoch reward for validator", "address", val.Address())
 		validatorReward, voterReward, err := validators.DistributeEpochReward(vmRunner, val.Address(), maxReward, scoreDenominator)
 		if err != nil {
 			sb.logger.Error("Error in distributing rewards to validator", "address", val.Address(), "err", err)
 			continue
 		}
-		voterRewards[val.Address()] = voterReward
+		voterRewards[valSets[i]] = voterReward
 		totalValidatorRewards.Add(totalValidatorRewards, validatorReward)
 	}
 	return totalValidatorRewards, voterRewards, nil
@@ -250,4 +248,18 @@ func (sb *Backend) deRegisterAllValidatorsInPending(vmRunner vm.EVMRunner) (*[]c
 		return nil, err
 	}
 	return deValidators, nil
+}
+
+func (sb *Backend) GetAccountsFromSigners(vmRunner vm.EVMRunner, signers []istanbul.Validator) ([]common.Address, error) {
+	var accountVals []common.Address
+	for i := 0; i < len(signers); i++ {
+		regVals, err := accounts.GetSignerToAccountMethod(vmRunner, signers[i].Address())
+		if err != nil {
+			sb.logger.Error("will distributeEpochRewards", "validator", regVals, "err", err)
+			return accountVals, err
+		}
+		sb.logger.Info("will distributeEpochRewards", "validator", regVals)
+		accountVals = append(accountVals, regVals)
+	}
+	return accountVals, nil
 }
