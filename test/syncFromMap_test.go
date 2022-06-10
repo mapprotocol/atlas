@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
@@ -138,6 +139,11 @@ func TestBLSPublickKey(t *testing.T) {
 	for i, v := range cache {
 		fmt.Println(i, len(v))
 	}
+}
+func Test01(t *testing.T) {
+	h1 := common.HexToHash("0x83c6030e8eb07e62c2f66a2afebcdcf0a0687ee96f8bfea7482a6ccc502e2525")
+	proposalSeal := istanbulCore.PrepareCommittedSeal(h1, big.NewInt(0))
+	fmt.Println(hex.EncodeToString(proposalSeal))
 }
 
 func getBLSPublickKey(blockNum int64) ([]blscrypto.SerializedPublicKey, error) {
