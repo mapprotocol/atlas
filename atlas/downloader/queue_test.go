@@ -18,7 +18,9 @@ package downloader
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/consensus/consensustest"
 	chain2 "github.com/mapprotocol/atlas/core/chain"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -26,7 +28,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/rawdb"
@@ -43,11 +44,11 @@ var (
 // contains a transaction and every 5th an uncle to allow testing correct block
 // reassembly.
 func makeChain(n int, seed byte, parent *types.Block, empty bool) ([]*types.Block, []types.Receipts) {
-	blocks, receipts := chain2.GenerateChain(params.TestChainConfig, parent, ethash.NewFaker(), testdb, n, func(i int, block *chain2.BlockGen) {
+	blocks, receipts := chain2.GenerateChain(params2.TestChainConfig, parent, consensustest.NewFaker(), testdb, n, func(i int, block *chain2.BlockGen) {
 		block.SetCoinbase(common.Address{seed})
 		// Add one tx to every secondblock
 		if !empty && i%2 == 0 {
-			signer := types.MakeSigner(params.TestChainConfig, block.Number())
+			signer := types.MakeSigner(params2.TestChainConfig, block.Number())
 			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed}, big.NewInt(1000), params.TxGas, nil, nil), signer, testKey)
 			if err != nil {
 				panic(err)
@@ -131,7 +132,7 @@ func TestBasics(t *testing.T) {
 			t.Fatal("should throttle")
 		}
 		// But we should still get the first things to fetch
-		if got, exp := len(fetchReq.Headers), 5; got != exp {
+		if got, exp := len(fetchReq.Headers), 10; got != exp {
 			t.Fatalf("expected %d requests, got %d", exp, got)
 		}
 		if got, exp := fetchReq.Headers[0].Number.Uint64(), uint64(1); got != exp {
@@ -223,9 +224,9 @@ func TestEmptyBlocks(t *testing.T) {
 		peer := dummyPeer("peer-1")
 		fetchReq, _, _ := q.ReserveBodies(peer, 50)
 
-		// there should be nothing to fetch, blocks are empty
-		if fetchReq != nil {
-			t.Fatal("there should be no body fetch tasks remaining")
+		// blocks are empty, but must be fetched the bodies so that the random beacon can be updated correctly
+		if fetchReq == nil {
+			t.Fatal("there should be body fetch tasks remaining")
 		}
 
 	}
@@ -250,16 +251,17 @@ func TestEmptyBlocks(t *testing.T) {
 	if q.receiptTaskQueue.Size() != 0 {
 		t.Errorf("expected receipt task queue to be %d, got %d", 0, q.receiptTaskQueue.Size())
 	}
-	if got, exp := q.resultCache.countCompleted(), 10; got != exp {
+	if got, exp := q.resultCache.countCompleted(), 0; got != exp {
 		t.Errorf("wrong processable count, got %d, exp %d", got, exp)
 	}
 }
 
-// XTestDelivery does some more extensive testing of events that happen,
+// TestDelivery does some more extensive testing of events that happen,
 // blocks that become known and peers that make reservations and deliveries.
 // disabled since it's not really a unit-test, but can be executed to test
 // some more advanced scenarios
-func XTestDelivery(t *testing.T) {
+func TestDelivery(t *testing.T) {
+	t.Skip("not really a unit-test, but can be executed to test some more advanced scenarios")
 	// the outside network, holding blocks
 	blo, rec := makeChain(128, 0, genesis, false)
 	world := newNetwork()
@@ -311,16 +313,17 @@ func XTestDelivery(t *testing.T) {
 			peer := dummyPeer(fmt.Sprintf("peer-%d", i))
 			f, _, _ := q.ReserveBodies(peer, rand.Intn(30))
 			if f != nil {
-				var emptyList []*types.Header
 				var txs [][]*types.Transaction
-				var uncles [][]*types.Header
+				var randomnessList []*types.Randomness
+				var epochSnarkDataList []*types.EpochSnarkData
 				numToSkip := rand.Intn(len(f.Headers))
 				for _, hdr := range f.Headers[0 : len(f.Headers)-numToSkip] {
 					txs = append(txs, world.getTransactions(hdr.Number.Uint64()))
-					uncles = append(uncles, emptyList)
+					randomnessList = append(randomnessList, &types.Randomness{})
+					epochSnarkDataList = append(epochSnarkDataList, &types.EpochSnarkData{})
 				}
 				time.Sleep(100 * time.Millisecond)
-				_, err := q.DeliverBodies(peer.id, txs, uncles)
+				_, err := q.DeliverBodies(peer.id, txs, randomnessList, epochSnarkDataList)
 				if err != nil {
 					fmt.Printf("delivered %d bodies %v\n", len(txs), err)
 				}
