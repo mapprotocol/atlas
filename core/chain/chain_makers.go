@@ -18,6 +18,7 @@ package chain
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/core/abstract"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -94,7 +95,7 @@ func (b *BlockGen) AddTx(tx *types.Transaction) {
 // further limitations on the content of transactions that can be
 // added. If contract code relies on the BLOCKHASH instruction,
 // the block in chain will be returned.
-func (b *BlockGen) AddTxWithChain(bc *BlockChain, tx *types.Transaction) {
+func (b *BlockGen) AddTxWithChain(bc abstract.ChainContext, tx *types.Transaction) {
 	if b.gasPool == nil {
 		b.SetCoinbase(common.Address{})
 	}
