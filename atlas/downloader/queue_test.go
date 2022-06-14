@@ -36,7 +36,7 @@ import (
 
 var (
 	testdb  = rawdb.NewMemoryDatabase()
-	genesis = chain2.GenesisBlockForTesting(testdb, testAddress, big.NewInt(1000000000))
+	genesis = chain2.GenesisBlockForTesting(testdb, testAddress, new(big.Int).Mul(big.NewInt(500000), big.NewInt(params.Ether)))
 )
 
 // makeChain creates a chain of n blocks starting at and including parent.
@@ -49,7 +49,8 @@ func makeChain(n int, seed byte, parent *types.Block, empty bool) ([]*types.Bloc
 		// Add one tx to every secondblock
 		if !empty && i%2 == 0 {
 			signer := types.MakeSigner(params2.TestChainConfig, block.Number())
-			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed}, big.NewInt(1000), params.TxGas, nil, nil), signer, testKey)
+			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed},
+			big.NewInt(1000), params.TxGas, big.NewInt(100000000000), nil), signer, testKey)
 			if err != nil {
 				panic(err)
 			}
