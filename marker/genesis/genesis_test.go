@@ -5,6 +5,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
+	"github.com/mapprotocol/atlas/params"
+	"math/big"
 	"testing"
 )
 
@@ -23,6 +25,13 @@ func Test_makeRegistryId(t *testing.T) {
 	//fmt.Println(big.NewInt(0).Exp(big.NewInt(2),big.NewInt(4),nil))
 }
 func Test_fixed(t *testing.T) {
+	perNumberReward := new(big.Int).Div(big.NewInt(300000000), big.NewInt(6000000))
+	fmt.Println(perNumberReward.String())
+	perEpochReward := new(big.Int).Mul(perNumberReward, big.NewInt(int64(params.Epoch))) //MAP
+	fmt.Println(perEpochReward.String())
+	perEpochReward = new(big.Int).Mul(perEpochReward, big.NewInt(1e18))
+	fmt.Println(perEpochReward.String())
+
 	fixed := fixed.MustNew
 	fmt.Println(fixed("1").BigInt())                    // 10000 00000 00000 00000 00000  24
 	fmt.Println(common.HexToAddress("0xd012").String()) // ValidatorsProxy
