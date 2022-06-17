@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"fmt"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"os"
 	"strings"
@@ -25,8 +26,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
-
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/atlas/tracers"
 	"github.com/mapprotocol/atlas/consensus"
@@ -175,7 +174,7 @@ func benchmarkEVM_Create(bench *testing.B, code string) {
 		Time:        new(big.Int).SetUint64(0),
 		Coinbase:    common.Address{},
 		BlockNumber: new(big.Int).SetUint64(1),
-		ChainConfig: &params.ChainConfig{
+		ChainConfig: &params2.ChainConfig{
 			ChainID:             big.NewInt(1),
 			HomesteadBlock:      new(big.Int),
 			ByzantiumBlock:      new(big.Int),
