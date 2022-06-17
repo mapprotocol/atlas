@@ -18,7 +18,9 @@ package core
 
 import (
 	"crypto/ecdsa"
+	"github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/chain"
+	params2 "github.com/mapprotocol/atlas/params"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -26,7 +28,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
@@ -113,7 +114,7 @@ func genTxRing(naccounts int) func(int, *chain.BlockGen) {
 	from := 0
 	return func(i int, gen *chain.BlockGen) {
 		block := gen.PrevBlock(i - 1)
-		gas := chain.CalcGasLimit(block, block.GasLimit(), block.GasLimit())
+		gas := chain.CalcGasLimit(block.GasLimit(), block.GasLimit())
 		for {
 			gas -= params.TxGas
 			if gas < params.TxGas {
@@ -168,19 +169,19 @@ func benchInsertChain(b *testing.B, disk bool, gen func(int, *chain.BlockGen)) {
 	// Generate a chain of b.N blocks using the supplied block
 	// generator function.
 	gspec := chain.Genesis{
-		Config: params.TestChainConfig,
+		Config: params2.TestChainConfig,
 		Alloc:  chain.GenesisAlloc{benchRootAddr: {Balance: benchRootFunds}},
 	}
 	genesis := gspec.MustCommit(db)
-	chain, _ := chain.GenerateChain(gspec.Config, genesis, ethash.NewFaker(), db, b.N, gen)
+	chain2, _ := chain.GenerateChain(gspec.Config, genesis, consensustest.NewFaker(), db, b.N, gen)
 
 	// Time the insertion of the new chain.
 	// State and blocks are stored in the same DB.
-	chainman, _ := chain.NewBlockChain(db, nil, gspec.Config, ethash.NewFaker(), vm.Config{}, nil, nil)
+	chainman, _ := chain.NewBlockChain(db, nil, gspec.Config, consensustest.NewFaker(), vm.Config{}, nil, nil)
 	defer chainman.Stop()
 	b.ReportAllocs()
 	b.ResetTimer()
-	if i, err := chainman.InsertChain(chain); err != nil {
+	if i, err := chainman.InsertChain(chain2); err != nil {
 		b.Fatalf("insert error (block %d): %v\n", i, err)
 	}
 }
@@ -231,8 +232,6 @@ func makeChainForBench(db ethdb.Database, full bool, count uint64) {
 			Coinbase:    common.Address{},
 			Number:      big.NewInt(int64(n)),
 			ParentHash:  hash,
-			Difficulty:  big.NewInt(1),
-			UncleHash:   types.EmptyUncleHash,
 			TxHash:      types.EmptyRootHash,
 			ReceiptHash: types.EmptyRootHash,
 		}
@@ -288,7 +287,7 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 		if err != nil {
 			b.Fatalf("error opening database at %v: %v", dir, err)
 		}
-		chain, err := chain.NewBlockChain(db, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+		chain, err := chain.NewBlockChain(db, nil, params2.TestChainConfig, consensustest.NewFaker(), vm.Config{}, nil, nil)
 		if err != nil {
 			b.Fatalf("error creating chain: %v", err)
 		}

@@ -383,7 +383,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 func DefaultGenesisBlock() *Genesis {
 	gs := genesisPOC2Contract()
 	l := len(gs)
-	log.Info("Writing Main-net poc2 alloc", "alloc count", l)
+	log.Info("Writing Main-net poc2 state", "alloc count", l)
 	gs1 := genesisRegisterProxyContract()
 	for addr, allc := range gs1 {
 		// add genesis contract to allc
