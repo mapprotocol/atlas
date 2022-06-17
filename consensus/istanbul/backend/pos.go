@@ -73,41 +73,41 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	if err != nil {
 		return err
 	}
-	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, signerSet)
+	_, _, err = sb.updateValidatorScores(header, state, signerSet)
 	if err != nil {
 		return err
 	}
-	scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets, ignores)
-	if err != nil {
-		return err
-	}
-	// Reward Validators And voters
-	totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, signerSet, validators_, validatorVoterReward, scores)
-	if err != nil {
-		return err
-	}
-	log.Info("totalValidatorRewards", "maxReward", totalValidatorRewards.String())
-	totalVoterRewards, err := sb.distributeVoterRewards(vmRunner, validators_, voterRewardData)
-	if err != nil {
-		return err
-	}
-	log.Info("distributeVoterRewards", "totalVoterRewards", totalVoterRewards.String())
-	if communityReward.Cmp(new(big.Int)) != 0 {
-		if err = gold_token.Mint(vmRunner, communityPartnerAddress, communityReward); err != nil {
-			return err
-		}
-	}
-	// mint to relayer
-	if relayerReward.Cmp(new(big.Int)) != 0 {
-		relayerAddress := vm.GetRelayerAddress(state)
-		if relayerAddress != params.ZeroAddress {
-			if err = gold_token.Mint(vmRunner, relayerAddress, relayerReward); err != nil {
-				log.Error("reward to relayer fail", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
-				return err
-			}
-			log.Info("reward to relayer success", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
-		}
-	}
+	//scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets, ignores)
+	//if err != nil {
+	//	return err
+	//}
+	//// Reward Validators And voters
+	//totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, signerSet, validators_, validatorVoterReward, scores)
+	//if err != nil {
+	//	return err
+	//}
+	//log.Info("totalValidatorRewards", "maxReward", totalValidatorRewards.String())
+	//totalVoterRewards, err := sb.distributeVoterRewards(vmRunner, validators_, voterRewardData)
+	//if err != nil {
+	//	return err
+	//}
+	//log.Info("distributeVoterRewards", "totalVoterRewards", totalVoterRewards.String())
+	//if communityReward.Cmp(new(big.Int)) != 0 {
+	//	if err = gold_token.Mint(vmRunner, communityPartnerAddress, communityReward); err != nil {
+	//		return err
+	//	}
+	//}
+	//// mint to relayer
+	//if relayerReward.Cmp(new(big.Int)) != 0 {
+	//	relayerAddress := vm.GetRelayerAddress(state)
+	//	if relayerAddress != params.ZeroAddress {
+	//		if err = gold_token.Mint(vmRunner, relayerAddress, relayerReward); err != nil {
+	//			log.Error("reward to relayer fail", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
+	//			return err
+	//		}
+	//		log.Info("reward to relayer success", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
+	//	}
+	//}
 	//----------------------------- deRegister -------------------
 	deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner)
 	if err != nil {
