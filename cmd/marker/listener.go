@@ -378,7 +378,7 @@ var setTargetValidatorEpochPaymentCommand = cli.Command{
 	Flags:  Flags,
 }
 
-var setEpochRelayerPaymentFractionCommand = cli.Command{
+var setEpochMaintainerPaymentFractionCommand = cli.Command{
 	Name:   "setEpochMaintainerPaymentFraction",
 	Usage:  "set Epoch Maintainer PaymentFraction",
 	Action: MigrateFlags(setEpochMaintainerPaymentFraction),

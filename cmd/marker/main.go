@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"sort"
 	"strconv"
+
+	"gopkg.in/urfave/cli.v1"
 
 	"github.com/ethereum/go-ethereum/log"
 
@@ -107,7 +108,7 @@ func init() {
 		setNextCommissionUpdateCommand,
 		updateCommissionCommand,
 		setTargetValidatorEpochPaymentCommand,
-		setEpochRelayerPaymentFractionCommand,
+		setEpochMaintainerPaymentFractionCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 
