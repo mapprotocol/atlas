@@ -14,9 +14,9 @@ func BaseConfig() *Config {
 	fixed := fixed.MustNew
 
 	// an epoch award 2,500,000 MAP = 300,000,000(one year award) / 6000,000(number a year) * 50,000(one epoch number)
-	perNumberReward := new(big.Int).Div(big.NewInt(300000000), big.NewInt(6000000)) // 50 MAP
+	perNumberReward := new(big.Int).Div(big.NewInt(300000000), big.NewInt(6000000))      // 50 MAP
 	perEpochReward := new(big.Int).Mul(perNumberReward, big.NewInt(int64(params.Epoch))) // MAP
-	perEpochReward = new(big.Int).Mul(perEpochReward, big.NewInt(1e18))               // wei
+	perEpochReward = new(big.Int).Mul(perEpochReward, big.NewInt(1e18))                  // wei
 	return &Config{
 		Validators: ValidatorsParameters{
 
@@ -50,9 +50,10 @@ func BaseConfig() *Config {
 			//MaxEpochPayment: bigIntStr("1500000000000000000000000") , //Validator Relayer
 			MaxEpochPayment: perEpochReward, //Validator Relayer
 
-			CommunityRewardFraction:     fixed("0"),
-			CommunityPartner:            params.ZeroAddress,
-			EpochRelayerPaymentFraction: fixed("0.33333333333333333333"),
+			CommunityRewardFraction:        fixed("0"),
+			CommunityPartner:               params.ZeroAddress,
+			EpochMaintainerPaymentFraction: fixed("0.33333333333333333333"),
+			MgrMaintainerAddress:           params.ZeroAddress,
 		},
 		LockedGold: LockedGoldParameters{
 			UnlockingPeriod: 1296000, //15 day

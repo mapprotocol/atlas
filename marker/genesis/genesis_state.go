@@ -266,8 +266,9 @@ func (ctx *deployContext) deployEpochRewards() error {
 			env.MustProxyAddressFor("Registry"),
 			ctx.genesisConfig.EpochRewards.MaxEpochPayment,
 			ctx.genesisConfig.EpochRewards.CommunityRewardFraction.BigInt(),
-			ctx.genesisConfig.EpochRewards.EpochRelayerPaymentFraction.BigInt(),
+			ctx.genesisConfig.EpochRewards.EpochMaintainerPaymentFraction.BigInt(),
 			ctx.genesisConfig.EpochRewards.CommunityPartner,
+			ctx.genesisConfig.EpochRewards.MgrMaintainerAddress,
 		)
 	})
 	if err != nil {
