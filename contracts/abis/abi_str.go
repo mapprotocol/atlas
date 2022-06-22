@@ -4515,7 +4515,7 @@ const EpochRewardsStr string = `[
           "type": "uint256"
         }
       ],
-      "name": "setEpochRelayerPaymentFraction",
+      "name": "setEpochMaintainerPaymentFraction",
       "outputs": [
         {
           "internalType": "bool",

@@ -2,10 +2,11 @@ package mapprotocol
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/params"
-	"strings"
 )
 
 var abis map[string]*abi.ABI
@@ -5693,7 +5694,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "setEpochRelayerPaymentFraction",
+      "name": "setEpochMaintainerPaymentFraction",
       "outputs": [
         {
           "internalType": "bool",

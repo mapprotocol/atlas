@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
+
+	"sort"
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/cmd/marker/account"
@@ -21,11 +24,11 @@ import (
 	"github.com/mapprotocol/atlas/helper/decimal"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
-	"sort"
 
-	"gopkg.in/urfave/cli.v1"
 	"math/big"
 	"strings"
+
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -376,9 +379,9 @@ var setTargetValidatorEpochPaymentCommand = cli.Command{
 }
 
 var setEpochRelayerPaymentFractionCommand = cli.Command{
-	Name:   "setEpochRelayerPaymentFraction",
-	Usage:  "set Epoch Relayer PaymentFraction",
-	Action: MigrateFlags(setEpochRelayerPaymentFraction),
+	Name:   "setEpochMaintainerPaymentFraction",
+	Usage:  "set Epoch Maintainer PaymentFraction",
+	Action: MigrateFlags(setEpochMaintainerPaymentFraction),
 	Flags:  Flags,
 }
 
@@ -1387,12 +1390,12 @@ func setTargetValidatorEpochPayment(_ *cli.Context, core *listener) error {
 	return nil
 }
 
-func setEpochRelayerPaymentFraction(_ *cli.Context, core *listener) error {
+func setEpochMaintainerPaymentFraction(_ *cli.Context, core *listener) error {
 	fixed := fixed.MustNew(core.cfg.Fixed).BigInt()
 	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
 	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
-	log.Info("=== setEpochRelayerPaymentFraction ===", "admin", core.cfg.From.String())
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setEpochRelayerPaymentFraction", fixed)
+	log.Info("=== setEpochMaintainerPaymentFraction ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setEpochMaintainerPaymentFraction", fixed)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil

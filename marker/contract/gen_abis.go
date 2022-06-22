@@ -5132,7 +5132,7 @@ func init() {
           "type": "uint256"
         }
       ],
-      "name": "setEpochRelayerPaymentFraction",
+      "name": "setEpochMaintainerPaymentFraction",
       "outputs": [
         {
           "internalType": "bool",
