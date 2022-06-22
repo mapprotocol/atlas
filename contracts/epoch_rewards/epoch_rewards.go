@@ -28,6 +28,7 @@ import (
 var (
 	calculateTargetEpochRewardsMethod = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "calculateTargetEpochRewards", params.MaxGasForCalculateTargetEpochPaymentAndRewards)
 	communityPartnerMethod            = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "communityPartner", params.MaxGasForGetCommunityPartnerSettingPartner)
+	getMgrMaintainerMethod            = contracts.NewRegisteredContractMethod(params.EpochRewardsRegistryId, abis.EpochRewards, "getMgrMaintainerAddress", params.MaxGasForGetMgrMaintainerAddress)
 )
 
 // Returns the per validator epoch reward, the total voter reward, the total community reward, and
@@ -51,4 +52,14 @@ func GetCommunityPartnerAddress(vmRunner vm.EVMRunner) (common.Address, error) {
 		return params.ZeroAddress, err
 	}
 	return communityPartnerPartner, nil
+}
+
+// Returns the address of the mgrMaintainer
+func GetMgrMaintainerAddress(vmRunner vm.EVMRunner) (common.Address, error) {
+	var mgrAddress common.Address
+	err := getMgrMaintainerMethod.Query(vmRunner, &mgrAddress)
+	if err != nil {
+		return params.ZeroAddress, err
+	}
+	return mgrAddress, nil
 }

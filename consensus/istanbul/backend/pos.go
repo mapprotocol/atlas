@@ -50,7 +50,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	validatorVoterReward, communityReward, relayerReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
+	validatorVoterReward, communityReward, maintainerReward, err := epoch_rewards.CalculateTargetEpochRewards(vmRunner)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		communityReward = big.NewInt(0)
 	}
 
-	logger.Info("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward, "relayerReward", relayerReward)
+	logger.Info("Calculated target rewards", "validatorReward", validatorVoterReward, "communityReward", communityReward, "maintainerReward", maintainerReward)
 
 	// The validator set that signs off on the last block of the epoch is the one that we need to
 	// iterate over.
@@ -97,15 +97,18 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	//		return err
 	//	}
 	//}
-	//// mint to relayer
-	//if relayerReward.Cmp(new(big.Int)) != 0 {
-	//	relayerAddress := vm.GetRelayerAddress(state)
-	//	if relayerAddress != params.ZeroAddress {
-	//		if err = gold_token.Mint(vmRunner, relayerAddress, relayerReward); err != nil {
-	//			log.Error("reward to relayer fail", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
+	//// mint to mgrMaintainer
+	//if maintainerReward.Cmp(new(big.Int)) != 0 {
+	//	mmAddress, err := epoch_rewards.GetMgrMaintainerAddress(vmRunner)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if mmAddress != params.ZeroAddress {
+	//		if err = gold_token.Mint(vmRunner, mmAddress, maintainerReward); err != nil {
+	//			log.Error("reward to maintainer fail", "addr", mmAddress, "maintainerReward", maintainerReward.String())
 	//			return err
 	//		}
-	//		log.Info("reward to relayer success", "relayerAddress", relayerAddress, "relayerReward", relayerReward.String())
+	//		log.Info("reward to maintainer success", "addr", mmAddress, "maintainerReward", maintainerReward.String())
 	//	}
 	//}
 	//----------------------------- deRegister -------------------
