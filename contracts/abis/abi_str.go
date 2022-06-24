@@ -4214,6 +4214,21 @@ const EpochRewardsStr string = `[
     },
     {
       "constant": true,
+      "inputs": [],
+      "name": "mgrMaintainer",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
       "inputs": [
         {
           "internalType": "uint256",
@@ -4472,6 +4487,11 @@ const EpochRewardsStr string = `[
           "internalType": "address",
           "name": "_communityPartner",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "mgrAddr",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -4516,6 +4536,27 @@ const EpochRewardsStr string = `[
         }
       ],
       "name": "setEpochMaintainerPaymentFraction",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "setMgrMaintainerAddress",
       "outputs": [
         {
           "internalType": "bool",
@@ -4582,6 +4623,21 @@ const EpochRewardsStr string = `[
       "constant": true,
       "inputs": [],
       "name": "getCommunityPartner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getMgrMaintainerAddress",
       "outputs": [
         {
           "internalType": "address",
