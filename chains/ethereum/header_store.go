@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -208,6 +209,10 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	)
 
 	data := state.GetPOWState(address, key)
+	if len(data) == 0 {
+		return errors.New("please initialize header store")
+	}
+
 	hash := tools.RlpHash(data)
 	if cc, ok := storeCache.Cache.Get(hash); ok {
 		cp, err := cloneHeaderStore(cc.(*HeaderStore))
