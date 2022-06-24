@@ -18,15 +18,12 @@
 package consensus
 
 import (
-	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/mapprotocol/atlas/chains"
-	"github.com/mapprotocol/atlas/chains/ethereum"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
@@ -259,15 +256,15 @@ func initEthereumStore(state *state.StateDB) {
 	key := common.BytesToHash(chains.EthereumHeaderStoreAddress[:])
 	getState := state.GetPOWState(chains.EthereumHeaderStoreAddress, key)
 	if len(getState) == 0 {
-		var header ethereum.Header
-
-		if err := json.Unmarshal([]byte(params.EthereumTestnetGenesisHeader), &header); err != nil {
-			log.Crit("json unmarshal ethereum testnet header failed", "error", err)
-		}
-
-		if err := ethereum.InitHeaderStore(state, &header, params.EthereumTestnetGenesisTD); err != nil {
-			log.Crit("init header store failed, ", "error", err)
-		}
+		//var header ethereum.Header
+		//
+		//if err := json.Unmarshal([]byte(params.EthereumTestnetGenesisHeader), &header); err != nil {
+		//	log.Crit("json unmarshal ethereum testnet header failed", "error", err)
+		//}
+		//
+		//if err := ethereum.InitHeaderStore(state, &header, params.EthereumTestnetGenesisTD); err != nil {
+		//	log.Crit("init header store failed, ", "error", err)
+		//}
 		state.SetCode(params.HeaderStoreAddress, params.HeaderStoreAddress[:])
 	}
 }

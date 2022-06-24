@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"math/big"
@@ -53,7 +54,7 @@ func BaseConfig() *Config {
 			CommunityRewardFraction:        fixed("0"),
 			CommunityPartner:               params.ZeroAddress,
 			EpochMaintainerPaymentFraction: fixed("0.33333333333333333333"),
-			MgrMaintainerAddress:           params.ZeroAddress,
+			MgrMaintainerAddress:           common.HexToAddress("0x1"),
 		},
 		LockedGold: LockedGoldParameters{
 			UnlockingPeriod: 1296000, //15 day
