@@ -109,6 +109,8 @@ func init() {
 		updateCommissionCommand,
 		setTargetValidatorEpochPaymentCommand,
 		setEpochMaintainerPaymentFractionCommand,
+		setMgrMaintainerAddressCommand,
+		getMgrMaintainerAddressCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 

@@ -385,6 +385,20 @@ var setEpochMaintainerPaymentFractionCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var setMgrMaintainerAddressCommand = cli.Command{
+	Name:   "setMgrMaintainerAddress",
+	Usage:  "set manager maintainer address",
+	Action: MigrateFlags(setMgrMaintainerAddress),
+	Flags:  Flags,
+}
+
+var getMgrMaintainerAddressCommand = cli.Command{
+	Name:   "getMgrMaintainerAddress",
+	Usage:  "get manager maintainer address",
+	Action: MigrateFlags(getMgrMaintainerAddress),
+	Flags:  Flags,
+}
+
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
 	//----------------------------- registerValidator ---------------------------------
@@ -1357,8 +1371,8 @@ func getProxyContractOwner(_ *cli.Context, core *listener) error {
 	log.Info("=== getOwner ===", "admin", core.cfg.From.String())
 	var ret interface{}
 	ContractAddress := core.cfg.TargetAddress
-	ValidatorAbi := mapprotocol.AbiFor("Proxy")
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ValidatorAbi, "_getOwner")
+	ProxyAbi := mapprotocol.AbiFor("Proxy")
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ContractAddress, nil, ProxyAbi, "_getOwner")
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	result := ret
@@ -1398,6 +1412,30 @@ func setEpochMaintainerPaymentFraction(_ *cli.Context, core *listener) error {
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setEpochMaintainerPaymentFraction", fixed)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func setMgrMaintainerAddress(_ *cli.Context, core *listener) error {
+	address := core.cfg.TargetAddress
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	log.Info("=== setMgrMaintainerAddress ===", "admin", core.cfg.From.String())
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, EpochRewardAddress, nil, abiEpochReward, "setMgrMaintainerAddress", address)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func getMgrMaintainerAddress(_ *cli.Context, core *listener) error {
+	log.Info("=== getMgrMaintainerAddress ===", "admin", core.cfg.From.String())
+	var ret interface{}
+	EpochRewardAddress := core.cfg.EpochRewardParameters.EpochRewardsAddress
+	abiEpochReward := core.cfg.EpochRewardParameters.EpochRewardsABI
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, EpochRewardAddress, nil, abiEpochReward, "getMgrMaintainerAddress")
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	result := ret
+	log.Info("getMgrMaintainerAddress", "address ", result)
 	return nil
 }
 
