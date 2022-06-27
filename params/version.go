@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	VersionMajor = 0        // Major version component of the current release
-	VersionMinor = 5        // Minor version component of the current release
-	VersionPatch = 2        // Patch version component of the current release
-	VersionMeta  = "stable" // Version metadata to append to the version string
+	VersionMajor = 0             // Major version component of the current release
+	VersionMinor = 5             // Minor version component of the current release
+	VersionPatch = 3             // Patch version component of the current release
+	VersionMeta  = "stable-poc3" // Version metadata to append to the version string
 )
 
 type VersionInfo struct {
@@ -46,7 +46,6 @@ func (v *VersionInfo) Cmp(version *VersionInfo) int {
 var CurrentVersionInfo = func() *VersionInfo {
 	return &VersionInfo{VersionMajor, VersionMinor, VersionPatch}
 }()
-
 
 // Version holds the textual version string.
 var Version = func() string {
