@@ -209,7 +209,7 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 	// calculate the head hash and TD that the peer truly must have.
 	var (
 		trueHead = block.ParentHash()
-		trueTD   = new(big.Int).Sub(td, block.TotalDifficulty())
+		trueTD   = new(big.Int).Sub(td, big.NewInt(1))
 	)
 	// Update the peer's total difficulty if better than the previous
 	if _, td := peer.Head(); trueTD.Cmp(td) > 0 {
