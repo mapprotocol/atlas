@@ -797,9 +797,10 @@ func WriteAncientBlocks(db ethdb.AncientWriter, blocks []*types.Block, receipts 
 				stReceipts = append(stReceipts, (*types.ReceiptForStorage)(receipt))
 			}
 			header := block.Header()
-			if i > 0 {
-				tdSum.Add(tdSum, block.TotalDifficulty())
-			}
+			//if i > 0 {
+			//	tdSum.Add(tdSum, block.TotalDifficulty())
+			//}
+			tdSum = new(big.Int).Set(block.TotalDifficulty())
 			if err := writeAncientBlock(op, block, header, stReceipts, tdSum); err != nil {
 				return err
 			}

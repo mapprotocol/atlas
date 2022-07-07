@@ -102,14 +102,14 @@ var signerToAccountCommand = cli.Command{
 	Action: MigrateFlags(signerToAccount),
 	Flags:  Flags,
 }
-var makeECDSASignatureFromsignerCommand = cli.Command{
-	Name:   "makeECDSASignatureFromsigner",
+var makeECDSASignatureFromSignerCommand = cli.Command{
+	Name:   "makeECDSASignatureFromSigner",
 	Usage:  "print a ECDSASignature that signer sign the account(validator)",
 	Action: MigrateFlags(makeECDSASignatureFromsigner),
 	Flags:  Flags,
 }
-var makeBLSProofOfPossessionFromsignerCommand = cli.Command{
-	Name:   "makeBLSProofOfPossessionFromsigner",
+var makeBLSProofOfPossessionFromSignerCommand = cli.Command{
+	Name:   "makeBLSProofOfPossessionFromSigner",
 	Usage:  "print a BLSProofOfPossession that signer BLSSign the account(validator)",
 	Action: MigrateFlags(makeBLSProofOfPossessionFromsigner),
 	Flags:  Flags,

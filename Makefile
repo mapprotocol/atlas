@@ -2,6 +2,7 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
+.PHONY: marker android ios atlas-cross evm all test clean
 .PHONY: atlas android ios atlas-cross evm all test clean
 .PHONY: atlas-linux atlas-linux-386 atlas-linux-amd64 atlas-linux-mips64 atlas-linux-mips64le
 .PHONY: atlas-linux-arm atlas-linux-arm-5 atlas-linux-arm-6 atlas-linux-arm-7 atlas-linux-arm64
@@ -16,6 +17,10 @@ atlas:
 	$(GORUN) build/ci.go install .
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/atlas\" to launch atlas."
+
+marker:
+	cd ./cmd/marker && go build -o ./marker  *.go && mv ./marker ../../build/bin/marker
+	@echo "Run \"$(GOBIN)/marker\" to launch marker."
 
 all:
 	$(GORUN) build/ci.go install

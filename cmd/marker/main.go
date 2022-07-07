@@ -63,8 +63,8 @@ func init() {
 		quicklyRegisterValidatorCommand,
 		authorizeValidatorSignerCommand,
 		signerToAccountCommand,
-		makeECDSASignatureFromsignerCommand,
-		makeBLSProofOfPossessionFromsignerCommand,
+		makeECDSASignatureFromSignerCommand,
+		makeBLSProofOfPossessionFromSignerCommand,
 		deregisterValidatorCommand,
 		//------ voter -----
 		voteValidatorCommand,
