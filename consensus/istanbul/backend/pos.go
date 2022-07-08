@@ -73,44 +73,47 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	if err != nil {
 		return err
 	}
-	_, _, err = sb.updateValidatorScores(header, state, signerSet)
+	uptimeRets, ignores, err := sb.updateValidatorScores(header, state, signerSet)
 	if err != nil {
 		return err
 	}
-	//scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets, ignores)
-	//if err != nil {
-	//	return err
-	//}
-	//// Reward Validators And voters
-	//totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, signerSet, validators_, validatorVoterReward, scores)
-	//if err != nil {
-	//	return err
-	//}
-	//log.Info("totalValidatorRewards", "maxReward", totalValidatorRewards.String())
-	//totalVoterRewards, err := sb.distributeVoterRewards(vmRunner, validators_, voterRewardData)
-	//if err != nil {
-	//	return err
-	//}
-	//log.Info("distributeVoterRewards", "totalVoterRewards", totalVoterRewards.String())
-	//if communityReward.Cmp(new(big.Int)) != 0 {
-	//	if err = gold_token.Mint(vmRunner, communityPartnerAddress, communityReward); err != nil {
-	//		return err
-	//	}
-	//}
-	//// mint to mgrMaintainer
-	//if maintainerReward.Cmp(new(big.Int)) != 0 {
-	//	mmAddress, err := epoch_rewards.GetMgrMaintainerAddress(vmRunner)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	if mmAddress != params.ZeroAddress {
-	//		if err = gold_token.Mint(vmRunner, mmAddress, maintainerReward); err != nil {
-	//			log.Error("reward to maintainer fail", "addr", mmAddress, "maintainerReward", maintainerReward.String())
-	//			return err
-	//		}
-	//		log.Info("reward to maintainer success", "addr", mmAddress, "maintainerReward", maintainerReward.String())
-	//	}
-	//}
+
+	if header.Number.Cmp(params.EnableRewardBlock) > 0 {
+		scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets, ignores)
+		if err != nil {
+			return err
+		}
+		// Reward Validators And voters
+		totalValidatorRewards, voterRewardData, err := sb.distributeValidatorRewards(vmRunner, signerSet, validators_, validatorVoterReward, scores)
+		if err != nil {
+			return err
+		}
+		log.Info("totalValidatorRewards", "maxReward", totalValidatorRewards.String())
+		totalVoterRewards, err := sb.distributeVoterRewards(vmRunner, validators_, voterRewardData)
+		if err != nil {
+			return err
+		}
+		log.Info("distributeVoterRewards", "totalVoterRewards", totalVoterRewards.String())
+		if communityReward.Cmp(new(big.Int)) != 0 {
+			if err = gold_token.Mint(vmRunner, communityPartnerAddress, communityReward); err != nil {
+				return err
+			}
+		}
+		// mint to mgrMaintainer
+		if maintainerReward.Cmp(new(big.Int)) != 0 {
+			mmAddress, err := epoch_rewards.GetMgrMaintainerAddress(vmRunner)
+			if err != nil {
+				return err
+			}
+			if mmAddress != params.ZeroAddress {
+				if err = gold_token.Mint(vmRunner, mmAddress, maintainerReward); err != nil {
+					log.Error("reward to maintainer fail", "addr", mmAddress, "maintainerReward", maintainerReward.String())
+					return err
+				}
+				log.Info("reward to maintainer success", "addr", mmAddress, "maintainerReward", maintainerReward.String())
+			}
+		}
+	}
 	//----------------------------- deRegister -------------------
 	deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner)
 	if err != nil {
