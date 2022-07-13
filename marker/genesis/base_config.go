@@ -24,7 +24,7 @@ func BaseConfig() *Config {
 			ValidatorLockedGoldRequirements: LockedGoldRequirements{
 				Value: bigIntStr("1000000000000000000000000"), //1000,000e18
 				// MUST BE KEPT IN SYNC WITH MEMBERSHIP HISTORY LENGTH
-				Duration: 60 * Day,
+				Duration: 20 * Minute,
 			},
 			ValidatorScoreExponent:        10,
 			ValidatorScoreAdjustmentSpeed: fixed("0.2"),
@@ -57,7 +57,7 @@ func BaseConfig() *Config {
 			MgrMaintainerAddress:           common.HexToAddress("0x1"),
 		},
 		LockedGold: LockedGoldParameters{
-			UnlockingPeriod: 1296000, //15 day
+			UnlockingPeriod: 900, //15 day
 		},
 		Random: RandomParameters{
 			RandomnessBlockRetentionWindow: 720,

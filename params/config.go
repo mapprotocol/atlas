@@ -10,7 +10,7 @@ const (
 	MainNetChainID uint64 = 22776
 	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
-	Epoch          uint64 = 50000
+	Epoch          uint64 = 1000
 )
 
 // network id
@@ -70,7 +70,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		Istanbul: &IstanbulConfig{
-			Epoch:          20000,
+			Epoch:          1000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
