@@ -3,21 +3,22 @@ package vm
 import (
 	"bytes"
 	"errors"
-	"github.com/mapprotocol/atlas/core/state"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/interfaces"
+	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/params"
 )
 
 const (
-	Save          = "save"
+	Save          = "updateBlockHeader"
 	Reset         = "reset"
 	CurNbrAndHash = "currentNumberAndHash"
 	SetRelayer    = "setRelayer"
@@ -47,7 +48,7 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	data := input[4:]
 	switch method.Name {
 	case Save:
-		ret, err = save(evm, contract, data)
+		ret, err = updateBlockHeader(evm, contract, data)
 	case Reset:
 		ret, err = reset(evm, contract, data)
 	case CurNbrAndHash:
@@ -70,7 +71,9 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	return ret, err
 }
 
-func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	var blockHeader []byte
+
 	args := struct {
 		From    *big.Int
 		To      *big.Int
@@ -81,12 +84,19 @@ func save(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 
-	method, _ := abiHeaderStore.Methods[Save]
+	method := abiHeaderStore.Methods[Save]
 	unpack, err := method.Inputs.Unpack(input)
 	if err != nil {
+		log.Error("unpack input failed", "err", err)
 		return nil, err
 	}
-	if err := method.Inputs.Copy(&args, unpack); err != nil {
+	if err := method.Inputs.Copy(&blockHeader, unpack); err != nil {
+		log.Error("copy input failed", "err", err)
+		return nil, err
+	}
+
+	if err := rlp.DecodeBytes(blockHeader, &args); err != nil {
+		log.Error("rlp decode input failed", "err", err)
 		return nil, err
 	}
 
