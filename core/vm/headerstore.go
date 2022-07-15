@@ -13,7 +13,6 @@ import (
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/interfaces"
-	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -106,7 +105,7 @@ func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, 
 	// check if it is a supported chain
 	fromChain := chains.ChainType(args.From.Uint64())
 	toChain := chains.ChainType(args.To.Uint64())
-	if !(chains.IsSupportedChain(fromChain) || chains.IsSupportedChain(toChain)) {
+	if !(chains.IsSupportedChain(fromChain) && chains.IsSupportedChain(toChain)) {
 		return nil, ErrNotSupportChain
 	}
 
@@ -232,13 +231,6 @@ func getRelayer(evm *EVM) (ret []byte, err error) {
 	return method.Outputs.Pack(common.BytesToAddress(relayerBytes))
 }
 
-/*
- used for reward to relayer in EpochReward
-*/
-func GetRelayerAddress(state *state.StateDB) common.Address {
-	relayerBytes := state.GetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]))
-	return common.BytesToAddress(relayerBytes)
-}
 func validateRelayer(evm *EVM, caller common.Address) error {
 	adminAddrBytes := evm.StateDB.GetPOWState(params.NewRelayerAddress, common.BytesToHash(params.NewRelayerAddress[:]))
 	if !bytes.Equal(caller.Bytes(), adminAddrBytes) {
