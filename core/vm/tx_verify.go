@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"errors"
+	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"strings"
 
@@ -40,7 +41,7 @@ func RunTxVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	switch method.Name {
 	// input[:4] 0x7df27c0b
 	case TxVerify:
-		ret, err = txVerify(evm, contract, data)
+		ret, err = verifyProofData(evm, contract, data)
 	default:
 		log.Warn("run tx verify contract failed, invalid method name", "method.name", method.Name)
 		return ret, errors.New("invalid method name")
@@ -54,7 +55,13 @@ func RunTxVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 	return ret, err
 }
 
-func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+func verifyProofData(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	var (
+		success      = true
+		message      = ""
+		logs         []byte
+		receiptProof []byte
+	)
 	args := struct {
 		Router   common.Address
 		Coin     common.Address
@@ -65,14 +72,10 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 
 	method := abiTxVerify.Methods[TxVerify]
 	defer func() {
-		var (
-			packErr error
-			message string
-			success = true
-		)
+		var packErr error
 
 		if err != nil {
-			success, message = false, err.Error()
+			success, message, logs = false, err.Error(), []byte{}
 		}
 		// In general, the Pack operation will not fail. Here we can choose to ignore Pack operation error.
 		// This is not absolute, so use a new value to receive the Pack operation error,
@@ -93,9 +96,9 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 				err` != nil
 					ret == nil, err == errors.New("pack error ...")
 		*/
-		ret, packErr = method.Outputs.Pack(success, message)
+		ret, packErr = method.Outputs.Pack(success, message, logs)
 		if packErr != nil {
-			log.Error("txVerify outputs pack failed", "error", packErr.Error())
+			log.Error("verify proof outputs pack failed", "error", packErr.Error())
 		}
 	}()
 
@@ -103,10 +106,15 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if err != nil {
 		return nil, err
 	}
-	if err := method.Inputs.Copy(&args, unpack); err != nil {
+	if err = method.Inputs.Copy(&receiptProof, unpack); err != nil {
 		return nil, err
 	}
-	log.Info("txVerify input params", "router", args.Router, "coin", args.Coin, "srcChain", args.SrcChain, "dstChain", args.DstChain)
+	if err := rlp.DecodeBytes(receiptProof, &args); err != nil {
+		log.Error("rlp decode receiptProof failed", "err", err)
+		return nil, err
+	}
+	log.Info("txVerify input params", "router", args.Router, "coin", args.Coin,
+		"srcChain", args.SrcChain, "dstChain", args.DstChain)
 
 	// params check
 	if bytes.Equal(args.Router.Bytes(), common.Address{}.Bytes()) {
@@ -115,7 +123,8 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if bytes.Equal(args.Coin.Bytes(), common.Address{}.Bytes()) {
 		return nil, errors.New("router address is empty")
 	}
-	if !(chains.IsSupportedChain(chains.ChainType(args.SrcChain.Uint64())) || chains.IsSupportedChain(chains.ChainType(args.DstChain.Uint64()))) {
+	if !(chains.IsSupportedChain(chains.ChainType(args.SrcChain.Uint64())) &&
+		chains.IsSupportedChain(chains.ChainType(args.DstChain.Uint64()))) {
 		return nil, ErrNotSupportChain
 	}
 	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.SrcChain.Uint64()))
@@ -127,5 +136,10 @@ func txVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err error
 	if err != nil {
 		return nil, err
 	}
-	return nil, v.Verify(evm.StateDB, args.Router, args.SrcChain, args.DstChain, args.TxProve)
+	logs, err = v.Verify(evm.StateDB, args.Router, args.SrcChain, args.DstChain, args.TxProve)
+	if err != nil {
+		log.Error("verify proof failed", "err", err.Error())
+		return nil, err
+	}
+	return nil, nil
 }

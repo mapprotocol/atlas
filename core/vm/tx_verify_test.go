@@ -257,9 +257,7 @@ func TestAddr(t *testing.T) {
 }
 
 func TestEventHash(t *testing.T) {
-	// LogSwapOut(bytes32 hash, address indexed token, address indexed from, address indexed to, uint amount, uint fromChainID, uint toChainID)
-	event := "LogSwapOut(bytes32,address,address,address,uint256,uint256,uint256)"
+	event := "mapTransferOut(address,address,bytes32,uint256,uint256,bytes,uint256,bytes)"
 	eventHash := crypto.Keccak256Hash([]byte(event))
-	t.Log("event hash: ", eventHash) // 0xcfdd266a10c21b3f2a2da4a807706d3f3825d37ca51d341eef4dce804212a8a3
-
+	t.Log("event hash: ", eventHash)
 }
