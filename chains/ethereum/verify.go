@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -32,7 +31,7 @@ type TxProve struct {
 type Verify struct {
 }
 
-func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, srcChain, dstChain *big.Int, txProveBytes []byte) (logs []byte, err error) {
+func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, txProveBytes []byte) (logs []byte, err error) {
 	txProve, err := v.decode(txProveBytes)
 	if err != nil {
 		return nil, err

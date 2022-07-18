@@ -3,12 +3,12 @@ package vm
 import (
 	"bytes"
 	"errors"
-	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/chains"
@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	TxVerify = "txVerify"
+	VerifyProof = "verifyProofData"
 )
 
 // TxVerify contract ABI
@@ -26,7 +26,7 @@ var (
 )
 
 var TxVerifyGas = map[string]uint64{
-	TxVerify: 42000,
+	VerifyProof: 42000,
 }
 
 // RunTxVerify execute atlas tx verify contract
@@ -39,18 +39,17 @@ func RunTxVerify(evm *EVM, contract *Contract, input []byte) (ret []byte, err er
 
 	data := input[4:]
 	switch method.Name {
-	// input[:4] 0x7df27c0b
-	case TxVerify:
+	case VerifyProof:
 		ret, err = verifyProofData(evm, contract, data)
 	default:
-		log.Warn("run tx verify contract failed, invalid method name", "method.name", method.Name)
+		log.Warn("run tx verify contract failed, invalid method", "method", method.Name)
 		return ret, errors.New("invalid method name")
 	}
 
 	if err != nil {
-		log.Error("run tx verify contract failed", "method.name", method.Name, "error", err)
+		log.Error("run tx verify contract failed", "method", method.Name, "error", err)
 	} else {
-		log.Info("run tx verify contract succeed", "method.name", method.Name)
+		log.Info("run tx verify contract succeed", "method", method.Name)
 	}
 	return ret, err
 }
@@ -70,7 +69,7 @@ func verifyProofData(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 		TxProve  []byte
 	}{}
 
-	method := abiTxVerify.Methods[TxVerify]
+	verifyProof := abiTxVerify.Methods[VerifyProof]
 	defer func() {
 		var packErr error
 
@@ -96,25 +95,24 @@ func verifyProofData(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 				err` != nil
 					ret == nil, err == errors.New("pack error ...")
 		*/
-		ret, packErr = method.Outputs.Pack(success, message, logs)
+		ret, packErr = verifyProof.Outputs.Pack(success, message, logs)
 		if packErr != nil {
 			log.Error("verify proof outputs pack failed", "error", packErr.Error())
 		}
 	}()
 
-	unpack, err := method.Inputs.Unpack(input)
+	unpack, err := verifyProof.Inputs.Unpack(input)
 	if err != nil {
 		return nil, err
 	}
-	if err = method.Inputs.Copy(&receiptProof, unpack); err != nil {
+	if err = verifyProof.Inputs.Copy(&receiptProof, unpack); err != nil {
 		return nil, err
 	}
 	if err := rlp.DecodeBytes(receiptProof, &args); err != nil {
 		log.Error("rlp decode receiptProof failed", "err", err)
 		return nil, err
 	}
-	log.Info("txVerify input params", "router", args.Router, "coin", args.Coin,
-		"srcChain", args.SrcChain, "dstChain", args.DstChain)
+	log.Info("verifyProofData args", "router", args.Router, "coin", args.Coin, "srcChain", args.SrcChain, "dstChain", args.DstChain)
 
 	// params check
 	if bytes.Equal(args.Router.Bytes(), common.Address{}.Bytes()) {
@@ -136,7 +134,7 @@ func verifyProofData(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	if err != nil {
 		return nil, err
 	}
-	logs, err = v.Verify(evm.StateDB, args.Router, args.SrcChain, args.DstChain, args.TxProve)
+	logs, err = v.Verify(evm.StateDB, args.Router, args.TxProve)
 	if err != nil {
 		log.Error("verify proof failed", "err", err.Error())
 		return nil, err
