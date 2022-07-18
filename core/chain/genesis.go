@@ -392,7 +392,7 @@ func DefaultGenesisBlock() *Genesis {
 	b1 := new(big.Int).Mul(big.NewInt(6000000000), big.NewInt(1e18))
 	b2 := new(big.Int).Mul(big.NewInt(4000000), big.NewInt(1e18))
 	balance0 := new(big.Int).Sub(b1, b2)
-	preAddr := common.HexToAddress("0x739A3c98BdDe5F213827eB1BaaDa3E51f5713399")
+	preAddr := common.HexToAddress("ec3e016916ba9f10762e33e03e8556409d096fb4")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 	DefaultGenesisCfg.Alloc = gs
 	return DefaultGenesisCfg
