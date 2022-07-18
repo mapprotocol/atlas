@@ -415,7 +415,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 		gs[addr] = allc
 	}
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
-	preAddr := common.HexToAddress("0xd9b31120b910c7d239a03062ab1d9403f30fb7d5")
+	preAddr := common.HexToAddress("0xec3e016916ba9f10762e33e03e8556409d096fb4")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 
 	return &Genesis{
