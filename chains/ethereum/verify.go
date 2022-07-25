@@ -18,7 +18,7 @@ var (
 	// EventHash cross-chain transaction event hash
 	// mapTransferOut(address indexed token, address indexed from, bytes32 indexed orderId, uint fromChain, uint toChain, bytes to, uint amount, bytes toChainToken);
 	// mapTransferOut(address,address,bytes32,uint256,uint256,bytes,uint256,bytes)
-	EventHash = common.HexToHash("0x1d7c4ab437b83807c25950ac63192692227b29e3205a809db6a4c3841836eb02")
+	//EventHash = common.HexToHash("0x1d7c4ab437b83807c25950ac63192692227b29e3205a809db6a4c3841836eb02")
 )
 
 type TxProve struct {
@@ -37,10 +37,10 @@ func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, txP
 		return nil, err
 	}
 
-	lgs, err := v.queryLog(routerContractAddr, txProve.Receipt.Logs)
-	if err != nil {
-		return nil, err
-	}
+	//lgs, err := v.queryLog(routerContractAddr, txProve.Receipt.Logs)
+	//if err != nil {
+	//	return nil, err
+	//}
 	receiptsRoot, err := v.getReceiptsRoot(db, txProve.BlockNumber)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, txP
 	if err := v.verifyProof(receiptsRoot, txProve); err != nil {
 		return nil, err
 	}
-	return rlp.EncodeToBytes(lgs)
+	return rlp.EncodeToBytes(txProve.Receipt.Logs)
 }
 
 func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
@@ -60,16 +60,16 @@ func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
 	return &txProve, nil
 }
 
-func (v *Verify) queryLog(routerContractAddr common.Address, logs []*ethtypes.Log) (*ethtypes.Log, error) {
-	for _, lg := range logs {
-		if bytes.Equal(lg.Address.Bytes(), routerContractAddr.Bytes()) {
-			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
-				return lg, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("not found event log, router contract addr: %v, event hash: %v", routerContractAddr, EventHash)
-}
+//func (v *Verify) queryLog(routerContractAddr common.Address, logs []*ethtypes.Log) (*ethtypes.Log, error) {
+//	for _, lg := range logs {
+//		if bytes.Equal(lg.Address.Bytes(), routerContractAddr.Bytes()) {
+//			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
+//				return lg, nil
+//			}
+//		}
+//	}
+//	return nil, fmt.Errorf("not found event log, router contract addr: %v, event hash: %v", routerContractAddr, EventHash)
+//}
 
 func (v *Verify) getReceiptsRoot(db types.StateDB, blockNumber uint64) (common.Hash, error) {
 	hs := NewHeaderStore()
