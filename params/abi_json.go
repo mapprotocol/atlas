@@ -2,8 +2,15 @@ package params
 
 // HeaderStoreABIJSON  header store abi json
 /*
+
+type BlockHeader struct {
+	From    *big.Int
+	To      *big.Int
+	Headers []byte
+}
+
 contract HeaderStore {
-    function save(uint256 from, uint256 to, bytes memory headers) public {}
+    function updateBlockHeader(bytes memory blockHeader) public {}
     function currentNumberAndHash(uint256 chainID) public returns (uint256 number, bytes memory hash) {}
     function setRelayer(address relayer) public {}
     function getRelayer() public returns (address relayer) {}
@@ -74,29 +81,6 @@ const HeaderStoreABIJSON = `[
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "from",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "to",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes",
-				"name": "headers",
-				"type": "bytes"
-			}
-		],
-		"name": "save",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "address",
 				"name": "relayer",
 				"type": "address"
@@ -106,264 +90,72 @@ const HeaderStoreABIJSON = `[
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes",
+				"name": "blockHeader",
+				"type": "bytes"
+			}
+		],
+		"name": "updateBlockHeader",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	}
 ]`
 
 // TxVerifyABIJSON  tx verify abi json
 /*
+
+type ReceiptProof struct{
+	Router   common.Address
+	Coin     common.Address
+	SrcChain *big.Int
+	DstChain *big.Int
+	TxProve  []byte
+}
+
+type TxProve struct {
+	Receipt     *ethtypes.Receipt
+	Prove       light.NodeList
+	BlockNumber uint64
+	TxIndex     uint
+}
+
 contract TxVerify {
-	function txVerify(address router, address coin, uint256 srcChain, uint256 dstChain, bytes memory txProve) public returns(bool success, string memory message){}
+    function verifyProofData(bytes memory receiptProof) public returns(bool success, string memory message, bytes memory logs) {}
 }
 */
 const TxVerifyABIJSON = `[
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "router",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "coin",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "srcChain",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "dstChain",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "txProve",
-                "type": "bytes"
-            }
-        ],
-        "name": "txVerify",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "success",
-                "type": "bool"
-            },
-            {
-                "internalType": "string",
-                "name": "message",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-]`
-
-const RelayerABIJSON = `[
-  {
-    "name": "Register",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Withdraw",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Unregister",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "Append",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "from",
-        "indexed": true
-      },
-      {
-        "type": "uint256",
-        "name": "value",
-        "indexed": false
-      }
-    ],
-    "anonymous": false,
-    "type": "event"
-  },
-  {
-    "name": "register",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "append",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getRelayerBalance",
-    "outputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "registered"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "unregistering"
-      },
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "unregistered"
-      }
-    ],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "owner"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "withdraw",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "unregister",
-    "outputs": [],
-    "inputs": [
-      {
-        "type": "uint256",
-        "unit": "wei",
-        "name": "value"
-      }
-    ],
-    "constant": false,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getPeriodHeight",
-    "outputs": [
-      {
-        "type": "uint256",
-        "name": "start"
-      },
-      {
-        "type": "uint256",
-        "name": "end"
-      },
-      {
-        "type": "bool",
-        "name": "relayer"
-      }
-    ],
-    "inputs": [
-      {
-        "type": "address",
-        "name": "owner"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "name": "getRelayer",
-    "inputs": [
-      {
-        "type": "address",
-        "name": "owner"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "bool",
-        "name": "register"
-      },
-      {
-        "type": "bool",
-        "name": "relayer"
-      },
-      {
-        "type": "uint256",
-        "name": "epoch"
-      }
-    ],
-    "constant": true,
-    "payable": false,
-    "type": "function"
-  }
+	{
+		"inputs": [
+			{
+				"internalType": "bytes",
+				"name": "receiptProof",
+				"type": "bytes"
+			}
+		],
+		"name": "verifyProofData",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "success",
+				"type": "bool"
+			},
+			{
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes",
+				"name": "logs",
+				"type": "bytes"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
 ]`

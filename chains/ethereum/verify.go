@@ -2,11 +2,8 @@ package ethereum
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -19,18 +16,12 @@ import (
 
 var (
 	// EventHash cross-chain transaction event hash
-	// LogSwapOut(bytes32,address,address,address,uint256,uint256,uint256)
-	EventHash = common.HexToHash("0xcfdd266a10c21b3f2a2da4a807706d3f3825d37ca51d341eef4dce804212a8a3")
+	// mapTransferOut(address indexed token, address indexed from, bytes32 indexed orderId, uint fromChain, uint toChain, bytes to, uint amount, bytes toChainToken);
+	// mapTransferOut(address,address,bytes32,uint256,uint256,bytes,uint256,bytes)
+	//EventHash = common.HexToHash("0x1d7c4ab437b83807c25950ac63192692227b29e3205a809db6a4c3841836eb02")
 )
 
-type TxParams struct {
-	From  []byte
-	To    []byte
-	Value *big.Int
-}
-
 type TxProve struct {
-	Tx          *TxParams
 	Receipt     *ethtypes.Receipt
 	Prove       light.NodeList
 	BlockNumber uint64
@@ -40,32 +31,25 @@ type TxProve struct {
 type Verify struct {
 }
 
-func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, srcChain, dstChain *big.Int, txProveBytes []byte) error {
+func (v *Verify) Verify(db types.StateDB, routerContractAddr common.Address, txProveBytes []byte) (logs []byte, err error) {
 	txProve, err := v.decode(txProveBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// debug log
-	for i, lg := range txProve.Receipt.Logs {
-		ls, _ := json.Marshal(lg)
-		log.Printf("receipt log-%d: %s\n", i, ls)
-	}
-
-	lg, err := v.queryLog(routerContractAddr, txProve.Receipt.Logs)
-	if err != nil {
-		return err
-	}
-	if err := v.verifyTxParams(srcChain, dstChain, txProve.Tx, lg); err != nil {
-		return err
-	}
-
+	//lgs, err := v.queryLog(routerContractAddr, txProve.Receipt.Logs)
+	//if err != nil {
+	//	return nil, err
+	//}
 	receiptsRoot, err := v.getReceiptsRoot(db, txProve.BlockNumber)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	//receiptsRoot := common.HexToHash("0xb350f39d35702cfbc6709470a50255fc2a11248fa91528e5e28fe0fd05c04f4d")
-	return v.verifyProof(receiptsRoot, txProve)
+
+	if err := v.verifyProof(receiptsRoot, txProve); err != nil {
+		return nil, err
+	}
+	return rlp.EncodeToBytes(txProve.Receipt.Logs)
 }
 
 func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
@@ -76,47 +60,16 @@ func (v *Verify) decode(txProveBytes []byte) (*TxProve, error) {
 	return &txProve, nil
 }
 
-func (v *Verify) queryLog(routerContractAddr common.Address, logs []*ethtypes.Log) (*ethtypes.Log, error) {
-	for _, lg := range logs {
-		if bytes.Equal(lg.Address.Bytes(), routerContractAddr.Bytes()) {
-			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
-				return lg, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("not found event log, router contract addr: %v, event hash: %v", routerContractAddr, EventHash)
-}
-
-func (v *Verify) verifyTxParams(srcChain, dstChain *big.Int, tx *TxParams, log *ethtypes.Log) error {
-	if len(log.Topics) < 4 {
-		return errors.New("verify tx params failed, the log.Topics`s length cannot be less than 4")
-	}
-
-	//from := strings.ToLower(tx.From.String())
-	if !bytes.Equal(common.BytesToHash(tx.From).Bytes(), common.HexToHash(log.Topics[2].Hex()).Bytes()) {
-		return errors.New("verify tx params failed, invalid from")
-	}
-	//to := strings.ToLower(tx.To.String())
-	if !bytes.Equal(common.BytesToHash(tx.To).Bytes(), log.Topics[3].Bytes()) {
-		return errors.New("verify tx params failed, invalid to")
-	}
-
-	if len(log.Data) < 128 {
-		return errors.New("verify tx params failed, log.Data length cannot be less than 128")
-	}
-
-	if !bytes.Equal(common.BigToHash(tx.Value).Bytes(), log.Data[32:64]) {
-		return errors.New("verify tx params failed， invalid value")
-	}
-	if !bytes.Equal(common.BigToHash(srcChain).Bytes(), log.Data[64:96]) {
-		return errors.New("verify tx params failed, invalid srcChain")
-	}
-	if !bytes.Equal(common.BigToHash(dstChain).Bytes(), log.Data[96:128]) {
-		return errors.New("verify tx params failed, invalid dstChain")
-	}
-
-	return nil
-}
+//func (v *Verify) queryLog(routerContractAddr common.Address, logs []*ethtypes.Log) (*ethtypes.Log, error) {
+//	for _, lg := range logs {
+//		if bytes.Equal(lg.Address.Bytes(), routerContractAddr.Bytes()) {
+//			if bytes.Equal(lg.Topics[0].Bytes(), EventHash.Bytes()) {
+//				return lg, nil
+//			}
+//		}
+//	}
+//	return nil, fmt.Errorf("not found event log, router contract addr: %v, event hash: %v", routerContractAddr, EventHash)
+//}
 
 func (v *Verify) getReceiptsRoot(db types.StateDB, blockNumber uint64) (common.Hash, error) {
 	hs := NewHeaderStore()

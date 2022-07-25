@@ -1,19 +1,22 @@
 package chains
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/mapprotocol/atlas/params"
 )
 
 const (
-	//ChainTypeMAP     ChainType = ChainType(params.MainNetChainID)
-	//ChainTypeMAPTest ChainType = ChainType(params.TestNetChainID)
-	//ChainTypeMAPDev  ChainType = ChainType(params.DevNetChainID)
+	ChainTypeMAP     = ChainType(params.MainNetChainID)
+	ChainTypeMAPTest = ChainType(params.TestNetChainID)
+	ChainTypeMAPDev  = ChainType(params.DevNetChainID)
+)
+
+const (
 	ChainTypeETH     ChainType = 1
-	ChainTypeETHTest ChainType = 3
-	ChainTypeETHDev  ChainType = 10
+	ChainTypeETHTest ChainType = 34434
 )
 
 const (
@@ -22,23 +25,20 @@ const (
 )
 
 var ChainTypeList = []ChainType{
-	//ChainTypeMAP,
-	//ChainTypeMAPTest,
-	//ChainTypeMAPDev,
+	ChainTypeMAP,
+	ChainTypeMAPTest,
+	ChainTypeMAPDev,
 	ChainTypeETH,
 	ChainTypeETHTest,
-	ChainTypeETHDev,
 }
 
 var chainType2ChainGroup = map[ChainType]ChainGroup{
 	ChainTypeETH:     ChainGroupETH,
-	ChainTypeETHDev:  ChainGroupETH,
 	ChainTypeETHTest: ChainGroupETH,
 }
 
 var chainType2ChainID = map[ChainType]uint64{
 	ChainTypeETH:     params.MainNetChainID,
-	ChainTypeETHDev:  params.DevNetChainID,
 	ChainTypeETHTest: params.TestNetChainID,
 }
 
@@ -49,7 +49,6 @@ var chainType2LondonBlock = map[ChainType]*big.Int{
 
 var (
 	EthereumHeaderStoreAddress = common.BytesToAddress([]byte("EthereumHeaderStoreAddress"))
-	EthereumHeaderSyncAddress  = common.BytesToAddress([]byte("EthereumHeaderSyncInfoAddress"))
 )
 
 type ChainType uint64
