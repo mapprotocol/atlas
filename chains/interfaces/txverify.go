@@ -1,8 +1,6 @@
 package interfaces
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/mapprotocol/atlas/chains"
@@ -11,7 +9,7 @@ import (
 )
 
 type IVerify interface {
-	Verify(db types.StateDB, router common.Address, srcChain, dstChain *big.Int, txProveBytes []byte) error
+	Verify(db types.StateDB, router common.Address, txProveBytes []byte) (logs []byte, err error)
 }
 
 func VerifyFactory(group chains.ChainGroup) (IVerify, error) {
