@@ -316,6 +316,13 @@ var getPendingWithdrawalsCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var getTotalVotesForValidatorCommand = cli.Command{
+	Name:   "getTotalVotesForValidator",
+	Usage:  "Returns the total withdrawals from unlocked gold for an account.",
+	Action: MigrateFlags(getTotalVotesForValidator),
+	Flags:  Flags,
+}
+
 //-------------- owner --------------------
 var setValidatorLockedGoldRequirementsCommand = cli.Command{
 	Name:   "setValidatorLockedGoldRequirements",
@@ -742,7 +749,8 @@ func vote(_ *cli.Context, core *listener) error {
 	}
 	amount := new(big.Int).Mul(core.cfg.VoteNum, big.NewInt(1e18))
 	log.Info("=== vote Validator ===", "admin", core.cfg.From, "voteTargetValidator", core.cfg.TargetAddress.String(), "vote MAP Num", core.cfg.VoteNum.String())
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "vote", core.cfg.TargetAddress, amount, lesser, greater)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections,
+		"vote", core.cfg.TargetAddress, amount, lesser, greater)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -767,7 +775,8 @@ func activate(_ *cli.Context, core *listener) error {
 	ElectionsAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElections := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== activate validator gold ===", "account.Address", core.cfg.From)
-	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections, "activate", core.cfg.TargetAddress)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ElectionsAddress, nil, abiElections,
+		"activate", core.cfg.TargetAddress)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -1036,6 +1045,8 @@ func getTotalVotesForEligibleValidators(_ *cli.Context, core *listener) error {
 	}
 	log.Info("=== getTotalVotesForEligibleValidators ===", "admin", core.cfg.From)
 	m := NewMessageRet2(SolveQueryResult4, core.msgCh, core.cfg, f, electionAddress, nil, abiElection, "getTotalVotesForEligibleValidators")
+	// getTotalVotesForEligibleValidators
+	// getTotalVotesForValidatorByAccount
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	Validators := (t.Validators).([]common.Address)
@@ -1091,7 +1102,8 @@ func getPendingVotesForValidatorByAccount(_ *cli.Context, core *listener) error 
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getPendingVotesForValidatorByAccount ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getPendingVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection,
+		"getPendingVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("PendingVotes", "balance", ret.(*big.Int))
@@ -1137,7 +1149,8 @@ func getActiveVotesForValidatorByAccount(_ *cli.Context, core *listener) error {
 	ElectionAddress := core.cfg.ElectionParameters.ElectionAddress
 	abiElection := core.cfg.ElectionParameters.ElectionABI
 	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", core.cfg.From)
-	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil, abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, ElectionAddress, nil,
+		abiElection, "getActiveVotesForValidatorByAccount", core.cfg.TargetAddress, core.cfg.From)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	log.Info("ActiveVotes", "balance", ret.(*big.Int))
@@ -1230,6 +1243,7 @@ func getTotalVotes(_ *cli.Context, core *listener) error {
 	log.Info("result", "getTotalVotes", result)
 	return nil
 }
+
 func getTotalVotesForValidator(_ *cli.Context, core *listener) error {
 	var ret interface{}
 	log.Info("=== getTotalVotesForValidator ===", "admin", core.cfg.From)
@@ -1242,6 +1256,7 @@ func getTotalVotesForValidator(_ *cli.Context, core *listener) error {
 	log.Info("=== getTotalVotesForValidator ===", "result", result)
 	return nil
 }
+
 func getPendingWithdrawals(_ *cli.Context, core *listener) error {
 	type ret []interface{}
 	var Values interface{}
