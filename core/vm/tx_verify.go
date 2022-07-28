@@ -118,9 +118,9 @@ func verifyProofData(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	if bytes.Equal(args.Router.Bytes(), common.Address{}.Bytes()) {
 		return nil, errors.New("router address is empty")
 	}
-	if bytes.Equal(args.Coin.Bytes(), common.Address{}.Bytes()) {
-		return nil, errors.New("router address is empty")
-	}
+	//if bytes.Equal(args.Coin.Bytes(), common.Address{}.Bytes()) {
+	//	return nil, errors.New("coin address is empty")
+	//}
 	if !(chains.IsSupportedChain(chains.ChainType(args.SrcChain.Uint64())) &&
 		chains.IsSupportedChain(chains.ChainType(args.DstChain.Uint64()))) {
 		return nil, ErrNotSupportChain
