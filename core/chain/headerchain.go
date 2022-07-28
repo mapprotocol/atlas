@@ -173,7 +173,6 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 		// The headers have already been validated at this point, so we already
 		// know that it's a contiguous chain, where
 		// headers[i].Hash() == headers[i+1].ParentHash
-		// 下一个区块的父 hash 就是当前区块的 hash
 		if i < len(headers)-1 {
 			hash = headers[i+1].ParentHash
 		} else {
@@ -215,9 +214,7 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 	batch.Reset()
 
 	var (
-		// 此时这里的 hc.currentHeader 还未更新
 		head    = hc.CurrentHeader().Number.Uint64()
-		// 此时这里的 hc.currentHeaderHash 还未更新
 		localTD = hc.GetTd(hc.currentHeaderHash, head)
 		status  = SideStatTy
 	)
@@ -225,12 +222,9 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 	// Second clause in the if statement reduces the vulnerability to selfish mining.
 	// Please refer to http://www.cs.cornell.edu/~ie53/publications/btcProcFC.pdf
 	reorg := newTD.Cmp(localTD) > 0
-	// 待插入的块的 td 等与当前块的 td
 	if !reorg && newTD.Cmp(localTD) == 0 {
-		// 待插入块的的高度小于当前块的高度
 		if lastNumber < head {
 			reorg = true
-		// 待插入块的的高度等于于当前块的高度
 		} else if lastNumber == head {
 			reorg = mrand.Float64() < 0.5
 		}
@@ -248,7 +242,6 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 		markerBatch := batch // we can reuse the batch to keep allocs down
 		if !chainAlreadyCanon {
 			// Delete any canonical number assignments above the new head
-			// 删除 headers[len(headers)-1] 之后的规范块
 			for i := lastNumber + 1; ; i++ {
 				// 'h' + number + 'n'
 				hash := rawdb.ReadCanonicalHash(hc.chainDb, i)
@@ -260,7 +253,6 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 			}
 			// Overwrite any stale canonical number assignments, going
 			// backwards from the first header in this import
-			// 覆盖 headers[0] 之前的
 			var (
 				headHash   = headers[0].ParentHash          // inserted[0].parent?
 				headNumber = headers[0].Number.Uint64() - 1 // inserted[0].num-1 ?
@@ -297,7 +289,6 @@ func (hc *HeaderChain) writeHeaders(headers []*types.Header) (result *headerWrit
 		}
 		markerBatch.Reset()
 		// Last step update all in-memory head header markers
-		// 更新 hc.currentHeaderHash 和 hc.currentHeader
 		hc.currentHeaderHash = lastHash
 		hc.currentHeader.Store(types.CopyHeader(lastHeader))
 		headHeaderGauge.Update(lastHeader.Number.Int64())
