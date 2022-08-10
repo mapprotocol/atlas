@@ -96,7 +96,7 @@ const (
 	txLookupCacheLimit  = 1024
 	maxFutureBlocks     = 256
 	maxTimeFutureBlocks = 30
-	TriesInMemory       = 128
+	TriesInMemory       = params.Epoch
 
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
@@ -1577,7 +1577,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 					// If we're exceeding limits but haven't reached a large enough memory gap,
 					// warn the user that the system is becoming unstable.
 					if chosen < lastWrite+TriesInMemory && bc.gcproc >= 2*bc.cacheConfig.TrieTimeLimit {
-						log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/TriesInMemory)
+						log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/float64(TriesInMemory))
 					}
 					// Flush an entire trie and restart the counters
 					triedb.Commit(header.Root, true, nil)
