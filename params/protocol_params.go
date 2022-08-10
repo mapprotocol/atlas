@@ -118,5 +118,5 @@ const (
 )
 
 var (
-	EnableRewardBlock = big.NewInt(300000)
+	EnableRewardBlock = big.NewInt(300000000)
 )
