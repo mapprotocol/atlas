@@ -50,7 +50,7 @@ func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, strin
 	url = fmt.Sprintf("%s://%s", scheme, host)
 	conn, err := ethclient.Dial(url)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to the map chain url: %v", err))
+		panic(fmt.Sprintf("Failed to connect to the map chain, error: %v", err))
 	}
 
 	_, err = conn.ChainID(context.Background())
