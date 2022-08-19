@@ -7,7 +7,7 @@ Atlas chain is a truly fast, permissionless, secure and scalable public blockcha
 ## Building the source
 
 
-Building atlas requires both a Go (version 1.14 or later) and a C compiler.
+Building atlas requires both a Go (version 1.16 or later) and a C compiler.
 You can install them using your favourite package manager.
 Once the dependencies are installed, run
 
