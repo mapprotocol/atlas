@@ -121,8 +121,7 @@ func verifyProofData(evm *EVM, contract *Contract, input []byte) (ret []byte, er
 	//if bytes.Equal(args.Coin.Bytes(), common.Address{}.Bytes()) {
 	//	return nil, errors.New("coin address is empty")
 	//}
-	if !(chains.IsSupportedChain(chains.ChainType(args.SrcChain.Uint64())) &&
-		chains.IsSupportedChain(chains.ChainType(args.DstChain.Uint64()))) {
+	if !chains.IsSupportedChain(chains.ChainType(args.SrcChain.Uint64())) {
 		return nil, ErrNotSupportChain
 	}
 	group, err := chains.ChainType2ChainGroup(chains.ChainType(args.SrcChain.Uint64()))
