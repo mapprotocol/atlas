@@ -17,6 +17,7 @@ import (
 const (
 	httpScheme  = "http"
 	httpsScheme = "https"
+	localHost   = "localhost"
 )
 
 func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, string) {
@@ -27,6 +28,9 @@ func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, strin
 	)
 	ip := config.Ip
 	port := config.Port
+	if len(strings.TrimSpace(ip)) == 0 {
+		panic("invalid address, please specify via rpcaddr")
+	}
 	parts := strings.Split(ip, "://")
 	addr := parts[len(parts)-1]
 
@@ -38,7 +42,7 @@ func DialConn(ctx *cli.Context, config *config.Config) (*ethclient.Client, strin
 	} else {
 		host = addr
 	}
-	if net.ParseIP(ip) != nil {
+	if ip == localHost || net.ParseIP(ip) != nil {
 		if scheme == "" {
 			scheme = httpScheme
 		}
