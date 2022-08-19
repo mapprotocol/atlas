@@ -98,6 +98,7 @@ func init() {
 		getAccountNonvotingLockedGoldCommand,
 		getAccountLockedGoldRequirementCommand,
 		getPendingWithdrawalsCommand,
+		getTotalVotesForValidatorCommand,
 		setValidatorLockedGoldRequirementsCommand,
 		setImplementationCommand,
 		setOwnerCommand,
