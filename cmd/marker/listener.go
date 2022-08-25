@@ -105,7 +105,7 @@ var signerToAccountCommand = cli.Command{
 var makeECDSASignatureFromSignerCommand = cli.Command{
 	Name:   "makeECDSASignatureFromSigner",
 	Usage:  "print a ECDSASignature that signer sign the account(validator)",
-	Action: MigrateFlags(makeECDSASignatureFromsigner),
+	Action: MigrateFlags(makeECDSASignatureFromSigner),
 	Flags:  Flags,
 }
 var makeBLSProofOfPossessionFromSignerCommand = cli.Command{
@@ -401,9 +401,7 @@ var getMgrMaintainerAddressCommand = cli.Command{
 
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
-	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	//commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	commision := big.NewInt(0).SetUint64(core.cfg.Commission)
 	log.Info("=== commision ===", "commision", commision)
 	if isPendingDeRegisterValidator(core) {
@@ -412,8 +410,6 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 		return nil
 	}
 	greater, lesser := registerUseFor(core)
-	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	//_params := []interface{}{commision, lesser, greater,core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
 	if core.cfg.SignerPriv != "" {
 		SignerPriv := core.cfg.SignerPriv
 		priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
@@ -434,8 +430,9 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 		core.cfg.BlsPub = blsPub
 		core.cfg.BlsG1Pub = blsG1Pub
 		core.cfg.BLSProof = _account.MustBLSProofOfPossession()
-		BLSProofOfPossession := makeBLSProofOfPossessionFromsigner_(core.cfg.From, core)
-		core.cfg.BLSProof = BLSProofOfPossession.Marshal()
+		//BLSProofOfPossession := makeBLSProofOfPossessionFromsigner_(core.cfg.From, core)
+		//core.cfg.BLSProof = BLSProofOfPossession.Marshal()
+		core.cfg.BLSProof = makeBLSProofOfPossessionFromSigner_(core.cfg.From, core.cfg.SignerPriv).Marshal()
 	}
 	validatorParams := [4][]byte{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
 
@@ -599,8 +596,8 @@ func createAccount(core *listener) {
    need signer private
 */
 func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
-	//SignerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
-	SignatureStr, signer := makeECDSASignatureFromsigner_(core) // signer sign account
+	// 	SignatureStr, signer := makeECDSASignatureFromsigner_(core) // signer sign account
+	SignatureStr, signer := makeECDSASignatureFromSigner_(core.cfg.From, core.cfg.SignerPriv) // signer sign account
 	Signature, err := hexutil.Decode(SignatureStr)
 	if err != nil {
 		panic(err)
@@ -612,7 +609,7 @@ func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
 	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
 
 	logger := log.New("func", "authorizeValidatorSigner")
-	logger.Info("authorizeValidatorSigner", "address", core.cfg.From)
+	logger.Info("authorizeValidatorSigner", "validator", core.cfg.From, "signer", signer)
 	log.Info("=== authorizeValidatorSigner ===")
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "authorizeValidatorSigner", signer, v, r, s)
 	go core.writer.ResolveMessage(m)
@@ -640,21 +637,23 @@ func signerToAccount(_ *cli.Context, core *listener) error {
 note:signer function
 print a ECDSASignature that signer sign the account(validator)
 */
-func makeECDSASignatureFromsigner(_ *cli.Context, core *listener) error {
-	core.cfg.From = core.cfg.TargetAddress
-	makeECDSASignatureFromsigner_(core)
+func makeECDSASignatureFromSigner(_ *cli.Context, core *listener) error {
+	//core.cfg.From = core.cfg.TargetAddress
+	makeECDSASignatureFromSigner_(core.cfg.TargetAddress, core.cfg.SignerPriv)
 	return nil
 }
-func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
-	log.Info("=== makeECDSASignatureFromsigner ===")
-	SignerPriv := core.cfg.SignerPriv
-	priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
+
+// func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
+func makeECDSASignatureFromSigner_(validator common.Address, signerPrivate string) (string, common.Address) {
+	log.Info("=== makeECDSASignatureFromSigner ===")
+	// SignerPriv := core.cfg.SignerPriv
+	priv, err := crypto.ToECDSA(common.FromHex(signerPrivate))
 	if err != nil {
 		panic(err)
 	}
 	signer := crypto.PubkeyToAddress(priv.PublicKey)
-	account_ := core.cfg.From
-	hash := accounts.TextHash(crypto.Keccak256(account_[:]))
+	// account_ := core.cfg.From
+	hash := accounts.TextHash(crypto.Keccak256(validator[:]))
 	sig, err := crypto.Sign(hash, priv)
 	if err != nil {
 		panic(err)
@@ -675,17 +674,17 @@ func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
   print a BLSProofOfPossession that signer BLSSign the account(validator)
 */
 func makeBLSProofOfPossessionFromsigner(_ *cli.Context, core *listener) error {
-	signature := makeBLSProofOfPossessionFromsigner_(core.cfg.AccountAddress, core)
+	// 	signature := makeBLSProofOfPossessionFromsigner_(core.cfg.AccountAddress, core)
+	signature := makeBLSProofOfPossessionFromSigner_(core.cfg.AccountAddress, core.cfg.SignerPriv)
 	log.Info("=== pop ===", "result", hexutil.Encode(signature.Marshal()))
 	return nil
 }
 
-func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener) *bls.UnsafeSignature {
-	log.Info("=== makeBLSProofOfPossessionFromsigner ===")
-	//account:= common.HexToAddress("0x6621F2b6Da2BEd64b5fFBD6C5b2138547f44C8f9")
-	//SignerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
-	SignerPriv := core.cfg.SignerPriv
-	privECDSA, err := crypto.ToECDSA(common.FromHex(SignerPriv))
+// func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener) *bls.UnsafeSignature {
+func makeBLSProofOfPossessionFromSigner_(message common.Address, signerPrivate string) *bls.UnsafeSignature {
+	log.Info("=== makeBLSProofOfPossessionFromSigner ===")
+	//SignerPriv := core.cfg.SignerPriv
+	privECDSA, err := crypto.ToECDSA(common.FromHex(signerPrivate))
 	if err != nil {
 		panic(err)
 	}
@@ -1494,7 +1493,6 @@ func getGLSub(core *listener, SubValue *big.Int, target common.Address) (common.
 				}
 			}
 			return greater, lesser, nil
-			break
 		}
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
@@ -1564,7 +1562,6 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 				}
 			}
 			return greater, lesser, nil
-			break
 		}
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
@@ -1630,7 +1627,6 @@ func getGL2(core *listener, target common.Address) (common.Address, common.Addre
 				}
 			}
 			return greater, lesser, nil
-			break
 		}
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError

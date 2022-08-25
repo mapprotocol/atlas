@@ -55,7 +55,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
 	chainID, _ := client.ChainID(context.Background())
-	logger.Info("Tx Info", "TX data nonce ", nonce, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
+	logger.Info("Tx Info", "from", from, "nonce ", nonce, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)
 	if err != nil {
