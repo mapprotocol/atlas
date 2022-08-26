@@ -43,3 +43,21 @@ func Test_setTargetEpochPayment(t *testing.T) {
 
 	setTargetEpochPayment(endpoint, from, target, privateKey)
 }
+
+func Test_getElectableValidators(t *testing.T) {
+	getElectableValidators(endpoint)
+}
+
+// INFO [08-26|16:55:35.641] getElectableValidators                   minElectableValidators=1 maxElectableValidators=100
+// INFO [08-26|17:00:42.247] getElectableValidators                   minElectableValidators=1 maxElectableValidators=50
+
+func Test_setElectableValidators(t *testing.T) {
+	from := common.HexToAddress("")
+	privateKey, err := crypto.ToECDSA(common.FromHex(""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	min := big.NewInt(1)
+	max := big.NewInt(100)
+	setElectableValidators(endpoint, from, privateKey, min, max)
+}
