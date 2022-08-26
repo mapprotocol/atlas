@@ -121,6 +121,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 func (c *core) handleCommit(msg *istanbul.Message) error {
 	defer c.handleCommitTimer.UpdateSince(time.Now())
 	commit := msg.Commit()
+	logger := c.newLogger("func", "handleCommit")
 	err := c.checkMessage(istanbul.MsgCommit, commit.Subject.View)
 	if err == errOldMessage {
 		// Discard messages from previous views, unless they are commits from the previous sequence,
@@ -130,9 +131,11 @@ func (c *core) handleCommit(msg *istanbul.Message) error {
 		if err != nil {
 			return err
 		} else if commit.Subject.View.Cmp(lastSubject.View) != 0 {
+			logger.Error("commit", "commit.Subject.View", commit.Subject.View, "lastSubject", lastSubject.View)
 			return errOldMessage
 		} else if lastSubject.View.Sequence.Cmp(common.Big0) == 0 {
 			// Don't handle commits for the genesis block, will cause underflows
+			logger.Error("commit", "lastSubject.View.Sequence", lastSubject.View.Sequence)
 			return errOldMessage
 		}
 		return c.handleCheckedCommitForPreviousSequence(msg, commit)

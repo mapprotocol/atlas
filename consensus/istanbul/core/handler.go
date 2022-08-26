@@ -114,7 +114,7 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				if err := c.handleMsg(ev.Payload); err != nil && err != errFutureMessage && err != errOldMessage {
+				if err := c.handleMsg(ev.Payload); err != nil {
 					logger.Warn("Error in handling istanbul message", "err", err)
 				}
 			case backlogEvent:
@@ -169,6 +169,7 @@ func (c *core) handleMsg(payload []byte) error {
 		logger.Debug("Failed to decode message from payload", "err", err)
 		return err
 	}
+	logger.Debug("Got new message", "msg", msg)
 
 	// Only accept message if the address is valid
 	_, src := c.current.ValidatorSet().GetByAddress(msg.Address)
