@@ -38,7 +38,7 @@ import (
 	"time"
 )
 
-func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB) error {
+func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB, EnableRewardBlock *big.Int) error {
 	start := time.Now()
 	defer sb.rewardDistributionTimer.UpdateSince(start)
 	logger := sb.logger.New("func", "Backend.distributeEpochPaymentsAndRewards", "blocknum", header.Number.Uint64())
@@ -78,7 +78,7 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		return err
 	}
 
-	if header.Number.Cmp(params.EnableRewardBlock) > 0 {
+	if header.Number.Cmp(EnableRewardBlock) > 0 {
 		scores, err := sb.calculatePaymentScoreDenominator(vmRunner, uptimeRets, ignores)
 		if err != nil {
 			return err

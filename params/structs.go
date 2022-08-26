@@ -98,6 +98,7 @@ type ChainConfig struct {
 	// Various consensus engines
 	Istanbul *IstanbulConfig `json:"istanbul,omitempty"`
 
+	EnableRewardBlock *big.Int `json:"rewardblock,omitempty"`
 	// This does not belong here but passing it to every function is not possible since that breaks
 	// some implemented interfaces and introduces churn across the geth codebase.
 	FullHeaderChainAvailable bool // False for lightest Sync mode, true otherwise
