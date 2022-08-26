@@ -77,6 +77,11 @@ var (
 		Usage: "value units one eth",
 		Value: 0,
 	}
+	AmountFlag = cli.StringFlag{
+		Name:  "amount",
+		Usage: "transfer amount, unit (wei)",
+		Value: "0",
+	}
 	DurationFlag = cli.Int64Flag{
 		Name:  "duration",
 		Usage: "duration The time (in seconds) that these requirements persist for.",
@@ -96,6 +101,21 @@ var (
 	SignerPrivFlag = cli.StringFlag{
 		Name:  "signerPriv",
 		Usage: "signer private",
+		Value: "",
+	}
+	SignerFlag = cli.StringFlag{
+		Name:  "signer",
+		Usage: "signer address",
+		Value: "",
+	}
+	SignatureFlag = cli.StringFlag{
+		Name:  "signature",
+		Usage: "ECDSA Signature",
+		Value: "",
+	}
+	ProofFlag = cli.StringFlag{
+		Name:  "proof",
+		Usage: "signer proof",
 		Value: "",
 	}
 	AccountAddressFlag = cli.StringFlag{

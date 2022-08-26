@@ -24,6 +24,12 @@ func NewWriter(ctx *cli.Context, config *config.Config) *writer {
 	}
 }
 
+func NewWriterNotConn(config *config.Config) *writer {
+	return &writer{
+		config: config,
+	}
+}
+
 func (w *writer) ResolveMessage(m Message) bool {
 	switch m.messageType {
 	case SolveSendTranstion1:

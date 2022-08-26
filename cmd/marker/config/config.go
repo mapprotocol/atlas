@@ -50,6 +50,7 @@ type Config struct {
 	BlsG1Pub   blscrypto.SerializedG1PublicKey
 	BLSProof   []byte
 	Value      uint64
+	Amount     string
 	Duration   int64
 	Commission uint64
 	Fixed      string
@@ -64,6 +65,9 @@ type Config struct {
 	ContractAddress       common.Address
 	SignerPriv            string
 	AccountAddress        common.Address //validator
+	SignerAddress         common.Address
+	Signature             string
+	Proof                 string
 	ImplementationAddress common.Address
 	Ip                    string
 	Port                  int
@@ -118,6 +122,15 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(SignerPrivFlag.Name) {
 		config.SignerPriv = ctx.String(SignerPrivFlag.Name)
 	}
+	if ctx.IsSet(SignerFlag.Name) {
+		config.SignerAddress = common.HexToAddress(ctx.String(SignerFlag.Name))
+	}
+	if ctx.IsSet(SignatureFlag.Name) {
+		config.Signature = ctx.String(SignatureFlag.Name)
+	}
+	if ctx.IsSet(ProofFlag.Name) {
+		config.Proof = ctx.String(ProofFlag.Name)
+	}
 	if ctx.IsSet(ImplementationAddressFlag.Name) {
 		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))
 	}
@@ -126,6 +139,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
+	}
+	if ctx.IsSet(AmountFlag.Name) {
+		config.Amount = ctx.String(AmountFlag.Name)
 	}
 	if ctx.IsSet(DurationFlag.Name) {
 		config.Duration = ctx.Int64(DurationFlag.Name)

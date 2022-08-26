@@ -55,7 +55,7 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, input)
 
 	chainID, _ := client.ChainID(context.Background())
-	logger.Info("Tx Info", "from", from, "nonce ", nonce, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
+	logger.Info("Tx Info", "from", from, "to", toAddress, "value", value, "nonce ", nonce, " gasLimit ", gasLimit, " gasPrice ", gasPrice, " chainID ", chainID)
 	signer := types.LatestSignerForChainID(chainID)
 	signedTx, err := types.SignTx(tx, signer, privateKey)
 	if err != nil {
@@ -75,7 +75,7 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 	logger := log.New("func", "getResult")
 	logger.Info("Please waiting ", " txHash ", txHash.String())
 	for {
-		time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Second)
 		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
 		if err != nil {
 			logger.Error("TransactionByHash", "error", err)
@@ -93,7 +93,7 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 		receipt *types.Receipt
 	)
 	for {
-		time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Second)
 		receipt, err = conn.TransactionReceipt(context.Background(), txHash)
 		if err == nil {
 			break
