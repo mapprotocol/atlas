@@ -52,10 +52,8 @@ func (c *core) checkMessage(msgCode uint64, msgView *istanbul.View) error {
 	if msgView == nil || msgView.Sequence == nil || msgView.Round == nil {
 		return errInvalidMessage
 	}
-	logger := c.newLogger("func", "checkMessage", "from", "-------------")
 	// First compare sequences. Prior seqs are always old. Future seqs are always future.
 	if msgView.Sequence.Cmp(c.current.Sequence()) < 0 {
-		logger.Error("equenceCmp", "msgView.Sequence", msgView.Sequence, "c.current.Sequence()", c.current.Sequence())
 		return errOldMessage
 	} else if msgView.Sequence.Cmp(c.current.Sequence()) > 0 {
 		return errFutureMessage
@@ -68,7 +66,6 @@ func (c *core) checkMessage(msgCode uint64, msgView *istanbul.View) error {
 
 	// Same sequence. Msgs for a round < desiredRound are always old.
 	if msgView.Round.Cmp(c.current.DesiredRound()) < 0 {
-		logger.Error("roundCmp", "msgView.Round", msgView.Round, "c.current", c.current.DesiredRound())
 		return errOldMessage
 	}
 

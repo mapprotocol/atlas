@@ -177,6 +177,10 @@ type Block struct {
 	// inter-peer block relay.
 	ReceivedAt   time.Time
 	ReceivedFrom interface{}
+	// compatible fields
+	uncles     []*Header
+	difficulty *big.Int
+	sha3Uncles common.Hash
 }
 
 // "external" block encoding. used for eth protocol, etc.
