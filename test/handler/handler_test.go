@@ -9,9 +9,10 @@ import (
 )
 
 var endpoint = "http://18.142.54.137:7445"
+var endpoint2 = "https://poc3-rpc.maplabs.io"
 
 func Test_getMgrMaintainerAddress(t *testing.T) {
-	getMgrMaintainerAddress(endpoint)
+	getMgrMaintainerAddress(endpoint2)
 }
 
 func Test_setMgrMaintainerAddress(t *testing.T) {
@@ -26,7 +27,7 @@ func Test_setMgrMaintainerAddress(t *testing.T) {
 }
 
 func Test_getTargetEpochPayment(t *testing.T) {
-	getTargetEpochPayment(endpoint)
+	getTargetEpochPayment(endpoint2)
 }
 
 // INFO [08-18|15:32:31.365] getTargetEpochPayment                    value=50,000,000,000,000,000,000,000
@@ -44,14 +45,14 @@ func Test_setTargetEpochPayment(t *testing.T) {
 	setTargetEpochPayment(endpoint, from, target, privateKey)
 }
 
-func Test_getElectableValidators(t *testing.T) {
-	getElectableValidators(endpoint)
+func Test_getRangeElectableValidators(t *testing.T) {
+	getElectableValidators(endpoint2)
 }
 
 // INFO [08-26|16:55:35.641] getElectableValidators                   minElectableValidators=1 maxElectableValidators=100
 // INFO [08-26|17:00:42.247] getElectableValidators                   minElectableValidators=1 maxElectableValidators=50
 
-func Test_setElectableValidators(t *testing.T) {
+func Test_setRangeElectableValidators(t *testing.T) {
 	from := common.HexToAddress("")
 	privateKey, err := crypto.ToECDSA(common.FromHex(""))
 	if err != nil {
