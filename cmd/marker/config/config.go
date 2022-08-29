@@ -74,6 +74,7 @@ type Config struct {
 	GasLimit              int64
 	Verbosity             string
 	NamePrefix            string
+	MetadataURL           string
 	LockedGoldParameters  LockedGoldParameters
 	AccountsParameters    AccountsParameters
 	ValidatorParameters   ValidatorParameters
@@ -166,6 +167,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(NamePrefixFlag.Name) {
 		config.NamePrefix = ctx.String(NamePrefixFlag.Name)
+	}
+	if ctx.IsSet(URLFlag.Name) {
+		config.MetadataURL = ctx.String(URLFlag.Name)
 	}
 	if ctx.IsSet(RPCListenAddrFlag.Name) {
 		config.Ip = ctx.String(RPCListenAddrFlag.Name)

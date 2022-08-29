@@ -434,6 +434,20 @@ var transferCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var getAccountMetadataURLCommand = cli.Command{
+	Name:   "getAccountMetadataURL",
+	Usage:  "get metadata url of account",
+	Action: MigrateFlags(getAccountMetadataURL),
+	Flags:  Flags,
+}
+
+var setAccountMetadataURLCommand = cli.Command{
+	Name:   "setAccountMetadataURL",
+	Usage:  "set metadata url of account",
+	Action: MigrateFlags(setAccountMetadataURL),
+	Flags:  Flags,
+}
+
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
 	log.Info("=== Register validator ===")
@@ -1574,6 +1588,28 @@ func transfer(_ *cli.Context, core *listener) error {
 	}
 	getResult(core.conn, txHash, false)
 	log.Info("transfer success", "from ", core.cfg.From, "to", core.cfg.TargetAddress, "amount", core.cfg.Amount)
+	return nil
+}
+
+func getAccountMetadataURL(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+	var ret interface{}
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, accountsAddress, nil, abiAccounts, "getMetadataURL", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("get account metadata url", "address", core.cfg.TargetAddress, "url", ret)
+	return nil
+}
+
+func setAccountMetadataURL(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+
+	log.Info("set account metadata url", "address", core.cfg.From, "url", core.cfg.MetadataURL)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setMetadataURL", core.cfg.MetadataURL)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
 	return nil
 }
 
