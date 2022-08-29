@@ -52,7 +52,7 @@ func init() {
 	app = cli.NewApp()
 	app.Usage = "Atlas Marker Tool"
 	app.Name = "marker"
-	app.Version = "1.0.0"
+	app.Version = "1.1.0"
 	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
 	app.Action = MigrateFlags(registerValidator)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
