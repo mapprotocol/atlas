@@ -69,8 +69,7 @@ type Config struct {
 	Signature             string
 	Proof                 string
 	ImplementationAddress common.Address
-	Ip                    string
-	Port                  int
+	RPCAddr               string
 	GasLimit              int64
 	Verbosity             string
 	NamePrefix            string
@@ -172,10 +171,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		config.MetadataURL = ctx.String(URLFlag.Name)
 	}
 	if ctx.IsSet(RPCListenAddrFlag.Name) {
-		config.Ip = ctx.String(RPCListenAddrFlag.Name)
-	}
-	if ctx.IsSet(RPCPortFlag.Name) {
-		config.Port = ctx.Int(RPCPortFlag.Name)
+		config.RPCAddr = ctx.String(RPCListenAddrFlag.Name)
 	}
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
