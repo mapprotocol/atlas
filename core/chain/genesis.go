@@ -406,9 +406,16 @@ func DefaultGenesisBlock() *Genesis {
 // validator4  0x6c5938b49bacde73a8db7c3a7da208846898bff5 password ""
 // keystore path  atlas/cmd/testnet_genesis
 func DefaultTestnetGenesisBlock() *Genesis {
-	gs := genesisTestnetRegisterProxyContract()
+	gs := genesisPOC2Contract()
+	l := len(gs)
+	log.Info("Writing Test-net poc2 alloc", "alloc count", l)
+	gs1 := genesisTestnetRegisterProxyContract()
+	for addr, allc := range gs1 {
+		// add genesis contract to allc
+		gs[addr] = allc
+	}
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
-	preAddr := common.HexToAddress("0x5F78EC486B721BAAE4aDD59A9bF3494C080A43C4")
+	preAddr := common.HexToAddress("0x1c0edab88dbb72b119039c4d14b1663525b3ac15")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 
 	return &Genesis{

@@ -8,7 +8,7 @@ import (
 
 const (
 	MainNetChainID uint64 = 22776
-	TestNetChainID uint64 = 20212
+	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
 	Epoch          uint64 = 50000
 )
@@ -55,7 +55,7 @@ var (
 	}
 
 	TestnetConfig = &ChainConfig{
-		ChainID:             big.NewInt(int64(TestNetChainID)),
+		ChainID:             big.NewInt(212),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
@@ -70,9 +70,9 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(2000),
+		EnableRewardBlock:   big.NewInt(3000),
 		Istanbul: &IstanbulConfig{
-			Epoch:          1000,
+			Epoch:          2000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
