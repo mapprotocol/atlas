@@ -29,6 +29,7 @@ var (
 		config.CommissionFlag,
 		config.RelayerfFlag,
 		config.NamePrefixFlag,
+		config.URLFlag,
 		config.VoteNumFlag,
 		config.TopNumFlag,
 		config.LockedNumFlag,
@@ -119,6 +120,8 @@ func init() {
 		setMgrMaintainerAddressCommand,
 		getMgrMaintainerAddressCommand,
 		transferCommand,
+		getAccountMetadataURLCommand,
+		setAccountMetadataURLCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 

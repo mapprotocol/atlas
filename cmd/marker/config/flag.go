@@ -24,6 +24,10 @@ var (
 		Name:  "namePrefix",
 		Usage: "namePrefix",
 	}
+	URLFlag = cli.StringFlag{
+		Name:  "url",
+		Usage: "metadata url of account",
+	}
 	CommissionFlag = cli.Uint64Flag{
 		Name:  "commission",
 		Usage: "register validator param",
