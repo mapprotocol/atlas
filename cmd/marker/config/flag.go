@@ -71,11 +71,6 @@ var (
 		Usage: "HTTP-RPC server listening interface",
 		Value: "localhost",
 	}
-	RPCPortFlag = cli.IntFlag{
-		Name:  "rpcport",
-		Usage: "HTTP-RPC server listening Port",
-		Value: 8545,
-	}
 	ValueFlag = cli.Uint64Flag{
 		Name:  "value",
 		Usage: "value units one eth",

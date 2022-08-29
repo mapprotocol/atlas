@@ -21,7 +21,6 @@ var (
 		config.KeyFlag,
 		config.KeyStoreFlag,
 		config.RPCListenAddrFlag,
-		config.RPCPortFlag,
 		config.ValueFlag,
 		config.AmountFlag,
 		config.DurationFlag,
