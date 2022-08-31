@@ -448,6 +448,20 @@ var setAccountMetadataURLCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var getAccountNameCommand = cli.Command{
+	Name:   "getAccountName",
+	Usage:  "get name of account",
+	Action: MigrateFlags(getAccountName),
+	Flags:  Flags,
+}
+
+var setAccountNameCommand = cli.Command{
+	Name:   "setAccountName",
+	Usage:  "set name of account",
+	Action: MigrateFlags(setAccountName),
+	Flags:  Flags,
+}
+
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
 	log.Info("=== Register validator ===")
@@ -682,7 +696,7 @@ func createAccount(core *listener) {
 	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
 
 	logger := log.New("func", "createAccount")
-	logger.Info("Create account", "address", core.cfg.From, "name", core.cfg.NamePrefix)
+	logger.Info("Create account", "address", core.cfg.From, "name", core.cfg.Name)
 	log.Info("=== create Account ===")
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "createAccount")
 	go core.writer.ResolveMessage(m)
@@ -692,7 +706,7 @@ func createAccount(core *listener) {
 	}
 
 	log.Info("=== setName name ===")
-	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.NamePrefix)
+	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.Name)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	if !isContinueError {
@@ -1608,6 +1622,27 @@ func setAccountMetadataURL(_ *cli.Context, core *listener) error {
 
 	log.Info("set account metadata url", "address", core.cfg.From, "url", core.cfg.MetadataURL)
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setMetadataURL", core.cfg.MetadataURL)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func getAccountName(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+	var ret interface{}
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, accountsAddress, nil, abiAccounts, "getName", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("get name", "address", core.cfg.TargetAddress, "name", ret)
+	return nil
+}
+
+func setAccountName(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+	log.Info("set name", "address", core.cfg.From, "name", core.cfg.Name)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.Name)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil

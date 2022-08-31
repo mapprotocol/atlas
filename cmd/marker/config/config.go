@@ -71,9 +71,9 @@ type Config struct {
 	ImplementationAddress common.Address
 	RPCAddr               string
 	GasLimit              int64
-	Verbosity             string
-	NamePrefix            string
-	MetadataURL           string
+	Verbosity   string
+	Name        string
+	MetadataURL string
 	LockedGoldParameters  LockedGoldParameters
 	AccountsParameters    AccountsParameters
 	ValidatorParameters   ValidatorParameters
@@ -92,7 +92,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config.TargetAddress = params.ZeroAddress
 	config.Commission = 1000000 //default 1  be relative to 1000,000
 	config.Verbosity = "3"
-	config.NamePrefix = "validator"
+	config.Name = "validator"
 
 	//-----------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {
@@ -164,8 +164,8 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(VerbosityFlag.Name) {
 		config.Verbosity = ctx.String(VerbosityFlag.Name)
 	}
-	if ctx.IsSet(NamePrefixFlag.Name) {
-		config.NamePrefix = ctx.String(NamePrefixFlag.Name)
+	if ctx.IsSet(NameFlag.Name) {
+		config.Name = ctx.String(NameFlag.Name)
 	}
 	if ctx.IsSet(URLFlag.Name) {
 		config.MetadataURL = ctx.String(URLFlag.Name)

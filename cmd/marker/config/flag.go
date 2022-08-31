@@ -20,9 +20,9 @@ var (
 		Usage: "Keystore file`s password",
 	}
 
-	NamePrefixFlag = cli.StringFlag{
-		Name:  "namePrefix",
-		Usage: "namePrefix",
+	NameFlag = cli.StringFlag{
+		Name:  "name",
+		Usage: "name of account",
 	}
 	URLFlag = cli.StringFlag{
 		Name:  "url",

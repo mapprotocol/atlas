@@ -27,7 +27,7 @@ var (
 		config.PasswordFlag,
 		config.CommissionFlag,
 		config.RelayerfFlag,
-		config.NamePrefixFlag,
+		config.NameFlag,
 		config.URLFlag,
 		config.VoteNumFlag,
 		config.TopNumFlag,
@@ -121,6 +121,8 @@ func init() {
 		transferCommand,
 		getAccountMetadataURLCommand,
 		setAccountMetadataURLCommand,
+		getAccountNameCommand,
+		setAccountNameCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 
