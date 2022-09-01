@@ -32,7 +32,7 @@ const (
 
 // ProtocolName is the official short name of the `snap` protocol used during
 // devp2p capability negotiation.
-const ProtocolName = "mapsnap"
+const ProtocolName = "snap"
 
 // ProtocolVersions are the supported versions of the `snap` protocol (first
 // is primary).
