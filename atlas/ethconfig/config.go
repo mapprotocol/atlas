@@ -66,7 +66,7 @@ var Defaults = Config{
 	TrieCleanCacheRejournal: 60 * time.Minute,
 	TrieDirtyCache:          256,
 	TrieTimeout:             60 * time.Minute,
-	SnapshotCache:           102,
+	SnapshotCache:           0,
 	GatewayFee:              big.NewInt(0),
 	Miner: miner.Config{
 		GasFloor: 8000000,
@@ -206,5 +206,5 @@ type Config struct {
 	OverrideLondon *big.Int `toml:",omitempty"`
 	// Churrito block override (TODO: remove after the fork)
 	OverrideChurrito *big.Int `toml:",omitempty"`
-	Preimages bool
+	Preimages        bool
 }
