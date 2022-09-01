@@ -657,7 +657,7 @@ func setNextCommissionUpdate(_ *cli.Context, core *listener) error {
 }
 
 func updateCommission(_ *cli.Context, core *listener) error {
-	log.Info("=== setNextCommissionUpdate ===", "commission", core.cfg.Commission)
+	log.Info("=== updateCommission ===")
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "updateCommission")
