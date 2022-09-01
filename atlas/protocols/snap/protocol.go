@@ -21,8 +21,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
 )
 
 // Constants to match up protocol versions and messages
@@ -32,7 +32,7 @@ const (
 
 // ProtocolName is the official short name of the `snap` protocol used during
 // devp2p capability negotiation.
-const ProtocolName = "snap"
+const ProtocolName = "mapsnap"
 
 // ProtocolVersions are the supported versions of the `snap` protocol (first
 // is primary).
