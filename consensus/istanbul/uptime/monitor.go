@@ -105,6 +105,44 @@ func (um *Monitor) ComputeValidatorsUptime(epoch uint64, valSetSize int) ([]*big
 	return uptimes, nil
 }
 
+func (um *Monitor) GetValidatorsUptime(epoch uint64, valSetSize int) ([]UptimeEntry, []*big.Int, error) {
+	logger := um.logger.New("func", "Backend.updateValidatorScores", "epoch", epoch)
+	logger.Trace("Updating validator scores")
+
+	// The totalMonitoredBlocks are the total number of block on which we monitor uptime for the epoch
+	totalMonitoredBlocks := um.MonitoringWindow(epoch).Size()
+
+	uptimes := make([]*big.Int, 0, valSetSize)
+	accumulated := um.store.ReadAccumulatedEpochUptime(epoch)
+
+	if accumulated == nil {
+		err := errors.New("accumulated uptimes not found")
+		logger.Error(err.Error())
+		return nil, nil, err
+	}
+
+	for i, entry := range accumulated.Entries {
+		if i >= valSetSize {
+			break
+		}
+		if entry.UpBlocks > totalMonitoredBlocks {
+			logger.Error("UpBlocks exceeds max possible", "upBlocks", entry.UpBlocks, "totalMonitoredBlocks", totalMonitoredBlocks, "valIdx", i)
+			uptimes = append(uptimes, params.Fixidity1)
+			continue
+		}
+		numerator := big.NewInt(0).Mul(big.NewInt(int64(entry.UpBlocks)), params.Fixidity1)
+
+		uptimes = append(uptimes, big.NewInt(0).Div(numerator, big.NewInt(int64(totalMonitoredBlocks))))
+	}
+
+	if len(uptimes) < valSetSize {
+		err := fmt.Errorf("accumulated uptimes found got: %d, want: %d", len(uptimes), valSetSize)
+		logger.Error(err.Error())
+		return nil, nil, err
+	}
+	return accumulated.Entries, uptimes, nil
+}
+
 // ProcessBlock uses the block's signature bitmap (which encodes who signed the parent block) to update the epoch's Uptime data
 func (um *Monitor) ProcessBlock(block *types.Block) error {
 	// The epoch's first block's aggregated parent signatures is for the previous epoch's valset.
