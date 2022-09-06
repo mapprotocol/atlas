@@ -114,3 +114,8 @@ func MustBigInt(str string) *big.Int {
 	}
 	return i
 }
+
+func Float64(a, b *big.Int) float64 {
+	f, _ := new(big.Rat).SetFrac(a, b).Float64()
+	return f
+}

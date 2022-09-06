@@ -30,9 +30,12 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/replica"
 	"github.com/mapprotocol/atlas/consensus/istanbul/core"
 	"github.com/mapprotocol/atlas/consensus/istanbul/proxy"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // API is a user facing RPC API to dump Istanbul state
@@ -293,4 +296,46 @@ func (api *API) GetLookbackWindow(number *rpc.BlockNumber) (uint64, error) {
 	}
 
 	return api.istanbul.LookbackWindow(header, state), nil
+}
+
+func (api *API) Uptimes() (map[string]interface{}, error) {
+	header := api.chain.CurrentHeader()
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+
+	latest := rpc.LatestBlockNumber
+	signers, err := api.GetValidators(&latest)
+	if len(signers) == 0 {
+		return nil, errors.New("unable to fetch validator set")
+	}
+
+	state, err := api.istanbul.stateAt(header.Hash())
+	if err != nil {
+		return nil, err
+	}
+	lookBackWindow := api.istanbul.LookbackWindow(header, state)
+	fmt.Println("============================== window: ", lookBackWindow)
+	fmt.Println("============================== epoch 1: ", api.istanbul.config.Epoch)
+	monitor := uptime.NewMonitor(store.New(api.istanbul.db), api.istanbul.config.Epoch, lookBackWindow)
+	epochNum := istanbul.GetEpochNumber(header.Number.Uint64(), api.istanbul.config.Epoch)
+
+	entries, uptimes, err := monitor.GetValidatorsUptime(epochNum, len(signers))
+	if err != nil {
+		return nil, err
+	}
+	ret := make(map[string]interface{})
+	ret["epoch"] = epochNum
+	ret["number"] = header.Number
+	ret["hash"] = header.Hash()
+	us := make(map[string]interface{})
+	for i, u := range uptimes {
+		us[signers[i].Hex()] = map[string]interface{}{
+			"uptime":   params.Float64(u, params.Fixidity1),
+			"upBlocks": entries[i].UpBlocks,
+		}
+	}
+	ret["uptimes"] = us
+
+	return ret, nil
 }
