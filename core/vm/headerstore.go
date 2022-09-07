@@ -93,7 +93,7 @@ func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, 
 		log.Error("copy input failed", "err", err)
 		return nil, err
 	}
-	log.Info("updateBlockHeader receipt", "input", common.Bytes2Hex(input))
+	log.Info("updateBlockHeader receipt", "input", common.Bytes2Hex(blockHeader))
 	if err := rlp.DecodeBytes(blockHeader, &args); err != nil {
 		log.Error("rlp decode input failed", "err", err)
 		return nil, err
