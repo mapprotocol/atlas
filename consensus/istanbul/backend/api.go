@@ -304,23 +304,26 @@ func (api *API) Uptimes() (map[string]interface{}, error) {
 		return nil, errUnknownBlock
 	}
 
-	latest := rpc.LatestBlockNumber
-	signers, err := api.GetValidators(&latest)
-	if len(signers) == 0 {
-		return nil, errors.New("unable to fetch validator set")
-	}
-
 	state, err := api.istanbul.stateAt(header.Hash())
 	if err != nil {
 		return nil, err
 	}
-	lookBackWindow := api.istanbul.LookbackWindow(header, state)
-	fmt.Println("============================== window: ", lookBackWindow)
-	fmt.Println("============================== epoch 1: ", api.istanbul.config.Epoch)
-	monitor := uptime.NewMonitor(store.New(api.istanbul.db), api.istanbul.config.Epoch, lookBackWindow)
-	epochNum := istanbul.GetEpochNumber(header.Number.Uint64(), api.istanbul.config.Epoch)
 
-	entries, uptimes, err := monitor.GetValidatorsUptime(epochNum, len(signers))
+	signers := api.istanbul.GetValidators(big.NewInt(header.Number.Int64()-1), header.ParentHash)
+	if len(signers) == 0 {
+		return nil, errors.New("unable to fetch validators")
+	}
+	vmRunner := api.istanbul.chain.NewEVMRunner(header, state)
+	accounts, err := api.istanbul.GetAccountsFromSigners(vmRunner, signers)
+	if err != nil {
+		return nil, err
+	}
+
+	lookBackWindow := api.istanbul.LookbackWindow(header, state)
+	monitor := uptime.NewMonitor(store.New(api.istanbul.db), api.istanbul.EpochSize(), lookBackWindow)
+	epochNum := istanbul.GetEpochNumber(header.Number.Uint64(), api.istanbul.EpochSize())
+
+	entries, uptimes, err := monitor.GetValidatorsUptime(epochNum, len(accounts))
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +333,7 @@ func (api *API) Uptimes() (map[string]interface{}, error) {
 	ret["hash"] = header.Hash()
 	us := make(map[string]interface{})
 	for i, u := range uptimes {
-		us[signers[i].Hex()] = map[string]interface{}{
+		us[accounts[i].Hex()] = map[string]interface{}{
 			"uptime":   params.Float64(u, params.Fixidity1),
 			"upBlocks": entries[i].UpBlocks,
 		}
