@@ -346,6 +346,7 @@ func (api *API) Activity() (map[string]interface{}, error) {
 	}
 
 	for i, u := range uptimes {
+		fmt.Printf("============================== validator: %s upBlocks: %d, lookBackWindow: %d", accounts[i].Hex(), entries[i].UpBlocks, lookBackWindow)
 		us[accounts[i].Hex()] = map[string]interface{}{
 			"uptime":   u,
 			"upBlocks": entries[i].UpBlocks + lookBackWindow,
