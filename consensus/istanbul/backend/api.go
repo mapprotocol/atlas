@@ -30,6 +30,8 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/replica"
 	"github.com/mapprotocol/atlas/consensus/istanbul/core"
 	"github.com/mapprotocol/atlas/consensus/istanbul/proxy"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
+	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
@@ -293,4 +295,62 @@ func (api *API) GetLookbackWindow(number *rpc.BlockNumber) (uint64, error) {
 	}
 
 	return api.istanbul.LookbackWindow(header, state), nil
+}
+
+func (api *API) Activity() (map[string]interface{}, error) {
+	header := api.chain.CurrentHeader()
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+
+	state, err := api.istanbul.stateAt(header.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	signers := api.istanbul.GetValidators(big.NewInt(header.Number.Int64()-1), header.ParentHash)
+	if len(signers) == 0 {
+		return nil, errors.New("unable to fetch validators")
+	}
+	vmRunner := api.istanbul.chain.NewEVMRunner(header, state)
+	accounts, err := api.istanbul.GetAccountsFromSigners(vmRunner, signers)
+	if err != nil {
+		return nil, err
+	}
+
+	epochNum := istanbul.GetEpochNumber(header.Number.Uint64(), api.istanbul.EpochSize())
+	numberWithinEpoch := istanbul.GetNumberWithinEpoch(header.Number.Uint64(), api.istanbul.EpochSize())
+
+	ret := make(map[string]interface{})
+	ret["epoch"] = epochNum
+	ret["number"] = header.Number
+	ret["hash"] = header.Hash()
+	us := make(map[string]interface{})
+	if numberWithinEpoch <= 12 {
+		for _, acc := range accounts {
+			us[acc.Hex()] = map[string]interface{}{
+				"uptime":   1,
+				"upBlocks": numberWithinEpoch,
+			}
+		}
+		ret["uptimes"] = us
+		return ret, nil
+	}
+
+	lookBackWindow := api.istanbul.LookbackWindow(header, state)
+	monitor := uptime.NewMonitor(store.New(api.istanbul.db), api.istanbul.EpochSize(), lookBackWindow)
+
+	entries, uptimes, err := monitor.GetValidatorsActivity(epochNum, numberWithinEpoch, len(accounts))
+	if err != nil {
+		return nil, err
+	}
+
+	for i, u := range uptimes {
+		us[accounts[i].Hex()] = map[string]interface{}{
+			"uptime":   u,
+			"upBlocks": entries[i].UpBlocks + lookBackWindow,
+		}
+	}
+	ret["uptimes"] = us
+	return ret, nil
 }
