@@ -35,7 +35,6 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	"github.com/mapprotocol/atlas/params"
 )
 
 // API is a user facing RPC API to dump Istanbul state
@@ -298,7 +297,7 @@ func (api *API) GetLookbackWindow(number *rpc.BlockNumber) (uint64, error) {
 	return api.istanbul.LookbackWindow(header, state), nil
 }
 
-func (api *API) Uptimes() (map[string]interface{}, error) {
+func (api *API) Activity() (map[string]interface{}, error) {
 	header := api.chain.CurrentHeader()
 	if header == nil {
 		return nil, errUnknownBlock
@@ -319,26 +318,39 @@ func (api *API) Uptimes() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	lookBackWindow := api.istanbul.LookbackWindow(header, state)
-	monitor := uptime.NewMonitor(store.New(api.istanbul.db), api.istanbul.EpochSize(), lookBackWindow)
 	epochNum := istanbul.GetEpochNumber(header.Number.Uint64(), api.istanbul.EpochSize())
+	numberWithinEpoch := istanbul.GetNumberWithinEpoch(header.Number.Uint64(), api.istanbul.EpochSize())
 
-	entries, uptimes, err := monitor.GetValidatorsUptime(epochNum, len(accounts))
-	if err != nil {
-		return nil, err
-	}
 	ret := make(map[string]interface{})
 	ret["epoch"] = epochNum
 	ret["number"] = header.Number
 	ret["hash"] = header.Hash()
 	us := make(map[string]interface{})
+	if numberWithinEpoch <= 12 {
+		for _, acc := range accounts {
+			us[acc.Hex()] = map[string]interface{}{
+				"uptime":   1,
+				"upBlocks": numberWithinEpoch,
+			}
+		}
+		ret["uptimes"] = us
+		return ret, nil
+	}
+
+	lookBackWindow := api.istanbul.LookbackWindow(header, state)
+	monitor := uptime.NewMonitor(store.New(api.istanbul.db), api.istanbul.EpochSize(), lookBackWindow)
+
+	entries, uptimes, err := monitor.GetValidatorsActivity(epochNum, numberWithinEpoch, len(accounts))
+	if err != nil {
+		return nil, err
+	}
+
 	for i, u := range uptimes {
 		us[accounts[i].Hex()] = map[string]interface{}{
-			"uptime":   params.Float64(u, params.Fixidity1),
-			"upBlocks": entries[i].UpBlocks,
+			"uptime":   u,
+			"upBlocks": entries[i].UpBlocks + lookBackWindow,
 		}
 	}
 	ret["uptimes"] = us
-
 	return ret, nil
 }

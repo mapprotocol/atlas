@@ -261,10 +261,9 @@ func (sb *Backend) GetAccountsFromSigners(vmRunner vm.EVMRunner, signers []istan
 	for i := 0; i < len(signers); i++ {
 		regVals, err := accounts.GetSignerToAccountMethod(vmRunner, signers[i].Address())
 		if err != nil {
-			sb.logger.Error("will distributeEpochRewards", "validator", regVals, "err", err)
+			sb.logger.Error("failed to get account from signer", "signer", signers[i], "err", err)
 			return accountVals, err
 		}
-		sb.logger.Info("will distributeEpochRewards", "validator", regVals)
 		accountVals = append(accountVals, regVals)
 	}
 	return accountVals, nil

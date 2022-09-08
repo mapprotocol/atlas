@@ -105,16 +105,11 @@ func (um *Monitor) ComputeValidatorsUptime(epoch uint64, valSetSize int) ([]*big
 	return uptimes, nil
 }
 
-func (um *Monitor) GetValidatorsUptime(epoch uint64, valSetSize int) ([]UptimeEntry, []*big.Int, error) {
-	logger := um.logger.New("func", "Backend.updateValidatorScores", "epoch", epoch)
-	logger.Trace("Updating validator scores")
+func (um *Monitor) GetValidatorsActivity(epoch, numberWithinEpoch uint64, valSetSize int) ([]UptimeEntry, []float64, error) {
+	logger := um.logger.New("func", "Monitor.GetValidatorsActivity", "epoch", epoch)
 
-	// The totalMonitoredBlocks are the total number of block on which we monitor uptime for the epoch
-	totalMonitoredBlocks := um.MonitoringWindow(epoch).Size()
-
-	uptimes := make([]*big.Int, 0, valSetSize)
+	uptimes := make([]float64, 0, valSetSize)
 	accumulated := um.store.ReadAccumulatedEpochUptime(epoch)
-
 	if accumulated == nil {
 		err := errors.New("accumulated uptimes not found")
 		logger.Error(err.Error())
@@ -125,14 +120,13 @@ func (um *Monitor) GetValidatorsUptime(epoch uint64, valSetSize int) ([]UptimeEn
 		if i >= valSetSize {
 			break
 		}
-		if entry.UpBlocks > totalMonitoredBlocks {
-			logger.Error("UpBlocks exceeds max possible", "upBlocks", entry.UpBlocks, "totalMonitoredBlocks", totalMonitoredBlocks, "valIdx", i)
-			uptimes = append(uptimes, params.Fixidity1)
+		if entry.UpBlocks > numberWithinEpoch {
+			logger.Error("UpBlocks exceeds max possible", "upBlocks", entry.UpBlocks, "numberWithinEpoch", numberWithinEpoch, "valIdx", i)
+			uptimes = append(uptimes, 1)
 			continue
 		}
-		numerator := big.NewInt(0).Mul(big.NewInt(int64(entry.UpBlocks)), params.Fixidity1)
-
-		uptimes = append(uptimes, big.NewInt(0).Div(numerator, big.NewInt(int64(totalMonitoredBlocks))))
+		numerator := float64(entry.UpBlocks + um.lookbackWindow)
+		uptimes = append(uptimes, numerator/float64(numberWithinEpoch))
 	}
 
 	if len(uptimes) < valSetSize {
