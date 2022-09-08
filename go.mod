@@ -28,7 +28,8 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/holiman/bloomfilter/v2 v2.0.3
 	github.com/holiman/uint256 v1.2.0
-	github.com/influxdata/influxdb v1.8.5 // indirect
+	github.com/influxdata/influxdb v1.8.5
+	github.com/influxdata/influxdb-client-go/v2 v2.4.0
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/loinfish/azure-storage-go v0.0.1

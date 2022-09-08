@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/ethereum/go-ethereum/trie"
@@ -31,6 +30,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/metrics"
 	"github.com/mapprotocol/atlas/p2p"
 	"github.com/mapprotocol/atlas/params"
 )

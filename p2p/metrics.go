@@ -1,8 +1,9 @@
 package p2p
 
 import (
-	"github.com/ethereum/go-ethereum/metrics"
 	"net"
+
+	"github.com/mapprotocol/atlas/metrics"
 )
 
 const (
