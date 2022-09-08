@@ -105,6 +105,38 @@ func (um *Monitor) ComputeValidatorsUptime(epoch uint64, valSetSize int) ([]*big
 	return uptimes, nil
 }
 
+func (um *Monitor) GetValidatorsActivity(epoch, numberWithinEpoch uint64, valSetSize int) ([]UptimeEntry, []float64, error) {
+	logger := um.logger.New("func", "Monitor.GetValidatorsActivity", "epoch", epoch)
+
+	uptimes := make([]float64, 0, valSetSize)
+	accumulated := um.store.ReadAccumulatedEpochUptime(epoch)
+	if accumulated == nil {
+		err := errors.New("accumulated uptimes not found")
+		logger.Error(err.Error())
+		return nil, nil, err
+	}
+
+	for i, entry := range accumulated.Entries {
+		if i >= valSetSize {
+			break
+		}
+		if entry.UpBlocks > numberWithinEpoch {
+			logger.Error("UpBlocks exceeds max possible", "upBlocks", entry.UpBlocks, "numberWithinEpoch", numberWithinEpoch, "valIdx", i)
+			uptimes = append(uptimes, 1)
+			continue
+		}
+		numerator := float64(entry.UpBlocks + um.lookbackWindow)
+		uptimes = append(uptimes, numerator/float64(numberWithinEpoch))
+	}
+
+	if len(uptimes) < valSetSize {
+		err := fmt.Errorf("accumulated uptimes found got: %d, want: %d", len(uptimes), valSetSize)
+		logger.Error(err.Error())
+		return nil, nil, err
+	}
+	return accumulated.Entries, uptimes, nil
+}
+
 // ProcessBlock uses the block's signature bitmap (which encodes who signed the parent block) to update the epoch's Uptime data
 func (um *Monitor) ProcessBlock(block *types.Block) error {
 	// The epoch's first block's aggregated parent signatures is for the previous epoch's valset.
