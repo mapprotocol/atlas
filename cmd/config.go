@@ -26,7 +26,6 @@ import (
 	"gopkg.in/urfave/cli.v1"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/naoina/toml"
 
 	"github.com/mapprotocol/atlas/apis/atlasapi"
@@ -34,6 +33,7 @@ import (
 	"github.com/mapprotocol/atlas/atlas/ethconfig"
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/cmd/utils"
+	"github.com/mapprotocol/atlas/metrics"
 	params2 "github.com/mapprotocol/atlas/params"
 )
 

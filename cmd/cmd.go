@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"gopkg.in/urfave/cli.v1"
 
 	"github.com/mapprotocol/atlas/accounts"
@@ -41,6 +40,7 @@ import (
 	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/mapprotocol/atlas/helper/debug"
 	"github.com/mapprotocol/atlas/helper/flags"
+	"github.com/mapprotocol/atlas/metrics"
 )
 
 const (

@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/metrics"
+
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/core/vm"
+	"github.com/mapprotocol/atlas/metrics"
 )
 
 var (

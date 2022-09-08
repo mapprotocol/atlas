@@ -34,7 +34,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
@@ -51,6 +50,7 @@ import (
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/core/vm/vmcontext"
 	"github.com/mapprotocol/atlas/internal/syncx"
+	"github.com/mapprotocol/atlas/metrics"
 	"github.com/mapprotocol/atlas/params"
 )
 
