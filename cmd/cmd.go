@@ -19,6 +19,8 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"sort"
 	"strconv"
@@ -239,6 +241,13 @@ func init() {
 }
 
 func Execute() {
+	go func() {
+		//内网可访问的pprof地址
+		err := http.ListenAndServe("127.0.0.1:8081", nil)
+		if err != nil {
+			fmt.Println("listen pprof failed , err is ", err)
+		}
+	}()
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
