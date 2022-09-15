@@ -23,7 +23,7 @@ import (
 
 const (
 	StoreCacheSize = 20
-	MaxHeaderLimit = 200000
+	MaxHeaderLimit = 5000
 	SplicingSymbol = "-"
 )
 
