@@ -4,20 +4,21 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	lru "github.com/hashicorp/golang-lru"
-	"github.com/mapprotocol/atlas/tools/rlp"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	ethrlp "github.com/ethereum/go-ethereum/rlp"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 	"github.com/mapprotocol/atlas/tools"
+	"github.com/mapprotocol/atlas/tools/rlp"
 )
 
 const (
@@ -144,7 +145,7 @@ func InitHeaderStore(state types.StateDB, header *Header, td *big.Int) error {
 
 func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, td *big.Int) error {
 	var header Header
-	if err := rlp.DecodeBytes(ethHeaders, &header); err != nil {
+	if err := ethrlp.DecodeBytes(ethHeaders, &header); err != nil {
 		log.Error("rlp decode ethereum header failed.", "err", err)
 		return chains.ErrRLPDecode
 	}
@@ -236,8 +237,8 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		return nil
 	}
 
-	if err := rlp.DecodeBytes(data, &h); err != nil {
-		log.Error("HeaderStore RLP decode failed", "err", err, "HeaderStore", data)
+	if err := ethrlp.DecodeBytes(data, &h); err != nil {
+		log.Error("HeaderStore RLP decode failed", "err", err)
 		return fmt.Errorf("HeaderStore RLP decode failed, error: %s", err.Error())
 	}
 
@@ -324,7 +325,7 @@ func (hs *HeaderStore) InsertHeaders(db types.StateDB, ethHeaders []byte) ([]*pa
 
 func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (*headerWriteResult, error) {
 	var headers []*Header
-	if err := rlp.DecodeBytes(ethHeaders, &headers); err != nil {
+	if err := ethrlp.DecodeBytes(ethHeaders, &headers); err != nil {
 		log.Error("rlp decode ethereum headers failed.", "err", err)
 		return &headerWriteResult{}, chains.ErrRLPDecode
 	}
