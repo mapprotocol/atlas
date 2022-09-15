@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	lru "github.com/hashicorp/golang-lru"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/core/types"
@@ -149,7 +148,7 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 		log.Error("rlp decode ethereum header failed.", "err", err)
 		return chains.ErrRLPDecode
 	}
-// pointer given to Decode must not be nil
+	// pointer given to Decode must not be nil
 	hash := header.Hash()
 	number := header.Number.Uint64()
 	key := headerKey(number, hash)
@@ -184,7 +183,7 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		key     = common.BytesToHash(address[:])
 	)
 
-	data, err := rlp.EncodeToBytes(hs)
+	data, err := tools.EncodeToBytes(hs)
 	if err != nil {
 		log.Error("Failed to RLP encode HeaderStore", "err", err)
 		return err
@@ -196,6 +195,7 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 	if err != nil {
 		return err
 	}
+	log.Info("data", "len", len(data))
 	hash := tools.RlpHash(data)
 	storeCache.Cache.Add(hash, clone)
 	return nil
