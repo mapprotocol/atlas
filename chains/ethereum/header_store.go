@@ -196,6 +196,11 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 	log.Info("data", "len", len(data))
+	total := int64(0)
+	for _, v := range hs.Headers {
+		total += int64(len(v))
+	}
+	log.Info("headers --------- ", "total", total, "headers", len(hs.Headers))
 	hash := tools.RlpHash(data)
 	storeCache.Cache.Add(hash, clone)
 	return nil
