@@ -189,19 +189,25 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 
-	state.SetPOWState(address, key, data)
+	newData := make([]byte, 0, len(data))
+	for _, d := range data {
+		newData = append(newData, d)
+	}
+	data = nil
+
+	state.SetPOWState(address, key, newData)
 
 	clone, err := cloneHeaderStore(hs)
 	if err != nil {
 		return err
 	}
-	log.Info("data", "len", len(data))
+	log.Info("data", "len", len(newData))
 	total := int64(0)
 	for _, v := range hs.Headers {
 		total += int64(len(v))
 	}
 	log.Info("headers --------- ", "total", total, "headers", len(hs.Headers))
-	hash := tools.RlpHash(data)
+	hash := tools.RlpHash(newData)
 	storeCache.Cache.Add(hash, clone)
 	return nil
 }
