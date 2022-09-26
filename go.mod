@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
+	github.com/MadBase/MadNet v0.5.0
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/allegro/bigcache v1.2.1 // indirect
@@ -58,4 +59,5 @@ require (
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6
 	gopkg.in/urfave/cli.v1 v1.20.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gotest.tools v2.2.0+incompatible
 )
