@@ -1194,7 +1194,8 @@ func (tv *verify) RequiredGas(input []byte) uint64 {
 }
 
 func (tv *verify) Run(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	return RunTxVerify(evm, contract, input)
+	return nil, errors.New("this method is Outmoded")
+	//return RunTxVerify(evm, contract, input)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

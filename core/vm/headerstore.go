@@ -48,6 +48,8 @@ func RunHeaderStore(evm *EVM, contract *Contract, input []byte) (ret []byte, err
 	switch method.Name {
 	case Save:
 		ret, err = updateBlockHeader(evm, contract, data)
+	case VerifyProof:
+		ret, err = verifyProofData(evm, contract, data)
 	case Reset:
 		ret, err = reset(evm, contract, data)
 	case CurNbrAndHash:
