@@ -1194,8 +1194,8 @@ func (tv *verify) RequiredGas(input []byte) uint64 {
 }
 
 func (tv *verify) Run(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
-	return nil, errors.New("this method is Outmoded")
-	//return RunTxVerify(evm, contract, input)
+	//return nil, errors.New("this method is Outmoded") // todo 下面注释掉，就不能通过 0x0000000000747856657269667941646472657373 请求verify
+	return RunTxVerify(evm, contract, input)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
