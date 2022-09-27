@@ -20,9 +20,13 @@ var (
 		Usage: "Keystore file`s password",
 	}
 
-	NamePrefixFlag = cli.StringFlag{
-		Name:  "namePrefix",
-		Usage: "namePrefix",
+	NameFlag = cli.StringFlag{
+		Name:  "name",
+		Usage: "name of account",
+	}
+	URLFlag = cli.StringFlag{
+		Name:  "url",
+		Usage: "metadata url of account",
 	}
 	CommissionFlag = cli.Uint64Flag{
 		Name:  "commission",
@@ -67,15 +71,15 @@ var (
 		Usage: "HTTP-RPC server listening interface",
 		Value: "localhost",
 	}
-	RPCPortFlag = cli.IntFlag{
-		Name:  "rpcport",
-		Usage: "HTTP-RPC server listening Port",
-		Value: 8545,
-	}
 	ValueFlag = cli.Uint64Flag{
 		Name:  "value",
 		Usage: "value units one eth",
 		Value: 0,
+	}
+	AmountFlag = cli.StringFlag{
+		Name:  "amount",
+		Usage: "transfer amount, unit (wei)",
+		Value: "0",
 	}
 	DurationFlag = cli.Int64Flag{
 		Name:  "duration",
@@ -96,6 +100,21 @@ var (
 	SignerPrivFlag = cli.StringFlag{
 		Name:  "signerPriv",
 		Usage: "signer private",
+		Value: "",
+	}
+	SignerFlag = cli.StringFlag{
+		Name:  "signer",
+		Usage: "signer address",
+		Value: "",
+	}
+	SignatureFlag = cli.StringFlag{
+		Name:  "signature",
+		Usage: "ECDSA Signature",
+		Value: "",
+	}
+	ProofFlag = cli.StringFlag{
+		Name:  "proof",
+		Usage: "signer proof",
 		Value: "",
 	}
 	AccountAddressFlag = cli.StringFlag{

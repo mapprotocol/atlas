@@ -21,8 +21,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/mapprotocol/atlas/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/core/state/snapshot"
 )
 
 // Constants to match up protocol versions and messages

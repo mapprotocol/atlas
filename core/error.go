@@ -19,9 +19,8 @@ package core
 import (
 	"errors"
 
-	"github.com/ethereum/go-ethereum/metrics"
-
 	"github.com/mapprotocol/atlas/core/types"
+	"github.com/mapprotocol/atlas/metrics"
 )
 
 var (
