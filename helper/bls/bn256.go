@@ -328,6 +328,15 @@ func UnsafeSign(key *SecretKey, msg []byte) (*UnsafeSignature, error) {
 	p.ScalarMult(hash, key.x)
 	return &UnsafeSignature{p}, nil
 }
+func UnsafeSign2(key *SecretKey, msg []byte) (*UnsafeSignature, error) {
+	hash, err := cfbn256.HashToG1(msg)
+	if err != nil {
+		return nil, err
+	}
+	p := newG1()
+	p.ScalarMult(hash, key.x)
+	return &UnsafeSignature{p}, nil
+}
 
 // Compress the signature to the 32 byte form
 func (usig *UnsafeSignature) Compress() []byte {

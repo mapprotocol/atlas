@@ -45,6 +45,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(1125000),
+		BN256ForkBlock:      big.NewInt(2000000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          Epoch,
 			ProposerPolicy: 2,
@@ -71,6 +72,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(3000),
+		BN256ForkBlock:      big.NewInt(20000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          2000,
 			ProposerPolicy: 2,
@@ -97,6 +99,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(2000),
+		BN256ForkBlock:      big.NewInt(2000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
@@ -123,6 +126,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(2000),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
@@ -154,6 +158,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(3000),
+		BN256ForkBlock:      big.NewInt(2000),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
@@ -183,6 +188,7 @@ var (
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(2000),
 		BerlinBlock:         nil,
 		LondonBlock:         nil,
 		DonutBlock:          nil,

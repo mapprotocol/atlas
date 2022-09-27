@@ -54,7 +54,7 @@ type Config struct {
 func setDefaults(cfg *Config) {
 	if cfg.ChainConfig == nil {
 		cfg.ChainConfig = &params2.ChainConfig{
-			ChainID:             big.NewInt(1),
+			ChainID:             big.NewInt(int64(params2.MainNetChainID)),
 			HomesteadBlock:      new(big.Int),
 			DAOForkBlock:        new(big.Int),
 			DAOForkSupport:      false,
@@ -62,6 +62,7 @@ func setDefaults(cfg *Config) {
 			EIP150Hash:          common.Hash{},
 			EIP155Block:         new(big.Int),
 			EIP158Block:         new(big.Int),
+			BN256ForkBlock:      new(big.Int),
 			ByzantiumBlock:      new(big.Int),
 			ConstantinopleBlock: new(big.Int),
 			PetersburgBlock:     new(big.Int),

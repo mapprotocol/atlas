@@ -74,8 +74,9 @@ type ChainConfig struct {
 	EIP150Block *big.Int    `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
 	EIP150Hash  common.Hash `json:"eip150Hash,omitempty"`  // EIP150 HF hash (needed for header only clients as only gas pricing changed)
 
-	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF block
-	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
+	EIP155Block    *big.Int `json:"eip155Block,omitempty"`    // EIP155 HF block
+	EIP158Block    *big.Int `json:"eip158Block,omitempty"`    // EIP158 HF block
+	BN256ForkBlock *big.Int `json:"bn256forkBlock,omitempty"` // EIP158 HF block
 
 	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
 	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
@@ -192,6 +193,10 @@ func (c *ChainConfig) IsEIP150(num *big.Int) bool {
 // IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.
 func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 	return isForked(c.EIP155Block, num)
+}
+
+func (c *ChainConfig) IsBN256Fork(num *big.Int) bool {
+	return isForked(c.BN256ForkBlock, num)
 }
 
 // IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
