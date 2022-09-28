@@ -58,13 +58,18 @@ type HeaderStore struct {
 	TDs                   map[string]*big.Int
 	CurNumber             uint64
 	CurHash               common.Hash
+	HeadersArray          [][]byte // todo
+	HeadersIdx            map[string]int
+	TDsArray              []*big.Int
+	TDsIdx                map[string]int
 }
 
 func headerKey(number uint64, hash common.Hash) string {
 	return fmt.Sprintf("%d%s%s", number, SplicingSymbol, hash.Hex())
 }
 
-func (hs *HeaderStore) delOldHeaders() {
+func (hs *HeaderStore) delOldHeaders() { // todo 怎么删除？怎么分叉？
+	// todo 记录删除的个数？数组左移？
 	length := len(hs.Headers)
 	if length <= MaxHeaderLimit {
 		return
@@ -83,7 +88,7 @@ func (hs *HeaderStore) delOldHeaders() {
 		return numbers[i] < numbers[j]
 	})
 
-	delTotal := length - MaxHeaderLimit
+	delTotal := length - MaxHeaderLimit // todo 这里暂时不删除，等待理解分叉
 	for i := 0; i < delTotal; {
 		number := numbers[i]
 		for _, key := range number2key[number] {
@@ -119,28 +124,11 @@ func NewHeaderStore() *HeaderStore {
 		CanonicalNumberToHash: make(map[uint64]common.Hash),
 		Headers:               make(map[string][]byte),
 		TDs:                   make(map[string]*big.Int),
+		HeadersArray:          make([][]byte, 0, MaxHeaderLimit),
+		HeadersIdx:            make(map[string]int),
+		TDsArray:              make([]*big.Int, 0, MaxHeaderLimit),
+		TDsIdx:                make(map[string]int),
 	}
-}
-
-func InitHeaderStore(state types.StateDB, header *Header, td *big.Int) error {
-	hash := header.Hash()
-	number := header.Number.Uint64()
-	key := headerKey(number, hash)
-
-	h := &HeaderStore{
-		CanonicalNumberToHash: map[uint64]common.Hash{
-			number: hash,
-		},
-		Headers: map[string][]byte{
-			key: encodeHeader(header),
-		},
-		TDs: map[string]*big.Int{
-			key: td,
-		},
-		CurHash:   hash,
-		CurNumber: number,
-	}
-	return h.Store(state)
 }
 
 func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, td *big.Int) error {
@@ -164,9 +152,17 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 		TDs: map[string]*big.Int{
 			key: td,
 		},
-		CurHash:   hash,
-		CurNumber: number,
+		CurHash:      hash,
+		CurNumber:    number,
+		HeadersArray: make([][]byte, 0, MaxHeaderLimit),
+		HeadersIdx:   make(map[string]int),
+		TDsArray:     make([]*big.Int, 0, MaxHeaderLimit),
+		TDsIdx:       make(map[string]int),
 	}
+	h.HeadersArray = append(h.HeadersArray, encodeHeader(&header))
+	h.TDsArray = append(h.TDsArray, td)
+	h.HeadersIdx[key] = len(h.HeadersArray) - 1
+	h.TDsIdx[key] = len(h.TDsArray) - 1
 	return h.Store(state)
 }
 
@@ -190,11 +186,6 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 
-	//newData := make([]byte, 0, len(data))
-	//for _, d := range data {
-	//	newData = append(newData, d)
-	//}
-
 	state.SetPOWState(address, key, data)
 
 	clone, err := cloneHeaderStore(hs)
@@ -206,7 +197,6 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 	for _, v := range hs.Headers {
 		total += int64(len(v))
 	}
-	log.Info("headers --------- ", "total", total, "headers", len(hs.Headers))
 	hash := tools.RlpHash(data)
 	storeCache.Cache.Add(hash, clone)
 	data = data[:0]
@@ -234,6 +224,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		h = *cp
 		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
 		hs.CanonicalNumberToHash, hs.Headers, hs.TDs = h.CanonicalNumberToHash, h.Headers, h.TDs
+		hs.HeadersArray, hs.HeadersIdx, hs.TDsArray, hs.TDsIdx = h.HeadersArray, h.HeadersIdx, h.TDsArray, h.TDsIdx
 		return nil
 	}
 
@@ -249,6 +240,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	storeCache.Cache.Add(hash, clone)
 	hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
 	hs.CanonicalNumberToHash, hs.Headers, hs.TDs = h.CanonicalNumberToHash, h.Headers, h.TDs
+	hs.HeadersArray, hs.HeadersIdx, hs.TDsArray, hs.TDsIdx = h.HeadersArray, h.HeadersIdx, h.TDsArray, h.TDsIdx
 	return nil
 }
 
@@ -262,21 +254,24 @@ func (hs *HeaderStore) WriteHeader(header *Header) {
 	//hs.hash2number[hash] = number
 
 	//if !hs.HasHeader(hash, number) {
-	hs.Headers[headerKey(number, hash)] = encodeHeader(header)
+	hs.HeadersArray = append(hs.HeadersArray, encodeHeader(header)) // todo append
+	hs.HeadersIdx[headerKey(number, hash)] = len(hs.HeadersArray) - 1
 	//}
 }
 
-func (hs *HeaderStore) GetTd(hash common.Hash, number uint64) *big.Int {
-	return hs.TDs[headerKey(number, hash)]
+func (hs *HeaderStore) GetTd(hash common.Hash, number uint64) *big.Int { // todo
+	return hs.TDsArray[hs.TDsIdx[headerKey(number, hash)]]
 }
 
-func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64) bool {
-	_, isExist := hs.Headers[headerKey(number, hash)]
+func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64) bool { // todo
+	//_, isExist := hs.Headers[headerKey(number, hash)]
+	_, isExist := hs.HeadersIdx[headerKey(number, hash)]
 	return isExist
 }
 
 func (hs *HeaderStore) WriteTd(hash common.Hash, number uint64, td *big.Int) {
-	hs.TDs[headerKey(number, hash)] = new(big.Int).SetUint64(td.Uint64())
+	hs.TDsArray = append(hs.TDsArray, new(big.Int).SetUint64(td.Uint64()))
+	hs.TDsIdx[headerKey(number, hash)] = len(hs.TDsArray) - 1
 }
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
@@ -469,12 +464,12 @@ func (hs *HeaderStore) CurrentHash() common.Hash {
 	return hs.CurHash
 }
 
-func (hs *HeaderStore) GetHeader(hash common.Hash, number uint64) *Header {
-	data := hs.Headers[headerKey(number, hash)]
-	if len(data) != 0 {
-		return decodeHeader(data, hash)
-	}
-	return nil
+func (hs *HeaderStore) GetHeader(hash common.Hash, number uint64) *Header { // todo
+	idx := hs.HeadersIdx[headerKey(number, hash)]
+	//if len(data) != 0 {
+	//	return decodeHeader(data, hash)
+	//}
+	return decodeHeader(hs.HeadersArray[idx], hash)
 }
 
 func (hs *HeaderStore) GetHeaderByNumber(number uint64) *Header {
