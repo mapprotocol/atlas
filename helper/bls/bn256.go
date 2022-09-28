@@ -201,6 +201,14 @@ func Sign(sk *SecretKey, pk *PublicKey, msg []byte) (*Signature, error) {
 
 	return apkSigWrap(pk, sig)
 }
+func Sign2(sk *SecretKey, pk *PublicKey, msg []byte) (*Signature, error) {
+	sig, err := UnsafeSign2(sk, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return apkSigWrap(pk, sig)
+}
 
 // UnmarshalSignature unmarshals a byte array into a BLS signature
 func UnmarshalSignature(sig []byte) (*Signature, error) {
@@ -297,6 +305,9 @@ func apkSigWrap(pk *PublicKey, signature *UnsafeSignature) (*Signature, error) {
 // Verify is the verification step of an aggregated apk signature
 func Verify(apk *Apk, msg []byte, sigma *Signature) error {
 	return verify(apk.gx, msg, sigma.e)
+}
+func Verify2(apk *Apk, msg []byte, sigma *Signature) error {
+	return verify2(apk.gx, msg, sigma.e)
 }
 
 // VerifyBatch is the verification step of a batch of aggregated apk signatures
@@ -406,7 +417,9 @@ func VerifyUnsafeBatch(pkeys []*PublicKey, msgList [][]byte, signature *UnsafeSi
 func VerifyUnsafe(pkey *PublicKey, msg []byte, signature *UnsafeSignature) error {
 	return verify(pkey.gx, msg, signature.e)
 }
-
+func VerifyUnsafe2(pkey *PublicKey, msg []byte, signature *UnsafeSignature) error {
+	return verify2(pkey.gx, msg, signature.e)
+}
 func verify(pk *cfbn256.G2, msg []byte, sigma *cfbn256.G1) error {
 	h0m, err := h0(msg)
 	if err != nil {
@@ -424,7 +437,25 @@ func verify(pk *cfbn256.G2, msg []byte, sigma *cfbn256.G1) error {
 		)
 		return errors.New(msg)
 	}
-
+	return nil
+}
+func verify2(pk *cfbn256.G2, msg []byte, sigma *cfbn256.G1) error {
+	h0m, err := cfbn256.HashToG1(msg)
+	if err != nil {
+		return err
+	}
+	pairH0mPK := cfbn256.Pair(h0m, pk).Marshal()
+	pairSigG2 := cfbn256.Pair(sigma, newG2().ScalarBaseMult(big.NewInt(1))).Marshal()
+	if subtle.ConstantTimeCompare(pairH0mPK, pairSigG2) != 1 {
+		msg := fmt.Sprintf(
+			"bls apk: Invalid Signature.\nG1Sig pair (length %d): %v...\nApk H0(m) pair (length %d): %v...",
+			len(pairSigG2),
+			hex.EncodeToString(pairSigG2[0:10]),
+			len(pairH0mPK),
+			hex.EncodeToString(pairH0mPK[0:10]),
+		)
+		return errors.New(msg)
+	}
 	return nil
 }
 func verifyBatch(pkeys []*cfbn256.G2, msgList [][]byte, sig *cfbn256.G1, allowDistinct bool) error {
@@ -447,11 +478,35 @@ func verifyBatch(pkeys []*cfbn256.G2, msgList [][]byte, sig *cfbn256.G1, allowDi
 	}
 
 	pairSigG2 := cfbn256.Pair(sig, newG2().ScalarBaseMult(big.NewInt(1)))
-
 	if subtle.ConstantTimeCompare(pairSigG2.Marshal(), pairH0mPKs.Marshal()) != 1 {
 		return errors.New("bls: Invalid Signature")
 	}
+	return nil
+}
 
+func verifyBatch2(pkeys []*cfbn256.G2, msgList [][]byte, sig *cfbn256.G1, allowDistinct bool) error {
+	if !allowDistinct && !distinct(msgList) {
+		return errors.New("bls: Messages are not distinct")
+	}
+
+	var pairH0mPKs *cfbn256.GT
+	for i := range msgList {
+		h0m, err := cfbn256.HashToG1(msgList[i])
+		if err != nil {
+			return err
+		}
+
+		if i == 0 {
+			pairH0mPKs = cfbn256.Pair(h0m, pkeys[i])
+		} else {
+			pairH0mPKs.Add(pairH0mPKs, cfbn256.Pair(h0m, pkeys[i]))
+		}
+	}
+
+	pairSigG2 := cfbn256.Pair(sig, newG2().ScalarBaseMult(big.NewInt(1)))
+	if subtle.ConstantTimeCompare(pairSigG2.Marshal(), pairH0mPKs.Marshal()) != 1 {
+		return errors.New("bls: Invalid Signature")
+	}
 	return nil
 }
 

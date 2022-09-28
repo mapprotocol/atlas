@@ -42,8 +42,8 @@ type DecryptFn func(accounts.Account, []byte, []byte, []byte) ([]byte, error)
 type SignerFn func(accounts.Account, string, []byte) ([]byte, error)
 
 // BLSSignerFn is a signer callback function to request a message and extra data to be signed by a
-// backing account using BLS with a direct or composite hasher
-type BLSSignerFn func(accounts.Account, []byte, []byte, bool, bool) (blscrypto.SerializedSignature, error)
+// backing account using BLS with a direct or composite hasher,fork,cur *big.Int
+type BLSSignerFn func(accounts.Account, []byte, []byte, bool, bool, *big.Int, *big.Int) (blscrypto.SerializedSignature, error)
 
 // HashSignerFn is a signer callback function to request a hash to be signed by a
 // backing account.

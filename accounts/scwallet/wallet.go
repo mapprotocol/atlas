@@ -134,7 +134,7 @@ func (w *Wallet) SignHash(account accounts.Account, hash []byte) ([]byte, error)
 	return w.signHash(account, hash)
 }
 
-func (w *Wallet) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
+func (w *Wallet) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool, fork, cur *big.Int) (bls.SerializedSignature, error) {
 	return bls.SerializedSignature{}, accounts.ErrNotSupported
 }
 

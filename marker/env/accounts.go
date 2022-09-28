@@ -78,7 +78,7 @@ func (a *Account) BLSProofOfPossession() ([]byte, error) {
 	//if err != nil {
 	//	return nil, err
 	//}
-	signature, err := bn256.UnsafeSign(key, a.Address.Bytes())
+	signature, err := bn256.UnsafeSign2(key, a.Address.Bytes())
 	if err != nil {
 		return nil, err
 	}

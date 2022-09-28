@@ -109,10 +109,10 @@ func Test_autoGenerateMarkerCfg(t *testing.T) {
 			"0x29e98029A155A7deb1BA1271a1012Ae662DDf701",
 		}
 		signersPath = []string{
-			"/Users/t/go_project/atlas/keystore/devnet/signer/UTC--2022-09-27T09-07-50.101447000Z--053af2b1ccbacba47c659b977e93571c89c49654",
-			"/Users/t/go_project/atlas/keystore/devnet/signer/UTC--2022-09-27T09-08-03.598556000Z--b47adf1e504601ff7682b68ba7990410b92cd958",
-			"/Users/t/go_project/atlas/keystore/devnet/signer/UTC--2022-09-27T09-08-15.391925000Z--f655fc7c95c70a118f98b46ca5028746284349a5",
-			"/Users/t/go_project/atlas/keystore/devnet/signer/UTC--2022-09-27T09-08-23.832918000Z--b243f68e8e3245464d21b79c7ceae347ecc08ea6",
+			"keystore/devnet/signer/UTC--2022-09-27T09-07-50.101447000Z--053af2b1ccbacba47c659b977e93571c89c49654",
+			"keystore/devnet/signer/UTC--2022-09-27T09-08-03.598556000Z--b47adf1e504601ff7682b68ba7990410b92cd958",
+			"keystore/devnet/signer/UTC--2022-09-27T09-08-15.391925000Z--f655fc7c95c70a118f98b46ca5028746284349a5",
+			"keystore/devnet/signer/UTC--2022-09-27T09-08-23.832918000Z--b243f68e8e3245464d21b79c7ceae347ecc08ea6",
 		}
 	)
 
@@ -177,7 +177,7 @@ func Test_autoGenerateMarkerCfg(t *testing.T) {
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		signature, err := bls.UnsafeSign(secretKey, common.HexToAddress(account[i]).Bytes())
+		signature, err := bls.UnsafeSign2(secretKey, common.HexToAddress(account[i]).Bytes())
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -195,8 +195,8 @@ func Test_autoGenerateMarkerCfg(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 		//test
-		if err := bls.VerifyUnsafe(pk, common.HexToAddress(account[i]).Bytes(), signature); err != nil {
-			t.Fatal(err.Error())
+		if err := bls.VerifyUnsafe2(pk, common.HexToAddress(account[i]).Bytes(), signature); err != nil {
+			panic(err)
 		}
 		fmt.Printf("BLSProofOfPossession: %d  %s\n", len(blsProofOfPossession), hexutil.Encode(blsProofOfPossession))
 		accountInfos = append(accountInfos, genesis.AccoutInfo{
@@ -233,11 +233,11 @@ func Test_sign(T *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	pop, _ := bls.UnsafeSign(priv, account.Bytes())
+	pop, _ := bls.UnsafeSign2(priv, account.Bytes())
 	popBytes := pop.Marshal()
 	T.Log(":", "pop:", hexutil.Encode(popBytes))
 	// test
-	err = bls.VerifyUnsafe(pub, account.Bytes(), pop)
+	err = bls.VerifyUnsafe2(pub, account.Bytes(), pop)
 	if err != nil {
 		fmt.Println(err)
 	}

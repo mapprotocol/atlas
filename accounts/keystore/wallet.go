@@ -40,14 +40,14 @@ func (w *keystoreWallet) SignHash(account accounts.Account, hash []byte) ([]byte
 	return w.signHash(account, hash)
 }
 
-func (w *keystoreWallet) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
+func (w *keystoreWallet) SignBLS(account accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool, fork, cur *big.Int) (bls.SerializedSignature, error) {
 	// Make sure the requested account is contained within
 	if !w.Contains(account) {
 		log.Debug(accounts.ErrUnknownAccount.Error(), "account", account)
 		return bls.SerializedSignature{}, accounts.ErrUnknownAccount
 	}
 	// Account seems valid, request the keystore to sign
-	return w.keystore.SignBLS(account, msg, extraData, useComposite, cip22)
+	return w.keystore.SignBLS(account, msg, extraData, useComposite, cip22, fork, cur)
 }
 
 func (w *keystoreWallet) GetPublicKey(account accounts.Account) (*ecdsa.PublicKey, error) {

@@ -69,9 +69,9 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 				return err
 			}
 		}
-
+		fork, cur := big.NewInt(0), new(big.Int).Set(headers[i].Number)
 		//verify AggregatedSeal
-		err = verifyAggregatedSeal(headers[i].Hash(), pubKey, extra.AggregatedSeal)
+		err = verifyAggregatedSeal(headers[i].Hash(), pubKey, extra.AggregatedSeal, fork, cur)
 		if err != nil {
 			log.Println("failed to verify AggregatedSeal, block num", headers[i].Number)
 			return err
@@ -86,8 +86,8 @@ func ValidateHeaderExtra(headers []*types.Header) error {
 					return err
 				}
 			}
-
-			err = verifyAggregatedSeal(headers[i-1].Hash(), pubKey, extra.ParentAggregatedSeal)
+			fork, cur := big.NewInt(0), new(big.Int).Set(headers[i].Number)
+			err = verifyAggregatedSeal(headers[i-1].Hash(), pubKey, extra.ParentAggregatedSeal, fork, cur)
 			if err != nil {
 				log.Println("failed to verify ParentAggregatedSeal in epoch point, block num", headers[i].Number)
 				return err
@@ -106,7 +106,8 @@ func sigHash(header *types.Header) (hash common.Hash) {
 	return hash
 }
 
-func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedPublicKey, aggregatedSeal types.IstanbulAggregatedSeal) error {
+func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedPublicKey,
+	aggregatedSeal types.IstanbulAggregatedSeal, fork, cur *big.Int) error {
 	if len(aggregatedSeal.Signature) != types.IstanbulExtraBlsSignature {
 		return errors.New("len error")
 	}
@@ -125,7 +126,8 @@ func verifyAggregatedSeal(headerHash common.Hash, pubKey []blscrypto.SerializedP
 		log.Println("now", len(publicKeys), ",need", pknum, ",all", len(pubKey))
 		return errors.New("no enough publicKey")
 	}
-	err := blscrypto.CryptoType().VerifyAggregatedSignature(publicKeys, proposalSeal, []byte{}, aggregatedSeal.Signature, false, false)
+	err := blscrypto.CryptoType().VerifyAggregatedSignature(publicKeys, proposalSeal, []byte{},
+		aggregatedSeal.Signature, false, false, fork, cur)
 	if err != nil {
 		return err
 	}
