@@ -157,16 +157,22 @@ func (self *testSystemBackend) Gossip(payload []byte, ethMsgCode uint64) error {
 	return nil
 }
 
-func (self *testSystemBackend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool) (bls.SerializedSignature, error) {
+func (self *testSystemBackend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool, fork, cur *big.Int) (bls.SerializedSignature, error) {
 	privateKey, err := bls.DeserializePrivateKey(self.blsKey)
 	if err != nil {
-		return bls.SerializedSignature{},err
+		return bls.SerializedSignature{}, err
 	}
 	pubkey := privateKey.ToPublic()
 	if err != nil {
-		return bls.SerializedSignature{},err
+		return bls.SerializedSignature{}, err
 	}
-	signature, err := bls.Sign(privateKey, pubkey, data)
+	var signature *bls.Signature
+	if params.IsBN256Fork(fork, cur) {
+		signature, err = bls.Sign2(privateKey, pubkey, data)
+	} else {
+		signature, err = bls.Sign(privateKey, pubkey, data)
+	}
+
 	if err != nil {
 		return bls.SerializedSignature{}, err
 	}

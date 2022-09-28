@@ -844,7 +844,7 @@ func makeBLSProofOfPossessionFromSigner_(message common.Address, signerPrivate s
 	if err != nil {
 		panic(err)
 	}
-	signature, err := bls.UnsafeSign(privateKey, message.Bytes())
+	signature, err := bls.UnsafeSign2(privateKey, message.Bytes())
 	if err != nil {
 		panic(err)
 	}
@@ -854,7 +854,7 @@ func makeBLSProofOfPossessionFromSigner_(message common.Address, signerPrivate s
 	//}
 	//log.Info("makeBLSProofOfPossessionFromsigner","BLS Public key", blsPubKeyText)
 	//test
-	if err := bls.VerifyUnsafe(pk, message.Bytes(), signature); err != nil {
+	if err := bls.VerifyUnsafe2(pk, message.Bytes(), signature); err != nil {
 		panic(err)
 	}
 	return signature

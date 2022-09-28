@@ -1391,7 +1391,12 @@ func (c *proofOfPossession) Run(evm *EVM, contract *Contract, input []byte) ([]b
 	if err != nil {
 		return nil, err
 	}
-	err = bls.VerifyUnsafe(publicKey, addressBytes, &signature)
+	fork, cur := new(big.Int).Set(evm.chainConfig.BN256ForkBlock), new(big.Int).Set(evm.Context.BlockNumber)
+	if params.IsBN256Fork(fork, cur) {
+		err = bls.VerifyUnsafe2(publicKey, addressBytes, &signature)
+	} else {
+		err = bls.VerifyUnsafe(publicKey, addressBytes, &signature)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"reflect"
 
@@ -106,9 +107,9 @@ type BLSCryptoSelector interface {
 	ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error)
 	PrivateToPublic(privateKeyBytes []byte) (SerializedPublicKey, error)
 	PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, error)
-	VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
+	VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool, fork, cur *big.Int) error
 	AggregateSignatures(signatures [][]byte) ([]byte, error)
-	VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error
+	VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool, fork, cur *big.Int) error
 	EncodeEpochSnarkDataCIP22(newValSet []SerializedPublicKey, maximumNonSigners, maxValidators uint32, epochIndex uint16, round uint8, blockHash, parentHash EpochEntropy) ([]byte, []byte, error)
 	UncompressKey(serialized SerializedPublicKey) ([]byte, error)
 }
@@ -206,7 +207,8 @@ func (BN256) PrivateToG1Public(privateKeyBytes []byte) (SerializedG1PublicKey, e
 	return pubKeyBytesFixed, err
 }
 
-func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message []byte, extraData []byte,
+	signature []byte, shouldUseCompositeHasher, cip22 bool, fork, cur *big.Int) error {
 	sigma := UnsafeSignature{}
 	err := sigma.Unmarshal(signature)
 	if err != nil {
@@ -224,7 +226,12 @@ func (BN256) VerifyAggregatedSignature(publicKeys []SerializedPublicKey, message
 
 	pk := AggregatePK(pks)
 
-	if err := VerifyUnsafe(pk, message, &sigma); err != nil {
+	if params.IsBN256Fork(fork, cur) {
+		err = VerifyUnsafe2(pk, message, &sigma)
+	} else {
+		err = VerifyUnsafe(pk, message, &sigma)
+	}
+	if err != nil {
 		return err
 	}
 	return err
@@ -246,7 +253,8 @@ func (BN256) AggregateSignatures(signatures [][]byte) ([]byte, error) {
 	return signs.Marshal(), nil
 }
 
-func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte, signature []byte, shouldUseCompositeHasher, cip22 bool) error {
+func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extraData []byte,
+	signature []byte, shouldUseCompositeHasher, cip22 bool, fork, cur *big.Int) error {
 	var sign UnsafeSignature
 	err := sign.Unmarshal(signature)
 	if err != nil {
@@ -256,8 +264,12 @@ func (BN256) VerifySignature(publicKey SerializedPublicKey, message []byte, extr
 	if err != nil {
 		return err
 	}
-
-	if err := VerifyUnsafe(pk, message, &sign); err != nil {
+	if params.IsBN256Fork(fork, cur) {
+		err = VerifyUnsafe2(pk, message, &sign)
+	} else {
+		err = VerifyUnsafe(pk, message, &sign)
+	}
+	if err != nil {
 		return err
 	}
 	return nil

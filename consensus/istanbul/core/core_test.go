@@ -206,7 +206,8 @@ func TestEpochSnarkData(t *testing.T) {
 	//if cip22 || len(extraData) > 0 {
 	//	t.Errorf("Unexpected cip22 (%t != false) or extraData length (%v > 0)", cip22, len(extraData))
 	//}
-	epochValidatorSetSeal, _ := backendCore.backend.SignBLS(message, extraData, true, cip22)
+	fork, cur := new(big.Int).Set(backendCore.backend.ChainConfig().BN256ForkBlock), big.NewInt(0)
+	epochValidatorSetSeal, _ := backendCore.backend.SignBLS(message, extraData, true, cip22, fork, cur)
 
 	if err := bls.CryptoType().VerifySignature(publicKey, message, extraData, epochValidatorSetSeal[:], true, cip22); err != nil {
 		t.Errorf("Failed verifying BLS signature")
@@ -216,7 +217,8 @@ func TestEpochSnarkData(t *testing.T) {
 	if !cip22 || len(extraData) == 0 {
 		t.Errorf("Unexpected cip22 (%t != true) or extraData length (%v == 0)", cip22, len(extraData))
 	}
-	epochValidatorSetSeal, _ = backendCore.backend.SignBLS(message, extraData, true, cip22)
+	cur = big.NewInt(2)
+	epochValidatorSetSeal, _ = backendCore.backend.SignBLS(message, extraData, true, cip22, fork, cur)
 
 	if err := bls.CryptoType().VerifySignature(publicKey, message, extraData, epochValidatorSetSeal[:], true, cip22); err != nil {
 		t.Errorf("Failed verifying BLS signature after Donut")

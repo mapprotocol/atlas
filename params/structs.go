@@ -195,8 +195,8 @@ func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 	return isForked(c.EIP155Block, num)
 }
 
-func (c *ChainConfig) IsBN256Fork(num *big.Int) bool {
-	return isForked(c.BN256ForkBlock, num)
+func IsBN256Fork(fork, cur *big.Int) bool {
+	return cur.Cmp(fork) > 0
 }
 
 // IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
