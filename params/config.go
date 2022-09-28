@@ -23,8 +23,8 @@ const (
 // Genesis hashes to enforce below configs on.
 var (
 	MainnetGenesisHash = common.HexToHash("0x6b2bd27bee0f7675550204c541a30cc6a14aa1738431cb60e21e666b2fec8014")
-	TestnetGenesisHash = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
-	DevnetGenesisHash  = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
+	TestnetGenesisHash = common.HexToHash("0xa6fad927164366eefba3477c881ea8940b03866ef9a4252be9ab5ba69e8f9cac")
+	DevnetGenesisHash  = common.HexToHash("0xa7712fd6f430d32fbc796665289bf9702b6991e96393fd670e7834c48e15755f")
 )
 
 var (
@@ -74,7 +74,7 @@ var (
 		EnableRewardBlock:   big.NewInt(3000),
 		BN256ForkBlock:      big.NewInt(20000),
 		Istanbul: &IstanbulConfig{
-			Epoch:          2000,
+			Epoch:          1000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,

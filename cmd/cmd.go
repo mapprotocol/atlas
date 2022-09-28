@@ -251,10 +251,10 @@ func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
 	switch {
 	case ctx.GlobalIsSet(utils.TestnetFlag.Name):
-		log.Info("Starting Atlas on Ropsten testnet...")
+		log.Info("Starting Atlas on testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Atlas in ephemeral dev mode...")
+		log.Info("Starting Atlas on devnet...")
 
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
 		log.Info("Starting Atlas on map protocol atlas mainnet...")

@@ -56,7 +56,6 @@ import (
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/consensus"
 	atlaschain "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/helper/flags"
 	"github.com/mapprotocol/atlas/metrics"
@@ -1098,8 +1097,8 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.NetRestrict = list
 	}
 
-	if ctx.GlobalBool(DeveloperFlag.Name) || ctx.GlobalBool(CatalystFlag.Name) {
-		// --dev mode can't use p2p networking.
+	if ctx.GlobalBool(CatalystFlag.Name) {
+		// can't use p2p networking.
 		cfg.MaxPeers = 0
 		cfg.ListenAddr = ""
 		cfg.NoDial = true
@@ -1126,9 +1125,9 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	if ctx.GlobalIsSet(KeyStoreDirFlag.Name) {
 		cfg.KeyStoreDir = ctx.GlobalString(KeyStoreDirFlag.Name)
 	}
-	if ctx.GlobalIsSet(DeveloperFlag.Name) {
-		cfg.UseLightweightKDF = true
-	}
+	//if ctx.GlobalIsSet(DeveloperFlag.Name) {
+	//	cfg.UseLightweightKDF = true
+	//}
 	if ctx.GlobalIsSet(LightKDFFlag.Name) {
 		cfg.UseLightweightKDF = ctx.GlobalBool(LightKDFFlag.Name)
 	}
@@ -1167,8 +1166,8 @@ func setDataDir(ctx *cli.Context, cfg *node.Config) {
 	switch {
 	case ctx.GlobalIsSet(DataDirFlag.Name):
 		cfg.DataDir = ctx.GlobalString(DataDirFlag.Name)
-	case ctx.GlobalBool(DeveloperFlag.Name):
-		cfg.DataDir = "" // unless explicitly requested, use memory databases
+	case ctx.GlobalBool(DeveloperFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "devnet")
 	case ctx.GlobalBool(TestnetFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		// Maintain compatibility with older Geth configurations storing the
 		// Ropsten database in `testnet` instead of `ropsten`.
@@ -1487,42 +1486,8 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = params.DevnetWorkID
 		}
-		cfg.SyncMode = downloader.FullSync
-		// Create new developer account or reuse existing one
-		var (
-			developer  accounts.Account
-			passphrase string
-			err        error
-		)
-		if list := MakePasswordList(ctx); len(list) > 0 {
-			// Just take the first value. Although the function returns a possible multiple values and
-			// some usages iterate through them as attempts, that doesn't make sense in this setting,
-			// when we're definitely concerned with only one account.
-			passphrase = list[0]
-		}
-		if cfg.Miner.Etherbase != (common.Address{}) {
-			developer = accounts.Account{Address: cfg.Miner.Etherbase}
-		}
-		if err = ks.Unlock(developer, passphrase); err != nil {
-			Fatalf("Failed to unlock developer account: %v", err)
-		}
-		log.Info("Using developer account", "address", developer.Address)
-
-		// Create a new developer genesis block or reuse existing one
 		cfg.Genesis = atlaschain.DevnetGenesisBlock()
-		if ctx.GlobalIsSet(DataDirFlag.Name) {
-			// Check if we have an already initialized chain and fall back to
-			// that if so. Otherwise we need to generate a new genesis spec.
-			chaindb := MakeChainDatabase(ctx, stack, false) // TODO (MariusVanDerWijden) make this read only
-			if rawdb.ReadCanonicalHash(chaindb, 0) != (common.Hash{}) {
-				cfg.Genesis = nil // fallback to db content
-			}
-			chaindb.Close()
-		}
-		if !ctx.GlobalIsSet(MinerGasPriceFlag.Name) {
-			cfg.Miner.GasPrice = big.NewInt(1)
-		}
-
+		SetDNSDiscoveryDefaults(cfg, params.DevnetGenesisHash)
 	default:
 		if cfg.NetworkId == params.MainnetNetWorkID {
 			SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
@@ -1686,7 +1651,7 @@ func MakeGenesis(ctx *cli.Context) *atlaschain.Genesis {
 	case ctx.GlobalBool(TestnetFlag.Name):
 		genesis = atlaschain.DefaultTestnetGenesisBlock()
 	case ctx.GlobalBool(DeveloperFlag.Name):
-		Fatalf("Developer chains are ephemeral")
+		genesis = atlaschain.DevnetGenesisBlock()
 	}
 	return genesis
 }

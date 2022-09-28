@@ -43,13 +43,17 @@ func TestDefaultGenesisBlock(t *testing.T) {
 	fmt.Println("address:", common.Address{}.String())
 	EmptyRootHash0 := types.DeriveSha(types.Transactions{}, trie.NewStackTrie(nil))
 	fmt.Println(EmptyRootHash0)
-	block := DefaultGenesisBlock().ToBlock(nil)
-	if block.Hash() != params2.MainnetGenesisHash {
-		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash(), params2.MainnetGenesisHash)
+	hash := DefaultGenesisBlock().ToBlock(nil).Hash()
+	if hash != params2.MainnetGenesisHash {
+		t.Errorf("wrong mainnet genesis hash, got %v, want %v", hash, params2.MainnetGenesisHash)
 	}
-	block = DefaultTestnetGenesisBlock().ToBlock(nil)
-	if block.Hash() != params2.TestnetGenesisHash {
-		t.Errorf("wrong ropsten genesis hash, got %v, want %v", block.Hash(), params2.TestnetGenesisHash)
+	hash = DefaultTestnetGenesisBlock().ToBlock(nil).Hash()
+	if hash != params2.TestnetGenesisHash {
+		t.Errorf("wrong testnet genesis hash, got %v, want %v", hash, params2.TestnetGenesisHash)
+	}
+	hash = DevnetGenesisBlock().ToBlock(nil).Hash()
+	if hash != params2.DevnetGenesisHash {
+		t.Errorf("wrong devnet genesis hash, got %v, want %v", hash, params2.DevnetGenesisHash)
 	}
 }
 

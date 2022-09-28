@@ -427,11 +427,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 	}
 }
 
-// DevnetGenesisBlock returns the 'geth --dev' genesis block.
-// owner       0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
-// validator1  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
-// keystore path  atlas/cmd/devnet_genesis
-
+// the keystore file is located in the keystore/devnet directory, the password for the keystore file is map123456
 //prealloc address: 0x5F78EC486B721BAAE4aDD59A9bF3494C080A43C4
 //priv: 939477962c734f29339531305a4309859aef4aa62e010529f3c343920ec1d49b
 
@@ -442,7 +438,6 @@ func DevnetGenesisBlock() *Genesis {
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 	return &Genesis{
 		Config: params.DevnetConfig,
-		//ExtraData: createDevAlloc(pk, faucet),
 		ExtraData: hexutil.MustDecode(devnetExtraData),
 		GasLimit:  11500000,
 		Alloc:     gs,
