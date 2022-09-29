@@ -98,8 +98,8 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(2000),
-		BN256ForkBlock:      big.NewInt(2000),
+		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
