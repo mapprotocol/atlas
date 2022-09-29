@@ -126,24 +126,24 @@ func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, 
 		return nil, err
 	}
 
-	nums, err := chain.InsertHeaders(evm.StateDB, args.Headers)
+	_, err = chain.InsertHeaders(evm.StateDB, args.Headers)
 	if err != nil {
 		log.Error("failed to write headers", "error", err)
 		return nil, err
 	}
 
-	// make event
-	event := abiHeaderStore.Events[EventOfUpdate]
-	logData, err := event.Inputs.Pack()
-	for _, n := range nums {
-		topics := []common.Hash{
-			event.ID,
-			contract.CallerAddress.Hash(),
-			common.BigToHash(new(big.Int).SetUint64(n.Number)),
-		}
-		addLog(evm, contract, topics, logData)
-		log.Info("event produce", "height", n, "topics", topics, "event.ID", event.ID)
-	}
+	//// make event
+	//event := abiHeaderStore.Events[EventOfUpdate]
+	//logData, err := event.Inputs.Pack()
+	//for _, n := range nums {
+	//	topics := []common.Hash{
+	//		event.ID,
+	//		contract.CallerAddress.Hash(),
+	//		common.BigToHash(new(big.Int).SetUint64(n.Number)),
+	//	}
+	//	addLog(evm, contract, topics, logData)
+	//	log.Info("event produce", "height", n, "topics", topics, "event.ID", event.ID)
+	//}
 	return nil, nil
 }
 
