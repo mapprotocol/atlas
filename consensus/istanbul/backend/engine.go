@@ -275,7 +275,7 @@ func (sb *Backend) verifyAggregatedSeals(chain consensus.ChainHeaderReader, head
 		return err
 	}
 	validators := snap.ValSet.Copy()
-	fork, cur := new(big.Int).Set(sb.chain.Config().BN256ForkBlock), new(big.Int).Set(header.Number)
+	fork, cur := new(big.Int).Set(chain.Config().BN256ForkBlock), new(big.Int).Set(header.Number)
 	err = sb.verifyAggregatedSeal(header.Hash(), validators, extra.AggregatedSeal, fork, cur)
 	if err != nil {
 		return err
