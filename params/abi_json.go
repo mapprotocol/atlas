@@ -10,14 +10,36 @@ type BlockHeader struct {
 }
 
 contract HeaderStore {
+	event UpdateBlockHeader(address indexed account, uint256 indexed blockHeight);
+
     function updateBlockHeader(bytes memory blockHeader) public {}
     function currentNumberAndHash(uint256 chainID) public returns (uint256 number, bytes memory hash) {}
     function setRelayer(address relayer) public {}
     function getRelayer() public returns (address relayer) {}
     function reset(uint256 from, uint256 td, bytes memory header) public {}
+	function verifyProofData(bytes memory receiptProof) public returns(bool success, string memory message, bytes memory logs) {}
 }
 */
 const HeaderStoreABIJSON = `[
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "blockHeight",
+				"type": "uint256"
+			}
+		],
+		"name": "UpdateBlockHeader",
+		"type": "event"
+	},
 	{
 		"inputs": [
 			{

@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/chains/interfaces"
+	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -22,6 +22,7 @@ const (
 	CurNbrAndHash = "currentNumberAndHash"
 	SetRelayer    = "setRelayer"
 	GetRelayer    = "getRelayer"
+	EventOfUpdate = "UpdateBlockHeader"
 )
 
 // HeaderStore contract ABI
@@ -125,10 +126,23 @@ func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, 
 		return nil, err
 	}
 
-	_, err = chain.InsertHeaders(evm.StateDB, args.Headers)
+	nums, err := chain.InsertHeaders(evm.StateDB, args.Headers)
 	if err != nil {
 		log.Error("failed to write headers", "error", err)
 		return nil, err
+	}
+
+	// make event
+	event := abiHeaderStore.Events[EventOfUpdate]
+	logData, err := event.Inputs.Pack()
+	for _, n := range nums {
+		topics := []common.Hash{
+			event.ID,
+			contract.CallerAddress.Hash(),
+			common.BigToHash(new(big.Int).SetUint64(n.Number)),
+		}
+		addLog(evm, contract, topics, logData)
+		log.Info("event produce", "height", n, "topics", topics, "event.ID", event.ID)
 	}
 	return nil, nil
 }
@@ -239,4 +253,13 @@ func validateRelayer(evm *EVM, caller common.Address) error {
 		return errors.New("invalid relayer")
 	}
 	return nil
+}
+
+func addLog(evm *EVM, contract *Contract, topics []common.Hash, data []byte) {
+	evm.StateDB.AddLog(&types.Log{
+		Address:     contract.Address(),
+		Topics:      topics,
+		Data:        data,
+		BlockNumber: evm.Context.BlockNumber.Uint64(),
+	})
 }

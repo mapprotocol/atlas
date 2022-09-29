@@ -58,10 +58,10 @@ type HeaderStore struct {
 	TDs                   map[string]*big.Int
 	CurNumber             uint64
 	CurHash               common.Hash
-	HeadersArray          [][]byte // todo
-	HeadersIdx            map[string]int
-	TDsArray              []*big.Int
-	TDsIdx                map[string]int
+	//HeadersArray          [][]byte // todo
+	//HeadersIdx            map[string]int
+	//TDsArray              []*big.Int
+	//TDsIdx                map[string]int
 }
 
 func headerKey(number uint64, hash common.Hash) string {
@@ -124,10 +124,10 @@ func NewHeaderStore() *HeaderStore {
 		CanonicalNumberToHash: make(map[uint64]common.Hash),
 		Headers:               make(map[string][]byte),
 		TDs:                   make(map[string]*big.Int),
-		HeadersArray:          make([][]byte, 0, MaxHeaderLimit),
-		HeadersIdx:            make(map[string]int),
-		TDsArray:              make([]*big.Int, 0, MaxHeaderLimit),
-		TDsIdx:                make(map[string]int),
+		//HeadersArray:          make([][]byte, 0, MaxHeaderLimit),
+		//HeadersIdx:            make(map[string]int),
+		//TDsArray:              make([]*big.Int, 0, MaxHeaderLimit),
+		//TDsIdx:                make(map[string]int),
 	}
 }
 
@@ -152,17 +152,17 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 		TDs: map[string]*big.Int{
 			key: td,
 		},
-		CurHash:      hash,
-		CurNumber:    number,
-		HeadersArray: make([][]byte, 0, MaxHeaderLimit),
-		HeadersIdx:   make(map[string]int),
-		TDsArray:     make([]*big.Int, 0, MaxHeaderLimit),
-		TDsIdx:       make(map[string]int),
+		CurHash:   hash,
+		CurNumber: number,
+		//HeadersArray: make([][]byte, 0, MaxHeaderLimit),
+		//HeadersIdx:   make(map[string]int),
+		//TDsArray:     make([]*big.Int, 0, MaxHeaderLimit),
+		//TDsIdx:       make(map[string]int),
 	}
-	h.HeadersArray = append(h.HeadersArray, encodeHeader(&header))
-	h.TDsArray = append(h.TDsArray, td)
-	h.HeadersIdx[key] = len(h.HeadersArray) - 1
-	h.TDsIdx[key] = len(h.TDsArray) - 1
+	//h.HeadersArray = append(h.HeadersArray, encodeHeader(&header))
+	//h.TDsArray = append(h.TDsArray, td)
+	//h.HeadersIdx[key] = len(h.HeadersArray) - 1
+	//h.TDsIdx[key] = len(h.TDsArray) - 1
 	return h.Store(state)
 }
 
@@ -224,7 +224,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		h = *cp
 		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
 		hs.CanonicalNumberToHash, hs.Headers, hs.TDs = h.CanonicalNumberToHash, h.Headers, h.TDs
-		hs.HeadersArray, hs.HeadersIdx, hs.TDsArray, hs.TDsIdx = h.HeadersArray, h.HeadersIdx, h.TDsArray, h.TDsIdx
+		//hs.HeadersArray, hs.HeadersIdx, hs.TDsArray, hs.TDsIdx = h.HeadersArray, h.HeadersIdx, h.TDsArray, h.TDsIdx
 		return nil
 	}
 
@@ -240,7 +240,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	storeCache.Cache.Add(hash, clone)
 	hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
 	hs.CanonicalNumberToHash, hs.Headers, hs.TDs = h.CanonicalNumberToHash, h.Headers, h.TDs
-	hs.HeadersArray, hs.HeadersIdx, hs.TDsArray, hs.TDsIdx = h.HeadersArray, h.HeadersIdx, h.TDsArray, h.TDsIdx
+	//hs.HeadersArray, hs.HeadersIdx, hs.TDsArray, hs.TDsIdx = h.HeadersArray, h.HeadersIdx, h.TDsArray, h.TDsIdx
 	return nil
 }
 
@@ -254,24 +254,27 @@ func (hs *HeaderStore) WriteHeader(header *Header) {
 	//hs.hash2number[hash] = number
 
 	//if !hs.HasHeader(hash, number) {
-	hs.HeadersArray = append(hs.HeadersArray, encodeHeader(header)) // todo append
-	hs.HeadersIdx[headerKey(number, hash)] = len(hs.HeadersArray) - 1
+	hs.Headers[headerKey(number, hash)] = encodeHeader(header)
+	//hs.HeadersArray = append(hs.HeadersArray, encodeHeader(header)) // todo append
+	//hs.HeadersIdx[headerKey(number, hash)] = len(hs.HeadersArray) - 1
 	//}
 }
 
 func (hs *HeaderStore) GetTd(hash common.Hash, number uint64) *big.Int { // todo
-	return hs.TDsArray[hs.TDsIdx[headerKey(number, hash)]]
+	return hs.TDs[headerKey(number, hash)]
+	//return hs.TDsArray[hs.TDsIdx[headerKey(number, hash)]]
 }
 
 func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64) bool { // todo
-	//_, isExist := hs.Headers[headerKey(number, hash)]
-	_, isExist := hs.HeadersIdx[headerKey(number, hash)]
+	_, isExist := hs.Headers[headerKey(number, hash)]
+	//_, isExist := hs.HeadersIdx[headerKey(number, hash)]
 	return isExist
 }
 
 func (hs *HeaderStore) WriteTd(hash common.Hash, number uint64, td *big.Int) {
-	hs.TDsArray = append(hs.TDsArray, new(big.Int).SetUint64(td.Uint64()))
-	hs.TDsIdx[headerKey(number, hash)] = len(hs.TDsArray) - 1
+	hs.TDs[headerKey(number, hash)] = new(big.Int).SetUint64(td.Uint64())
+	//hs.TDsArray = append(hs.TDsArray, new(big.Int).SetUint64(td.Uint64()))
+	//hs.TDsIdx[headerKey(number, hash)] = len(hs.TDsArray) - 1
 }
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
@@ -465,11 +468,13 @@ func (hs *HeaderStore) CurrentHash() common.Hash {
 }
 
 func (hs *HeaderStore) GetHeader(hash common.Hash, number uint64) *Header { // todo
-	idx := hs.HeadersIdx[headerKey(number, hash)]
-	//if len(data) != 0 {
-	//	return decodeHeader(data, hash)
-	//}
-	return decodeHeader(hs.HeadersArray[idx], hash)
+	data := hs.Headers[headerKey(number, hash)]
+	if len(data) != 0 {
+		return decodeHeader(data, hash)
+	}
+	return nil
+	// idx := hs.HeadersIdx[headerKey(number, hash)]
+	// return decodeHeader(hs.HeadersArray[idx], hash)
 }
 
 func (hs *HeaderStore) GetHeaderByNumber(number uint64) *Header {
