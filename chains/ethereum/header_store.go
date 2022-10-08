@@ -53,8 +53,6 @@ type HeaderStore struct {
 	CanonicalNumberToHash map[uint64]common.Hash
 	CurNumber             uint64
 	CurHash               common.Hash
-	Head                  int
-	Tail                  int
 	HeaderNumber          []*big.Int
 }
 
@@ -262,6 +260,7 @@ func (hs *HeaderStore) WriteHeaderAndTd(hash common.Hash, number uint64, td *big
 	}
 	loadHeader.Headers[hash] = encodeHeader(header)
 	loadHeader.TDs[hash] = td
+	hs.HeaderNumber = append(hs.HeaderNumber, header.Number)
 	// store
 	return hs.StoreHeader(db, number, loadHeader)
 }
