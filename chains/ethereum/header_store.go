@@ -184,7 +184,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		}
 		h = *cp
 		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
-		hs.CanonicalNumberToHash = h.CanonicalNumberToHash
+		hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
 		return nil
 	}
 
