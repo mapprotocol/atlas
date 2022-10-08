@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	// EventHash cross-chain transaction event hash
-	// mapTransferOut(address indexed token, address indexed from, bytes32 indexed orderId, uint fromChain, uint toChain, bytes to, uint amount, bytes toChainToken);
-	// mapTransferOut(address,address,bytes32,uint256,uint256,bytes,uint256,bytes)
-	//EventHash = common.HexToHash("0x1d7c4ab437b83807c25950ac63192692227b29e3205a809db6a4c3841836eb02")
+// EventHash cross-chain transaction event hash
+// mapTransferOut(address indexed token, address indexed from, bytes32 indexed orderId, uint fromChain, uint toChain, bytes to, uint amount, bytes toChainToken);
+// mapTransferOut(address,address,bytes32,uint256,uint256,bytes,uint256,bytes)
+//EventHash = common.HexToHash("0x1d7c4ab437b83807c25950ac63192692227b29e3205a809db6a4c3841836eb02")
 )
 
 type TxProve struct {
@@ -76,7 +76,7 @@ func (v *Verify) getReceiptsRoot(db types.StateDB, blockNumber uint64) (common.H
 	if err := hs.Load(db); err != nil {
 		return common.Hash{}, err
 	}
-	header := hs.GetHeaderByNumber(blockNumber)
+	header := hs.GetHeaderByNumber(blockNumber, db)
 	if header == nil {
 		return common.Hash{}, fmt.Errorf("get header by number failed, number: %d", blockNumber)
 	}
