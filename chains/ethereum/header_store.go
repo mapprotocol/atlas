@@ -57,8 +57,8 @@ type HeaderStore struct {
 }
 
 type LightHeader struct {
-	Headers map[common.Hash][]byte
-	TDs     map[common.Hash]*big.Int
+	Headers map[string][]byte
+	TDs     map[string]*big.Int
 }
 
 func headerKey(number uint64, hash common.Hash) string {
@@ -120,6 +120,9 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 		HeaderNumber: make([]*big.Int, 0, MaxHeaderLimit),
 	}
 	h.HeaderNumber = append(h.HeaderNumber, header.Number)
+	if err := h.Store(state); err != nil {
+		return err
+	}
 	return h.WriteHeaderAndTd(hash, number, td, &header, state)
 }
 
@@ -158,6 +161,26 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 	log.Info("data", "len", len(data))
+	hash := tools.RlpHash(data)
+	storeCache.Cache.Add(hash, clone)
+	data = data[:0]
+	return nil
+}
+
+func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *LightHeader) error {
+	address := chains.EthereumHeaderStoreAddress
+	data, err := rlp.EncodeToBytes(header)
+	if err != nil {
+		log.Error("Failed to RLP encode HeaderStore", "err", err)
+		return err
+	}
+	// save 保存到数据库
+	state.SetPOWState(address, common.BigToHash(new(big.Int).SetUint64(number)), data)
+	// 保存到cache中
+	clone, err := cloneLightHeader(header)
+	if err != nil {
+		return err
+	}
 	hash := tools.RlpHash(data)
 	storeCache.Cache.Add(hash, clone)
 	data = data[:0]
@@ -233,33 +256,13 @@ func (hs *HeaderStore) LoadHeader(number uint64, db types.StateDB) (lh *LightHea
 	return &ret, nil
 }
 
-func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *LightHeader) error {
-	address := chains.EthereumHeaderStoreAddress
-	data, err := rlp.EncodeToBytes(header)
-	if err != nil {
-		log.Error("Failed to RLP encode HeaderStore", "err", err)
-		return err
-	}
-	// save 保存到数据库
-	state.SetPOWState(address, common.BigToHash(new(big.Int).SetUint64(number)), data)
-	// 保存到cache中
-	clone, err := cloneLightHeader(header)
-	if err != nil {
-		return err
-	}
-	hash := tools.RlpHash(data)
-	storeCache.Cache.Add(hash, clone)
-	data = data[:0]
-	return nil
-}
-
 func (hs *HeaderStore) WriteHeaderAndTd(hash common.Hash, number uint64, td *big.Int, header *Header, db types.StateDB) error {
 	loadHeader, err := hs.LoadHeader(number, db)
 	if err != nil {
 		return err
 	}
-	loadHeader.Headers[hash] = encodeHeader(header)
-	loadHeader.TDs[hash] = td
+	loadHeader.Headers[hash.String()] = encodeHeader(header)
+	loadHeader.TDs[hash.String()] = td
 	hs.HeaderNumber = append(hs.HeaderNumber, header.Number)
 	// store
 	return hs.StoreHeader(db, number, loadHeader)
@@ -270,7 +273,7 @@ func (hs *HeaderStore) GetTd(hash common.Hash, number uint64, db types.StateDB) 
 	if err != nil {
 		return nil
 	}
-	return loadHeader.TDs[hash]
+	return loadHeader.TDs[hash.String()]
 }
 
 func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64, db types.StateDB) bool {
@@ -278,7 +281,7 @@ func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64, db types.State
 	if err != nil {
 		return false
 	}
-	_, isExist := loadHeader.Headers[hash]
+	_, isExist := loadHeader.Headers[hash.String()]
 	return isExist
 }
 
@@ -479,7 +482,7 @@ func (hs *HeaderStore) GetHeader(hash common.Hash, number uint64, db types.State
 	if err != nil {
 		return nil
 	}
-	data := loadHeader.Headers[hash]
+	data := loadHeader.Headers[hash.String()]
 	if len(data) != 0 {
 		return decodeHeader(data, hash)
 	}
