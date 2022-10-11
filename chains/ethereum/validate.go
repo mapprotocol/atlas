@@ -61,6 +61,12 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainTy
 	if err := hs.Load(db); err != nil {
 		return 0, err
 	}
+	////log.Info("validate header stroe", "header", len(hs.HeaderNumber))
+	//for _, h := range hs.HeaderNumber {
+	//	if _, err := hs.LoadHeader(h.Uint64(), db); err != nil {
+	//		return 0, err
+	//	}
+	//}
 	currentNumber := hs.CurrentNumber()
 	firstNumber := chain[0].Number
 
@@ -68,11 +74,11 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainTy
 		return 0, fmt.Errorf("non contiguous insert, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	if firstNumber.Uint64() <= currentNumber - MaxHeaderLimit + 1 {
+	if firstNumber.Uint64() <= currentNumber-MaxHeaderLimit+1 {
 		return 0, fmt.Errorf("obsolete block, current number: %d, first number: %d", currentNumber, firstNumber)
 	}
 
-	abort, results := v.VerifyHeaders(hs, chain, chainType)
+	abort, results := v.VerifyHeaders(hs, chain, chainType, db)
 	defer close(abort)
 
 	for i := range chain {
@@ -84,7 +90,7 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainTy
 	return 0, nil
 }
 
-func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header, chainType chains.ChainType) (chan<- struct{}, <-chan error) {
+func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header, chainType chains.ChainType, db types.StateDB) (chan<- struct{}, <-chan error) {
 	// Spawn as many workers as allowed threads
 	workers := runtime.GOMAXPROCS(0)
 	if len(headers) < workers {
@@ -102,7 +108,7 @@ func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header, chainType c
 	for i := 0; i < workers; i++ {
 		go func() {
 			for index := range inputs {
-				errors[index] = v.verifyHeaderWorker(hs, headers, index, unixNow, chainType)
+				errors[index] = v.verifyHeaderWorker(hs, headers, index, unixNow, chainType, db)
 				done <- index
 			}
 		}()
@@ -138,10 +144,10 @@ func (v *Validate) VerifyHeaders(hs *HeaderStore, headers []*Header, chainType c
 	return abort, errorsOut
 }
 
-func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index int, unixNow int64, chainType chains.ChainType) error {
+func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index int, unixNow int64, chainType chains.ChainType, db types.StateDB) error {
 	var parent *Header
 	if index == 0 {
-		parent = hs.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+		parent = hs.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1, db)
 	} else if headers[index-1].Hash() == headers[index].ParentHash {
 		parent = headers[index-1]
 	}

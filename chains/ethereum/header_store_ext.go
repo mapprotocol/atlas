@@ -12,9 +12,9 @@ import (
 type extHeaderStore struct {
 	Numbers      []uint64
 	Hashes       []common.Hash
-	HeadersKey   []string
+	HeadersKey   []*big.Int
 	HeadersValue [][]byte
-	TDsKey       []string
+	TDsKey       []*big.Int
 	TDsValue     []*big.Int
 	CurNumber    uint64
 	CurHash      common.Hash
@@ -23,17 +23,15 @@ type extHeaderStore struct {
 func (hs *HeaderStore) EncodeRLP(w io.Writer) error {
 	var (
 		cl = len(hs.CanonicalNumberToHash)
-		hl = len(hs.Headers)
-		tl = len(hs.TDs)
+		hl = len(hs.HeaderNumber)
+		tl = len(hs.HeaderNumber)
 	)
 
 	var (
-		Numbers      = make([]uint64, 0, cl)
-		Hashes       = make([]common.Hash, 0, cl)
-		HeadersKey   = make([]string, 0, hl)
-		HeadersValue = make([][]byte, 0, hl)
-		TDsKey       = make([]string, 0, tl)
-		TDsValue     = make([]*big.Int, 0, tl)
+		Numbers    = make([]uint64, 0, cl)
+		Hashes     = make([]common.Hash, 0, cl)
+		HeadersKey = make([]*big.Int, 0, hl)
+		TDsKey     = make([]*big.Int, 0, tl)
 	)
 
 	for number := range hs.CanonicalNumberToHash {
@@ -46,31 +44,21 @@ func (hs *HeaderStore) EncodeRLP(w io.Writer) error {
 		Hashes = append(Hashes, hs.CanonicalNumberToHash[number])
 	}
 
-	for k := range hs.Headers {
+	for _, k := range hs.HeaderNumber {
 		HeadersKey = append(HeadersKey, k)
 	}
-	sort.Strings(HeadersKey)
-	for _, v := range HeadersKey {
-		HeadersValue = append(HeadersValue, hs.Headers[v])
-	}
 
-	for k := range hs.TDs {
+	for _, k := range hs.HeaderNumber {
 		TDsKey = append(TDsKey, k)
-	}
-	sort.Strings(TDsKey)
-	for _, v := range TDsKey {
-		TDsValue = append(TDsValue, hs.TDs[v])
 	}
 
 	return rlp.Encode(w, extHeaderStore{
-		Numbers:      Numbers,
-		Hashes:       Hashes,
-		HeadersKey:   HeadersKey,
-		HeadersValue: HeadersValue,
-		TDsKey:       TDsKey,
-		TDsValue:     TDsValue,
-		CurNumber:    hs.CurNumber,
-		CurHash:      hs.CurHash,
+		Numbers:    Numbers,
+		Hashes:     Hashes,
+		HeadersKey: HeadersKey,
+		TDsKey:     TDsKey,
+		CurNumber:  hs.CurNumber,
+		CurHash:    hs.CurHash,
 	})
 }
 
@@ -81,12 +69,73 @@ func (hs *HeaderStore) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	CanonicalNumberToHash := make(map[uint64]common.Hash)
-	Headers := make(map[string][]byte)
-	TDs := make(map[string]*big.Int)
+	headerNumber := make([]*big.Int, 0, len(eh.HeadersKey))
 
 	for i, number := range eh.Numbers {
 		CanonicalNumberToHash[number] = eh.Hashes[i]
 	}
+	for _, v := range eh.HeadersKey {
+		headerNumber = append(headerNumber, v)
+	}
+
+	hs.CurNumber, hs.CurHash = eh.CurNumber, eh.CurHash
+	hs.CanonicalNumberToHash, hs.HeaderNumber = CanonicalNumberToHash, headerNumber
+	return nil
+}
+
+type extLightHeader struct {
+	HeadersKey   []string
+	HeadersValue [][]byte
+	TDsKey       []string
+	TDsValue     []*big.Int
+}
+
+func (lh *LightHeader) EncodeRLP(w io.Writer) error {
+	var (
+		hl = len(lh.Headers)
+		tl = len(lh.TDs)
+	)
+
+	var (
+		HeadersKey   = make([]string, 0, hl)
+		HeadersValue = make([][]byte, 0, hl)
+		TDsKey       = make([]string, 0, tl)
+		TDsValue     = make([]*big.Int, 0, tl)
+	)
+
+	for k := range lh.Headers {
+		HeadersKey = append(HeadersKey, k)
+	}
+	sort.Strings(HeadersKey)
+	for _, v := range HeadersKey {
+		HeadersValue = append(HeadersValue, lh.Headers[v])
+	}
+
+	for k := range lh.TDs {
+		TDsKey = append(TDsKey, k)
+	}
+	sort.Strings(TDsKey)
+	for _, v := range TDsKey {
+		TDsValue = append(TDsValue, lh.TDs[v])
+	}
+
+	return rlp.Encode(w, extLightHeader{
+		HeadersKey:   HeadersKey,
+		TDsKey:       TDsKey,
+		HeadersValue: HeadersValue,
+		TDsValue:     TDsValue,
+	})
+}
+
+func (lh *LightHeader) DecodeRLP(s *rlp.Stream) error {
+	var eh extLightHeader
+	if err := s.Decode(&eh); err != nil {
+		return err
+	}
+
+	Headers := make(map[string][]byte)
+	TDs := make(map[string]*big.Int)
+
 	for i, k := range eh.HeadersKey {
 		Headers[k] = eh.HeadersValue[i]
 	}
@@ -94,7 +143,6 @@ func (hs *HeaderStore) DecodeRLP(s *rlp.Stream) error {
 		TDs[k] = eh.TDsValue[i]
 	}
 
-	hs.CurNumber, hs.CurHash = eh.CurNumber, eh.CurHash
-	hs.CanonicalNumberToHash, hs.Headers, hs.TDs = CanonicalNumberToHash, Headers, TDs
+	lh.Headers, lh.TDs = Headers, TDs
 	return nil
 }
