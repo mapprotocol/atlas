@@ -4,14 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	cfbn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 	"log"
 	"math/big"
 	"testing"
-
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func Test01(t *testing.T) {
@@ -310,7 +310,6 @@ func Test02(t *testing.T) {
 }
 
 ///////////////////////////////////////////////////////////////////////
-
 func TestBls2(t *testing.T) {
 	pub, priv, err1 := GenKeyPair(rand.Reader)
 	if err1 != nil {
@@ -333,4 +332,47 @@ func TestBls2(t *testing.T) {
 		fmt.Println(err)
 	}
 	fmt.Println("finish")
+}
+
+func TestBls03(t *testing.T) {
+	b0, err := hexutil.Decode("0x07b68ce4d3ba620d2c916b52a04331f9c1de66070ce9327c2b8ed57ad91ecaec")
+	if err != nil {
+		t.Error(err)
+	}
+	privateKeyBLS, err := DeserializePrivateKey(b0)
+	if err != nil {
+		t.Error(err)
+	}
+	publicKeyBLS := privateKeyBLS.ToPublic()
+	publicKeyBLSBytes := publicKeyBLS.Marshal()
+	t.Logf("public key: %x", publicKeyBLSBytes)
+
+	//address, _ := hex.DecodeString("0x6162636566676869")
+	msg := []byte{1}
+	pop, _ := Sign2(privateKeyBLS, publicKeyBLS, msg)
+	popBytes := pop.Marshal()
+	t.Logf("signature2: %x", popBytes)
+
+	pop2, _ := Sign(privateKeyBLS, publicKeyBLS, msg)
+	popBytes2 := pop2.Marshal()
+	t.Logf("signature1: %x", popBytes2)
+
+	err = Verify2(NewApk(publicKeyBLS), msg, pop)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finish")
+}
+func TestBls04(t *testing.T) {
+	//msg := []byte{1}
+	msg, err := hex.DecodeString("6162636566676869")
+	if err != nil {
+		t.Error(err)
+	}
+	g1, err := cfbn256.HashToG1(msg)
+	if err != nil {
+		t.Error(err)
+	}
+	b0 := g1.Marshal()
+	t.Logf("hash: %x", b0)
 }
