@@ -175,6 +175,7 @@ func reset(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 	if evm.chainConfig.ChainID.Cmp(new(big.Int).SetUint64(chainID)) != 0 {
+		log.Info("reset ----------- ", "cfgId", evm.chainConfig.ChainID, "chainID", chainID)
 		return nil, errors.New("current chainID does not match the from parameter")
 	}
 
