@@ -53,6 +53,7 @@ type HeaderStore struct {
 	CanonicalNumberToHash map[uint64]common.Hash
 	CurNumber             uint64
 	CurHash               common.Hash
+	HeaderNumber          []*big.Int
 }
 
 type LightHeader struct {
@@ -65,15 +66,16 @@ func headerKey(number uint64, hash common.Hash) string {
 }
 
 func (hs *HeaderStore) delOldHeaders() {
-	//length := len(hs.HeaderNumber)
-	//if length <= MaxHeaderLimit {
-	//	return
-	//}
-	//
-	//delTotal := length - MaxHeaderLimit
-	//hs.HeaderNumber = hs.HeaderNumber[delTotal:]
-	//log.Info("before cleaning up the old ethereum headers", "headers length", length)
-	//log.Info("after cleaning up the old ethereum headers", "headers length", len(hs.HeaderNumber))
+	length := len(hs.HeaderNumber)
+	log.Info("delOld -------------- length", "length", length, "height", hs.CurNumber)
+	if length <= MaxHeaderLimit {
+		return
+	}
+
+	delTotal := length - MaxHeaderLimit
+	hs.HeaderNumber = hs.HeaderNumber[delTotal:]
+	log.Info("before cleaning up the old ethereum headers", "headers length", length)
+	log.Info("after cleaning up the old ethereum headers", "headers length", len(hs.HeaderNumber))
 }
 
 func encodeHeader(header *Header) []byte {
@@ -96,6 +98,7 @@ func decodeHeader(data []byte, hash common.Hash) *Header {
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
 		CanonicalNumberToHash: make(map[uint64]common.Hash),
+		HeaderNumber:          make([]*big.Int, 0, MaxHeaderLimit), // 数组舍弃多少个，还是通过下标的方式
 	}
 }
 
@@ -113,9 +116,11 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 		CanonicalNumberToHash: map[uint64]common.Hash{
 			number: hash,
 		},
-		CurHash:   hash,
-		CurNumber: number,
+		CurHash:      hash,
+		CurNumber:    number,
+		HeaderNumber: make([]*big.Int, 0, MaxHeaderLimit),
 	}
+	h.HeaderNumber = append(h.HeaderNumber, header.Number)
 	if err := h.Store(state); err != nil {
 		return err
 	}
@@ -156,6 +161,7 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 
+	log.Info("Store save ", "curNumber", hs.CurNumber, "length", len(hs.HeaderNumber))
 	state.SetPOWState(address, key, data)
 
 	clone, err := cloneHeaderStore(hs)
@@ -207,7 +213,8 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		}
 		h = *cp
 		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
-		hs.CanonicalNumberToHash = h.CanonicalNumberToHash
+		hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
+		log.Info("Load cache ", "curNumber", hs.CurNumber, "length", len(hs.HeaderNumber))
 		return nil
 	}
 
@@ -222,6 +229,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	}
 	storeCache.Cache.Add(hash, clone)
 	hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
+	hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
 	return nil
 }
 
@@ -266,6 +274,7 @@ func (hs *HeaderStore) WriteHeaderAndTd(hash common.Hash, number uint64, td *big
 	}
 	loadHeader.Headers[hash.String()] = encodeHeader(header)
 	loadHeader.TDs[hash.String()] = td
+	hs.HeaderNumber = append(hs.HeaderNumber, header.Number)
 	// store
 	return hs.StoreHeader(db, number, loadHeader)
 }
