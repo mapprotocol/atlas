@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"math/big"
+	"sort"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
-
-	"sort"
+	"github.com/ethereum/go-ethereum/rlp"
+	"gopkg.in/urfave/cli.v1"
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/cmd/marker/account"
@@ -24,11 +27,6 @@ import (
 	"github.com/mapprotocol/atlas/helper/decimal"
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
-
-	"math/big"
-	"strings"
-
-	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -56,6 +54,14 @@ func NewListener(ctx *cli.Context, config *config.Config) *listener {
 		msgCh: make(chan struct{}),
 	}
 }
+
+func NewListenerNotConn(config *config.Config) *listener {
+	return &listener{
+		cfg:   config,
+		msgCh: make(chan struct{}),
+	}
+}
+
 func (l *listener) setWriter(w *writer) {
 	l.writer = w
 }
@@ -74,6 +80,20 @@ var registerValidatorCommand = cli.Command{
 	Name:   "register",
 	Usage:  "register validator",
 	Action: MigrateFlags(registerValidator),
+	Flags:  Flags,
+}
+
+var generateSignerProofCommand = cli.Command{
+	Name:   "generateSignerProof",
+	Usage:  "generate proof of signer",
+	Action: MigrateFlagsOfLocalCommand(generateSignerProof),
+	Flags:  Flags,
+}
+
+var registerValidatorByProofCommand = cli.Command{
+	Name:   "registerByProof",
+	Usage:  "register validator by signer proof",
+	Action: MigrateFlags(registerValidatorByProof),
 	Flags:  Flags,
 }
 
@@ -96,6 +116,14 @@ var authorizeValidatorSignerCommand = cli.Command{
 	Action: MigrateFlags(authorizeValidatorSigner),
 	Flags:  Flags,
 }
+
+var authorizeValidatorSignerSignatureCommand = cli.Command{
+	Name:   "authorizeValidatorSignerBySignature",
+	Usage:  "Finish the process of authorizing an address to sign on behalf of the account.",
+	Action: MigrateFlags(authorizeValidatorSignerBySignature),
+	Flags:  Flags,
+}
+
 var signerToAccountCommand = cli.Command{
 	Name:   "signerToAccount",
 	Usage:  "Returns the account associated with `signer`.",
@@ -105,13 +133,13 @@ var signerToAccountCommand = cli.Command{
 var makeECDSASignatureFromSignerCommand = cli.Command{
 	Name:   "makeECDSASignatureFromSigner",
 	Usage:  "print a ECDSASignature that signer sign the account(validator)",
-	Action: MigrateFlags(makeECDSASignatureFromsigner),
+	Action: MigrateFlagsOfLocalCommand(makeECDSASignatureFromSigner),
 	Flags:  Flags,
 }
 var makeBLSProofOfPossessionFromSignerCommand = cli.Command{
 	Name:   "makeBLSProofOfPossessionFromSigner",
 	Usage:  "print a BLSProofOfPossession that signer BLSSign the account(validator)",
-	Action: MigrateFlags(makeBLSProofOfPossessionFromsigner),
+	Action: MigrateFlagsOfLocalCommand(makeBLSProofOfPossessionFromsigner),
 	Flags:  Flags,
 }
 var deregisterValidatorCommand = cli.Command{
@@ -406,11 +434,44 @@ var getMgrMaintainerAddressCommand = cli.Command{
 	Flags:  Flags,
 }
 
+var transferCommand = cli.Command{
+	Name:   "transfer",
+	Usage:  "transfer",
+	Action: MigrateFlags(transfer),
+	Flags:  Flags,
+}
+
+var getAccountMetadataURLCommand = cli.Command{
+	Name:   "getAccountMetadataURL",
+	Usage:  "get metadata url of account",
+	Action: MigrateFlags(getAccountMetadataURL),
+	Flags:  Flags,
+}
+
+var setAccountMetadataURLCommand = cli.Command{
+	Name:   "setAccountMetadataURL",
+	Usage:  "set metadata url of account",
+	Action: MigrateFlags(setAccountMetadataURL),
+	Flags:  Flags,
+}
+
+var getAccountNameCommand = cli.Command{
+	Name:   "getAccountName",
+	Usage:  "get name of account",
+	Action: MigrateFlags(getAccountName),
+	Flags:  Flags,
+}
+
+var setAccountNameCommand = cli.Command{
+	Name:   "setAccountName",
+	Usage:  "set name of account",
+	Action: MigrateFlags(setAccountName),
+	Flags:  Flags,
+}
+
 //---------- validator -----------------
 func registerValidator(ctx *cli.Context, core *listener) error {
-	//----------------------------- registerValidator ---------------------------------
 	log.Info("=== Register validator ===")
-	//commision := fixed.MustNew(core.cfg.Commission).BigInt()
 	commision := big.NewInt(0).SetUint64(core.cfg.Commission)
 	log.Info("=== commision ===", "commision", commision)
 	if isPendingDeRegisterValidator(core) {
@@ -419,8 +480,6 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 		return nil
 	}
 	greater, lesser := registerUseFor(core)
-	//fmt.Println("=== greater, lesser ===", greater, lesser)
-	//_params := []interface{}{commision, lesser, greater,core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
 	if core.cfg.SignerPriv != "" {
 		SignerPriv := core.cfg.SignerPriv
 		priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
@@ -441,12 +500,79 @@ func registerValidator(ctx *cli.Context, core *listener) error {
 		core.cfg.BlsPub = blsPub
 		core.cfg.BlsG1Pub = blsG1Pub
 		core.cfg.BLSProof = _account.MustBLSProofOfPossession()
-		BLSProofOfPossession := makeBLSProofOfPossessionFromsigner_(core.cfg.From, core)
-		core.cfg.BLSProof = BLSProofOfPossession.Marshal()
+		//BLSProofOfPossession := makeBLSProofOfPossessionFromsigner_(core.cfg.From, core)
+		//core.cfg.BLSProof = BLSProofOfPossession.Marshal()
+		core.cfg.BLSProof = makeBLSProofOfPossessionFromSigner_(core.cfg.From, core.cfg.SignerPriv).Marshal()
 	}
 	validatorParams := [4][]byte{core.cfg.BlsPub[:], core.cfg.BlsG1Pub[:], core.cfg.BLSProof, core.cfg.PublicKey[1:]}
 
 	_params := []interface{}{commision, lesser, greater, validatorParams}
+	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
+	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+type Proof struct {
+	PublicKey      []byte
+	BLSPublicKey   [128]byte
+	BLSG1PublicKey [64]byte
+	BLSProof       []byte
+}
+
+func generateSignerProof(_ *cli.Context, core *listener) error {
+	log.Info("generateBLSProof", "validator", core.cfg.AccountAddress, "signerPrivate", core.cfg.SignerPriv)
+	private, err := crypto.ToECDSA(common.FromHex(core.cfg.SignerPriv))
+	if err != nil {
+		return err
+	}
+	publicAddr := crypto.PubkeyToAddress(private.PublicKey)
+	_account := &account.Account{Address: publicAddr, PrivateKey: private}
+	blsPub, err := _account.BLSPublicKey()
+	if err != nil {
+		return err
+	}
+	blsG1Pub, err := _account.BLSG1PublicKey()
+	if err != nil {
+		return err
+	}
+
+	args := Proof{
+		PublicKey:      _account.PublicKey(),
+		BLSPublicKey:   blsPub,
+		BLSG1PublicKey: blsG1Pub,
+		BLSProof:       makeBLSProofOfPossessionFromSigner_(core.cfg.AccountAddress, core.cfg.SignerPriv).Marshal(),
+	}
+	enc, err := rlp.EncodeToBytes(args)
+	if err != nil {
+		return err
+	}
+	log.Info("generateBLSProof", "proof", hexutil.Encode(enc))
+	return nil
+}
+
+func registerValidatorByProof(_ *cli.Context, core *listener) error {
+	commission := new(big.Int).SetUint64(core.cfg.Commission)
+	log.Info("registerValidatorByProof", "commission", commission)
+	if isPendingDeRegisterValidator(core) {
+		log.Info("the account is in PendingDeRegisterValidator list please use revertRegisterValidator command")
+		return nil
+	}
+	greater, lesser := registerUseFor(core)
+	dec, err := hexutil.Decode(core.cfg.Proof)
+	if err != nil {
+		return err
+	}
+	pf := new(Proof)
+	if err := rlp.DecodeBytes(dec, pf); err != nil {
+		return err
+	}
+
+	validatorParams := [4][]byte{pf.BLSPublicKey[:], pf.BLSG1PublicKey[:], pf.BLSProof, pf.PublicKey[1:]}
+
+	_params := []interface{}{commission, lesser, greater, validatorParams}
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "registerValidator", _params...)
@@ -538,7 +664,7 @@ func setNextCommissionUpdate(_ *cli.Context, core *listener) error {
 }
 
 func updateCommission(_ *cli.Context, core *listener) error {
-	log.Info("=== setNextCommissionUpdate ===", "commission", core.cfg.Commission)
+	log.Info("=== updateCommission ===")
 	ValidatorAddress := core.cfg.ValidatorParameters.ValidatorAddress
 	abiValidators := core.cfg.ValidatorParameters.ValidatorABI
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, ValidatorAddress, nil, abiValidators, "updateCommission")
@@ -577,7 +703,7 @@ func createAccount(core *listener) {
 	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
 
 	logger := log.New("func", "createAccount")
-	logger.Info("Create account", "address", core.cfg.From, "name", core.cfg.NamePrefix)
+	logger.Info("Create account", "address", core.cfg.From, "name", core.cfg.Name)
 	log.Info("=== create Account ===")
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "createAccount")
 	go core.writer.ResolveMessage(m)
@@ -587,7 +713,7 @@ func createAccount(core *listener) {
 	}
 
 	log.Info("=== setName name ===")
-	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.NamePrefix)
+	m = NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.Name)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	if !isContinueError {
@@ -606,8 +732,8 @@ func createAccount(core *listener) {
    need signer private
 */
 func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
-	//SignerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
-	SignatureStr, signer := makeECDSASignatureFromsigner_(core) // signer sign account
+	// 	SignatureStr, signer := makeECDSASignatureFromsigner_(core) // signer sign account
+	SignatureStr, signer := makeECDSASignatureFromSigner_(core.cfg.From, core.cfg.SignerPriv) // signer sign account
 	Signature, err := hexutil.Decode(SignatureStr)
 	if err != nil {
 		panic(err)
@@ -619,9 +745,27 @@ func authorizeValidatorSigner(_ *cli.Context, core *listener) error {
 	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
 
 	logger := log.New("func", "authorizeValidatorSigner")
-	logger.Info("authorizeValidatorSigner", "address", core.cfg.From)
+	logger.Info("authorizeValidatorSigner", "validator", core.cfg.From, "signer", signer)
 	log.Info("=== authorizeValidatorSigner ===")
 	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "authorizeValidatorSigner", signer, v, r, s)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func authorizeValidatorSignerBySignature(_ *cli.Context, core *listener) error {
+	Signature, err := hexutil.Decode(core.cfg.Signature)
+	if err != nil {
+		panic(err)
+	}
+	v := uint8(new(big.Int).SetBytes([]byte{Signature[64] + 27}).Uint64())
+	r := common.BytesToHash(Signature[:32])
+	s := common.BytesToHash(Signature[32:64])
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+
+	log.Info("authorizeValidatorSignerBySignature", "signer", core.cfg.SignerAddress, "signature", core.cfg.Signature)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "authorizeValidatorSigner", core.cfg.SignerAddress, v, r, s)
 	go core.writer.ResolveMessage(m)
 	core.waitUntilMsgHandled(1)
 	return nil
@@ -647,21 +791,23 @@ func signerToAccount(_ *cli.Context, core *listener) error {
 note:signer function
 print a ECDSASignature that signer sign the account(validator)
 */
-func makeECDSASignatureFromsigner(_ *cli.Context, core *listener) error {
-	core.cfg.From = core.cfg.TargetAddress
-	makeECDSASignatureFromsigner_(core)
+func makeECDSASignatureFromSigner(_ *cli.Context, core *listener) error {
+	//core.cfg.From = core.cfg.TargetAddress
+	makeECDSASignatureFromSigner_(core.cfg.TargetAddress, core.cfg.SignerPriv)
 	return nil
 }
-func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
-	log.Info("=== makeECDSASignatureFromsigner ===")
-	SignerPriv := core.cfg.SignerPriv
-	priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
+
+// func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
+func makeECDSASignatureFromSigner_(validator common.Address, signerPrivate string) (string, common.Address) {
+	log.Info("=== makeECDSASignatureFromSigner ===")
+	// SignerPriv := core.cfg.SignerPriv
+	priv, err := crypto.ToECDSA(common.FromHex(signerPrivate))
 	if err != nil {
 		panic(err)
 	}
 	signer := crypto.PubkeyToAddress(priv.PublicKey)
-	account_ := core.cfg.From
-	hash := accounts.TextHash(crypto.Keccak256(account_[:]))
+	// account_ := core.cfg.From
+	hash := accounts.TextHash(crypto.Keccak256(validator[:]))
 	sig, err := crypto.Sign(hash, priv)
 	if err != nil {
 		panic(err)
@@ -682,17 +828,17 @@ func makeECDSASignatureFromsigner_(core *listener) (string, common.Address) {
   print a BLSProofOfPossession that signer BLSSign the account(validator)
 */
 func makeBLSProofOfPossessionFromsigner(_ *cli.Context, core *listener) error {
-	signature := makeBLSProofOfPossessionFromsigner_(core.cfg.AccountAddress, core)
+	// 	signature := makeBLSProofOfPossessionFromsigner_(core.cfg.AccountAddress, core)
+	signature := makeBLSProofOfPossessionFromSigner_(core.cfg.AccountAddress, core.cfg.SignerPriv)
 	log.Info("=== pop ===", "result", hexutil.Encode(signature.Marshal()))
 	return nil
 }
 
-func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener) *bls.UnsafeSignature {
-	log.Info("=== makeBLSProofOfPossessionFromsigner ===")
-	//account:= common.HexToAddress("0x6621F2b6Da2BEd64b5fFBD6C5b2138547f44C8f9")
-	//SignerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"
-	SignerPriv := core.cfg.SignerPriv
-	privECDSA, err := crypto.ToECDSA(common.FromHex(SignerPriv))
+// func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener) *bls.UnsafeSignature {
+func makeBLSProofOfPossessionFromSigner_(message common.Address, signerPrivate string) *bls.UnsafeSignature {
+	log.Info("=== makeBLSProofOfPossessionFromSigner ===")
+	//SignerPriv := core.cfg.SignerPriv
+	privECDSA, err := crypto.ToECDSA(common.FromHex(signerPrivate))
 	if err != nil {
 		panic(err)
 	}
@@ -705,7 +851,7 @@ func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener)
 	if err != nil {
 		panic(err)
 	}
-	signature, err := bls.UnsafeSign(privateKey, message.Bytes())
+	signature, err := bls.UnsafeSign2(privateKey, message.Bytes())
 	if err != nil {
 		panic(err)
 	}
@@ -715,7 +861,7 @@ func makeBLSProofOfPossessionFromsigner_(message common.Address, core *listener)
 	//}
 	//log.Info("makeBLSProofOfPossessionFromsigner","BLS Public key", blsPubKeyText)
 	//test
-	if err := bls.VerifyUnsafe(pk, message.Bytes(), signature); err != nil {
+	if err := bls.VerifyUnsafe2(pk, message.Bytes(), signature); err != nil {
 		panic(err)
 	}
 	return signature
@@ -1454,6 +1600,69 @@ func getMgrMaintainerAddress(_ *cli.Context, core *listener) error {
 	return nil
 }
 
+func transfer(_ *cli.Context, core *listener) error {
+	amount, ok := new(big.Int).SetString(core.cfg.Amount, 10)
+	if !ok {
+		log.Error("invalid amount", "amount ", core.cfg.Amount)
+		return nil
+	}
+	if amount.Cmp(big.NewInt(0)) != 1 {
+		log.Error("transfer amount must be greater than 0", "amount", core.cfg.Amount)
+		return nil
+	}
+
+	txHash, err := sendContractTransaction(core.conn, core.cfg.From, core.cfg.TargetAddress, amount, core.cfg.PrivateKey, nil, 0)
+	if err != nil {
+		return err
+	}
+	getResult(core.conn, txHash, false)
+	log.Info("transfer success", "from ", core.cfg.From, "to", core.cfg.TargetAddress, "amount", core.cfg.Amount)
+	return nil
+}
+
+func getAccountMetadataURL(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+	var ret interface{}
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, accountsAddress, nil, abiAccounts, "getMetadataURL", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("get account metadata url", "address", core.cfg.TargetAddress, "url", ret)
+	return nil
+}
+
+func setAccountMetadataURL(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+
+	log.Info("set account metadata url", "address", core.cfg.From, "url", core.cfg.MetadataURL)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setMetadataURL", core.cfg.MetadataURL)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
+func getAccountName(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+	var ret interface{}
+	m := NewMessageRet1(SolveQueryResult3, core.msgCh, core.cfg, &ret, accountsAddress, nil, abiAccounts, "getName", core.cfg.TargetAddress)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	log.Info("get name", "address", core.cfg.TargetAddress, "name", ret)
+	return nil
+}
+
+func setAccountName(_ *cli.Context, core *listener) error {
+	abiAccounts := core.cfg.AccountsParameters.AccountsABI
+	accountsAddress := core.cfg.AccountsParameters.AccountsAddress
+	log.Info("set name", "address", core.cfg.From, "name", core.cfg.Name)
+	m := NewMessage(SolveSendTranstion1, core.msgCh, core.cfg, accountsAddress, nil, abiAccounts, "setName", core.cfg.Name)
+	go core.writer.ResolveMessage(m)
+	core.waitUntilMsgHandled(1)
+	return nil
+}
+
 //-------------------- getLesser getGreater -------
 //Sub todo judge locked and withdrawal comparison
 func getGLSub(core *listener, SubValue *big.Int, target common.Address) (common.Address, common.Address, error) {
@@ -1509,7 +1718,6 @@ func getGLSub(core *listener, SubValue *big.Int, target common.Address) (common.
 				}
 			}
 			return greater, lesser, nil
-			break
 		}
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
@@ -1579,7 +1787,6 @@ func getGL(core *listener, target common.Address) (common.Address, common.Addres
 				}
 			}
 			return greater, lesser, nil
-			break
 		}
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError
@@ -1645,7 +1852,6 @@ func getGL2(core *listener, target common.Address) (common.Address, common.Addre
 				}
 			}
 			return greater, lesser, nil
-			break
 		}
 	}
 	return params.ZeroAddress, params.ZeroAddress, NoTargetValidatorError

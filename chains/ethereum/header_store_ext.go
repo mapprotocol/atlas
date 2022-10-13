@@ -47,10 +47,6 @@ func (hs *HeaderStore) EncodeRLP(w io.Writer) error {
 	for _, k := range hs.HeaderNumber {
 		HeadersKey = append(HeadersKey, k)
 	}
-	//sort.Strings(HeadersKey)
-	//for _, v := range HeadersKey {
-	//	HeadersValue = append(HeadersValue, hs.Headers[v])
-	//}
 
 	for _, k := range hs.HeaderNumber {
 		TDsKey = append(TDsKey, k)
@@ -73,13 +69,17 @@ func (hs *HeaderStore) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	CanonicalNumberToHash := make(map[uint64]common.Hash)
+	headerNumber := make([]*big.Int, 0, len(eh.HeadersKey))
 
 	for i, number := range eh.Numbers {
 		CanonicalNumberToHash[number] = eh.Hashes[i]
 	}
+	for _, v := range eh.HeadersKey {
+		headerNumber = append(headerNumber, v)
+	}
 
 	hs.CurNumber, hs.CurHash = eh.CurNumber, eh.CurHash
-	hs.CanonicalNumberToHash = CanonicalNumberToHash
+	hs.CanonicalNumberToHash, hs.HeaderNumber = CanonicalNumberToHash, headerNumber
 	return nil
 }
 
@@ -111,8 +111,8 @@ func (lh *LightHeader) EncodeRLP(w io.Writer) error {
 		HeadersValue = append(HeadersValue, lh.Headers[v])
 	}
 
-	for _, k := range lh.TDs {
-		TDsKey = append(TDsKey, k.String())
+	for k := range lh.TDs {
+		TDsKey = append(TDsKey, k)
 	}
 	sort.Strings(TDsKey)
 	for _, v := range TDsKey {

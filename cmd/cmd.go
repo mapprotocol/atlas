@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"gopkg.in/urfave/cli.v1"
 
 	"github.com/mapprotocol/atlas/accounts"
@@ -43,6 +42,7 @@ import (
 	"github.com/mapprotocol/atlas/cmd/utils"
 	"github.com/mapprotocol/atlas/helper/debug"
 	"github.com/mapprotocol/atlas/helper/flags"
+	"github.com/mapprotocol/atlas/metrics"
 )
 
 const (
@@ -260,10 +260,10 @@ func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
 	switch {
 	case ctx.GlobalIsSet(utils.TestnetFlag.Name):
-		log.Info("Starting Atlas on Ropsten testnet...")
+		log.Info("Starting Atlas on testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Atlas in ephemeral dev mode...")
+		log.Info("Starting Atlas on devnet...")
 
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
 		log.Info("Starting Atlas on map protocol atlas mainnet...")

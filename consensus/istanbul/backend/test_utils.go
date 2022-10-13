@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/core/chain"
+	"math/big"
 	"strings"
 	"time"
 
@@ -318,7 +319,7 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 		key, _ = generatePrivateKey()
 	}
 
-	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+	return func(_ accounts.Account, data []byte, extraData []byte, useComposite, cip22 bool, fork *big.Int, cur *big.Int) (blscrypto.SerializedSignature, error) {
 
 		keybytes, err := blscrypto.CryptoType().ECDSAToBLS(key)
 		if err != nil {
@@ -337,7 +338,13 @@ func SignBLSFn(key *ecdsa.PrivateKey) istanbul.BLSSignerFn {
 		//if err != nil {
 		//	return blscrypto.SerializedSignature{}, err
 		//}
-		signature, err := blscrypto.Sign(prikey, prikey.ToPublic(), data)
+		var signature *blscrypto.Signature
+		if params.IsBN256Fork(fork, cur) {
+			signature, err = blscrypto.Sign2(prikey, prikey.ToPublic(), data)
+		} else {
+			signature, err = blscrypto.Sign(prikey, prikey.ToPublic(), data)
+		}
+
 		if err != nil {
 			return blscrypto.SerializedSignature{}, err
 		}

@@ -146,7 +146,7 @@ type Wallet interface {
 	SignHash(account Account, hash []byte) ([]byte, error)
 
 	// SignBLS generates a BLS signature over the provided data with a direct or composite hasher
-	SignBLS(account Account, msg []byte, extraData []byte, useComposite, cip22 bool) (bls.SerializedSignature, error)
+	SignBLS(account Account, msg []byte, extraData []byte, useComposite, cip22 bool, fork, cur *big.Int) (bls.SerializedSignature, error)
 
 	GetPublicKey(account Account) (*ecdsa.PublicKey, error)
 

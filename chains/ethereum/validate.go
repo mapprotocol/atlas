@@ -61,6 +61,12 @@ func (v *Validate) ValidateHeaderChain(db types.StateDB, headers []byte, chainTy
 	if err := hs.Load(db); err != nil {
 		return 0, err
 	}
+	////log.Info("validate header stroe", "header", len(hs.HeaderNumber))
+	//for _, h := range hs.HeaderNumber {
+	//	if _, err := hs.LoadHeader(h.Uint64(), db); err != nil {
+	//		return 0, err
+	//	}
+	//}
 	currentNumber := hs.CurrentNumber()
 	firstNumber := chain[0].Number
 

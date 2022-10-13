@@ -25,6 +25,7 @@ import (
 	crand "crypto/rand"
 	"errors"
 	bn256 "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -525,7 +526,7 @@ func (ks *KeyStore) Decrypt(a accounts.Account, c, s1, s2 []byte) ([]byte, error
 	return eciesKey.Decrypt(c, s1, s2)
 }
 
-func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, useComposite, cip22 bool, fork, cur *big.Int) (blscrypto.SerializedSignature, error) {
 	// Look up the key to sign with and abort if it cannot be found
 	ks.mu.RLock()
 	defer ks.mu.RUnlock()
@@ -550,7 +551,13 @@ func (ks *KeyStore) SignBLS(a accounts.Account, msg []byte, extraData []byte, us
 	//	return blscrypto.SerializedSignature{}, err
 	//}
 	//pk, err := bn256.UnmarshalPk(pubkey)
-	sign, err := bn256.UnsafeSign(blskey, msg)
+	var sign *bn256.UnsafeSignature
+	if params.IsBN256Fork(fork, cur) {
+		sign, err = bn256.UnsafeSign2(blskey, msg)
+	} else {
+		sign, err = bn256.UnsafeSign(blskey, msg)
+	}
+
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}

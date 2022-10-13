@@ -21,13 +21,14 @@ var (
 		config.KeyFlag,
 		config.KeyStoreFlag,
 		config.RPCListenAddrFlag,
-		config.RPCPortFlag,
 		config.ValueFlag,
+		config.AmountFlag,
 		config.DurationFlag,
 		config.PasswordFlag,
 		config.CommissionFlag,
 		config.RelayerfFlag,
-		config.NamePrefixFlag,
+		config.NameFlag,
+		config.URLFlag,
 		config.VoteNumFlag,
 		config.TopNumFlag,
 		config.LockedNumFlag,
@@ -37,6 +38,9 @@ var (
 		config.ValidatorAddressFlag,
 		config.AccountAddressFlag,
 		config.SignerPrivFlag,
+		config.SignerFlag,
+		config.SignatureFlag,
+		config.ProofFlag,
 		config.ContractAddressFlag,
 		config.MAPValueFlag,
 		config.GasLimitFlag,
@@ -48,7 +52,7 @@ func init() {
 	app = cli.NewApp()
 	app.Usage = "Atlas Marker Tool"
 	app.Name = "marker"
-	app.Version = "1.0.0"
+	app.Version = "1.2.1"
 	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
 	app.Action = MigrateFlags(registerValidator)
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
@@ -59,9 +63,12 @@ func init() {
 	app.Commands = []cli.Command{
 		//------ validator -----
 		registerValidatorCommand,
+		generateSignerProofCommand,
+		registerValidatorByProofCommand,
 		revertRegisterValidatorCommand,
 		quicklyRegisterValidatorCommand,
 		authorizeValidatorSignerCommand,
+		authorizeValidatorSignerSignatureCommand,
 		signerToAccountCommand,
 		makeECDSASignatureFromSignerCommand,
 		makeBLSProofOfPossessionFromSignerCommand,
@@ -112,6 +119,11 @@ func init() {
 		setEpochMaintainerPaymentFractionCommand,
 		setMgrMaintainerAddressCommand,
 		getMgrMaintainerAddressCommand,
+		transferCommand,
+		getAccountMetadataURLCommand,
+		setAccountMetadataURLCommand,
+		getAccountNameCommand,
+		setAccountNameCommand,
 		//---------- CreateGenesis --------
 		genesis.CreateGenesisCommand,
 
@@ -154,6 +166,33 @@ func MigrateFlags(hdl func(ctx *cli.Context, config *listener) error) func(*cli.
 		}
 		core := NewListener(ctx, _config)
 		writer := NewWriter(ctx, _config)
+		core.setWriter(writer)
+		return hdl(ctx, core)
+	}
+}
+
+func MigrateFlagsOfLocalCommand(hdl func(ctx *cli.Context, config *listener) error) func(*cli.Context) error {
+	return func(ctx *cli.Context) error {
+		for _, name := range ctx.FlagNames() {
+			if ctx.IsSet(name) {
+				err := ctx.Set(name, ctx.String(name))
+				if err != nil {
+					log.Error("MigrateFlags", "=== err ===", err, ctx.IsSet(name))
+				}
+			}
+		}
+		cfg, err := config.AssemblyConfig(ctx)
+		if err != nil {
+			cli.ShowAppHelpAndExit(ctx, 1)
+			panic(err)
+		}
+		err = startLogger(ctx, cfg)
+		if err != nil {
+			cli.ShowAppHelpAndExit(ctx, 1)
+			panic(err)
+		}
+		core := NewListenerNotConn(cfg)
+		writer := NewWriterNotConn(cfg)
 		core.setWriter(writer)
 		return hdl(ctx, core)
 	}

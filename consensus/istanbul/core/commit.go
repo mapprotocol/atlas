@@ -18,6 +18,7 @@ package core
 
 import (
 	"errors"
+	"math/big"
 	"reflect"
 	"time"
 
@@ -39,8 +40,9 @@ func (c *core) sendCommit() {
 }
 
 func (c *core) generateCommittedSeal(sub *istanbul.Subject) (blscrypto.SerializedSignature, error) {
+	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(sub.View.Sequence)
 	seal := PrepareCommittedSeal(sub.Digest, sub.View.Round)
-	committedSeal, err := c.backend.SignBLS(seal, []byte{}, false, false)
+	committedSeal, err := c.backend.SignBLS(seal, []byte{}, false, false, fork, cur)
 	if err != nil {
 		return blscrypto.SerializedSignature{}, err
 	}
@@ -85,6 +87,7 @@ func (c *core) generateEpochValidatorSetData(blockNumber uint64, round uint8, bl
 func (c *core) broadcastCommit(sub *istanbul.Subject) {
 	logger := c.newLogger("func", "broadcastCommit")
 
+	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(sub.View.Sequence)
 	committedSeal, err := c.generateCommittedSeal(sub)
 	if err != nil {
 		logger.Error("Failed to commit seal", "err", err)
@@ -104,7 +107,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 	}
 	var epochValidatorSetSeal blscrypto.SerializedSignature
 	if err == nil {
-		epochValidatorSetSeal, err = c.backend.SignBLS(epochValidatorSetData, epochValidatorSetExtraData, true, cip22)
+		epochValidatorSetSeal, err = c.backend.SignBLS(epochValidatorSetData, epochValidatorSetExtraData, true, cip22, fork, cur)
 		if err != nil {
 			logger.Error("Failed to sign epoch validator set seal", "err", err)
 			return
@@ -156,7 +159,8 @@ func (c *core) handleCheckedCommitForPreviousSequence(msg *istanbul.Message, com
 	if validator == nil {
 		return errInvalidValidatorAddress
 	}
-	if err := c.verifyCommittedSeal(commit, validator); err != nil {
+	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(headBlock.Number())
+	if err := c.verifyCommittedSeal(commit, validator, fork, cur); err != nil {
 		return errInvalidCommittedSeal
 	}
 	if headBlock.Number().Uint64() > 0 {
@@ -186,7 +190,8 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 		return errInvalidValidatorAddress
 	}
 
-	if err := c.verifyCommittedSeal(commit, validator); err != nil {
+	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(c.current.Proposal().Number())
+	if err := c.verifyCommittedSeal(commit, validator, fork, cur); err != nil {
 		return errInvalidCommittedSeal
 	}
 
@@ -256,13 +261,15 @@ func (c *core) verifyCommit(commit *istanbul.CommittedSubject) error {
 }
 
 // verifyCommittedSeal verifies the commit seal in the received COMMIT message
-func (c *core) verifyCommittedSeal(comSub *istanbul.CommittedSubject, src istanbul.Validator) error {
+func (c *core) verifyCommittedSeal(comSub *istanbul.CommittedSubject, src istanbul.Validator, fork, cur *big.Int) error {
 	seal := PrepareCommittedSeal(comSub.Subject.Digest, comSub.Subject.View.Round)
-	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), seal, []byte{}, comSub.CommittedSeal, false, false)
+	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), seal, []byte{}, comSub.CommittedSeal,
+		false, false, fork, cur)
 }
 
 // verifyEpochValidatorSetSeal verifies the epoch validator set seal in the received COMMIT message
-func (c *core) verifyEpochValidatorSetSeal(comSub *istanbul.CommittedSubject, blockNumber uint64, newValSet istanbul.ValidatorSet, src istanbul.Validator) error {
+func (c *core) verifyEpochValidatorSetSeal(comSub *istanbul.CommittedSubject, blockNumber uint64,
+	newValSet istanbul.ValidatorSet, src istanbul.Validator) error {
 	if blockNumber == 0 {
 		return nil
 	}
@@ -273,5 +280,7 @@ func (c *core) verifyEpochValidatorSetSeal(comSub *istanbul.CommittedSubject, bl
 		}
 		return err
 	}
-	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), epochData, epochExtraData, comSub.EpochValidatorSetSeal, true, cip22)
+	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), big.NewInt(int64(blockNumber))
+	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), epochData, epochExtraData,
+		comSub.EpochValidatorSetSeal, true, cip22, fork, cur)
 }

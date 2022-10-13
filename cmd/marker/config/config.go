@@ -50,6 +50,7 @@ type Config struct {
 	BlsG1Pub   blscrypto.SerializedG1PublicKey
 	BLSProof   []byte
 	Value      uint64
+	Amount     string
 	Duration   int64
 	Commission uint64
 	Fixed      string
@@ -64,12 +65,15 @@ type Config struct {
 	ContractAddress       common.Address
 	SignerPriv            string
 	AccountAddress        common.Address //validator
+	SignerAddress         common.Address
+	Signature             string
+	Proof                 string
 	ImplementationAddress common.Address
-	Ip                    string
-	Port                  int
+	RPCAddr               string
 	GasLimit              int64
 	Verbosity             string
-	NamePrefix            string
+	Name                  string
+	MetadataURL           string
 	LockedGoldParameters  LockedGoldParameters
 	AccountsParameters    AccountsParameters
 	ValidatorParameters   ValidatorParameters
@@ -88,7 +92,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config.TargetAddress = params.ZeroAddress
 	config.Commission = 1000000 //default 1  be relative to 1000,000
 	config.Verbosity = "3"
-	config.NamePrefix = "validator"
+	config.Name = "validator"
 
 	//-----------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {
@@ -118,6 +122,15 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(SignerPrivFlag.Name) {
 		config.SignerPriv = ctx.String(SignerPrivFlag.Name)
 	}
+	if ctx.IsSet(SignerFlag.Name) {
+		config.SignerAddress = common.HexToAddress(ctx.String(SignerFlag.Name))
+	}
+	if ctx.IsSet(SignatureFlag.Name) {
+		config.Signature = ctx.String(SignatureFlag.Name)
+	}
+	if ctx.IsSet(ProofFlag.Name) {
+		config.Proof = ctx.String(ProofFlag.Name)
+	}
 	if ctx.IsSet(ImplementationAddressFlag.Name) {
 		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))
 	}
@@ -126,6 +139,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	}
 	if ctx.IsSet(ValueFlag.Name) {
 		config.Value = ctx.Uint64(ValueFlag.Name)
+	}
+	if ctx.IsSet(AmountFlag.Name) {
+		config.Amount = ctx.String(AmountFlag.Name)
 	}
 	if ctx.IsSet(DurationFlag.Name) {
 		config.Duration = ctx.Int64(DurationFlag.Name)
@@ -148,14 +164,14 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(VerbosityFlag.Name) {
 		config.Verbosity = ctx.String(VerbosityFlag.Name)
 	}
-	if ctx.IsSet(NamePrefixFlag.Name) {
-		config.NamePrefix = ctx.String(NamePrefixFlag.Name)
+	if ctx.IsSet(NameFlag.Name) {
+		config.Name = ctx.String(NameFlag.Name)
+	}
+	if ctx.IsSet(URLFlag.Name) {
+		config.MetadataURL = ctx.String(URLFlag.Name)
 	}
 	if ctx.IsSet(RPCListenAddrFlag.Name) {
-		config.Ip = ctx.String(RPCListenAddrFlag.Name)
-	}
-	if ctx.IsSet(RPCPortFlag.Name) {
-		config.Port = ctx.Int(RPCPortFlag.Name)
+		config.RPCAddr = ctx.String(RPCListenAddrFlag.Name)
 	}
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)

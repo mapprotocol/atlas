@@ -10,7 +10,7 @@ const (
 	MainNetChainID uint64 = 22776
 	TestNetChainID uint64 = 212
 	DevNetChainID  uint64 = 213
-	Epoch          uint64 = 1000
+	Epoch          uint64 = 2000
 )
 
 // network id
@@ -22,9 +22,9 @@ const (
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
+	MainnetGenesisHash = common.HexToHash("0x6b2bd27bee0f7675550204c541a30cc6a14aa1738431cb60e21e666b2fec8014")
 	TestnetGenesisHash = common.HexToHash("0x221d3d4a9df0d2566ae1e5704917bef9447bb3da2114aa3729e2319540d451cc")
-	DevnetGenesisHash  = common.HexToHash("0x9a2c09dc9f15e67f86dbf339e148ba0b4d0170fbfb72e420e30eaae1604b6669")
+	DevnetGenesisHash  = common.HexToHash("0xa7712fd6f430d32fbc796665289bf9702b6991e96393fd670e7834c48e15755f")
 )
 
 var (
@@ -44,6 +44,8 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(1125000),
+		BN256ForkBlock:      big.NewInt(2000000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          Epoch,
 			ProposerPolicy: 2,
@@ -69,8 +71,10 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(3000),
+		BN256ForkBlock:      big.NewInt(20000),
 		Istanbul: &IstanbulConfig{
-			Epoch:          1000,
+			Epoch:          2000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -94,8 +98,10 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(0),
 		Istanbul: &IstanbulConfig{
-			Epoch:          17280,
+			Epoch:          1000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -119,6 +125,8 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(2000),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
@@ -149,11 +157,13 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(3000),
+		BN256ForkBlock:      big.NewInt(2000),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
 		Istanbul: &IstanbulConfig{
-			Epoch:          17280,
+			Epoch:          2000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -177,6 +187,8 @@ var (
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(2000),
 		BerlinBlock:         nil,
 		LondonBlock:         nil,
 		DonutBlock:          nil,

@@ -43,13 +43,17 @@ func TestDefaultGenesisBlock(t *testing.T) {
 	fmt.Println("address:", common.Address{}.String())
 	EmptyRootHash0 := types.DeriveSha(types.Transactions{}, trie.NewStackTrie(nil))
 	fmt.Println(EmptyRootHash0)
-	block := DefaultGenesisBlock().ToBlock(nil)
-	if block.Hash() != params2.MainnetGenesisHash {
-		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash(), params2.MainnetGenesisHash)
+	hash := DefaultGenesisBlock().ToBlock(nil).Hash()
+	if hash != params2.MainnetGenesisHash {
+		t.Errorf("wrong mainnet genesis hash, got %v, want %v", hash, params2.MainnetGenesisHash)
 	}
-	block = DefaultTestnetGenesisBlock().ToBlock(nil)
-	if block.Hash() != params2.TestnetGenesisHash {
-		t.Errorf("wrong ropsten genesis hash, got %v, want %v", block.Hash(), params2.TestnetGenesisHash)
+	hash = DefaultTestnetGenesisBlock().ToBlock(nil).Hash()
+	if hash != params2.TestnetGenesisHash {
+		t.Errorf("wrong testnet genesis hash, got %v, want %v", hash, params2.TestnetGenesisHash)
+	}
+	hash = DevnetGenesisBlock().ToBlock(nil).Hash()
+	if hash != params2.DevnetGenesisHash {
+		t.Errorf("wrong devnet genesis hash, got %v, want %v", hash, params2.DevnetGenesisHash)
 	}
 }
 
@@ -371,19 +375,19 @@ func TestPrintPreContractAddr(t *testing.T) {
 }
 
 func Test06(t *testing.T) {
-	type txLogs struct{
+	type txLogs struct {
 		PostStateOrStatus []byte
 		CumulativeGasUsed uint
-		Bloom []byte
+		Bloom             []byte
 	}
-	p1,_ := hex.DecodeString("2")
-	b1,_ := hex.DecodeString("1")
+	p1, _ := hex.DecodeString("2")
+	b1, _ := hex.DecodeString("1")
 	tx1 := txLogs{
 		PostStateOrStatus: p1,
 		CumulativeGasUsed: 1,
-		Bloom: b1,
+		Bloom:             b1,
 	}
-	r1,_ := rlp.EncodeToBytes(tx1)
+	r1, _ := rlp.EncodeToBytes(tx1)
 	fmt.Println(hex.EncodeToString(r1))
 	fmt.Println(rlpHash(tx1).String())
 }

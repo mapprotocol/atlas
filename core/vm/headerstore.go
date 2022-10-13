@@ -96,7 +96,7 @@ func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, 
 		log.Error("copy input failed", "err", err)
 		return nil, err
 	}
-	log.Info("updateBlockHeader receipt", "input", common.Bytes2Hex(blockHeader))
+
 	if err := rlp.DecodeBytes(blockHeader, &args); err != nil {
 		log.Error("rlp decode input failed", "err", err)
 		return nil, err
@@ -144,6 +144,7 @@ func updateBlockHeader(evm *EVM, contract *Contract, input []byte) (ret []byte, 
 		addLog(evm, contract, topics, logData)
 		log.Info("event produce", "height", n, "topics", topics, "event.ID", event.ID)
 	}
+
 	return nil, nil
 }
 
@@ -174,6 +175,7 @@ func reset(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
 		return nil, err
 	}
 	if evm.chainConfig.ChainID.Cmp(new(big.Int).SetUint64(chainID)) != 0 {
+		log.Info("reset ----------- ", "cfgId", evm.chainConfig.ChainID, "chainID", chainID)
 		return nil, errors.New("current chainID does not match the from parameter")
 	}
 

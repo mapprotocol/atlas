@@ -24,6 +24,8 @@ func TestEnvironment_SaveGenesis(t *testing.T) {
 		EIP155Block: big.NewInt(211),
 		EIP158Block: big.NewInt(211),
 
+		BN256ForkBlock: big.NewInt(0),
+
 		//ByzantiumBlock:      big.NewInt(211),
 		//ConstantinopleBlock: big.NewInt(211),
 		//PetersburgBlock:     big.NewInt(211),

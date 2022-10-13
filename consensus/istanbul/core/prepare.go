@@ -17,6 +17,7 @@
 package core
 
 import (
+	"math/big"
 	"reflect"
 	"time"
 
@@ -78,7 +79,8 @@ func (c *core) verifyPreparedCertificate(preparedCertificate istanbul.PreparedCe
 			commit := message.Commit()
 			// Verify the committedSeal
 			src := c.current.GetValidatorByAddress(signer)
-			err = c.verifyCommittedSeal(commit, src)
+			fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(preparedCertificate.Proposal.Number())
+			err = c.verifyCommittedSeal(commit, src, fork, cur)
 			if err != nil {
 				logger.Error("Commit seal did not contain signature from message signer.", "err", err)
 				return nil, err

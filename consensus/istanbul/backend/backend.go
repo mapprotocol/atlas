@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
@@ -51,6 +50,7 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/metrics"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -93,11 +93,11 @@ type BlsInfo struct {
 }
 
 // Sign signs with the bls account
-func (bi *BlsInfo) Sign(data []byte, extra []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+func (bi *BlsInfo) Sign(data []byte, extra []byte, useComposite, cip22 bool, fork, cur *big.Int) (blscrypto.SerializedSignature, error) {
 	if bi.sign == nil {
 		return blscrypto.SerializedSignature{}, errInvalidSigningFn
 	}
-	return bi.sign(accounts.Account{Address: bi.Address}, data, extra, useComposite, cip22)
+	return bi.sign(accounts.Account{Address: bi.Address}, data, extra, useComposite, cip22, fork, cur)
 }
 
 type Wallets struct {
@@ -725,9 +725,9 @@ func (sb *Backend) Sign(data []byte) ([]byte, error) {
 }
 
 // Sign implements istanbul.Backend.SignBLS
-func (sb *Backend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool) (blscrypto.SerializedSignature, error) {
+func (sb *Backend) SignBLS(data []byte, extra []byte, useComposite, cip22 bool, fork, cur *big.Int) (blscrypto.SerializedSignature, error) {
 	w := sb.wallets()
-	return w.Bls.Sign(data, extra, useComposite, cip22)
+	return w.Bls.Sign(data, extra, useComposite, cip22, fork, cur)
 }
 
 // CheckSignature implements istanbul.Backend.CheckSignature

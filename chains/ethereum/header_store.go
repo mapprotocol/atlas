@@ -20,7 +20,7 @@ import (
 
 const (
 	StoreCacheSize = 20
-	MaxHeaderLimit = 5000
+	MaxHeaderLimit = 100000
 	SplicingSymbol = "-"
 )
 
@@ -67,6 +67,7 @@ func headerKey(number uint64, hash common.Hash) string {
 
 func (hs *HeaderStore) delOldHeaders() {
 	length := len(hs.HeaderNumber)
+	log.Info("delOld -------------- length", "length", length, "height", hs.CurNumber)
 	if length <= MaxHeaderLimit {
 		return
 	}
@@ -123,7 +124,13 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 	if err := h.Store(state); err != nil {
 		return err
 	}
-	return h.WriteHeaderAndTd(hash, number, td, &header, state)
+	firstHeader := &LightHeader{
+		Headers: make(map[string][]byte),
+		TDs:     make(map[string]*big.Int),
+	}
+	firstHeader.Headers[hash.String()] = encodeHeader(&header)
+	firstHeader.TDs[hash.String()] = td
+	return h.StoreHeader(state, number, firstHeader)
 }
 
 func cloneHeaderStore(src *HeaderStore) (dst *HeaderStore, err error) {
@@ -154,16 +161,15 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 
+	log.Info("Store save ", "curNumber", hs.CurNumber, "length", len(hs.HeaderNumber))
 	state.SetPOWState(address, key, data)
 
 	clone, err := cloneHeaderStore(hs)
 	if err != nil {
 		return err
 	}
-	log.Info("data", "len", len(data))
 	hash := tools.RlpHash(data)
 	storeCache.Cache.Add(hash, clone)
-	data = data[:0]
 	return nil
 }
 
@@ -208,6 +214,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		h = *cp
 		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
 		hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
+		log.Info("Load cache ", "curNumber", hs.CurNumber, "length", len(hs.HeaderNumber))
 		return nil
 	}
 
@@ -222,7 +229,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	}
 	storeCache.Cache.Add(hash, clone)
 	hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
-	hs.CanonicalNumberToHash = h.CanonicalNumberToHash
+	hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
 	return nil
 }
 
@@ -230,7 +237,11 @@ func (hs *HeaderStore) LoadHeader(number uint64, db types.StateDB) (lh *LightHea
 	address := chains.EthereumHeaderStoreAddress
 	data := db.GetPOWState(address, common.BigToHash(new(big.Int).SetUint64(number)))
 	if len(data) == 0 {
-		return nil, errors.New("please initialize header store")
+		return &LightHeader{
+			Headers: make(map[string][]byte),
+			TDs:     make(map[string]*big.Int),
+		}, nil
+		//return nil, errors.New("loadHeader please initialize header store")
 	}
 	// 先从 lruCache 获取
 	hash := tools.RlpHash(data)
@@ -271,6 +282,7 @@ func (hs *HeaderStore) WriteHeaderAndTd(hash common.Hash, number uint64, td *big
 func (hs *HeaderStore) GetTd(hash common.Hash, number uint64, db types.StateDB) *big.Int {
 	loadHeader, err := hs.LoadHeader(number, db)
 	if err != nil {
+		log.Error("getTd failed", "err", err)
 		return nil
 	}
 	return loadHeader.TDs[hash.String()]
@@ -309,7 +321,6 @@ type headerWriteResult struct {
 func (hs *HeaderStore) InsertHeaders(db types.StateDB, ethHeaders []byte) ([]*params.NumberHash, error) {
 	start := time.Now()
 	res, err := hs.WriteHeaders(db, ethHeaders)
-
 	// Report some public statistics so the user has a clue what's going on
 	context := []interface{}{
 		"count", len(res.imported),

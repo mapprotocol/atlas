@@ -7,8 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/bn256"
-	cfbn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
+	//cfbn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
+	cfbn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 	"io"
@@ -16,13 +16,13 @@ import (
 )
 
 // newG1 is the constructor for the G1 group as in the BN256 curve
-func newG1() *bn256.G1 {
-	return new(bn256.G1)
+func newG1() *cfbn256.G1 {
+	return new(cfbn256.G1)
 }
 
 // newG2 is the constructor for the G2 group as in the BN256 curve
-func newG2() *bn256.G2 {
-	return new(bn256.G2)
+func newG2() *cfbn256.G2 {
+	return new(cfbn256.G2)
 }
 
 // SecretKey has "x" as secret for the BLS signature
@@ -32,7 +32,7 @@ type SecretKey struct {
 
 // PublicKey is calculated as g^x
 type PublicKey struct {
-	gx *bn256.G2
+	gx *cfbn256.G2
 }
 
 // Apk is the short aggregated public key struct
@@ -42,12 +42,12 @@ type Apk struct {
 
 // Signature is the plain public key model of the BLS signature being resilient to rogue key attack
 type Signature struct {
-	e *bn256.G1
+	e *cfbn256.G1
 }
 
 // UnsafeSignature is the BLS Signature Struct not resilient to rogue-key attack
 type UnsafeSignature struct {
-	e *bn256.G1
+	e *cfbn256.G1
 }
 
 // GenKeyPair generates Public and Private Keys
@@ -81,10 +81,11 @@ func PerformHash(msg []byte) ([]byte, error) {
 	}
 	return H.Sum(nil), err
 }
+
 // h0 is the hash-to-curve-point function
 // Hₒ : M -> Gₒ
 // TODO: implement the Elligator algorithm for deterministic random-looking hashing to BN256 point. See https://eprint.iacr.org/2014/043.pdf
-func h0(msg []byte) (*bn256.G1, error) {
+func h0(msg []byte) (*cfbn256.G1, error) {
 	hashed, err := PerformHash(msg)
 	if err != nil {
 		return nil, err
@@ -107,7 +108,7 @@ func h1(pk *PublicKey) (*big.Int, error) {
 	return new(big.Int).SetBytes(h), nil
 }
 
-func pkt(pk *PublicKey) (*bn256.G2, error) {
+func pkt(pk *PublicKey) (*cfbn256.G2, error) {
 	t, err := h1(pk)
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func NewApk(pk *PublicKey) *Apk {
 // Copy the APK by marshalling and unmarshalling the internals. It is somewhat
 // wasteful but does the job
 func (apk *Apk) Copy() *Apk {
-	g2 := new(bn256.G2)
+	g2 := new(cfbn256.G2)
 	b := apk.gx.Marshal()
 	// no need to check errors. We deal with well formed APKs
 	_, _ = g2.Unmarshal(b)
@@ -200,6 +201,14 @@ func Sign(sk *SecretKey, pk *PublicKey, msg []byte) (*Signature, error) {
 
 	return apkSigWrap(pk, sig)
 }
+func Sign2(sk *SecretKey, pk *PublicKey, msg []byte) (*Signature, error) {
+	sig, err := UnsafeSign2(sk, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return apkSigWrap(pk, sig)
+}
 
 // UnmarshalSignature unmarshals a byte array into a BLS signature
 func UnmarshalSignature(sig []byte) (*Signature, error) {
@@ -215,7 +224,7 @@ func UnmarshalSignature(sig []byte) (*Signature, error) {
 func (sigma *Signature) Copy() *Signature {
 	b := sigma.e.Marshal()
 	s := &Signature{
-		e: new(bn256.G1),
+		e: new(cfbn256.G1),
 	}
 	_, _ = s.e.Unmarshal(b)
 	return s
@@ -256,7 +265,7 @@ func (sigma *Signature) Compress() []byte {
 // Decompress reconstructs the 64 byte signature from the compressed form
 func (sigma *Signature) Decompress(x []byte) error {
 	e := newG1()
-	if _,err := e.Unmarshal(x);err != nil {
+	if _, err := e.Unmarshal(x); err != nil {
 		return err
 	}
 	sigma.e = e
@@ -297,6 +306,9 @@ func apkSigWrap(pk *PublicKey, signature *UnsafeSignature) (*Signature, error) {
 func Verify(apk *Apk, msg []byte, sigma *Signature) error {
 	return verify(apk.gx, msg, sigma.e)
 }
+func Verify2(apk *Apk, msg []byte, sigma *Signature) error {
+	return verify2(apk.gx, msg, sigma.e)
+}
 
 // VerifyBatch is the verification step of a batch of aggregated apk signatures
 // TODO: consider adding the possibility to handle non distinct messages (at batch level after aggregating APK)
@@ -309,7 +321,7 @@ func VerifyBatch(apks []*Apk, msgs [][]byte, sigma *Signature) error {
 		)
 	}
 
-	pks := make([]*bn256.G2, len(apks))
+	pks := make([]*cfbn256.G2, len(apks))
 	for i, pk := range apks {
 		pks[i] = pk.gx
 	}
@@ -327,6 +339,15 @@ func UnsafeSign(key *SecretKey, msg []byte) (*UnsafeSignature, error) {
 	p.ScalarMult(hash, key.x)
 	return &UnsafeSignature{p}, nil
 }
+func UnsafeSign2(key *SecretKey, msg []byte) (*UnsafeSignature, error) {
+	hash, err := cfbn256.HashToG1(msg)
+	if err != nil {
+		return nil, err
+	}
+	p := newG1()
+	p.ScalarMult(hash, key.x)
+	return &UnsafeSignature{p}, nil
+}
 
 // Compress the signature to the 32 byte form
 func (usig *UnsafeSignature) Compress() []byte {
@@ -336,7 +357,7 @@ func (usig *UnsafeSignature) Compress() []byte {
 // Decompress reconstructs the 64 byte signature from the compressed form
 func (usig *UnsafeSignature) Decompress(x []byte) error {
 	e := newG1()
-	if _,err := e.Unmarshal(x);err != nil {
+	if _, err := e.Unmarshal(x); err != nil {
 		return err
 	}
 	usig.e = e
@@ -383,7 +404,7 @@ func UnsafeBatch(sigs ...*UnsafeSignature) (*UnsafeSignature, error) {
 // VerifyUnsafeBatch verifies a batch of messages signed with aggregated signature
 // the rogue-key attack is prevented by making all messages distinct
 func VerifyUnsafeBatch(pkeys []*PublicKey, msgList [][]byte, signature *UnsafeSignature) error {
-	g2s := make([]*bn256.G2, len(pkeys))
+	g2s := make([]*cfbn256.G2, len(pkeys))
 	for i, pk := range pkeys {
 		g2s[i] = pk.gx
 	}
@@ -396,8 +417,10 @@ func VerifyUnsafeBatch(pkeys []*PublicKey, msgList [][]byte, signature *UnsafeSi
 func VerifyUnsafe(pkey *PublicKey, msg []byte, signature *UnsafeSignature) error {
 	return verify(pkey.gx, msg, signature.e)
 }
-
-func verify(pk *bn256.G2, msg []byte, sigma *bn256.G1) error {
+func VerifyUnsafe2(pkey *PublicKey, msg []byte, signature *UnsafeSignature) error {
+	return verify2(pkey.gx, msg, signature.e)
+}
+func verify(pk *cfbn256.G2, msg []byte, sigma *cfbn256.G1) error {
 	h0m, err := h0(msg)
 	if err != nil {
 		return err
@@ -414,10 +437,28 @@ func verify(pk *bn256.G2, msg []byte, sigma *bn256.G1) error {
 		)
 		return errors.New(msg)
 	}
-
 	return nil
 }
-func verifyBatch(pkeys []*bn256.G2, msgList [][]byte, sig *bn256.G1, allowDistinct bool) error {
+func verify2(pk *cfbn256.G2, msg []byte, sigma *cfbn256.G1) error {
+	h0m, err := cfbn256.HashToG1(msg)
+	if err != nil {
+		return err
+	}
+	pairH0mPK := cfbn256.Pair(h0m, pk).Marshal()
+	pairSigG2 := cfbn256.Pair(sigma, newG2().ScalarBaseMult(big.NewInt(1))).Marshal()
+	if subtle.ConstantTimeCompare(pairH0mPK, pairSigG2) != 1 {
+		msg := fmt.Sprintf(
+			"bls apk: Invalid Signature.\nG1Sig pair (length %d): %v...\nApk H0(m) pair (length %d): %v...",
+			len(pairSigG2),
+			hex.EncodeToString(pairSigG2[0:10]),
+			len(pairH0mPK),
+			hex.EncodeToString(pairH0mPK[0:10]),
+		)
+		return errors.New(msg)
+	}
+	return nil
+}
+func verifyBatch(pkeys []*cfbn256.G2, msgList [][]byte, sig *cfbn256.G1, allowDistinct bool) error {
 	if !allowDistinct && !distinct(msgList) {
 		return errors.New("bls: Messages are not distinct")
 	}
@@ -437,16 +478,40 @@ func verifyBatch(pkeys []*bn256.G2, msgList [][]byte, sig *bn256.G1, allowDistin
 	}
 
 	pairSigG2 := cfbn256.Pair(sig, newG2().ScalarBaseMult(big.NewInt(1)))
-
 	if subtle.ConstantTimeCompare(pairSigG2.Marshal(), pairH0mPKs.Marshal()) != 1 {
 		return errors.New("bls: Invalid Signature")
 	}
+	return nil
+}
 
+func verifyBatch2(pkeys []*cfbn256.G2, msgList [][]byte, sig *cfbn256.G1, allowDistinct bool) error {
+	if !allowDistinct && !distinct(msgList) {
+		return errors.New("bls: Messages are not distinct")
+	}
+
+	var pairH0mPKs *cfbn256.GT
+	for i := range msgList {
+		h0m, err := cfbn256.HashToG1(msgList[i])
+		if err != nil {
+			return err
+		}
+
+		if i == 0 {
+			pairH0mPKs = cfbn256.Pair(h0m, pkeys[i])
+		} else {
+			pairH0mPKs.Add(pairH0mPKs, cfbn256.Pair(h0m, pkeys[i]))
+		}
+	}
+
+	pairSigG2 := cfbn256.Pair(sig, newG2().ScalarBaseMult(big.NewInt(1)))
+	if subtle.ConstantTimeCompare(pairSigG2.Marshal(), pairH0mPKs.Marshal()) != 1 {
+		return errors.New("bls: Invalid Signature")
+	}
 	return nil
 }
 
 // VerifyCompressed verifies a Compressed marshalled signature
-func VerifyCompressed(pks []*bn256.G2, msgList [][]byte, compressedSig []byte, allowDistinct bool) error {
+func VerifyCompressed(pks []*cfbn256.G2, msgList [][]byte, compressedSig []byte, allowDistinct bool) error {
 	sig := newG1()
 	if _, err := sig.Unmarshal(compressedSig); err != nil {
 		return err
@@ -561,18 +626,18 @@ func (self *SecretKey) Serialize() ([]byte, error) {
 	return privateKeyBytes, nil
 }
 func (self *SecretKey) ToPublic() *PublicKey {
-	gx := new(bn256.G2).ScalarBaseMult(new(big.Int).Set(self.x))
+	gx := new(cfbn256.G2).ScalarBaseMult(new(big.Int).Set(self.x))
 	pk := &PublicKey{gx}
 	return pk
 }
 func (self *SecretKey) ToG1Public() []byte {
-	g1pub := new(bn256.G1).ScalarBaseMult(new(big.Int).Set(self.x))
+	g1pub := new(cfbn256.G1).ScalarBaseMult(new(big.Int).Set(self.x))
 
 	return g1pub.Marshal()
 }
-func verifyG1Pk(g1pk *bn256.G1,g2pk *bn256.G2) error {
-	pair1 := cfbn256.Pair(g1pk,newG2().ScalarBaseMult(big.NewInt(1))).Marshal()
-	pair2 := cfbn256.Pair(newG1().ScalarBaseMult(big.NewInt(1)),g2pk).Marshal()
+func verifyG1Pk(g1pk *cfbn256.G1, g2pk *cfbn256.G2) error {
+	pair1 := cfbn256.Pair(g1pk, newG2().ScalarBaseMult(big.NewInt(1))).Marshal()
+	pair2 := cfbn256.Pair(newG1().ScalarBaseMult(big.NewInt(1)), g2pk).Marshal()
 
 	if subtle.ConstantTimeCompare(pair1, pair2) != 1 {
 		msg := fmt.Sprintf(
@@ -586,21 +651,21 @@ func verifyG1Pk(g1pk *bn256.G1,g2pk *bn256.G2) error {
 	}
 	return nil
 }
-func UnmarshalG1Pk(g1pkmsg []byte) (*bn256.G1,error) {
+func UnmarshalG1Pk(g1pkmsg []byte) (*cfbn256.G1, error) {
 	e := newG1()
 	if _, err := e.Unmarshal(g1pkmsg); err != nil {
-		return nil,err
+		return nil, err
 	}
-	return e,nil
+	return e, nil
 }
-func VerifyG1Pk(g1pk []byte,g2pk []byte) error {
-	pk1,err := UnmarshalG1Pk(g1pk)
+func VerifyG1Pk(g1pk []byte, g2pk []byte) error {
+	pk1, err := UnmarshalG1Pk(g1pk)
 	if err != nil {
 		return err
 	}
-	pk2,err := UnmarshalPk(g2pk)
+	pk2, err := UnmarshalPk(g2pk)
 	if err != nil {
 		return err
 	}
-	return verifyG1Pk(pk1,pk2.gx)
+	return verifyG1Pk(pk1, pk2.gx)
 }

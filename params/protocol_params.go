@@ -1,7 +1,5 @@
 package params
 
-import "math/big"
-
 const (
 	DefaultGasLimit uint64 = 20000000 // Gas limit of the blocks before BlockchainParams contract is loaded.
 
@@ -115,8 +113,4 @@ const (
 	Bls12381MapG1Gas          uint64 = 5500  // Gas price for BLS12-381 mapping field element to G1 operation
 	Bls12381MapG2Gas          uint64 = 75000 // Gas price for BLS12-381 mapping field element to G2 operation
 	////////////////////////////////////////////////////////////////////////////////////////////////
-)
-
-var (
-	EnableRewardBlock = big.NewInt(300000)
 )

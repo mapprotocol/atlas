@@ -28,14 +28,15 @@ import (
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/syndtr/goleveldb/leveldb"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/metrics"
 	"github.com/mapprotocol/atlas/params"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // CoreBackend provides the Istanbul backend application specific functions for Istanbul core
@@ -73,7 +74,7 @@ type CoreBackend interface {
 	Sign([]byte) ([]byte, error)
 
 	// Sign with the data with the BLS key, using either a direct or composite hasher and optional cip22 encoding
-	SignBLS([]byte, []byte, bool, bool) (blscrypto.SerializedSignature, error)
+	SignBLS([]byte, []byte, bool, bool, *big.Int, *big.Int) (blscrypto.SerializedSignature, error)
 
 	// CheckSignature verifies the signature by checking if it's signed by
 	// the given validator
