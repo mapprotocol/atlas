@@ -79,6 +79,7 @@ func (hs *HeaderStore) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	hs.CurNumber, hs.CurHash = eh.CurNumber, eh.CurHash
+	hs.CanonicalNumberToHash, hs.HeaderNumber = CanonicalNumberToHash, headerNumber
 	return nil
 }
 
