@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	vet "github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/enodes"
@@ -35,12 +36,31 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/tools"
 )
 
 // API is a user facing RPC API to dump Istanbul state
 type API struct {
 	chain    consensus.ChainHeaderReader
 	istanbul *Backend
+}
+
+type G1PublicKey struct {
+	X string `json:"x"`
+	Y string `json:"y"`
+}
+
+type Validator struct {
+	Weight   int            `json:"weight"`
+	Address  common.Address `json:"address"`
+	G1PubKey G1PublicKey    `json:"g1_pub_key"`
+}
+
+type EpochInfo struct {
+	Epoch      uint64      `json:"epoch"`
+	EpochSize  uint64      `json:"epoch_size"`
+	Threshold  int         `json:"threshold"`
+	Validators []Validator `json:"validators"`
 }
 
 // getHeaderByNumber retrieves the header requested block or current if unspecified.
@@ -353,4 +373,40 @@ func (api *API) Activity() (map[string]interface{}, error) {
 	}
 	ret["uptimes"] = us
 	return ret, nil
+}
+
+// GetEpochInfo retrieves the epoch info
+func (api *API) GetEpochInfo(epochNumber uint64) *EpochInfo {
+	number, _ := istanbul.GetEpochFirstBlockNumber(epochNumber, api.istanbul.config.Epoch)
+	header := api.chain.GetHeaderByNumber(number)
+	// Ensure we have an actually valid block
+	if header == nil {
+		return nil
+	}
+
+	ss, err := api.istanbul.snapshot(api.chain, header.Number.Uint64(), header.Hash(), nil)
+	if err != nil {
+		return nil
+	}
+
+	validatorNum := len(ss.validators())
+	validators := make([]Validator, 0, validatorNum)
+	for _, v := range ss.validators() {
+		validators = append(validators, Validator{
+			Weight:  1,
+			Address: v.Address,
+			G1PubKey: G1PublicKey{
+				X: tools.Bytes2Hex(v.BLSG1PublicKey[:32]),
+				Y: tools.Bytes2Hex(v.BLSG1PublicKey[32:]),
+			},
+		})
+	}
+
+	epochInfo := &EpochInfo{
+		Epoch:      epochNumber,
+		EpochSize:  api.istanbul.config.Epoch,
+		Threshold:  ss.ValSet.MinQuorumSize(),
+		Validators: validators,
+	}
+	return epochInfo
 }
