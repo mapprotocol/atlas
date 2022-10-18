@@ -10,28 +10,28 @@ import (
 )
 
 type extHeaderStore struct {
-	Numbers      []uint64
-	Hashes       []common.Hash
-	HeadersKey   []*big.Int
-	HeadersValue [][]byte
-	TDsKey       []*big.Int
-	TDsValue     []*big.Int
-	CurNumber    uint64
-	CurHash      common.Hash
+	Numbers []uint64
+	Hashes  []common.Hash
+	//HeadersKey   []*big.Int
+	//HeadersValue [][]byte
+	//TDsKey       []*big.Int
+	//TDsValue     []*big.Int
+	CurNumber uint64
+	CurHash   common.Hash
 }
 
 func (hs *HeaderStore) EncodeRLP(w io.Writer) error {
 	var (
 		cl = len(hs.CanonicalNumberToHash)
-		hl = len(hs.HeaderNumber)
-		tl = len(hs.HeaderNumber)
+		//hl = len(hs.HeaderNumber)
+		//tl = len(hs.HeaderNumber)
 	)
 
 	var (
-		Numbers    = make([]uint64, 0, cl)
-		Hashes     = make([]common.Hash, 0, cl)
-		HeadersKey = make([]*big.Int, 0, hl)
-		TDsKey     = make([]*big.Int, 0, tl)
+		Numbers = make([]uint64, 0, cl)
+		Hashes  = make([]common.Hash, 0, cl)
+		//HeadersKey = make([]*big.Int, 0, hl)
+		//TDsKey     = make([]*big.Int, 0, tl)
 	)
 
 	for number := range hs.CanonicalNumberToHash {
@@ -44,21 +44,21 @@ func (hs *HeaderStore) EncodeRLP(w io.Writer) error {
 		Hashes = append(Hashes, hs.CanonicalNumberToHash[number])
 	}
 
-	for _, k := range hs.HeaderNumber {
-		HeadersKey = append(HeadersKey, k)
-	}
-
-	for _, k := range hs.HeaderNumber {
-		TDsKey = append(TDsKey, k)
-	}
+	//for _, k := range hs.HeaderNumber {
+	//	HeadersKey = append(HeadersKey, k)
+	//}
+	//
+	//for _, k := range hs.HeaderNumber {
+	//	TDsKey = append(TDsKey, k)
+	//}
 
 	return rlp.Encode(w, extHeaderStore{
-		Numbers:    Numbers,
-		Hashes:     Hashes,
-		HeadersKey: HeadersKey,
-		TDsKey:     TDsKey,
-		CurNumber:  hs.CurNumber,
-		CurHash:    hs.CurHash,
+		Numbers: Numbers,
+		Hashes:  Hashes,
+		//HeadersKey: HeadersKey,
+		//TDsKey:     TDsKey,
+		CurNumber: hs.CurNumber,
+		CurHash:   hs.CurHash,
 	})
 }
 
@@ -69,17 +69,18 @@ func (hs *HeaderStore) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	CanonicalNumberToHash := make(map[uint64]common.Hash)
-	headerNumber := make([]*big.Int, 0, len(eh.HeadersKey))
+	//headerNumber := make([]*big.Int, 0, len(eh.HeadersKey))
 
 	for i, number := range eh.Numbers {
 		CanonicalNumberToHash[number] = eh.Hashes[i]
 	}
-	for _, v := range eh.HeadersKey {
-		headerNumber = append(headerNumber, v)
-	}
+	//for _, v := range eh.HeadersKey {
+	//	headerNumber = append(headerNumber, v)
+	//}
 
 	hs.CurNumber, hs.CurHash = eh.CurNumber, eh.CurHash
-	hs.CanonicalNumberToHash, hs.HeaderNumber = CanonicalNumberToHash, headerNumber
+	//hs.CanonicalNumberToHash, hs.HeaderNumber = CanonicalNumberToHash, headerNumber
+	hs.CanonicalNumberToHash = CanonicalNumberToHash
 	return nil
 }
 
