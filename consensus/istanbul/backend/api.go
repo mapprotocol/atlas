@@ -43,6 +43,15 @@ type API struct {
 	istanbul *Backend
 }
 
+type EpochInfo struct {
+	Epoch     uint64                            `json:"epoch"`
+	EpochSize uint64                            `json:"epochsize"`
+	Threshold int                               `json:"threshold"`
+	Weight    []int                             `json:"weight"`
+	Address   []common.Address                  `json:"address"`
+	G1PK      []blscrypto.SerializedG1PublicKey `json:"g1pk"`
+}
+
 // getHeaderByNumber retrieves the header requested block or current if unspecified.
 func (api *API) getHeaderByNumber(number *rpc.BlockNumber) (*types.Header, error) {
 	var header *types.Header
@@ -353,4 +362,39 @@ func (api *API) Activity() (map[string]interface{}, error) {
 	}
 	ret["uptimes"] = us
 	return ret, nil
+}
+
+// GetEpochInfo retrieves the epoch info
+func (api *API) GetEpochInfo(epochNumber uint64) *EpochInfo {
+	number, _ := istanbul.GetEpochFirstBlockNumber(epochNumber, api.istanbul.config.Epoch)
+	header := api.chain.GetHeaderByNumber(number)
+	// Ensure we have an actually valid block
+	if header == nil {
+		return nil
+	}
+
+	ss, err := api.istanbul.snapshot(api.chain, header.Number.Uint64(), header.Hash(), nil)
+	if err != nil {
+		return nil
+	}
+
+	validatorNum := len(ss.validators())
+	weights := make([]int, 0, validatorNum)
+	addresses := make([]common.Address, 0, validatorNum)
+	g1pks := make([]blscrypto.SerializedG1PublicKey, 0, validatorNum)
+	for _, v := range ss.validators() {
+		weights = append(weights, 1)
+		addresses = append(addresses, v.Address)
+		g1pks = append(g1pks, v.BLSG1PublicKey)
+	}
+
+	epochInfo := &EpochInfo{
+		Epoch:     epochNumber,
+		EpochSize: api.istanbul.config.Epoch,
+		Threshold: ss.ValSet.MinQuorumSize(),
+		Weight:    weights,
+		Address:   addresses,
+		G1PK:      g1pks,
+	}
+	return epochInfo
 }
