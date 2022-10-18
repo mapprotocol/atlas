@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	vet "github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/enodes"
@@ -35,6 +36,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/tools"
 )
 
 // API is a user facing RPC API to dump Istanbul state
@@ -43,13 +45,22 @@ type API struct {
 	istanbul *Backend
 }
 
+type G1PublicKey struct {
+	X string `json:"x"`
+	Y string `json:"y"`
+}
+
+type Validator struct {
+	Weight   int            `json:"weight"`
+	Address  common.Address `json:"address"`
+	G1PubKey G1PublicKey    `json:"g1_pub_key"`
+}
+
 type EpochInfo struct {
-	Epoch     uint64                            `json:"epoch"`
-	EpochSize uint64                            `json:"epochsize"`
-	Threshold int                               `json:"threshold"`
-	Weight    []int                             `json:"weight"`
-	Address   []common.Address                  `json:"address"`
-	G1PK      []blscrypto.SerializedG1PublicKey `json:"g1pk"`
+	Epoch      uint64      `json:"epoch"`
+	EpochSize  uint64      `json:"epoch_size"`
+	Threshold  int         `json:"threshold"`
+	Validators []Validator `json:"validators"`
 }
 
 // getHeaderByNumber retrieves the header requested block or current if unspecified.
@@ -379,22 +390,23 @@ func (api *API) GetEpochInfo(epochNumber uint64) *EpochInfo {
 	}
 
 	validatorNum := len(ss.validators())
-	weights := make([]int, 0, validatorNum)
-	addresses := make([]common.Address, 0, validatorNum)
-	g1pks := make([]blscrypto.SerializedG1PublicKey, 0, validatorNum)
+	validators := make([]Validator, 0, validatorNum)
 	for _, v := range ss.validators() {
-		weights = append(weights, 1)
-		addresses = append(addresses, v.Address)
-		g1pks = append(g1pks, v.BLSG1PublicKey)
+		validators = append(validators, Validator{
+			Weight:  1,
+			Address: v.Address,
+			G1PubKey: G1PublicKey{
+				X: tools.Bytes2Hex(v.BLSG1PublicKey[:32]),
+				Y: tools.Bytes2Hex(v.BLSG1PublicKey[32:]),
+			},
+		})
 	}
 
 	epochInfo := &EpochInfo{
-		Epoch:     epochNumber,
-		EpochSize: api.istanbul.config.Epoch,
-		Threshold: ss.ValSet.MinQuorumSize(),
-		Weight:    weights,
-		Address:   addresses,
-		G1PK:      g1pks,
+		Epoch:      epochNumber,
+		EpochSize:  api.istanbul.config.Epoch,
+		Threshold:  ss.ValSet.MinQuorumSize(),
+		Validators: validators,
 	}
 	return epochInfo
 }
