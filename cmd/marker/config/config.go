@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
@@ -71,9 +72,9 @@ type Config struct {
 	ImplementationAddress common.Address
 	RPCAddr               string
 	GasLimit              int64
-	Verbosity   string
-	Name        string
-	MetadataURL string
+	Verbosity             string
+	Name                  string
+	MetadataURL           string
 	LockedGoldParameters  LockedGoldParameters
 	AccountsParameters    AccountsParameters
 	ValidatorParameters   ValidatorParameters
@@ -87,7 +88,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config := Config{}
 	//------------------ pre set --------------------------
 	path := ""
-	password := "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	password := ""
 	config.VoteNum = big.NewInt(int64(0))
 	config.TargetAddress = params.ZeroAddress
 	config.Commission = 1000000 //default 1  be relative to 1000,000
@@ -98,9 +99,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(KeyStoreFlag.Name) {
 		path = ctx.String(KeyStoreFlag.Name)
 	}
-	if ctx.IsSet(PasswordFlag.Name) {
-		password = ctx.String(PasswordFlag.Name)
-	}
+	//if ctx.IsSet(PasswordFlag.Name) {
+	//	password = ctx.String(PasswordFlag.Name)
+	//}
 	if ctx.IsSet(CommissionFlag.Name) {
 		config.Commission = ctx.Uint64(CommissionFlag.Name)
 	}
@@ -177,6 +178,8 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
 	}
 	if path != "" {
+		fmt.Println("Please Enter Your keyStoreFlag Password")
+		fmt.Scanln(&password)
 		_account, err := account.LoadAccount(path, password)
 		if err != nil {
 			return nil, err

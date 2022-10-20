@@ -15,10 +15,10 @@ var (
 		Name:  "keystore",
 		Usage: "Keystore file path",
 	}
-	PasswordFlag = cli.StringFlag{
-		Name:  "password",
-		Usage: "Keystore file`s password",
-	}
+	//PasswordFlag = cli.StringFlag{
+	//	Name:  "password",
+	//	Usage: "Keystore file`s password",
+	//}
 
 	NameFlag = cli.StringFlag{
 		Name:  "name",
