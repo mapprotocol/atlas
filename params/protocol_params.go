@@ -112,5 +112,6 @@ const (
 	Bls12381PairingPerPairGas uint64 = 43000 // Per-point pair gas price for BLS12-381 elliptic curve pairing check
 	Bls12381MapG1Gas          uint64 = 5500  // Gas price for BLS12-381 mapping field element to G1 operation
 	Bls12381MapG2Gas          uint64 = 75000 // Gas price for BLS12-381 mapping field element to G2 operation
-	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	MaxCodeSize = 49152 // Maximum bytecode to permit for a contract
 )
