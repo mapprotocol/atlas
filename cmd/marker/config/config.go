@@ -6,13 +6,14 @@ import (
 	"github.com/mapprotocol/atlas/cmd/marker/mapprotocol"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
+	"syscall"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/marker/account"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
-
-	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/term"
 )
 
 type LockedGoldParameters struct {
@@ -88,7 +89,6 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config := Config{}
 	//------------------ pre set --------------------------
 	path := ""
-	password := ""
 	config.VoteNum = big.NewInt(int64(0))
 	config.TargetAddress = params.ZeroAddress
 	config.Commission = 1000000 //default 1  be relative to 1000,000
@@ -178,9 +178,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
 	}
 	if path != "" {
-		fmt.Println("Please Enter Your keyStoreFlag Password")
-		fmt.Scanln(&password)
-		_account, err := account.LoadAccount(path, password)
+		_account, err := account.LoadAccount(path, string(GetPassword(fmt.Sprintf("Enter password for key %s:", path))))
 		if err != nil {
 			return nil, err
 		}
@@ -193,6 +191,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 			return nil, err
 		}
 		config.PublicKey = _account.PublicKey()
+
 		config.From = _account.Address
 		config.PrivateKey = _account.PrivateKey
 		config.BlsPub = blsPub
@@ -230,4 +229,18 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config.GoldTokenParameters.GoldTokenABI = abiGoldToken
 
 	return &config, nil
+}
+
+func GetPassword(msg string) []byte {
+	for {
+		fmt.Println(msg)
+		fmt.Print("> ")
+		password, err := term.ReadPassword(syscall.Stdin)
+		if err != nil {
+			fmt.Printf("invalid input: %s\n", err)
+		} else {
+			fmt.Printf("\n")
+			return password
+		}
+	}
 }

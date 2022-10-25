@@ -24,7 +24,6 @@ var (
 		config.ValueFlag,
 		config.AmountFlag,
 		config.DurationFlag,
-		config.PasswordFlag,
 		config.CommissionFlag,
 		config.RelayerfFlag,
 		config.NameFlag,
