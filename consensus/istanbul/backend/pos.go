@@ -38,7 +38,7 @@ import (
 	"time"
 )
 
-func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB, EnableRewardBlock *big.Int) error {
+func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB, EnableRewardBlock, bn256Block *big.Int) error {
 	start := time.Now()
 	defer sb.rewardDistributionTimer.UpdateSince(start)
 	logger := sb.logger.New("func", "Backend.distributeEpochPaymentsAndRewards", "blocknum", header.Number.Uint64())
@@ -122,10 +122,24 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 	log.Info("deRegister AllValidators InPending", "deRegisters", deRegisters)
 
 	//----------------------------- Automatic active -------------------
-	b, err := sb.activeAllPending(vmRunner, validators_)
-	if err != nil {
-		return err
+	var b = false
+	if header.Number.Cmp(bn256Block) >= 0 {
+		// active the next epoch validators
+		vals, err := sb.GetValidatorAccounts(vmRunner)
+		if err != nil {
+			return err
+		}
+		b, err = sb.activeAllPending(vmRunner, vals)
+		if err != nil {
+			return err
+		}
+	} else {
+		b, err = sb.activeAllPending(vmRunner, validators_)
+		if err != nil {
+			return err
+		}
 	}
+
 	log.Info("Automatic active pending voter", "success", b)
 	//----------------------------------------------------------------------
 
@@ -267,4 +281,24 @@ func (sb *Backend) GetAccountsFromSigners(vmRunner vm.EVMRunner, signers []istan
 		accountVals = append(accountVals, regVals)
 	}
 	return accountVals, nil
+}
+func (sb *Backend) GetAccountsFromSignersAddress(vmRunner vm.EVMRunner, signers []common.Address) ([]common.Address, error) {
+	var accountVals []common.Address
+	for i := 0; i < len(signers); i++ {
+		regVals, err := accounts.GetSignerToAccountMethod(vmRunner, signers[i])
+		if err != nil {
+			sb.logger.Error("failed to get account from signer", "signer", signers[i], "err", err)
+			return accountVals, err
+		}
+		accountVals = append(accountVals, regVals)
+	}
+	return accountVals, nil
+}
+
+func (sb *Backend) GetValidatorAccounts(vmRunner vm.EVMRunner) ([]common.Address, error) {
+	signers, err := election.GetElectedValidators(vmRunner)
+	if err != nil {
+		return nil, err
+	}
+	return sb.GetAccountsFromSignersAddress(vmRunner, signers)
 }

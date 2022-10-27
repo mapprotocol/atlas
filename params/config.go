@@ -99,7 +99,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(0),
-		BN256ForkBlock:      big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(2001),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
