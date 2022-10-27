@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/mapprotocol/atlas/chains/eth2"
 	"github.com/mapprotocol/atlas/helper/bls"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -82,6 +83,8 @@ var (
 	b12_377PairingAddress    = atlasPrecompileAddress(28)
 	cip20Address             = atlasPrecompileAddress(29)
 	cip26Address             = atlasPrecompileAddress(30)
+
+	eth2VerifyUpdateAddress = atlasPrecompileAddress(31)
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -147,6 +150,8 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
 	// New in Donut hard fork
 	ed25519Address: &ed25519Verify{},
+
+	eth2VerifyUpdateAddress: &eth2VerifyLightClient{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
@@ -177,6 +182,8 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
 	// New in Donut hard fork
 	ed25519Address: &ed25519Verify{},
+
+	eth2VerifyUpdateAddress: &eth2VerifyLightClient{},
 }
 
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
@@ -207,6 +214,8 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 	getVerifiedSealBitmapAddress: &getVerifiedSealBitmap{},
 	// New in Donut hard fork
 	ed25519Address: &ed25519Verify{},
+
+	eth2VerifyUpdateAddress: &eth2VerifyLightClient{},
 }
 
 var (
@@ -1706,4 +1715,14 @@ func (c *getVerifiedSealBitmap) Run(evm *EVM, contract *Contract, input []byte) 
 	}
 
 	return common.LeftPadBytes(extra.AggregatedSeal.Bitmap.Bytes()[:], 32), nil
+}
+
+type eth2VerifyLightClient struct{}
+
+func (c *eth2VerifyLightClient) RequiredGas(input []byte) uint64 {
+	return params2.VerifyEth2UpdateGas
+}
+
+func (c *eth2VerifyLightClient) Run(evm *EVM, contract *Contract, input []byte) (ret []byte, err error) {
+	return nil, eth2.VerifyLightClientUpdate(input)
 }

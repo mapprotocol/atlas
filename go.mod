@@ -28,6 +28,7 @@ require (
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+	github.com/herumi/bls-eth-go-binary v1.28.1
 	github.com/holiman/bloomfilter/v2 v2.0.3
 	github.com/holiman/uint256 v1.2.0
 	github.com/influxdata/influxdb v1.8.5
@@ -38,12 +39,17 @@ require (
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mattn/go-runewidth v0.0.10 // indirect
+	github.com/minio/highwayhash v1.0.1
+	github.com/minio/sha256-simd v1.0.0
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.10.1
 	github.com/peterh/liner v1.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/tsdb v0.10.0
+	github.com/prysmaticlabs/fastssz v0.0.0-20220628131814-351fdcbb9964
+	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
+	github.com/prysmaticlabs/gohashtree v0.0.2-alpha
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rjeczalik/notify v0.9.2
 	github.com/rs/cors v1.7.0
@@ -51,6 +57,7 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/status-im/keycard-go v0.0.0-20191119114148-6dd40a46baa0
 	github.com/stretchr/testify v1.7.0
+	github.com/supranational/blst v0.3.10
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tyler-smith/go-bip39 v1.0.2
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
@@ -60,6 +67,5 @@ require (
 	golang.org/x/text v0.3.6
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6
 	gopkg.in/urfave/cli.v1 v1.20.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gotest.tools v2.2.0+incompatible
 )
