@@ -143,7 +143,7 @@ const (
 //	return crypto.FromECDSA(privateKeyECDSA), nil
 //}
 func (BN256) ECDSAToBLS(privateKeyECDSA *ecdsa.PrivateKey) ([]byte, error) {
-	for i := 0; i < 256; i++ { // 最多尝试256次
+	for i := 0; i < 256; i++ {
 		modulus := big.NewInt(0)
 		modulus, ok := modulus.SetString(MODULUS256, 10)
 		if !ok {
