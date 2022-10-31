@@ -114,7 +114,7 @@ func decodeHeader(data []byte, hash common.Hash) *Header {
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
 		CanonicalNumberToHash: make(map[uint64]common.Hash),
-		//HeaderNumber:          make([]*big.Int, 0, MaxHeaderLimit), // 数组舍弃多少个，还是通过下标的方式
+		//HeaderNumber:          make([]*big.Int, 0, MaxHeaderLimit),
 	}
 }
 
@@ -196,9 +196,9 @@ func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *L
 		log.Error("Failed to RLP encode HeaderStore", "err", err)
 		return err
 	}
-	// save 保存到数据库
+	// save db
 	state.SetPOWState(address, common.BigToHash(new(big.Int).SetUint64(number)), data)
-	// 保存到cache中
+	// save cache
 	clone, err := cloneLightHeader(header)
 	if err != nil {
 		return err
@@ -260,7 +260,6 @@ func (hs *HeaderStore) LoadHeader(number uint64, db types.StateDB) (lh *LightHea
 		}, nil
 		//return nil, errors.New("loadHeader please initialize header store")
 	}
-	// 先从 lruCache 获取
 	hash := tools.RlpHash(data)
 	if cc, ok := storeCache.Cache.Get(hash); ok {
 		cp, err := cloneLightHeader(cc.(*LightHeader))
