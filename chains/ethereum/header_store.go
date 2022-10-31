@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
+
 	//"github.com/mapprotocol/atlas/core/state"
 	"math/big"
 	"time"
@@ -66,16 +68,30 @@ func headerKey(number uint64, hash common.Hash) string {
 }
 
 func (hs *HeaderStore) delOldHeaders() {
-	//length := len(hs.HeaderNumber)
-	//log.Info("delOld -------------- length", "length", length, "height", hs.CurNumber)
-	//if length <= MaxHeaderLimit {
-	//	return
-	//}
+	length := len(hs.CanonicalNumberToHash)
+	log.Info("delOld -------------- length", "length", length, "height", hs.CurNumber)
+	if length <= MaxHeaderLimit {
+		return
+	}
 
-	//delTotal := length - MaxHeaderLimit
-	//hs.HeaderNumber = hs.HeaderNumber[delTotal:]
-	//log.Info("before cleaning up the old ethereum headers", "headers length", length)
-	//log.Info("after cleaning up the old ethereum headers", "headers length", len(hs.HeaderNumber))
+	numbers := make([]uint64, 0, length)
+	for key := range hs.CanonicalNumberToHash {
+		numbers = append(numbers, key)
+	}
+
+	sort.Slice(numbers, func(i, j int) bool {
+		return numbers[i] < numbers[j]
+	})
+
+	delTotal := length - MaxHeaderLimit
+	for i := 0; i < delTotal; {
+		number := numbers[i]
+		delete(hs.CanonicalNumberToHash, number)
+		log.Info("deleted ethereum canonical header", "number", number)
+		i++
+	}
+	log.Info("before cleaning up the old canonical ethereum headers", "headers length", length)
+	log.Info("after cleaning up the old canonical ethereum headers", "headers length", len(hs.CanonicalNumberToHash))
 }
 
 func encodeHeader(header *Header) []byte {
