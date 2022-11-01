@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"sort"
-
-	//"github.com/mapprotocol/atlas/core/state"
+	"math"
 	"math/big"
 	"time"
 
@@ -52,10 +50,10 @@ type Cache struct {
 }
 
 type HeaderStore struct {
-	CanonicalNumberToHash map[uint64]common.Hash
 	CurNumber             uint64
 	CurHash               common.Hash
-	//HeaderNumber          []*big.Int
+	startNumber           uint64 // Record the block number to start synchronization, which is used to obtain the key of the db
+	CanonicalNumberToHash []common.Hash
 }
 
 type LightHeader struct {
@@ -67,31 +65,39 @@ func headerKey(number uint64, hash common.Hash) string {
 	return fmt.Sprintf("%d%s%s", number, SplicingSymbol, hash.Hex())
 }
 
+func (hs *HeaderStore) headerIdx(number uint64) uint64 {
+	return uint64(math.Mod(float64(number), MaxHeaderLimit)) + hs.startNumber
+}
+
+func (hs *HeaderStore) CanonicalHeaderIdx(number uint64) uint64 {
+	return uint64(math.Mod(float64(number), MaxHeaderLimit))
+}
+
 func (hs *HeaderStore) delOldHeaders() {
-	length := len(hs.CanonicalNumberToHash)
-	log.Info("delOld -------------- length", "length", length, "height", hs.CurNumber)
-	if length <= MaxHeaderLimit {
-		return
-	}
-
-	numbers := make([]uint64, 0, length)
-	for key := range hs.CanonicalNumberToHash {
-		numbers = append(numbers, key)
-	}
-
-	sort.Slice(numbers, func(i, j int) bool {
-		return numbers[i] < numbers[j]
-	})
-
-	delTotal := length - MaxHeaderLimit
-	for i := 0; i < delTotal; {
-		number := numbers[i]
-		delete(hs.CanonicalNumberToHash, number)
-		log.Info("deleted ethereum canonical header", "number", number)
-		i++
-	}
-	log.Info("before cleaning up the old canonical ethereum headers", "headers length", length)
-	log.Info("after cleaning up the old canonical ethereum headers", "headers length", len(hs.CanonicalNumberToHash))
+	//length := len(hs.CanonicalNumberToHash)
+	//log.Info("delOld -------------- length", "length", length, "height", hs.CurNumber)
+	//if length <= MaxHeaderLimit {
+	//	return
+	//}
+	//
+	//numbers := make([]uint64, 0, length)
+	//for key := range hs.CanonicalNumberToHash {
+	//	numbers = append(numbers, key)
+	//}
+	//
+	//sort.Slice(numbers, func(i, j int) bool {
+	//	return numbers[i] < numbers[j]
+	//})
+	//
+	//delTotal := length - MaxHeaderLimit
+	//for i := 0; i < delTotal; {
+	//	number := numbers[i]
+	//	delete(hs.CanonicalNumberToHash, number)
+	//	log.Info("deleted ethereum canonical header", "number", number)
+	//	i++
+	//}
+	//log.Info("before cleaning up the old canonical ethereum headers", "headers length", length)
+	//log.Info("after cleaning up the old canonical ethereum headers", "headers length", len(hs.CanonicalNumberToHash))
 }
 
 func encodeHeader(header *Header) []byte {
@@ -113,8 +119,7 @@ func decodeHeader(data []byte, hash common.Hash) *Header {
 
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
-		CanonicalNumberToHash: make(map[uint64]common.Hash),
-		//HeaderNumber:          make([]*big.Int, 0, MaxHeaderLimit),
+		CanonicalNumberToHash: make([]common.Hash, MaxHeaderLimit),
 	}
 }
 
@@ -129,14 +134,14 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 	number := header.Number.Uint64()
 
 	h := &HeaderStore{
-		CanonicalNumberToHash: map[uint64]common.Hash{
-			number: hash,
-		},
-		CurHash:   hash,
-		CurNumber: number,
-		//HeaderNumber: make([]*big.Int, 0, MaxHeaderLimit),
+		CurHash:               hash,
+		CurNumber:             number,
+		startNumber:           number,
+		CanonicalNumberToHash: make([]common.Hash, MaxHeaderLimit),
 	}
-	//h.HeaderNumber = append(h.HeaderNumber, header.Number)
+	cntIdx := hs.CanonicalHeaderIdx(number)
+	log.Info("ResetHeaderStore GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	h.CanonicalNumberToHash[cntIdx] = hash
 	if err := h.Store(state); err != nil {
 		return err
 	}
@@ -177,7 +182,6 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 		return err
 	}
 
-	//log.Info("Store save ", "curNumber", hs.CurNumber, "length", len(hs.HeaderNumber))
 	state.SetPOWState(address, key, data)
 
 	clone, err := cloneHeaderStore(hs)
@@ -190,6 +194,8 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 }
 
 func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *LightHeader) error {
+	idx := hs.headerIdx(number)
+	log.Info("StoreHeader GetHeaderIdx", "number", number, "idx", idx)
 	address := chains.EthereumHeaderStoreAddress
 	data, err := rlp.EncodeToBytes(header)
 	if err != nil {
@@ -197,7 +203,7 @@ func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *L
 		return err
 	}
 	// save db
-	state.SetPOWState(address, common.BigToHash(new(big.Int).SetUint64(number)), data)
+	state.SetPOWState(address, common.BigToHash(new(big.Int).SetUint64(idx)), data)
 	// save cache
 	clone, err := cloneLightHeader(header)
 	if err != nil {
@@ -230,7 +236,6 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 		h = *cp
 		hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
 		hs.CanonicalNumberToHash = h.CanonicalNumberToHash
-		//hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
 		return nil
 	}
 
@@ -245,20 +250,20 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 	}
 	storeCache.Cache.Add(hash, clone)
 	hs.CurHash, hs.CurNumber = h.CurHash, h.CurNumber
-	//hs.CanonicalNumberToHash, hs.HeaderNumber = h.CanonicalNumberToHash, h.HeaderNumber
 	hs.CanonicalNumberToHash = h.CanonicalNumberToHash
 	return nil
 }
 
 func (hs *HeaderStore) LoadHeader(number uint64, db types.StateDB) (lh *LightHeader, err error) {
+	idx := hs.headerIdx(number)
+	log.Info("LoadHeader GetHeaderIdx", "number", number, "idx", idx)
 	address := chains.EthereumHeaderStoreAddress
-	data := db.GetPOWState(address, common.BigToHash(new(big.Int).SetUint64(number)))
+	data := db.GetPOWState(address, common.BigToHash(new(big.Int).SetUint64(idx)))
 	if len(data) == 0 {
 		return &LightHeader{
 			Headers: make(map[string][]byte),
 			TDs:     make(map[string]*big.Int),
 		}, nil
-		//return nil, errors.New("loadHeader please initialize header store")
 	}
 	hash := tools.RlpHash(data)
 	if cc, ok := storeCache.Cache.Get(hash); ok {
@@ -314,16 +319,22 @@ func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64, db types.State
 }
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
-	return hs.CanonicalNumberToHash[number]
+	cntIdx := hs.CanonicalHeaderIdx(number)
+	log.Info("ReadCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	return hs.CanonicalNumberToHash[cntIdx]
 }
 
 func (hs *HeaderStore) WriteCanonicalHash(hash common.Hash, number uint64) {
 	// number -> hash mapping
-	hs.CanonicalNumberToHash[number] = hash
+	cntIdx := hs.CanonicalHeaderIdx(number)
+	log.Info("WriteCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	hs.CanonicalNumberToHash[cntIdx] = hash
 }
 
 func (hs *HeaderStore) DeleteCanonicalHash(number uint64) {
-	delete(hs.CanonicalNumberToHash, number)
+	cntIdx := hs.CanonicalHeaderIdx(number)
+	log.Info("DeleteCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	hs.CanonicalNumberToHash[cntIdx] = common.Hash{}
 }
 
 type headerWriteResult struct {
@@ -433,6 +444,9 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (*heade
 	if reorg {
 		if !chainAlreadyCanon {
 			for i := lastNumber + 1; ; i++ {
+				if i <= hs.CurNumber-MaxHeaderLimit+1 {
+					continue
+				}
 				hash := hs.ReadCanonicalHash(i)
 				if hash == (common.Hash{}) {
 					break
