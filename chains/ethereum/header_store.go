@@ -25,7 +25,8 @@ const (
 )
 
 var (
-	storeCache *Cache
+	storeCache  *Cache
+	startNumber uint64 // Record the block number to start synchronization, which is used to obtain the key of the db
 )
 
 func init() {
@@ -52,7 +53,6 @@ type Cache struct {
 type HeaderStore struct {
 	CurNumber             uint64
 	CurHash               common.Hash
-	startNumber           uint64 // Record the block number to start synchronization, which is used to obtain the key of the db
 	CanonicalNumberToHash []common.Hash
 }
 
@@ -66,7 +66,7 @@ func headerKey(number uint64, hash common.Hash) string {
 }
 
 func (hs *HeaderStore) headerIdx(number uint64) uint64 {
-	return uint64(math.Mod(float64(number), MaxHeaderLimit)) + hs.startNumber
+	return uint64(math.Mod(float64(number), MaxHeaderLimit)) + startNumber
 }
 
 func (hs *HeaderStore) CanonicalHeaderIdx(number uint64) uint64 {
@@ -136,7 +136,6 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 	h := &HeaderStore{
 		CurHash:               hash,
 		CurNumber:             number,
-		startNumber:           number,
 		CanonicalNumberToHash: make([]common.Hash, MaxHeaderLimit),
 	}
 	cntIdx := hs.CanonicalHeaderIdx(number)
@@ -145,6 +144,7 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 	if err := h.Store(state); err != nil {
 		return err
 	}
+	startNumber = number
 	firstHeader := &LightHeader{
 		Headers: make(map[string][]byte),
 		TDs:     make(map[string]*big.Int),
