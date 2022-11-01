@@ -139,7 +139,7 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 		CanonicalNumberToHash: make([]common.Hash, MaxHeaderLimit),
 	}
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	log.Info("ResetHeaderStore GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	//log.Info("ResetHeaderStore GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
 	h.CanonicalNumberToHash[cntIdx] = hash
 	if err := h.Store(state); err != nil {
 		return err
@@ -195,7 +195,7 @@ func (hs *HeaderStore) Store(state types.StateDB) error {
 
 func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *LightHeader) error {
 	idx := hs.headerIdx(number)
-	log.Info("StoreHeader GetHeaderIdx", "number", number, "idx", idx)
+	//log.Info("StoreHeader GetHeaderIdx", "number", number, "idx", idx)
 	address := chains.EthereumHeaderStoreAddress
 	data, err := rlp.EncodeToBytes(header)
 	if err != nil {
@@ -256,7 +256,7 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 
 func (hs *HeaderStore) LoadHeader(number uint64, db types.StateDB) (lh *LightHeader, err error) {
 	idx := hs.headerIdx(number)
-	log.Info("LoadHeader GetHeaderIdx", "number", number, "idx", idx)
+	//log.Info("LoadHeader GetHeaderIdx", "number", number, "idx", idx)
 	address := chains.EthereumHeaderStoreAddress
 	data := db.GetPOWState(address, common.BigToHash(new(big.Int).SetUint64(idx)))
 	if len(data) == 0 {
@@ -320,20 +320,20 @@ func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64, db types.State
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	log.Info("ReadCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	//log.Info("ReadCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
 	return hs.CanonicalNumberToHash[cntIdx]
 }
 
 func (hs *HeaderStore) WriteCanonicalHash(hash common.Hash, number uint64) {
 	// number -> hash mapping
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	log.Info("WriteCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	//log.Info("WriteCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
 	hs.CanonicalNumberToHash[cntIdx] = hash
 }
 
 func (hs *HeaderStore) DeleteCanonicalHash(number uint64) {
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	log.Info("DeleteCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
+	//log.Info("DeleteCanonicalHash GetCanonicalHeaderIdx", "number", number, "idx", cntIdx)
 	hs.CanonicalNumberToHash[cntIdx] = common.Hash{}
 }
 
@@ -445,6 +445,7 @@ func (hs *HeaderStore) WriteHeaders(db types.StateDB, ethHeaders []byte) (*heade
 		if !chainAlreadyCanon {
 			for i := lastNumber + 1; ; i++ {
 				if i <= hs.CurNumber-MaxHeaderLimit+1 {
+					log.Info("chainAlreadyCanon=false, obsolete block", "current", hs.CurNumber, "calNumber", i)
 					continue
 				}
 				hash := hs.ReadCanonicalHash(i)
