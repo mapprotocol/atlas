@@ -66,8 +66,10 @@ func headerKey(number uint64, hash common.Hash) string {
 }
 
 func (hs *HeaderStore) headerDbKey(number uint64) common.Hash {
-	idx := hs.CanonicalHeaderIdx(number)
-	return common.HexToHash(fmt.Sprintf("%s-%d", "eth2map", idx))
+	str := fmt.Sprintf("%s-%d", "eth2map", hs.CanonicalHeaderIdx(number))
+	key := common.BytesToHash([]byte(str))
+	log.Info("StoreHeader GetHeaderKey", "number", number, "str", str, "key", key.String())
+	return key
 }
 
 func (hs *HeaderStore) CanonicalHeaderIdx(number uint64) uint64 {
@@ -180,7 +182,6 @@ func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *L
 		return err
 	}
 	key := hs.headerDbKey(number)
-	log.Info("StoreHeader GetHeaderKey", "number", number, "key", key.String())
 	// save db
 	state.SetPOWState(address, key, data)
 	// save cache
@@ -235,7 +236,6 @@ func (hs *HeaderStore) Load(state types.StateDB) (err error) {
 
 func (hs *HeaderStore) LoadHeader(number uint64, db types.StateDB) (lh *LightHeader, err error) {
 	key := hs.headerDbKey(number)
-	log.Info("LoadHeader GetHeaderKey", "number", number, "key", key.String())
 	address := chains.EthereumHeaderStoreAddress
 	data := db.GetPOWState(address, key)
 	if len(data) == 0 {
