@@ -202,11 +202,12 @@ func (hs *HeaderStore) StoreHeader(state types.StateDB, number uint64, header *L
 
 func (hs *HeaderStore) StoreCanonicalHash(state types.StateDB, number uint64, hash *common.Hash) error {
 	address := chains.EthereumHeaderStoreAddress
-	data, err := rlp.EncodeToBytes(hash)
+	data, err := rlp.EncodeToBytes(*hash)
 	if err != nil {
 		log.Error("Failed to RLP encode HeaderStore", "err", err)
 		return err
 	}
+	log.Info("StoreCanonicalHash", "number", number, "hash", hash)
 	key := hs.canonicalHeaderDbKey(number)
 	// save db
 	state.SetPOWState(address, key, data)
@@ -292,8 +293,13 @@ func (hs *HeaderStore) LoadCanonicalHash(number uint64, db types.StateDB) (lh co
 	if len(data) == 0 {
 		return common.Hash{}, nil
 	}
-	hash := tools.RlpHash(data)
-	return hash, nil
+
+	err = rlp.DecodeBytes(data, &lh)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+	log.Info("LoadCanonicalHash", "number", number, "hash", lh)
+	return
 }
 
 func (hs *HeaderStore) WriteHeaderAndTd(hash common.Hash, number uint64, td *big.Int, header *Header, db types.StateDB) error {
