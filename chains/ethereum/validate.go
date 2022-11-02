@@ -207,6 +207,9 @@ func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int6
 		return errInvalidNumber
 	}
 
+	if err := VerifySeal(header); err != nil {
+		return err
+	}
 	return nil
 }
 

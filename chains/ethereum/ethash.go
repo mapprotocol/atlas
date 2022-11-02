@@ -15,7 +15,7 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package ethash implements the ethash proof-of-work consensus engine.
-package ethash
+package ethereum
 
 import (
 	"bytes"
@@ -36,7 +36,6 @@ import (
 	"unsafe"
 
 	"github.com/edsrzf/mmap-go"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/hashicorp/golang-lru/simplelru"
 )
@@ -56,6 +55,8 @@ var (
 	errInvalidMixDigest = errors.New("invalid mix digest")
 	errInvalidPoW       = errors.New("invalid proof-of-work")
 )
+
+var ethashEngine *Ethash
 
 // isLittleEndian returns whether the local system is running in little or big
 // endian byte order.
@@ -487,10 +488,10 @@ func (ethash *Ethash) dataset(block uint64, async bool) *dataset {
 	return current
 }
 
-// Verify checks whether a block satisfies the PoW difficulty requirements,
+// verifySeal checks whether a block satisfies the PoW difficulty requirements,
 // either using the usual ethash cache for it, or alternatively using a full DAG
 // to make remote mining fast.
-func (ethash *Ethash) Verify(header *types.Header) error {
+func (ethash *Ethash) verifySeal(header *Header) error {
 	// Recompute the digest and PoW values
 	number := header.Number.Uint64()
 	var (
@@ -519,7 +520,8 @@ func (ethash *Ethash) Verify(header *types.Header) error {
 	}
 	return nil
 }
-func (ethash *Ethash) SealHash(header *types.Header) (hash common.Hash) {
+
+func (ethash *Ethash) SealHash(header *Header) (hash common.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 
 	enc := []interface{}{
@@ -545,9 +547,9 @@ func (ethash *Ethash) SealHash(header *types.Header) (hash common.Hash) {
 	return hash
 }
 
-func NewEthash(dir string) *Ethash {
+func MakeGlobalEthash(dir string) {
 	DatasetDir := filepath.Join(dir, "Ethash")
-	return New(Config{
+	ethashEngine = New(Config{
 		CacheDir:         DatasetDir,
 		CachesInMem:      2,
 		CachesOnDisk:     3,
@@ -558,4 +560,11 @@ func NewEthash(dir string) *Ethash {
 		DatasetsLockMmap: false,
 		PowMode:          ModeNormal,
 	})
+}
+
+func VerifySeal(header *Header) error {
+	if ethashEngine == nil {
+		return errors.New("ethash has not been initialized")
+	}
+	return ethashEngine.verifySeal(header)
 }
