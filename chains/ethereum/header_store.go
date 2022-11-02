@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	lru "github.com/hashicorp/golang-lru"
+	golru "github.com/hashicorp/golang-lru"
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/params"
@@ -32,7 +32,7 @@ func init() {
 	storeCache = &Cache{
 		size: StoreCacheSize,
 	}
-	storeCache.Cache, _ = lru.New(storeCache.size)
+	storeCache.Cache, _ = golru.New(storeCache.size)
 }
 
 // WriteStatus status of write
@@ -45,7 +45,7 @@ const (
 )
 
 type Cache struct {
-	Cache *lru.Cache
+	Cache *golru.Cache
 	size  int
 }
 
