@@ -101,7 +101,7 @@ func decodeHeader(data []byte, hash common.Hash) *Header {
 
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
-		CanonicalNumberToHash: make([]common.Hash, MaxHeaderLimit),
+		CanonicalNumberToHash: make([]common.Hash, 0),
 	}
 }
 
