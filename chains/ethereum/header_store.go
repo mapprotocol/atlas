@@ -53,7 +53,7 @@ type Cache struct {
 type HeaderStore struct {
 	CurNumber             uint64
 	CurHash               common.Hash
-	CanonicalNumberToHash []common.Hash
+	CanonicalNumberToHash []*common.Hash
 }
 
 type LightHeader struct {
@@ -101,7 +101,7 @@ func decodeHeader(data []byte, hash common.Hash) *Header {
 
 func NewHeaderStore() *HeaderStore {
 	return &HeaderStore{
-		CanonicalNumberToHash: make([]common.Hash, 0),
+		CanonicalNumberToHash: make([]*common.Hash, 0),
 	}
 }
 
@@ -118,10 +118,10 @@ func (hs *HeaderStore) ResetHeaderStore(state types.StateDB, ethHeaders []byte, 
 	h := &HeaderStore{
 		CurHash:               hash,
 		CurNumber:             number,
-		CanonicalNumberToHash: make([]common.Hash, MaxHeaderLimit),
+		CanonicalNumberToHash: make([]*common.Hash, MaxHeaderLimit),
 	}
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	h.CanonicalNumberToHash[cntIdx] = hash
+	h.CanonicalNumberToHash[cntIdx] = &hash
 	if err := h.Store(state); err != nil {
 		return err
 	}
@@ -298,17 +298,17 @@ func (hs *HeaderStore) HasHeader(hash common.Hash, number uint64, db types.State
 
 func (hs *HeaderStore) ReadCanonicalHash(number uint64) common.Hash {
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	return hs.CanonicalNumberToHash[cntIdx]
+	return *hs.CanonicalNumberToHash[cntIdx]
 }
 
 func (hs *HeaderStore) WriteCanonicalHash(hash common.Hash, number uint64) {
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	hs.CanonicalNumberToHash[cntIdx] = hash
+	hs.CanonicalNumberToHash[cntIdx] = &hash
 }
 
 func (hs *HeaderStore) DeleteCanonicalHash(number uint64) {
 	cntIdx := hs.CanonicalHeaderIdx(number)
-	hs.CanonicalNumberToHash[cntIdx] = common.Hash{}
+	hs.CanonicalNumberToHash[cntIdx] = &common.Hash{}
 }
 
 type headerWriteResult struct {
