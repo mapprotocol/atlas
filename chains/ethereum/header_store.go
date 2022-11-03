@@ -68,20 +68,20 @@ func headerKey(number uint64, hash common.Hash) string {
 func (hs *HeaderStore) headerDbKey(number uint64) common.Hash {
 	str := fmt.Sprintf("%s-%d", "eth2map", hs.loopIdx(number))
 	key := common.BytesToHash([]byte(str))
-	log.Info("StoreHeader GetHeaderKey", "number", number, "str", str, "key", key.String())
+	log.Debug("StoreHeader GetHeaderKey", "number", number, "str", str, "key", key.String())
 	return key
 }
 
 func (hs *HeaderStore) canonicalHeaderDbKey(number uint64) common.Hash {
 	str := fmt.Sprintf("%s-%d", "canonical", hs.loopIdx(number))
 	key := common.BytesToHash([]byte(str))
-	log.Info("Store canonicalHeaderDbKey", "number", number, "str", str, "key", key.String())
+	log.Debug("Store canonicalHeaderDbKey", "number", number, "str", str, "key", key.String())
 	return key
 }
 
 func (hs *HeaderStore) loopIdx(number uint64) uint64 {
 	idx := uint64(math.Mod(float64(number), MaxHeaderLimit))
-	log.Info("ReadCanonicalHash loopIdx", "number", number, "idx", idx)
+	log.Debug("ReadCanonicalHash loopIdx", "number", number, "idx", idx)
 	return idx
 }
 
@@ -207,7 +207,7 @@ func (hs *HeaderStore) StoreCanonicalHash(state types.StateDB, number uint64, ha
 		log.Error("Failed to RLP encode HeaderStore", "err", err)
 		return err
 	}
-	log.Info("StoreCanonicalHash", "number", number, "hash", hash)
+	log.Debug("StoreCanonicalHash", "number", number, "hash", hash)
 	key := hs.canonicalHeaderDbKey(number)
 	// save db
 	state.SetPOWState(address, key, data)
@@ -298,7 +298,7 @@ func (hs *HeaderStore) LoadCanonicalHash(number uint64, db types.StateDB) (lh co
 	if err != nil {
 		return common.Hash{}, nil
 	}
-	log.Info("LoadCanonicalHash", "number", number, "hash", lh)
+	log.Debug("LoadCanonicalHash", "number", number, "hash", lh)
 	return
 }
 
