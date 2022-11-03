@@ -39,7 +39,7 @@ var chainType2ChainGroup = map[ChainType]ChainGroup{
 
 var chainType2ChainID = map[ChainType]uint64{
 	ChainTypeETH:     params.MainNetChainID,
-	ChainTypeETHTest: params.DevNetChainID,
+	ChainTypeETHTest: params.TestNetChainID,
 }
 
 var chainType2LondonBlock = map[ChainType]*big.Int{
