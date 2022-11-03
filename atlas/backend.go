@@ -30,6 +30,7 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/chains/ethereum"
 	"math/big"
 	"runtime"
 	"sync"
@@ -136,6 +137,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 
+	ethereum.MakeGlobalEthash(stack.DataDir())
 	chainConfig, genesisHash, genesisErr := chain.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideChurrito)
 	if _, ok := genesisErr.(*ethparams.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
