@@ -379,7 +379,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 	return g.MustCommit(db)
 }
 
-// DefaultGenesisBlock returns the Ethereum main net genesis block.
+// DefaultGenesisBlock returns the MAP main network genesis block.
 func DefaultGenesisBlock() *Genesis {
 	gs := genesisPOC2Contract()
 	l := len(gs)
@@ -398,7 +398,7 @@ func DefaultGenesisBlock() *Genesis {
 	return DefaultGenesisCfg
 }
 
-// DefaultTestnetGenesisBlock returns the Ropsten network genesis block.
+// DefaultTestnetGenesisBlock returns the testnet network genesis block.
 // owner 0x1c0edab88dbb72b119039c4d14b1663525b3ac15
 // validator1  0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
 // validator2  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
@@ -427,24 +427,37 @@ func DefaultTestnetGenesisBlock() *Genesis {
 	}
 }
 
+// DevnetGenesisBlock returns the dev network genesis block.
 // the keystore file is located in the keystore/devnet directory, the password for the keystore file is map123456
 //prealloc address: 0x5F78EC486B721BAAE4aDD59A9bF3494C080A43C4
 //priv: 939477962c734f29339531305a4309859aef4aa62e010529f3c343920ec1d49b
-
 func DevnetGenesisBlock() *Genesis {
 	gs := genesisDevnetRegisterProxyContract()
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0x5F78EC486B721BAAE4aDD59A9bF3494C080A43C4")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 	return &Genesis{
-		Config: params.DevnetConfig,
+		Config:    params.DevnetConfig,
 		ExtraData: hexutil.MustDecode(devnetExtraData),
 		GasLimit:  11500000,
 		Alloc:     gs,
 	}
 }
 
-// DefaultGenesisBlock returns the Ethereum main net genesis block.
+// SingleGenesisBlock returns the single network genesis block.
+func SingleGenesisBlock(faucet common.Address) *Genesis {
+	gs := genesisSingleNetRegisterProxyContract()
+	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
+	gs[faucet] = GenesisAccount{Balance: balance0}
+	// Assemble and return the genesis with the precompiles and faucet pre-funded
+	return &Genesis{
+		Config:    params.SingleNetConfig,
+		ExtraData: hexutil.MustDecode(singleExtraData),
+		GasLimit:  11500000,
+		Alloc:     gs,
+	}
+}
+
 func UseForGenesisBlock() *Genesis {
 	return DefaultGenesisCfg
 }

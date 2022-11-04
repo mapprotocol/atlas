@@ -121,6 +121,19 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, atlasConfig) {
 		Metrics: metrics.DefaultConfig,
 	}
 
+	if ctx.GlobalBool(utils.SingleFlag.Name) {
+		//set node config
+		if !ctx.GlobalBool(utils.HTTPListenAddrFlag.Name) {
+			cfg.Node.HTTPHost = "127.0.0.1"
+		}
+		if !ctx.GlobalBool(utils.HTTPPortFlag.Name) {
+			cfg.Node.HTTPPort = 7445
+		}
+		if !ctx.GlobalBool(utils.HTTPApiFlag.Name) {
+			cfg.Node.HTTPModules = []string{"admin", "debug", "web3", "eth", "txpool", "personal", "header", "istanbul", "miner", "net"}
+		}
+	}
+
 	// Load config file.
 	if file := ctx.GlobalString(configFileFlag.Name); file != "" {
 		if err := loadConfig(file, &cfg); err != nil {

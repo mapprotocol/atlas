@@ -29,10 +29,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mapprotocol/atlas/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
+
+	"github.com/mapprotocol/atlas/accounts"
 )
 
 const (
@@ -166,6 +167,14 @@ func NewKeyForDirectICAP(rand io.Reader) *Key {
 
 func newKey(rand io.Reader) (*Key, error) {
 	privateKeyECDSA, err := ecdsa.GenerateKey(crypto.S256(), rand)
+	if err != nil {
+		return nil, err
+	}
+	return newKeyFromECDSA(privateKeyECDSA), nil
+}
+
+func newKeyFromPrivateKey(privateKey string) (*Key, error) {
+	privateKeyECDSA, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
 		return nil, err
 	}
