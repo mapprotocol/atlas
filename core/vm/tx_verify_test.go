@@ -199,8 +199,8 @@ func getTxProve() []byte {
 func TestReceiptsRootAndProof(t *testing.T) {
 	var (
 		srcChain = big.NewInt(1)
-		dstChain = big.NewInt(211)
-		router   = common.HexToAddress("0xd6199276959b95a68c1ee30e8569f5fe060903a6")
+		//dstChain = big.NewInt(211)
+		router = common.HexToAddress("0xd6199276959b95a68c1ee30e8569f5fe060903a6")
 	)
 
 	group, err := chains.ChainType2ChainGroup(chains.ChainType(srcChain.Uint64()))
@@ -217,7 +217,7 @@ func TestReceiptsRootAndProof(t *testing.T) {
 	}
 	//db := rawdb.NewMemoryDatabase()
 	//sdb, _ := state.New(common.Hash{}, state.NewDatabase(db), nil)
-	if err := v.Verify(getStateDB(), router, srcChain, dstChain, getTxProve()); err != nil {
+	if _, err := v.Verify(getStateDB(), router, getTxProve()); err != nil {
 		t.Fatal(err)
 	}
 }
