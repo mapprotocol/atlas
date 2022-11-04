@@ -32,7 +32,7 @@ To start a g
 instance for single node,  run it with these flags:
 
 ```
-$ atlas --singlenet  console
+$ atlas --single  console
 ```
 
 ## Executables
@@ -92,7 +92,7 @@ whereas the HTTP and WS interfaces need to manually be enabled and only expose a
 HTTP based JSON-RPC API options:
   * `--http` Enable the HTTP-RPC server
   * `--http.addr` HTTP-RPC server listening interface (default: `localhost`)
-  * `--http.port` HTTP-RPC server listening port (default: `8545`)
+  * `--http.port` HTTP-RPC server listening port (default: `7445`)
   * `--http.api` API's offered over the HTTP-RPC interface (default: `eth,net,web3`)
   * `--http.corsdomain` Comma separated list of domains from which to accept cross origin requests (browser enforced)
   * `--ws` Enable the WS-RPC server

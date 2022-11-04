@@ -74,6 +74,12 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		},
 	},
 	{
+		Name: "SINGLE CHAIN",
+		Flags: []cli.Flag{
+			utils.SingleFlag,
+		},
+	},
+	{
 		Name: "TRANSACTION POOL",
 		Flags: []cli.Flag{
 			utils.TxPoolLocalsFlag,

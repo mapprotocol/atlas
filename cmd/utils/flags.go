@@ -147,7 +147,7 @@ var (
 		Usage: "map protocol atlas developer network: pre-configured proof-of-work developer network",
 	}
 	SingleFlag = cli.BoolFlag{
-		Name:  "singlenet",
+		Name:  "single",
 		Usage: "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
 	}
 	IdentityFlag = cli.StringFlag{
@@ -713,9 +713,10 @@ var (
 func MakeDataDir(ctx *cli.Context) string {
 	if path := ctx.GlobalString(DataDirFlag.Name); path != "" {
 		if ctx.GlobalBool(TestnetFlag.Name) {
-			// Maintain compatibility with older Geth configurations storing the
-			// Ropsten database in `testnet` instead of `ropsten`.
 			return filepath.Join(path, "testnet")
+		}
+		if ctx.GlobalBool(SingleFlag.Name) {
+			return filepath.Join(path, "singlenet")
 		}
 		return path
 	}
@@ -765,7 +766,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(TestnetFlag.Name):
 		urls = params.TestnetBootnodes
-	case cfg.BootstrapNodes != nil:
+	case cfg.BootstrapNodes != nil || ctx.GlobalBool(SingleFlag.Name):
 		return // already set, don't apply defaults.
 	}
 
@@ -789,7 +790,7 @@ func setBootstrapNodesV5(ctx *cli.Context, cfg *p2p.Config) {
 	switch {
 	case ctx.GlobalIsSet(BootnodesFlag.Name):
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
-	case cfg.BootstrapNodesV5 != nil:
+	case cfg.BootstrapNodesV5 != nil || ctx.GlobalBool(SingleFlag.Name):
 		return // already set, don't apply defaults.
 	}
 
@@ -1097,7 +1098,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.NetRestrict = list
 	}
 
-	if ctx.GlobalBool(CatalystFlag.Name) {
+	if ctx.GlobalBool(CatalystFlag.Name) || ctx.GlobalBool(SingleFlag.Name) {
 		// can't use p2p networking.
 		cfg.MaxPeers = 0
 		cfg.ListenAddr = ""
@@ -1337,7 +1338,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, TestnetFlag)
+	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, TestnetFlag, SingleFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 	if ctx.GlobalString(GCModeFlag.Name) == "archive" && ctx.GlobalUint64(TxLookupLimitFlag.Name) != 0 {
@@ -1488,6 +1489,52 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = atlaschain.DevnetGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.DevnetGenesisHash)
+	case ctx.GlobalBool(SingleFlag.Name):
+		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = params.SingleNetworkID
+		}
+
+		var (
+			acc        accounts.Account
+			passphrase string
+		)
+		if list := MakePasswordList(ctx); len(list) > 0 {
+			// Just take the first value. Although the function returns a possible multiple values and
+			// some usages iterate through them as attempts, that doesn't make sense in this setting,
+			// when we're definitely concerned with only one account.
+			passphrase = list[0]
+		}
+		if cfg.Miner.Etherbase != (common.Address{}) {
+			acc = accounts.Account{Address: cfg.Miner.Etherbase}
+		} else {
+
+			var (
+				privateKey = "062fcdefff500e0116e9bd543e82a1f552829542dc52abb0fd069de8e45270cd"
+				address    = common.HexToAddress("0x90E9d4EA1285334082515aeE10278F34AE40B01A")
+			)
+
+			passphrase = "single"
+			if !ks.HasAddress(address) {
+				dataDir := ctx.GlobalString(DataDirFlag.Name)
+				path := keystore.JoinPathForKeyStore(dataDir, address)
+				if err := keystore.GenerateKeystoreFromPrivateKey(privateKey, passphrase, path); err != nil {
+					Fatalf("Failed to Generate singlenet account: %v", err)
+				}
+				time.Sleep(time.Second)
+				log.Info("Single Network account was generated", "passphrase", passphrase, "private key", privateKey, "keystore path", path)
+			}
+
+			acc = accounts.Account{Address: address}
+			cfg.Miner.Etherbase = address
+		}
+
+		if err := ks.Unlock(acc, passphrase); err != nil {
+			Fatalf("Failed to unlock singlenet account: %v", err)
+		}
+		log.Info("Using single network account", "address", acc.Address)
+
+		setTxFeeRecipient(ctx, ks, cfg)
+		cfg.Genesis = atlaschain.SingleGenesisBlock(cfg.Miner.Etherbase)
 	default:
 		if cfg.NetworkId == params.MainnetNetWorkID {
 			SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)

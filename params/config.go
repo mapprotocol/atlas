@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	MainNetChainID uint64 = 22776
-	TestNetChainID uint64 = 212
-	DevNetChainID  uint64 = 213
-	Epoch          uint64 = 4000
+	MainNetChainID   uint64 = 22776
+	TestNetChainID   uint64 = 212
+	DevNetChainID    uint64 = 213
+	SingleNetChainID uint64 = 214
+	Epoch            uint64 = 50000
 )
 
 // network id
@@ -18,6 +19,7 @@ const (
 	MainnetNetWorkID = MainNetChainID
 	TestnetWorkID    = TestNetChainID
 	DevnetWorkID     = DevNetChainID
+	SingleNetworkID  = SingleNetChainID
 )
 
 // Genesis hashes to enforce below configs on.
@@ -100,6 +102,33 @@ var (
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(2001),
+		Istanbul: &IstanbulConfig{
+			Epoch:          1000,
+			ProposerPolicy: 2,
+			BlockPeriod:    5,
+			RequestTimeout: 3000,
+			LookbackWindow: 12,
+		},
+	}
+
+	SingleNetConfig = &ChainConfig{
+		ChainID:             new(big.Int).SetUint64(SingleNetChainID),
+		HomesteadBlock:      big.NewInt(0),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      true,
+		EIP150Block:         big.NewInt(0),
+		EIP150Hash:          common.Hash{},
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
+		EnableRewardBlock:   big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
