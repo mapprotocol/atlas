@@ -25,7 +25,7 @@ const (
 // Genesis hashes to enforce below configs on.
 var (
 	MainnetGenesisHash = common.HexToHash("0x6b2bd27bee0f7675550204c541a30cc6a14aa1738431cb60e21e666b2fec8014")
-	TestnetGenesisHash = common.HexToHash("0xa6fad927164366eefba3477c881ea8940b03866ef9a4252be9ab5ba69e8f9cac")
+	TestnetGenesisHash = common.HexToHash("0xede9749324b65e9df7b74830696637ed25c24ae4ffd07f8c36b8e5b6eac7dfa0")
 	DevnetGenesisHash  = common.HexToHash("0xa7712fd6f430d32fbc796665289bf9702b6991e96393fd670e7834c48e15755f")
 )
 
@@ -73,10 +73,10 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(3000),
+		EnableRewardBlock:   big.NewInt(5000),
 		BN256ForkBlock:      big.NewInt(20000),
 		Istanbul: &IstanbulConfig{
-			Epoch:          1000,
+			Epoch:          4000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -186,13 +186,13 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(3000),
-		BN256ForkBlock:      big.NewInt(2000),
+		EnableRewardBlock:   big.NewInt(5000),
+		BN256ForkBlock:      big.NewInt(20000),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
 		Istanbul: &IstanbulConfig{
-			Epoch:          2000,
+			Epoch:          4000,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
