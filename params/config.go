@@ -76,7 +76,7 @@ var (
 		EnableRewardBlock:   big.NewInt(5000),
 		BN256ForkBlock:      big.NewInt(20000),
 		Istanbul: &IstanbulConfig{
-			Epoch:          4000,
+			Epoch:          100,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
@@ -192,7 +192,7 @@ var (
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
 		Istanbul: &IstanbulConfig{
-			Epoch:          4000,
+			Epoch:          100,
 			ProposerPolicy: 2,
 			BlockPeriod:    5,
 			RequestTimeout: 3000,
