@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/mapprotocol/atlas/core/rawdb"
 	"log"
 	"math/big"
 	"testing"
@@ -63,6 +64,12 @@ func dialConn() *ethclient.Client {
 	return conn
 }
 
+func getStateDB() *state.StateDB {
+	finalDb := rawdb.NewMemoryDatabase()
+	finalState, _ := state.New(common.Hash{}, state.NewDatabase(finalDb), nil)
+	return finalState
+}
+
 func getTransactionsHashByBlockNumber(conn *ethclient.Client, number *big.Int) []common.Hash {
 	block, err := conn.BlockByNumber(context.Background(), number)
 	if err != nil {
@@ -102,7 +109,7 @@ func GetReceiptsFromJSON(receiptsJSON string) []*types.Receipt {
 	return rs
 }
 
-func getTxProve(blockNumber uint64, txIndex uint, receiptsJSON string, txParams *TxParams) []byte {
+func getTxProve(blockNumber uint64, txIndex uint, receiptsJSON string) []byte {
 
 	// get receipts from eth node
 	//conn := dialConn()
@@ -140,11 +147,6 @@ func getTxProve(blockNumber uint64, txIndex uint, receiptsJSON string, txParams 
 	}
 
 	txProve := TxProve{
-		Tx: &TxParams{
-			From:  txParams.From,
-			To:    txParams.To,
-			Value: txParams.Value,
-		},
 		Receipt:     receipts[txIndex],
 		Prove:       proof.NodeList(),
 		BlockNumber: blockNumber,
@@ -166,7 +168,6 @@ func TestVerify_Verify(t *testing.T) {
 		blockNumber  uint64
 		txIndex      uint
 		receiptsJSON string
-		txParams     *TxParams
 		statedb      *state.StateDB
 	}
 	getStateDB()
@@ -185,12 +186,7 @@ func TestVerify_Verify(t *testing.T) {
 				blockNumber:  273,
 				txIndex:      0,
 				receiptsJSON: ReceiptsJSON,
-				txParams: &TxParams{
-					From:  common.HexToAddress("0x1aec262a9429eb9167ac4033aaf8b4239c2743fe").Bytes(),
-					To:    common.HexToAddress("0x970e05ffbb2c4a3b80082e82b24f48a29a9c7651").Bytes(),
-					Value: big.NewInt(588),
-				},
-				statedb: getStateDB(),
+				statedb:      getStateDB(),
 			},
 			wantErr:         false,
 			wantReceiptHash: common.HexToHash("0x27022c6416c6a79e82c97f1d25f90b8543ea15fc5adfe11ec941d5ab0dec6d28"),
@@ -205,8 +201,8 @@ func TestVerify_Verify(t *testing.T) {
 
 			//set := flag.NewFlagSet("test", 0)
 			//chainsdb.NewStoreDb(cli.NewContext(nil, set, nil), 10, 2)
-			txProve := getTxProve(tt.args.blockNumber, tt.args.txIndex, tt.args.receiptsJSON, tt.args.txParams)
-			if err := new(Verify).Verify(tt.args.statedb, tt.args.router, tt.args.srcChain, tt.args.dstChain, txProve); (err != nil) != tt.wantErr {
+			txProve := getTxProve(tt.args.blockNumber, tt.args.txIndex, tt.args.receiptsJSON)
+			if _, err := new(Verify).Verify(tt.args.statedb, tt.args.router, txProve); (err != nil) != tt.wantErr {
 				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

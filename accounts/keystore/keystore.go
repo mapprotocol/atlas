@@ -26,6 +26,7 @@ import (
 	"errors"
 	bn256 "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -595,4 +596,26 @@ func (ks *KeyStore) GetPublicKey(a accounts.Account) (*ecdsa.PublicKey, error) {
 		return nil, ErrLocked
 	}
 	return &unlockedKey.PrivateKey.PublicKey, nil
+}
+
+func JoinPathForKeyStore(path string, keyAddr common.Address) string {
+	return filepath.Join(path, KeyStoreScheme, keyFileName(keyAddr))
+}
+
+func GenerateKeystoreFromPrivateKey(privateKey, passphrase, path string) error {
+	key, err := newKeyFromPrivateKey(privateKey)
+	if err != nil {
+		return err
+	}
+
+	keyjson, err := EncryptKey(key, passphrase, StandardScryptN, StandardScryptP)
+	if err != nil {
+		return err
+	}
+
+	// Store the file to disk.
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path, keyjson, 0600)
 }
