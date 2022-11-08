@@ -1225,7 +1225,7 @@ func (s *PublicBlockChainAPI) rpcMarshalBlock(ctx context.Context, b *types.Bloc
 	}
 	// Compatible with Ethereum
 	fields["difficulty"] = (*hexutil.Big)(big.NewInt(0))
-	fields["sha3Uncles"] = ""
+	fields["sha3Uncles"] = "0x0000000000000000000000000000000000000000000000000000000000000000"
 	fields["uncles"] = make([]*types.Header, 0)
 	return fields, err
 }
