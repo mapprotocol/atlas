@@ -105,6 +105,8 @@ var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 	params.HeaderStoreAddress:        &store{},
 	params.TxVerifyAddress:           &verify{},
+
+	eth2VerifyUpdateAddress: &eth2VerifyLightClient{},
 }
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
@@ -120,6 +122,8 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
 	params.HeaderStoreAddress:        &store{},
 	params.TxVerifyAddress:           &verify{},
+
+	eth2VerifyUpdateAddress: &eth2VerifyLightClient{},
 }
 
 // PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum

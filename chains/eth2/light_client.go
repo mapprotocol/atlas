@@ -2,6 +2,7 @@ package eth2
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/chains/eth2/bls12381"
 	ssz "github.com/prysmaticlabs/fastssz"
 )
@@ -24,18 +25,26 @@ var DomainSyncCommittee = [4]byte{0x07, 0x00, 0x00, 0x00}
 func VerifyLightClientUpdate(input []byte) error {
 	verify, err := decodeLightClientVerify(input)
 	if err != nil {
+		log.Warn("decodeLightClientVerify", "error", err)
 		return err
 	}
 
 	if err := verifyFinality(verify.update); err != nil {
+		log.Warn("verifyFinality", "error", err)
 		return err
 	}
 
 	if err := verifyNextSyncCommittee(verify.state, verify.update); err != nil {
+		log.Warn("verifyNextSyncCommittee", "error", err)
 		return err
 	}
 
-	return verifyBlsSignatures(verify.state, verify.update)
+	if err := verifyBlsSignatures(verify.state, verify.update); err != nil {
+		log.Warn("verifyBlsSignatures", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 func verifyFinality(update *LightClientUpdate) error {
@@ -104,7 +113,7 @@ func verifyNextSyncCommittee(state *LightClientState, update *LightClientUpdate)
 			Leaf:   leaf[:],
 			Hashes: update.nextSyncCommitteeBranch,
 		}
-		ret, err := ssz.VerifyProof(update.finalizedHeader.StateRoot, &proof)
+		ret, err := ssz.VerifyProof(update.attestedHeader.StateRoot, &proof)
 		if err != nil {
 			return fmt.Errorf("VerifyProof return err: %v", err)
 		}
