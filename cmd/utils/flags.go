@@ -766,6 +766,8 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(TestnetFlag.Name):
 		urls = params.TestnetBootnodes
+	case ctx.GlobalBool(DeveloperFlag.Name):
+		urls = params.DevnetBootnodes
 	case cfg.BootstrapNodes != nil || ctx.GlobalBool(SingleFlag.Name):
 		return // already set, don't apply defaults.
 	}
