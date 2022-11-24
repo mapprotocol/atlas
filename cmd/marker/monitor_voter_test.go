@@ -21,7 +21,7 @@ import (
 //creat new keystore at remote
 func Test_NewAccount(t *testing.T) {
 	var voterAccounts []common.Address
-	url := "http://13.67.118.60:7445" //测试网 validator voter
+	url := "http://13.67.118.60:7445"
 	conn, err := rpc.Dial(url)
 	if err != nil {
 		t.Error("Failed to connect to the Atlaschain client: ", err)
