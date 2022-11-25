@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/mapprotocol/atlas/tools"
 	"math/big"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -50,15 +51,15 @@ type G1PublicKey struct {
 }
 
 type Validator struct {
-	Weight   int            `json:"weight"`
+	Weight   string         `json:"weight"`
 	Address  common.Address `json:"address"`
 	G1PubKey G1PublicKey    `json:"g1_pub_key"`
 }
 
 type EpochInfo struct {
-	Epoch      uint64      `json:"epoch"`
-	EpochSize  uint64      `json:"epoch_size"`
-	Threshold  int         `json:"threshold"`
+	Epoch      string      `json:"epoch"`
+	EpochSize  string      `json:"epoch_size"`
+	Threshold  string      `json:"threshold"`
 	Validators []Validator `json:"validators"`
 }
 
@@ -392,7 +393,7 @@ func (api *API) GetEpochInfo(epochNumber uint64) *EpochInfo {
 	validators := make([]Validator, 0, validatorNum)
 	for _, v := range ss.validators() {
 		validators = append(validators, Validator{
-			Weight:  1,
+			Weight:  strconv.Itoa(1),
 			Address: v.Address,
 			G1PubKey: G1PublicKey{
 				X: tools.Bytes2Hex(v.BLSG1PublicKey[:32]),
@@ -402,9 +403,9 @@ func (api *API) GetEpochInfo(epochNumber uint64) *EpochInfo {
 	}
 
 	epochInfo := &EpochInfo{
-		Epoch:      epochNumber,
-		EpochSize:  api.istanbul.config.Epoch,
-		Threshold:  ss.ValSet.MinQuorumSize(),
+		Epoch:      strconv.FormatUint(epochNumber, 10),
+		EpochSize:  strconv.FormatUint(api.istanbul.config.Epoch, 10),
+		Threshold:  strconv.Itoa(ss.ValSet.MinQuorumSize()),
 		Validators: validators,
 	}
 	return epochInfo
