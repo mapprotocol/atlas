@@ -68,8 +68,8 @@ Do not forget `--http.addr 0.0.0.0`, if you want to access RPC from other contai
 ### DefultParams
 | param    | MainnetChain| TestnetChain      | DevnetChain       | SingleNetChain   |
 | :-----------: | :--------------| :---------------- | :----------------| :---------------|
-| ChainId       |     211      |     212      |     213      |     214    |
-| NetworkId     |     211      |     212      |     213      |     214      |
+| ChainId       |     22776      |     212      |     213      |     214    |
+| NetworkId     |     22776      |     212      |     213      |     214      |
 | Port          |     20101      |     20101      |     20101      |20101|
 | RpcPort       |     7445      |     7445      |     7445      |     7445   |
 
