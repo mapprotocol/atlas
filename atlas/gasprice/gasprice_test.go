@@ -18,8 +18,10 @@ package gasprice
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -35,6 +37,7 @@ import (
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/compass/pkg/ethclient"
 )
 
 const testHead = 32
@@ -189,4 +192,108 @@ func TestSuggestTipCap(t *testing.T) {
 			t.Fatalf("Gas price mismatch, want %d, got %d", c.expect, got)
 		}
 	}
+}
+
+func getBlockValues(ctx context.Context, signer types.Signer, blockNum uint64,
+	limit int, ignoreUnder *big.Int, result chan results, quit chan struct{}) {
+	url := "https://poc3-rpc.maplabs.io"
+	c, e := ethclient.Dial(url)
+	if e != nil {
+		panic(e)
+	}
+
+	block, err := c.MAPBlockByNumber(ctx, big.NewInt(int64((blockNum))))
+	if block == nil {
+		select {
+		case result <- results{nil, err}:
+		case <-quit:
+		}
+		return
+	}
+	// Sort the transaction by effective tip in ascending sort.
+	txs := make([]*types.Transaction, len(block.Transactions()))
+	copy(txs, block.Transactions())
+
+	sorter := newSorter(txs, block.BaseFee())
+	sort.Sort(sorter)
+
+	var prices []*big.Int
+	for _, tx := range sorter.txs {
+		fmt.Println("===", tx.GasFeeCap(), tx.GasTipCap(), block.BaseFee())
+		tip, _ := tx.EffectiveGasTip(block.BaseFee())
+		if ignoreUnder != nil && tip.Cmp(ignoreUnder) == -1 {
+			continue
+		}
+		sender, err := types.Sender(signer, tx)
+		if err == nil && sender != block.Coinbase() {
+			prices = append(prices, tip)
+			if len(prices) >= limit {
+				break
+			}
+		}
+	}
+	fmt.Println("===prices", prices, "len", len(prices), block.Number(), len(txs))
+	select {
+	case result <- results{prices, nil}:
+	case <-quit:
+	}
+}
+
+func Test03(t *testing.T) {
+
+	checkBlocks := 20
+	num := big.NewInt(2865114)
+	lastPrice := big.NewInt(0)
+	var (
+		sent, exp int
+		number    = num.Uint64()
+		result    = make(chan results, checkBlocks)
+		quit      = make(chan struct{})
+		results   []*big.Int
+	)
+	for sent < checkBlocks && number > 0 {
+		go getBlockValues(context.Background(), types.MakeSigner(params.MainnetChainConfig,
+			big.NewInt(int64(number))), number, sampleNumber, DefaultIgnorePrice, result, quit)
+		sent++
+		exp++
+		number--
+	}
+	for exp > 0 {
+		res := <-result
+		if res.err != nil {
+			close(quit)
+			t.Error(res.err)
+		}
+		exp--
+		// Nothing returned. There are two special cases here:
+		// - The block is empty
+		// - All the transactions included are sent by the miner itself.
+		// In these cases, use the latest calculated price for sampling.
+		if len(res.values) == 0 {
+			res.values = []*big.Int{lastPrice}
+		}
+		// Besides, in order to collect enough data for sampling, if nothing
+		// meaningful returned, try to query more blocks. But the maximum
+		// is 2*checkBlocks.
+		if len(res.values) == 1 && len(results)+1+exp < checkBlocks*2 && number > 0 {
+			go getBlockValues(context.Background(), types.MakeSigner(params.MainnetChainConfig, big.NewInt(int64(number))),
+				number, sampleNumber, DefaultIgnorePrice, result, quit)
+			sent++
+			exp++
+			number--
+		}
+		results = append(results, res.values...)
+	}
+	price := lastPrice
+	if len(results) > 0 {
+		sort.Sort(bigIntArray(results))
+		pos := (len(results) - 1) * 60 / 100
+		price = results[pos]
+		fmt.Println(pos)
+		fmt.Println(results)
+	}
+	if price.Cmp(DefaultMaxPrice) > 0 {
+		price = new(big.Int).Set(DefaultMaxPrice)
+	}
+	fmt.Println(price)
 }
