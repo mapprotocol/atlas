@@ -488,7 +488,8 @@ func (sb *Backend) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 	lastBlockOfEpoch := istanbul.IsLastBlockOfEpoch(header.Number.Uint64(), sb.config.Epoch)
 	if lastBlockOfEpoch {
 		snapshot = state.Snapshot()
-		err = sb.distributeEpochRewards(header, state, chain.Config().EnableRewardBlock, chain.Config().BN256ForkBlock)
+		err = sb.distributeEpochRewards(header, state, chain.Config().EnableRewardBlock, chain.Config().BN256ForkBlock,
+			chain.Config().DeregisterBlock)
 		if err != nil {
 			sb.logger.Error("Failed to distribute epoch rewards", "blockNumber", header.Number, "err", err)
 			state.RevertToSnapshot(snapshot)
