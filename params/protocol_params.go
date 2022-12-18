@@ -18,6 +18,7 @@ const (
 	MaxGasForDebitGasFeesTransactions              uint64 = 2000 * million
 	MaxGasForCreditGasFeesTransactions             uint64 = 2000 * million
 	MaxGasForDistributeEpochPayment                uint64 = 5000 * million
+	MaxGasForDeregisterPayment1                    uint64 = 1 * million
 	MaxGasForDeregisterPayment                     uint64 = 5000 * million
 	MaxGasForDistributeVoterEpochRewards           uint64 = 5000 * million
 	MaxGasForElectValidators                       uint64 = 5000 * million

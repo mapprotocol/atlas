@@ -47,7 +47,7 @@ var (
 	getValidatorMethod                         = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getValidator", params.MaxGasForGetValidator)
 	updateValidatorScoreFromSignerMethod       = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "updateValidatorScoreFromSigner", params.MaxGasForUpdateValidatorScore)
 	distributeEpochPaymentsFromSignerMethod    = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "distributeEpochPaymentsFromSigner", params.MaxGasForDistributeEpochPayment)
-	deRegisterValidatorsInPendingMethod        = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "deRegisterAllValidatorsInPending", params.MaxGasForDistributeEpochPayment)
+	deRegisterValidatorsInPendingMethod        = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "deRegisterAllValidatorsInPending", params.MaxGasForDeregisterPayment1)
 	getDeRegisteredValidatorsTMethod           = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "getDeRegisteredValidatorsT", params.MaxGasForDistributeEpochPayment)
 	deRegisterValidatorsInPendingMethod2       = contracts.NewRegisteredContractMethod(params.ValidatorsRegistryId, abis.Validators, "deRegisterAllValidatorsInPending", params.MaxGasForDeregisterPayment)
 )
