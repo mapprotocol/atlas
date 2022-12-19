@@ -113,7 +113,7 @@ const (
 	Bls12381MapG1Gas          uint64 = 5500  // Gas price for BLS12-381 mapping field element to G1 operation
 	Bls12381MapG2Gas          uint64 = 75000 // Gas price for BLS12-381 mapping field element to G2 operation
 
-	VerifyEth2UpdateGas uint64 = 100 // Cost of verifying the eth2.0 light client update
+	VerifyEth2UpdateGas uint64 = 50000 // Cost of verifying the eth2.0 light client update
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
 	MaxCodeSize = 49152 // Maximum bytecode to permit for a contract
