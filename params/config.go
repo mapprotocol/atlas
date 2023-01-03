@@ -49,6 +49,7 @@ var (
 		EnableRewardBlock:   big.NewInt(1125000),
 		BN256ForkBlock:      big.NewInt(2350001),
 		DeregisterBlock:     big.NewInt(2990000),
+		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          Epoch,
 			ProposerPolicy: 2,
@@ -56,6 +57,7 @@ var (
 			RequestTimeout: 3000,
 			LookbackWindow: 12,
 		},
+		FullHeaderChainAvailable: true,
 	}
 
 	TestnetConfig = &ChainConfig{
@@ -77,6 +79,7 @@ var (
 		EnableRewardBlock:   big.NewInt(5000),
 		BN256ForkBlock:      big.NewInt(20000),
 		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          4000,
 			ProposerPolicy: 2,
@@ -105,6 +108,7 @@ var (
 		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(2001),
 		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
@@ -133,6 +137,7 @@ var (
 		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(0),
 		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
@@ -161,6 +166,7 @@ var (
 		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(2000),
 		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
@@ -194,6 +200,7 @@ var (
 		EnableRewardBlock:   big.NewInt(5000),
 		BN256ForkBlock:      big.NewInt(20000),
 		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		DonutBlock:          nil,
 		EWASMBlock:          nil,
 		CatalystBlock:       nil,
@@ -225,6 +232,7 @@ var (
 		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(2000),
 		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		BerlinBlock:         nil,
 		LondonBlock:         nil,
 		DonutBlock:          nil,
