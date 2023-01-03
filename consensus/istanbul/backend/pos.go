@@ -38,7 +38,8 @@ import (
 	"time"
 )
 
-func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB, EnableRewardBlock, bn256Block *big.Int) error {
+func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.StateDB,
+	EnableRewardBlock, bn256Block, deregisterBlock *big.Int) error {
 	start := time.Now()
 	defer sb.rewardDistributionTimer.UpdateSince(start)
 	logger := sb.logger.New("func", "Backend.distributeEpochPaymentsAndRewards", "blocknum", header.Number.Uint64())
@@ -115,11 +116,19 @@ func (sb *Backend) distributeEpochRewards(header *types.Header, state *state.Sta
 		}
 	}
 	//----------------------------- deRegister -------------------
-	deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner)
-	if err != nil {
-		return err
+	if header.Number.Cmp(deregisterBlock) > 0 {
+		deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner, true)
+		if err != nil {
+			return err
+		}
+		log.Info("deRegister AllValidators InPending", "deRegisters", deRegisters)
+	} else {
+		deRegisters, err := sb.deRegisterAllValidatorsInPending(vmRunner, false)
+		if err != nil {
+			return err
+		}
+		log.Info("deRegister AllValidators InPending", "deRegisters", deRegisters)
 	}
-	log.Info("deRegister AllValidators InPending", "deRegisters", deRegisters)
 
 	//----------------------------- Automatic active -------------------
 	var b = false
@@ -262,12 +271,20 @@ func (sb *Backend) activeAllPending(vmRunner vm.EVMRunner, validators []common.A
 	}
 	return b, nil
 }
-func (sb *Backend) deRegisterAllValidatorsInPending(vmRunner vm.EVMRunner) (*[]common.Address, error) {
-	deValidators, err := validators.DeRegisterValidatorsInPending(vmRunner)
-	if err != nil {
-		return nil, err
+func (sb *Backend) deRegisterAllValidatorsInPending(vmRunner vm.EVMRunner, update bool) (*[]common.Address, error) {
+	if !update {
+		deValidators, err := validators.DeRegisterValidatorsInPending(vmRunner)
+		if err != nil {
+			return nil, err
+		}
+		return deValidators, nil
+	} else {
+		deValidators, err := validators.DeRegisterValidatorsInPending2(vmRunner)
+		if err != nil {
+			return nil, err
+		}
+		return deValidators, nil
 	}
-	return deValidators, nil
 }
 
 func (sb *Backend) GetAccountsFromSigners(vmRunner vm.EVMRunner, signers []istanbul.Validator) ([]common.Address, error) {
