@@ -118,5 +118,6 @@ const (
 	VerifyEth2UpdateGas uint64 = 50000 // Cost of verifying the eth2.0 light client update
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
-	MaxCodeSize = 49152 // Maximum bytecode to permit for a contract
+	MaxCodeSize        = 49152              // Maximum bytecode to permit for a contract
+	MaxGasLimit uint64 = 0x7fffffffffffffff // Maximum the gas limit (2^63-1).
 )

@@ -30,12 +30,14 @@ import (
 	istanbulCore "github.com/mapprotocol/atlas/consensus/istanbul/core"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	ethCore "github.com/mapprotocol/atlas/core"
 	ethChain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/params"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"time"
@@ -131,7 +133,26 @@ func (sb *Backend) verifyHeader(chain consensus.ChainHeaderReader, header *types
 	if _, err := types.ExtractIstanbulExtra(header); err != nil {
 		return errInvalidExtraDataFormat
 	}
-
+	if chain.Config().IsCalc(header.Number) {
+		// Verify that the gas limit is <= 2^63-1
+		if header.GasLimit > params.MaxGasLimit {
+			return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, params.MaxGasLimit)
+		}
+		// Verify that the gasUsed is <= gasLimit
+		if header.GasUsed > header.GasLimit {
+			return fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
+		}
+		var parent *types.Header
+		if len(parents) > 0 {
+			parent = parents[len(parents)-1]
+		} else {
+			parent = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+		}
+		if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
+			// Verify the header's EIP-1559 attributes.
+			return err
+		}
+	}
 	return sb.verifyCascadingFields(chain, header, parents)
 }
 
