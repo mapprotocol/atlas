@@ -58,8 +58,10 @@ func getGasLimitByWork2(w *worker, parent *types.Block, header *types.Header, vm
 	gaslimit := uint64(0)
 	if w.chainConfig.IsCalc(header.Number) {
 		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner)
+		fmt.Println("===getGasLimitByWork2", "parent", parent.GasLimit(), "ceil", ceil)
 		gaslimit = chain.CalcGasLimit(parent.GasLimit(), ceil)
 	} else {
+		fmt.Println("******* not here **********")
 		gaslimit = chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil)
 	}
 	return gaslimit
