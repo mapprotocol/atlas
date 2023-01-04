@@ -148,9 +148,11 @@ func (sb *Backend) verifyHeader(chain consensus.ChainHeaderReader, header *types
 		} else {
 			parent = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
 		}
-		if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
-			// Verify the header's EIP-1559 attributes.
-			return err
+		if header.Number.Cmp(big.NewInt(1)) >= 0 {
+			if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
+				// Verify the header's EIP-1559 attributes.
+				return err
+			}
 		}
 	}
 	return sb.verifyCascadingFields(chain, header, parents)
