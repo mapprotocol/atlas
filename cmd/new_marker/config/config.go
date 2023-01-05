@@ -91,6 +91,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config.Commission = 1000000 //default 1  be relative to 1000,000
 	config.Verbosity = "3"
 	config.Name = "validator"
+	config.From = common.HexToAddress("0x0000000000000000000000000000000000000000") //  default
 
 	//-----------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {

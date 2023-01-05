@@ -104,7 +104,8 @@ func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 	if receipt.Status == types.ReceiptStatusSuccessful {
 		logger.Info("Transaction Success", "number", receipt.BlockNumber.Uint64())
 	} else if receipt.Status == types.ReceiptStatusFailed {
-		logger.Info("Transaction Failed ", "number", receipt.BlockNumber.Uint64())
+		logger.Error("Transaction Failed ", "number", receipt.BlockNumber.Uint64())
+		os.Exit(1)
 	}
 }
 

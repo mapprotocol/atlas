@@ -34,6 +34,11 @@ func (b *base) newConn(addr string) *ethclient.Client {
 	return connections.DialConn(addr)
 }
 
+func (b base) handleType1Msg(cfg *config.Config, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) {
+	m := writer.NewMessage(writer.SolveSendTranstion1, b.msgCh, cfg, to, value, abi, abiMethod, params...)
+	b.handleMessage(cfg.RPCAddr, m)
+}
+
 func (b base) handleType3Msg(cfg *config.Config, ret interface{}, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) {
 	m := writer.NewMessageRet1(writer.SolveQueryResult3, b.msgCh, cfg, &ret, to, value, abi, abiMethod, params...)
 	b.handleMessage(cfg.RPCAddr, m)

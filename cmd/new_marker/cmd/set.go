@@ -16,31 +16,73 @@ func init() {
 		{
 			Name:   "getAccountMetadataURL",
 			Usage:  "get metadata url of account",
-			Action: Warp(account.GetAccountMetadataURL),
+			Action: MigrateFlags(account.GetAccountMetadataURL),
 			Flags:  config.BaseFlagCombination,
 		},
 		{
 			Name:   "getAccountName",
 			Usage:  "get name of account",
-			Action: Warp(account.GetAccountName),
+			Action: MigrateFlags(account.GetAccountName),
 			Flags:  config.BaseFlagCombination,
 		},
 		{
 			Name:   "getAccountTotalLockedGold",
 			Usage:  "Returns the total amount of locked gold for an account.",
-			Action: Warp(account.GetAccountTotalLockedGold),
+			Action: MigrateFlags(account.GetAccountTotalLockedGold),
 			Flags:  config.BaseFlagCombination,
 		},
 		{
 			Name:   "getAccountNonvotingLockedGold",
 			Usage:  "Returns the total amount of non-voting locked gold for an account",
-			Action: Warp(account.GetAccountNonvotingLockedGold),
+			Action: MigrateFlags(account.GetAccountNonvotingLockedGold),
+			Flags:  config.BaseFlagCombination,
+		},
+		{
+			Name:   "getPendingVotesForValidatorByAccount",
+			Usage:  "Returns the pending votes for `validator` made by `account`",
+			Action: MigrateFlags(account.GetPendingVotesForValidatorByAccount),
+			Flags:  config.BaseFlagCombination,
+		},
+		{
+			Name:   "getActiveVotesForValidatorByAccount",
+			Usage:  "Returns the active votes for `validator` made by `account`",
+			Action: MigrateFlags(account.GetActiveVotesForValidatorByAccount),
+			Flags:  config.BaseFlagCombination,
+		},
+		{
+			Name:   "getValidatorsVotedForByAccount",
+			Usage:  "Returns the validators that `account` has voted for.",
+			Action: MigrateFlags(account.GetValidatorsVotedForByAccount),
+			Flags:  config.BaseFlagCombination,
+		},
+		{
+			Name:   "setAccountMetadataURL",
+			Usage:  "set metadata url of account",
+			Action: MigrateFlags(account.SetAccountMetadataURL),
+			Flags:  append(config.BaseFlagCombination, config.URLFlag),
+		},
+		{
+			Name:   "setAccountName",
+			Usage:  "set name of account",
+			Action: MigrateFlags(account.SetAccountName),
+			Flags:  append([]cli.Flag{}, config.RPCAddrFlag, config.KeyStoreFlag, config.GasLimitFlag, config.NameFlag),
+		},
+		{
+			Name:   "createAccount",
+			Usage:  "creat validator account",
+			Action: MigrateFlags(account.CreateAccount),
+			Flags:  append([]cli.Flag{}, config.RPCAddrFlag, config.KeyStoreFlag, config.GasLimitFlag, config.NameFlag),
+		},
+		{
+			Name:   "signerToAccount",
+			Usage:  "Returns the account associated with `signer`.",
+			Action: MigrateFlags(account.SignerToAccount),
 			Flags:  config.BaseFlagCombination,
 		},
 	}...)
 }
 
-func Warp(hdl func(ctx *cli.Context, cfg *config.Config) error) func(*cli.Context) error {
+func MigrateFlags(hdl func(ctx *cli.Context, cfg *config.Config) error) func(*cli.Context) error {
 	return func(ctx *cli.Context) error {
 		for _, name := range ctx.FlagNames() {
 			if ctx.IsSet(name) {
