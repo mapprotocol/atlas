@@ -1,0 +1,46 @@
+package cmd
+
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/mapprotocol/atlas/accounts/abi"
+	"github.com/mapprotocol/atlas/cmd/new_marker/config"
+	"github.com/mapprotocol/atlas/cmd/new_marker/connections"
+	"github.com/mapprotocol/atlas/cmd/new_marker/writer"
+	"math/big"
+)
+
+type base struct {
+	msgCh chan struct{} // wait for msg handles
+}
+
+func newBase() *base {
+	return &base{
+		msgCh: make(chan struct{}),
+	}
+}
+
+// waitUntilMsgHandled this function will block untill message is handled
+func (b *base) waitUntilMsgHandled(counter int) {
+	log.Debug("waitUntilMsgHandled", "counter", counter)
+	for counter > 0 {
+		<-b.msgCh
+		counter -= 1
+	}
+}
+
+func (b *base) newConn(addr string) *ethclient.Client {
+	return connections.DialConn(addr)
+}
+
+func (b base) handleType3Msg(cfg *config.Config, ret interface{}, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) {
+	m := writer.NewMessageRet1(writer.SolveQueryResult3, b.msgCh, cfg, &ret, to, value, abi, abiMethod, params...)
+	b.handleMessage(cfg.RPCAddr, m)
+}
+
+func (b *base) handleMessage(rpcAddr string, msg writer.Message) {
+	w := writer.New(b.newConn(rpcAddr))
+	go w.ResolveMessage(msg)
+	b.waitUntilMsgHandled(1)
+}
