@@ -100,6 +100,8 @@ type ChainConfig struct {
 	Istanbul *IstanbulConfig `json:"istanbul,omitempty"`
 
 	EnableRewardBlock *big.Int `json:"rewardblock,omitempty"`
+	DeregisterBlock   *big.Int `json:"deregisterblock,omitempty"`
+	CalcBaseBlock     *big.Int `json:"calcbaseblock,omitempty"`
 	// This does not belong here but passing it to every function is not possible since that breaks
 	// some implemented interfaces and introduces churn across the geth codebase.
 	FullHeaderChainAvailable bool // False for lightest Sync mode, true otherwise
@@ -155,7 +157,7 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v BN256Fork: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Reward: %v, Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v BN256Fork: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Reward: %v, Deregister: %v,Calc: %v,Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -172,6 +174,8 @@ func (c *ChainConfig) String() string {
 		c.BerlinBlock,
 		c.LondonBlock,
 		c.EnableRewardBlock,
+		c.DeregisterBlock,
+		c.CalcBaseBlock,
 		engine,
 	)
 }
@@ -250,6 +254,9 @@ func (c *ChainConfig) IsCatalyst(num *big.Int) bool {
 // IsEWASM returns whether num represents a block number after the EWASM fork
 func (c *ChainConfig) IsEWASM(num *big.Int) bool {
 	return isForked(c.EWASMBlock, num)
+}
+func (c *ChainConfig) IsCalc(num *big.Int) bool {
+	return isForked(c.CalcBaseBlock, num)
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported

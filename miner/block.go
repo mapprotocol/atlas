@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 	"time"
 
@@ -36,6 +37,34 @@ type blockState struct {
 	receipts       []*types.Receipt
 	randomness     *types.Randomness // The types.Randomness of the last block by mined by this worker.
 	txFeeRecipient common.Address
+}
+
+func getGasLimitByWork(w *worker, parent *types.Block, header *types.Header) (uint64, error) {
+	gaslimit := uint64(0)
+	if w.chainConfig.IsCalc(header.Number) {
+		state, err := w.chain.StateAt(parent.Root())
+		if err != nil {
+			return 0, fmt.Errorf("failed to get the parent state:(%v) %w", parent.Number(), err)
+		}
+		vmRunner := w.chain.NewEVMRunner(header, state)
+		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner)
+		gaslimit = chain.CalcGasLimit(parent.GasLimit(), ceil)
+	} else {
+		gaslimit = chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil)
+	}
+	return gaslimit, nil
+}
+func getGasLimitByWork2(w *worker, parent *types.Block, header *types.Header, vmRunner vm.EVMRunner) uint64 {
+	gaslimit := uint64(0)
+	if w.chainConfig.IsCalc(header.Number) {
+		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner)
+		fmt.Println("===getGasLimitByWork2", "parent", parent.GasLimit(), "ceil", ceil)
+		gaslimit = chain.CalcGasLimit(parent.GasLimit(), ceil)
+	} else {
+		fmt.Println("******* not here **********")
+		gaslimit = chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil)
+	}
+	return gaslimit
 }
 
 // prepareBlock intializes a new blockState that is ready to have transaction included to.
@@ -90,6 +119,8 @@ func prepareBlock(w *worker) (*blockState, error) {
 	}
 
 	vmRunner := w.chain.NewEVMRunner(header, state)
+	header.GasLimit = getGasLimitByWork2(w, parent, header, vmRunner)
+
 	b := &blockState{
 		signer:         types.NewLondonSigner(w.chainConfig.ChainID),
 		state:          state,
@@ -97,6 +128,9 @@ func prepareBlock(w *worker) (*blockState, error) {
 		gasLimit:       blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner),
 		header:         header,
 		txFeeRecipient: txFeeRecipient,
+	}
+	if w.chainConfig.IsCalc(header.Number) {
+		b.gasLimit = header.GasLimit
 	}
 	b.gasPool = new(core.GasPool).AddGas(b.gasLimit)
 
