@@ -23,7 +23,8 @@ func init() {
 		_, _ = fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
-	app.Commands = append(app.Commands, cmd.Set...)
+	app.Commands = append(app.Commands, cmd.AccountSet...)
+	app.Commands = append(app.Commands, cmd.ValidatorSet...)
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
 

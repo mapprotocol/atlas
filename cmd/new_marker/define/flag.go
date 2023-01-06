@@ -1,4 +1,4 @@
-package config
+package define
 
 import (
 	"gopkg.in/urfave/cli.v1"
@@ -129,5 +129,11 @@ var BaseFlagCombination = []cli.Flag{
 	RPCAddrFlag,
 	KeyStoreFlag,
 	TargetAddressFlag,
+	GasLimitFlag,
+}
+
+var MustFlagCombination = []cli.Flag{
+	RPCAddrFlag,
+	KeyStoreFlag,
 	GasLimitFlag,
 }

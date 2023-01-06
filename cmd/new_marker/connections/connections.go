@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/mapprotocol/atlas/cmd/new_marker/config"
+	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 )
 
 const (
@@ -28,7 +28,7 @@ func DialConn(addr string) *ethclient.Client {
 	return conn
 }
 
-func DialRpc(config *config.Config) (*rpc.Client, string) {
+func DialRpc(config *define.Config) (*rpc.Client, string) {
 	logger := log.New("func", "dialConn")
 	conn, err := rpc.Dial(config.RPCAddr)
 	if err != nil {

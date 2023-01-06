@@ -1,4 +1,4 @@
-package config
+package define
 
 import (
 	"crypto/ecdsa"

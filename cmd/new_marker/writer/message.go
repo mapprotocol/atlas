@@ -4,7 +4,7 @@ import (
 	"crypto/ecdsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts/abi"
-	"github.com/mapprotocol/atlas/cmd/new_marker/config"
+	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
 	"math/big"
 )
@@ -31,7 +31,7 @@ type Message struct {
 	gasLimit    uint64
 }
 
-func NewMessage(messageType string, ch chan<- struct{}, cfg *config.Config, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
+func NewMessage(messageType string, ch chan<- struct{}, cfg *define.Config, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
 	return Message{
 		messageType: messageType,
 		from:        cfg.From,
@@ -47,7 +47,7 @@ func NewMessage(messageType string, ch chan<- struct{}, cfg *config.Config, to c
 }
 
 //NewMessageRet1 need to handle return params
-func NewMessageRet1(messageType string, ch chan<- struct{}, cfg *config.Config, ret interface{}, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
+func NewMessageRet1(messageType string, ch chan<- struct{}, cfg *define.Config, ret interface{}, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
 	return Message{
 		messageType: messageType,
 		from:        cfg.From,
@@ -64,7 +64,7 @@ func NewMessageRet1(messageType string, ch chan<- struct{}, cfg *config.Config, 
 }
 
 //NewMessageRet2 need to handle return params
-func NewMessageRet2(messageType string, ch chan<- struct{}, cfg *config.Config, solveResult func([]byte), to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
+func NewMessageRet2(messageType string, ch chan<- struct{}, cfg *define.Config, solveResult func([]byte), to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) Message {
 	return Message{
 		messageType: messageType,
 		from:        cfg.From,

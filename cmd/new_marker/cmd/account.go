@@ -4,7 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
-	"github.com/mapprotocol/atlas/cmd/new_marker/config"
+	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
 	"github.com/mapprotocol/atlas/cmd/new_marker/writer"
 	"gopkg.in/urfave/cli.v1"
@@ -21,16 +21,16 @@ type Account struct {
 func NewAccount() *Account {
 	return &Account{
 		base:          newBase(),
-		abi:           mapprotocol.AbiFor("Accounts"),
-		lockedGoldAbi: mapprotocol.AbiFor("LockedGold"),
 		to:            mapprotocol.MustProxyAddressFor("Accounts"),
+		abi:           mapprotocol.AbiFor("Accounts"),
 		lockGoldTo:    mapprotocol.MustProxyAddressFor("LockedGold"),
+		lockedGoldAbi: mapprotocol.AbiFor("LockedGold"),
 		electionTo:    mapprotocol.MustProxyAddressFor("Election"),
 		electionAbi:   mapprotocol.AbiFor("Election"),
 	}
 }
 
-func (a *Account) GetAccountMetadataURL(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetAccountMetadataURL(_ *cli.Context, cfg *define.Config) error {
 	var (
 		ret interface{}
 	)
@@ -39,7 +39,7 @@ func (a *Account) GetAccountMetadataURL(_ *cli.Context, cfg *config.Config) erro
 	return nil
 }
 
-func (a *Account) GetAccountName(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetAccountName(_ *cli.Context, cfg *define.Config) error {
 	var (
 		ret interface{}
 	)
@@ -48,7 +48,7 @@ func (a *Account) GetAccountName(_ *cli.Context, cfg *config.Config) error {
 	return nil
 }
 
-func (a *Account) GetAccountTotalLockedGold(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetAccountTotalLockedGold(_ *cli.Context, cfg *define.Config) error {
 	var (
 		ret interface{}
 	)
@@ -59,7 +59,7 @@ func (a *Account) GetAccountTotalLockedGold(_ *cli.Context, cfg *config.Config) 
 	return nil
 }
 
-func (a *Account) GetAccountNonvotingLockedGold(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetAccountNonvotingLockedGold(_ *cli.Context, cfg *define.Config) error {
 	var (
 		ret interface{}
 	)
@@ -70,7 +70,7 @@ func (a *Account) GetAccountNonvotingLockedGold(_ *cli.Context, cfg *config.Conf
 	return nil
 }
 
-func (a *Account) GetPendingVotesForValidatorByAccount(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetPendingVotesForValidatorByAccount(_ *cli.Context, cfg *define.Config) error {
 	var (
 		ret interface{}
 	)
@@ -80,7 +80,7 @@ func (a *Account) GetPendingVotesForValidatorByAccount(_ *cli.Context, cfg *conf
 	return nil
 }
 
-func (a *Account) GetActiveVotesForValidatorByAccount(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetActiveVotesForValidatorByAccount(_ *cli.Context, cfg *define.Config) error {
 	var (
 		ret interface{}
 	)
@@ -91,7 +91,7 @@ func (a *Account) GetActiveVotesForValidatorByAccount(_ *cli.Context, cfg *confi
 	return nil
 }
 
-func (a *Account) GetValidatorsVotedForByAccount(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) GetValidatorsVotedForByAccount(_ *cli.Context, cfg *define.Config) error {
 	log.Info("=== getValidatorsVotedForByAccount ===", "admin", cfg.From)
 	var (
 		ret interface{}
@@ -107,19 +107,19 @@ func (a *Account) GetValidatorsVotedForByAccount(_ *cli.Context, cfg *config.Con
 	return nil
 }
 
-func (a *Account) SetAccountMetadataURL(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) SetAccountMetadataURL(_ *cli.Context, cfg *define.Config) error {
 	a.handleType1Msg(cfg, a.to, nil, a.abi, "setMetadataURL", cfg.MetadataURL)
 	log.Info("set account metadata url", "address", cfg.From, "url", cfg.MetadataURL)
 	return nil
 }
 
-func (a *Account) SetAccountName(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) SetAccountName(_ *cli.Context, cfg *define.Config) error {
 	log.Info("set name", "address", cfg.From, "name", cfg.Name)
 	a.handleType1Msg(cfg, a.to, nil, a.abi, "setName", cfg.Name)
 	return nil
 }
 
-func (a *Account) CreateAccount(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) CreateAccount(_ *cli.Context, cfg *define.Config) error {
 	logger := log.New("func", "createAccount")
 	logger.Info("Create account", "address", cfg.From, "name", cfg.Name)
 	log.Info("=== create Account ===")
@@ -135,7 +135,7 @@ func (a *Account) CreateAccount(_ *cli.Context, cfg *config.Config) error {
 }
 
 // SignerToAccount : Query the account of a target signer
-func (a *Account) SignerToAccount(_ *cli.Context, cfg *config.Config) error {
+func (a *Account) SignerToAccount(_ *cli.Context, cfg *define.Config) error {
 	//----------------------------- signerToAccount ---------------------------------
 	logger := log.New("func", "signerToAccount")
 	var ret common.Address
