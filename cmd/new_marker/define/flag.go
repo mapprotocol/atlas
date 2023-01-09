@@ -37,10 +37,6 @@ var (
 		Name:  "lockedNum",
 		Usage: "The amount of map to lock 、unlock、relock、withdraw ",
 	}
-	MAPValueFlag = cli.Int64Flag{
-		Name:  "mapValue",
-		Usage: "validator address",
-	}
 	WithdrawIndexFlag = cli.Int64Flag{
 		Name:  "withdrawIndex",
 		Usage: "use for withdraw",

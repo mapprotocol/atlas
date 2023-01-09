@@ -39,6 +39,11 @@ func (b base) handleType1Msg(cfg *define.Config, to common.Address, value *big.I
 	b.handleMessage(cfg.RPCAddr, m)
 }
 
+func (b base) handleType2Msg(cfg *define.Config, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) {
+	m := writer.NewMessage(writer.SolveSendTranstion2, b.msgCh, cfg, to, value, abi, abiMethod, params...)
+	b.handleMessage(cfg.RPCAddr, m)
+}
+
 func (b base) handleType3Msg(cfg *define.Config, ret interface{}, to common.Address, value *big.Int, abi *abi.ABI, abiMethod string, params ...interface{}) {
 	m := writer.NewMessageRet1(writer.SolveQueryResult3, b.msgCh, cfg, &ret, to, value, abi, abiMethod, params...)
 	b.handleMessage(cfg.RPCAddr, m)

@@ -92,10 +92,58 @@ func init() {
 			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.CommissionFlag, define.SignerPriFlag),
 		},
 		{
+			Name:   "generateSignerProof",
+			Usage:  "generate proof of signer",
+			Action: MigrateFlags(validator.GenerateSignerProof),
+			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.ValidatorAddressFlag, define.SignerPriFlag),
+		},
+		{
 			Name:   "registerByProof",
 			Usage:  "register validator by signer proof",
 			Action: MigrateFlags(validator.RegisterValidatorByProof),
 			Flags:  append(define.MustFlagCombination, define.ProofFlag, define.CommissionFlag),
+		},
+		{
+			Name:   "revertRegister",
+			Usage:  "register validator",
+			Action: MigrateFlags(validator.RevertRegisterValidator),
+			Flags:  define.MustFlagCombination,
+		},
+		{
+			Name:   "deregister",
+			Usage:  "deregister Validator",
+			Action: MigrateFlags(validator.DeregisterValidator),
+			Flags:  define.MustFlagCombination,
+		},
+		{
+			Name:   "quicklyRegister",
+			Usage:  "register validator",
+			Action: MigrateFlags(validator.QuicklyRegisterValidator),
+			Flags:  append(define.MustFlagCombination, define.CommissionFlag, define.LockedNumFlag, define.NameFlag),
+		},
+		{
+			Name:   "authorizeValidatorSigner",
+			Usage:  "Finish the process of authorizing an address to sign on behalf of the account.",
+			Action: MigrateFlags(validator.AuthorizeValidatorSigner),
+			Flags:  append(define.MustFlagCombination, define.SignerPriFlag),
+		},
+		{
+			Name:   "authorizeValidatorSignerBySignature",
+			Usage:  "Finish the process of authorizing an address to sign on behalf of the account.",
+			Action: MigrateFlags(validator.AuthorizeValidatorSignerBySignature),
+			Flags:  append(define.MustFlagCombination, define.SignatureFlag, define.SignerFlag),
+		},
+		{
+			Name:   "makeECDSASignatureFromSigner",
+			Usage:  "print a ECDSASignature that signer sign the account(validator)",
+			Action: MigrateFlags(validator.MakeECDSASignatureFromSigner),
+			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag),
+		},
+		{
+			Name:   "makeBLSProofOfPossessionFromSigner",
+			Usage:  "print a BLSProofOfPossession that signer BLSSign the account(validator)",
+			Action: MigrateFlags(validator.MakeBLSProofOfPossessionFromsigner),
+			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag),
 		},
 	}...)
 }
