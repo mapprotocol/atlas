@@ -119,6 +119,11 @@ var (
 		Usage: "use for sendContractTransaction gasLimit",
 		Value: 0,
 	}
+	KeystoreAddressFlag = cli.StringFlag{
+		Name:  "keystoreAddress",
+		Usage: "the address corresponding to the keystore",
+		Value: "",
+	}
 )
 
 var BaseFlagCombination = []cli.Flag{
@@ -126,6 +131,7 @@ var BaseFlagCombination = []cli.Flag{
 	KeyStoreFlag,
 	GasLimitFlag,
 	TargetAddressFlag,
+	KeystoreAddressFlag,
 }
 
 var MustFlagCombination = []cli.Flag{
