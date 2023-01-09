@@ -25,6 +25,7 @@ func init() {
 	}
 	app.Commands = append(app.Commands, cmd.AccountSet...)
 	app.Commands = append(app.Commands, cmd.ValidatorSet...)
+	app.Commands = append(app.Commands, cmd.VoterSet...)
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
 

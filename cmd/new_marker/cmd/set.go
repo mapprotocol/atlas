@@ -11,6 +11,8 @@ import (
 var (
 	AccountSet   []cli.Command
 	ValidatorSet []cli.Command
+	VoterSet     []cli.Command
+	ToolSet      []cli.Command
 )
 
 func init() {
@@ -144,6 +146,57 @@ func init() {
 			Usage:  "print a BLSProofOfPossession that signer BLSSign the account(validator)",
 			Action: MigrateFlags(validator.MakeBLSProofOfPossessionFromsigner),
 			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag),
+		},
+	}...)
+	voter := NewVoter()
+	VoterSet = append(VoterSet, []cli.Command{
+		{
+			Name:   "vote",
+			Usage:  "vote validator ",
+			Action: MigrateFlags(voter.Vote),
+			Flags:  append(define.BaseFlagCombination, define.VoteNumFlag),
+		},
+		{
+			Name:   "quicklyVote",
+			Usage:  "vote validator ",
+			Action: MigrateFlags(voter.QuicklyVote),
+			Flags:  append(define.BaseFlagCombination, define.NameFlag, define.LockedNumFlag, define.TargetAddressFlag, define.VoteNumFlag),
+		},
+		{
+			Name:   "activate",
+			Usage:  "Converts `account`'s pending votes for `validator` to active votes.",
+			Action: MigrateFlags(voter.Activate),
+			Flags:  define.BaseFlagCombination,
+		},
+		{
+			Name:   "getActiveVotesForValidator",
+			Usage:  "Returns the total active vote units made for `validator`.",
+			Action: MigrateFlags(voter.GetActiveVotesForValidator),
+			Flags:  define.BaseFlagCombination,
+		},
+		{
+			Name:   "getPendingVotersForValidator",
+			Usage:  "Returns the total pending voters vote for target `validator`.",
+			Action: MigrateFlags(voter.GetPendingVotersForValidator),
+			Flags:  define.BaseFlagCombination,
+		},
+		{
+			Name:   "getPendingInfoForValidator",
+			Usage:  "Returns the  pending Info voters vote And Epoch for target `validator`.",
+			Action: MigrateFlags(voter.GetPendingInfoForValidator),
+			Flags:  define.BaseFlagCombination,
+		},
+		{
+			Name:   "revokePending",
+			Usage:  "Revokes `value` pending votes for `validator`",
+			Action: MigrateFlags(voter.RevokePending),
+			Flags:  append(define.BaseFlagCombination, define.LockedNumFlag),
+		},
+		{
+			Name:   "revokeActive",
+			Usage:  "Revokes `value` active votes for `validator`",
+			Action: MigrateFlags(voter.RevokeActive),
+			Flags:  append(define.BaseFlagCombination, define.LockedNumFlag),
 		},
 	}...)
 }

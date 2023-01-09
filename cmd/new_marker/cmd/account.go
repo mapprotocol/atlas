@@ -6,14 +6,12 @@ import (
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
-	"github.com/mapprotocol/atlas/cmd/new_marker/writer"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
 )
 
 type Account struct {
 	*base
-	*writer.Writer
 	to, lockGoldTo, electionTo      common.Address
 	abi, lockedGoldAbi, electionAbi *abi.ABI
 }
