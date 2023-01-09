@@ -2,37 +2,46 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/helper/decimal"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
 	"os"
 	"sort"
+	"strings"
 )
 
 type Voter struct {
 	*base
-	account                         *Account
-	validator                       *Validator
-	to, lockGoldTo, electionTo      common.Address
-	abi, lockedGoldAbi, electionAbi *abi.ABI
+	account                                                     *Account
+	validator                                                   *Validator
+	to, lockGoldTo, electionTo, validatorTo, goldTokenTo        common.Address
+	abi, lockedGoldAbi, electionAbi, validatorAbi, goldTokenAbi *abi.ABI
 }
 
 func NewVoter() *Voter {
 	return &Voter{
-		base:      newBase(),
-		account:   NewAccount(),
-		validator: NewValidator(),
-		//to:            mapprotocol.MustProxyAddressFor("Voters"),
-		//abi:           mapprotocol.AbiFor("Voters"),
-		//lockGoldTo:    mapprotocol.MustProxyAddressFor("LockedGold"),
-		//lockedGoldAbi: mapprotocol.AbiFor("LockedGold"),
-		electionTo:  mapprotocol.MustProxyAddressFor("Election"),
-		electionAbi: mapprotocol.AbiFor("Election"),
+		base:          newBase(),
+		account:       NewAccount(),
+		validator:     NewValidator(),
+		to:            mapprotocol.MustProxyAddressFor("Voters"),
+		abi:           mapprotocol.AbiFor("Voters"),
+		lockGoldTo:    mapprotocol.MustProxyAddressFor("LockedGold"),
+		lockedGoldAbi: mapprotocol.AbiFor("LockedGold"),
+		electionTo:    mapprotocol.MustProxyAddressFor("Election"),
+		electionAbi:   mapprotocol.AbiFor("Election"),
+		validatorTo:   mapprotocol.MustProxyAddressFor("Validators"),
+		validatorAbi:  mapprotocol.AbiFor("Validators"),
+		goldTokenTo:   mapprotocol.MustProxyAddressFor("GoldToken"),
+		goldTokenAbi:  mapprotocol.AbiFor("GoldToken"),
 	}
 }
 
@@ -132,6 +141,315 @@ func (v *Voter) RevokeActive(_ *cli.Context, cfg *define.Config) error {
 	log.Info("=== revokeActive ===", "admin", cfg.From)
 	v.handleType1Msg(cfg, v.electionTo, nil, v.electionAbi, "revokeActive", _params)
 	return nil
+}
+
+func (v *Voter) LockedMAP(_ *cli.Context, cfg *define.Config) error {
+	lockedGold := new(big.Int).Mul(cfg.LockedNum, big.NewInt(1e18))
+	log.Info("=== Lock  gold ===")
+	log.Info("Lock  gold", "amount", lockedGold.String())
+	v.handleType2Msg(cfg, v.lockGoldTo, lockedGold, v.lockedGoldAbi, "lock")
+	return nil
+}
+
+func (v *Voter) UnlockedMAP(_ *cli.Context, cfg *define.Config) error {
+	lockedGold := new(big.Int).Mul(cfg.LockedNum, big.NewInt(1e18))
+	log.Info("=== unLock validator gold ===")
+	log.Info("unLock validator gold", "amount", lockedGold, "admin", cfg.From)
+	v.handleType1Msg(cfg, v.lockGoldTo, nil, v.lockedGoldAbi, "unlock", lockedGold)
+	return nil
+}
+
+func (v *Voter) RelockMAP(_ *cli.Context, cfg *define.Config) error {
+	lockedGold := new(big.Int).Mul(cfg.LockedNum, big.NewInt(1e18))
+	log.Info("=== relockMAP validator gold ===")
+	log.Info("relockMAP validator gold", "amount", lockedGold)
+	v.handleType1Msg(cfg, v.lockGoldTo, nil, v.lockedGoldAbi, "relock", cfg.RelockIndex, lockedGold)
+	return nil
+}
+
+func (v *Voter) Withdraw(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== withdraw validator gold ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, v.lockGoldTo, nil, v.lockedGoldAbi, "withdraw", cfg.WithdrawIndex)
+	return nil
+}
+
+func (v *Voter) GetTotalVotesForEligibleValidators(_ *cli.Context, cfg *define.Config) error {
+	type ret struct {
+		Validators interface{} // indexed
+		Values     interface{}
+	}
+	var t ret
+	f := func(output []byte) {
+		err := v.electionAbi.UnpackIntoInterface(&t, "getTotalVotesForEligibleValidators", output)
+		if err != nil {
+			log.Error("getTotalVotesForEligibleValidators", "err", err)
+			os.Exit(1)
+		}
+	}
+	log.Info("=== getTotalVotesForEligibleValidators ===", "admin", cfg.From)
+	v.handleType4Msg(cfg, f, v.electionTo, nil, v.electionAbi, "getTotalVotesForEligibleValidators")
+	Validators := (t.Validators).([]common.Address)
+	Values := (t.Values).([]*big.Int)
+	for i := 0; i < len(Validators); i++ {
+		log.Info("Validator:", "addr", Validators[i], "vote amount", Values[i])
+	}
+	return nil
+}
+
+func (v *Voter) GetRegisteredValidatorSigners(_ *cli.Context, cfg *define.Config) error {
+	log.Info("==== getRegisteredValidatorSigners ===")
+	Validators := v._getRegisteredValidatorSigners(cfg)
+	if len(Validators) == 0 {
+		log.Info("nil")
+	}
+	for i := 0; i < len(Validators); i++ {
+		log.Info("Validator:", "index", i, "addr", Validators[i])
+	}
+	return nil
+}
+
+func (v *Voter) GetValidator(_ *cli.Context, cfg *define.Config) error {
+	type ret struct {
+		EcdsaPublicKey      interface{}
+		BlsPublicKey        interface{}
+		BlsG1PublicKey      interface{}
+		Score               interface{}
+		Signer              interface{}
+		Commission          interface{}
+		NextCommission      interface{}
+		NextCommissionBlock interface{}
+		SlashMultiplier     interface{}
+		LastSlashed         interface{}
+	}
+	var t ret
+	f := func(output []byte) {
+		err := v.validatorAbi.UnpackIntoInterface(&t, "getValidator", output)
+		if err != nil {
+			log.Error("getValidator", "err", err)
+			os.Exit(1)
+		}
+	}
+
+	log.Info("=== getValidator ===", "admin", cfg.From)
+	v.handleType4Msg(cfg, f, v.validatorTo, nil, v.validatorAbi, "getValidator", cfg.TargetAddress)
+	log.Info("", "ecdsaPublicKey", common.BytesToHash(t.EcdsaPublicKey.([]byte)).String())
+	log.Info("", "BlsPublicKey", common.BytesToHash(t.BlsPublicKey.([]byte)).String())
+	log.Info("", "BlsG1PublicKey", common.BytesToHash(t.BlsG1PublicKey.([]byte)).String())
+	log.Info("", "Score", ConvertToFraction(t.Score))
+	log.Info("", "Signer", t.Signer)
+	log.Info("", "Commission", ConvertToFraction(t.Commission))
+	log.Info("", "NextCommission", ConvertToFraction(t.NextCommission))
+	log.Info("", "NextCommissionBlock", t.NextCommissionBlock)
+	log.Info("", "SlashMultiplier", ConvertToFraction(t.SlashMultiplier))
+	log.Info("", "LastSlashed", ConvertToFraction(t.LastSlashed))
+	return nil
+}
+
+func (v *Voter) GetRewardInfo(_ *cli.Context, cfg *define.Config) error {
+	conn := v.newConn(cfg.RPCAddr)
+	curBlockNumber, err := conn.BlockNumber(context.Background())
+	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
+	if err != nil {
+		return err
+	}
+	EpochFirst, err := istanbul.GetEpochFirstBlockGivenBlockNumber(curBlockNumber, epochSize)
+	if err != nil {
+		return err
+	}
+	Epoch := istanbul.GetEpochNumber(curBlockNumber, epochSize)
+	validatorContractAddress := cfg.ValidatorParameters.ValidatorAddress
+	queryBlock := big.NewInt(int64(EpochFirst - 1))
+	log.Info("=== getReward ===", "cur_epoch", Epoch, "epochSize", epochSize, "queryBlockNumber", queryBlock, "validatorContractAddress", validatorContractAddress.String(), "admin", cfg.From)
+	query := mapprotocol.BuildQuery(validatorContractAddress, mapprotocol.ValidatorEpochPaymentDistributed, queryBlock, queryBlock)
+	// querying for logs
+	logs, err := conn.FilterLogs(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		//validator := common.Bytes2Hex(l.Topics[0].Bytes())
+		validator := common.BytesToAddress(l.Topics[1].Bytes())
+		reward := big.NewInt(0).SetBytes(l.Data[:32])
+		log.Info("", "validator", validator, "reward", reward)
+	}
+	log.Info("=== END ===")
+	return nil
+}
+
+func (v *Voter) getVoterRewardInfo(ctx *cli.Context, cfg *define.Config) error {
+	conn := v.newConn(cfg.RPCAddr)
+	curBlockNumber, err := conn.BlockNumber(context.Background())
+	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
+	if err != nil {
+		return err
+	}
+	EpochFirst, err := istanbul.GetEpochFirstBlockGivenBlockNumber(curBlockNumber, epochSize)
+	if err != nil {
+		return err
+	}
+	Epoch := istanbul.GetEpochNumber(curBlockNumber, epochSize)
+	electionContractAddress := cfg.ElectionParameters.ElectionAddress
+	firstBlock := big.NewInt(int64(1))
+	endBlock := big.NewInt(int64(EpochFirst + 1))
+	log.Info("=== get voter Reward ===", "cur_epoch", Epoch, "epochSize", epochSize, "query first BlockNumber", firstBlock, "query end BlockNumber", endBlock, "validatorContractAddress", electionContractAddress.String(), "admin", cfg.From)
+	query := mapprotocol.BuildQuery(electionContractAddress, mapprotocol.EpochRewardsDistributedToVoters, firstBlock, endBlock)
+	// querying for logs
+	logs, err := conn.FilterLogs(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		validator := common.BytesToAddress(l.Topics[1].Bytes())
+		reward := big.NewInt(0).SetBytes(l.Data[:32])
+		log.Info("reward to voters", "validator", validator, "reward", reward)
+	}
+	log.Info("=== END ===")
+	return nil
+}
+
+func (v *Voter) getNumRegisteredValidators(_ *cli.Context, cfg *define.Config) error {
+	var NumValidators interface{}
+	v.handleType3Msg(cfg, &NumValidators, v.validatorTo, nil, v.validatorAbi, "getNumRegisteredValidators")
+	ret := NumValidators.(*big.Int)
+	log.Info("=== result ===", "num", ret.String())
+	return nil
+}
+
+func (v *Voter) getTopValidators(_ *cli.Context, cfg *define.Config) error {
+	var TopValidators interface{}
+	v.handleType3Msg(cfg, &TopValidators, v.validatorTo, nil, v.validatorAbi, "getTopValidators", cfg.TopNum)
+	Validators := TopValidators.([]common.Address)
+	for i := 0; i < len(Validators); i++ {
+		log.Info("Validator:", "index", i, "addr", Validators[i])
+	}
+	return nil
+}
+
+func (v *Voter) getValidatorEligibility(_ *cli.Context, cfg *define.Config) error {
+	var ret interface{}
+	v.handleType3Msg(cfg, &ret, v.electionTo, nil, v.electionAbi, "getValidatorEligibility", cfg.TargetAddress)
+	log.Info("=== result ===", "bool", ret.(bool))
+	return nil
+}
+
+func (v *Voter) balanceOf(_ *cli.Context, cfg *define.Config) error {
+	var ret interface{}
+	log.Info("=== balanceOf ===", "admin", cfg.From)
+	v.handleType3Msg(cfg, &ret, v.goldTokenTo, nil, v.goldTokenAbi, "balanceOf", cfg.TargetAddress)
+	log.Info("=== result ===", "balance", ret.(*big.Int).String())
+	return nil
+}
+
+func (v *Voter) getTotalVotes(_ *cli.Context, cfg *define.Config) error {
+	var ret interface{}
+	log.Info("=== getAccountLockedGoldRequirement ===", "admin", cfg.From)
+	v.handleType3Msg(cfg, &ret, v.electionTo, nil, v.electionAbi, "getTotalVotes")
+	result := ret.(*big.Int)
+	log.Info("result", "getTotalVotes", result)
+	return nil
+}
+
+func (v *Voter) getPendingWithdrawals(_ *cli.Context, cfg *define.Config) error {
+	type ret []interface{}
+	var (
+		Values     interface{}
+		Timestamps interface{}
+	)
+	t := ret{&Values, &Timestamps}
+	log.Info("=== getPendingWithdrawals ===", "admin", cfg.From, "target", cfg.TargetAddress.String())
+	f := func(output []byte) {
+		err := v.lockedGoldAbi.UnpackIntoInterface(&t, "getPendingWithdrawals", output)
+		if err != nil {
+			log.Error("getPendingWithdrawals", "err", err)
+			os.Exit(1)
+		}
+	}
+	v.handleType4Msg(cfg, f, v.lockGoldTo, nil, v.lockedGoldAbi, "getPendingWithdrawals", cfg.TargetAddress)
+	Values1 := (Values).([]*big.Int)
+	Timestamps1 := (Timestamps).([]*big.Int)
+	if len(Values1) == 0 {
+		log.Info("nil")
+		return nil
+	}
+	for i := 0; i < len(Values1); i++ {
+		log.Info("result:", "index", i, "values", Values1[i], "timestamps", Timestamps1[i])
+	}
+	return nil
+}
+
+func (v *Voter) setValidatorLockedGoldRequirements(_ *cli.Context, cfg *define.Config) error {
+	value := new(big.Int).Mul(big.NewInt(int64(cfg.Value)), big.NewInt(1e18))
+	duration := big.NewInt(cfg.Duration)
+	log.Info("=== setValidatorLockedGoldRequirements ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, v.validatorTo, nil, v.validatorAbi, "setValidatorLockedGoldRequirements", value, duration)
+	return nil
+}
+
+func (v *Voter) setImplementation(_ *cli.Context, cfg *define.Config) error {
+	implementation := cfg.ImplementationAddress
+	ContractAddress := cfg.ContractAddress
+	ProxyAbi := mapprotocol.AbiFor("Proxy")
+	log.Info("=== setImplementation ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, ContractAddress, nil, ProxyAbi, "_setImplementation", implementation)
+	return nil
+}
+
+func (v *Voter) setContractOwner(_ *cli.Context, cfg *define.Config) error {
+	NewOwner := cfg.TargetAddress
+	ContractAddress := cfg.ContractAddress // 代理地址
+	abiValidators := cfg.ValidatorParameters.ValidatorABI
+	log.Info("ProxyAddress", "ContractAddress", ContractAddress, "NewOwner", NewOwner.String())
+	log.Info("=== setOwner ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, ContractAddress, nil, abiValidators, "transferOwnership", NewOwner)
+	return nil
+}
+
+func (v *Voter) setProxyContractOwner(_ *cli.Context, cfg *define.Config) error {
+	NewOwner := cfg.TargetAddress
+	ContractAddress := cfg.ContractAddress //代理地址
+	log.Info("ProxyAddress", "ContractAddress", ContractAddress, "NewOwner", NewOwner.String())
+	ProxyAbi := mapprotocol.AbiFor("Proxy") //代理ABI
+	log.Info("=== setOwner ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, ContractAddress, nil, ProxyAbi, "_transferOwnership", NewOwner)
+	return nil
+}
+
+func (v *Voter) getProxyContractOwner(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== getOwner ===", "admin", cfg.From.String())
+	var ret interface{}
+	ProxyAbi := mapprotocol.AbiFor("Proxy")
+	v.handleType3Msg(cfg, &ret, cfg.ContractAddress, nil, ProxyAbi, "_getOwner")
+	result := ret
+	log.Info("getOwner", "Owner ", result)
+	return nil
+}
+
+func (v *Voter) getContractOwner(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== getOwner ===", "admin", cfg.From.String())
+	var ret interface{}
+	ContractAddress := cfg.TargetAddress
+	v.handleType3Msg(cfg, &ret, ContractAddress, nil, v.validatorAbi, "owner")
+	result := ret
+	log.Info("getOwner", "Owner ", result)
+	return nil
+}
+
+func ConvertToFraction(num interface{}) string {
+	s := num.(*big.Int)
+	p := decimal.Precision(24)
+	b, err := decimal.ToJSON(s, p)
+	if err != nil {
+		log.Error("ConvertToFraction", "err", err)
+	}
+	str := (string)(b)
+	str = strings.Replace(str, "\"", "", -1)
+	return str
+}
+
+func (v *Voter) _getRegisteredValidatorSigners(cfg *define.Config) []common.Address {
+	var ValidatorSigners interface{}
+	v.handleType3Msg(cfg, &ValidatorSigners, v.validatorTo, nil, v.validatorAbi, "getRegisteredValidatorSigners")
+	return ValidatorSigners.([]common.Address)
 }
 
 func (v *Voter) getGL(cfg *define.Config, target common.Address) (common.Address, common.Address, error) {

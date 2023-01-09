@@ -124,8 +124,8 @@ var (
 var BaseFlagCombination = []cli.Flag{
 	RPCAddrFlag,
 	KeyStoreFlag,
-	TargetAddressFlag,
 	GasLimitFlag,
+	TargetAddressFlag,
 }
 
 var MustFlagCombination = []cli.Flag{

@@ -109,7 +109,6 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(TargetAddressFlag.Name) {
 		config.TargetAddress = common.HexToAddress(ctx.String(TargetAddressFlag.Name))
 	}
-
 	if ctx.IsSet(ValidatorAddressFlag.Name) {
 		config.AccountAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
 	}
