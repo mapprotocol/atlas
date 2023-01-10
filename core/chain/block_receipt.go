@@ -2,6 +2,7 @@ package chain
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 )
@@ -20,6 +21,7 @@ func AddBlockReceipt(receipts types.Receipts, statedb *state.StateDB, blockHash 
 			receipt.Logs[i].BlockHash = blockHash
 		}
 		receipts = append(receipts, receipt)
+		log.Info("AddBlockReceipt len greater than 0", "blockHash", blockHash)
 	}
 	return receipts
 }
