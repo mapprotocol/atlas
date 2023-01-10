@@ -20,20 +20,20 @@ func New(conn *ethclient.Client) *Writer {
 func (w *Writer) ResolveMessage(m Message) bool {
 	switch m.messageType {
 	case SolveSendTranstion1:
-		txHash, err := sendContractTransaction(w.conn, m.from, m.to, nil, m.priKey, m.input, m.gasLimit)
+		txHash, err := SendContractTransaction(w.conn, m.from, m.to, nil, m.priKey, m.input, m.gasLimit)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		getResult(w.conn, txHash, true)
+		GetResult(w.conn, txHash, true)
 		m.DoneCh <- struct{}{}
 	case SolveSendTranstion2:
-		txHash, err := sendContractTransaction(w.conn, m.from, m.to, m.value, m.priKey, m.input, m.gasLimit)
+		txHash, err := SendContractTransaction(w.conn, m.from, m.to, m.value, m.priKey, m.input, m.gasLimit)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		getResult(w.conn, txHash, true)
+		GetResult(w.conn, txHash, true)
 		m.DoneCh <- struct{}{}
 	case SolveQueryResult3:
 		w.handleUnpackMethodSolveType3(m)

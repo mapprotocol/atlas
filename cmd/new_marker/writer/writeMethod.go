@@ -17,9 +17,9 @@ import (
 
 const DefaultGasLimit = 4500000
 
-func sendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte, gasLimitSetting uint64) (common.Hash, error) {
+func SendContractTransaction(client *ethclient.Client, from, toAddress common.Address, value *big.Int, privateKey *ecdsa.PrivateKey, input []byte, gasLimitSetting uint64) (common.Hash, error) {
 	// Ensure a valid value field and resolve the account nonce
-	logger := log.New("func", "sendContractTransaction")
+	logger := log.New("func", "SendContractTransaction")
 	nonce, err := client.PendingNonceAt(context.Background(), from)
 	if err != nil {
 		logger.Error("PendingNonceAt", "error", err)
@@ -71,8 +71,8 @@ func sendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	return signedTx.Hash(), nil
 }
 
-func getResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
-	logger := log.New("func", "getResult")
+func GetResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
+	logger := log.New("func", "GetResult")
 	logger.Info("Please waiting ", " txHash ", txHash.String())
 	for {
 		time.Sleep(time.Second)

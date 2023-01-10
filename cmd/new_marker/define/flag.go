@@ -124,7 +124,50 @@ var (
 		Usage: "The address corresponding to the keystore",
 		Value: "",
 	}
+	BuildpathFlag = cli.StringFlag{
+		Name:  "buildpath",
+		Usage: "Directory where smartcontract truffle build file live",
+	}
+	NewEnvFlag = cli.StringFlag{
+		Name:  "newenv",
+		Usage: "Creates a new env in desired folder",
+	}
+	MarkerCfgFlag = cli.StringFlag{
+		Name:  "markercfg",
+		Usage: "Marker config path",
+	}
 )
+
+var TemplateFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:  "template",
+		Usage: "Optional template to use (default: local)",
+	},
+	cli.IntFlag{
+		Name:  "validators",
+		Usage: "Number of Validators",
+	},
+	cli.IntFlag{
+		Name:  "dev.accounts",
+		Usage: "Number of developer accounts",
+	},
+	cli.Uint64Flag{
+		Name:  "blockperiod",
+		Usage: "Seconds between each block",
+	},
+	cli.Uint64Flag{
+		Name:  "epoch",
+		Usage: "Epoch size",
+	},
+	cli.Int64Flag{
+		Name:  "blockgaslimit",
+		Usage: "Block gas limit",
+	},
+	cli.StringFlag{
+		Name:  "mnemonic",
+		Usage: "Mnemonic to generate accounts",
+	},
+}
 
 var BaseFlagCombination = []cli.Flag{
 	RPCAddrFlag,

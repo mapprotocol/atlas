@@ -11,6 +11,7 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/helper/decimal"
+	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
@@ -21,27 +22,27 @@ import (
 
 type Voter struct {
 	*base
-	account                                                     *Account
-	validator                                                   *Validator
-	to, lockGoldTo, electionTo, validatorTo, goldTokenTo        common.Address
-	abi, lockedGoldAbi, electionAbi, validatorAbi, goldTokenAbi *abi.ABI
+	account                                                                 *Account
+	validator                                                               *Validator
+	lockGoldTo, electionTo, validatorTo, goldTokenTo, epochRewardsTo        common.Address
+	lockedGoldAbi, electionAbi, validatorAbi, goldTokenAbi, epochRewardsAbi *abi.ABI
 }
 
 func NewVoter() *Voter {
 	return &Voter{
-		base:          newBase(),
-		account:       NewAccount(),
-		validator:     NewValidator(),
-		to:            mapprotocol.MustProxyAddressFor("Voters"),
-		abi:           mapprotocol.AbiFor("Voters"),
-		lockGoldTo:    mapprotocol.MustProxyAddressFor("LockedGold"),
-		lockedGoldAbi: mapprotocol.AbiFor("LockedGold"),
-		electionTo:    mapprotocol.MustProxyAddressFor("Election"),
-		electionAbi:   mapprotocol.AbiFor("Election"),
-		validatorTo:   mapprotocol.MustProxyAddressFor("Validators"),
-		validatorAbi:  mapprotocol.AbiFor("Validators"),
-		goldTokenTo:   mapprotocol.MustProxyAddressFor("GoldToken"),
-		goldTokenAbi:  mapprotocol.AbiFor("GoldToken"),
+		base:            newBase(),
+		account:         NewAccount(),
+		validator:       NewValidator(),
+		lockGoldTo:      mapprotocol.MustProxyAddressFor("LockedGold"),
+		lockedGoldAbi:   mapprotocol.AbiFor("LockedGold"),
+		electionTo:      mapprotocol.MustProxyAddressFor("Election"),
+		electionAbi:     mapprotocol.AbiFor("Election"),
+		validatorTo:     mapprotocol.MustProxyAddressFor("Validators"),
+		validatorAbi:    mapprotocol.AbiFor("Validators"),
+		goldTokenTo:     mapprotocol.MustProxyAddressFor("GoldToken"),
+		goldTokenAbi:    mapprotocol.AbiFor("GoldToken"),
+		epochRewardsTo:  mapprotocol.MustProxyAddressFor("EpochRewards"),
+		epochRewardsAbi: mapprotocol.AbiFor("EpochRewards"),
 	}
 }
 
@@ -431,6 +432,56 @@ func (v *Voter) getContractOwner(_ *cli.Context, cfg *define.Config) error {
 	v.handleType3Msg(cfg, &ret, ContractAddress, nil, v.validatorAbi, "owner")
 	result := ret
 	log.Info("getOwner", "Owner ", result)
+	return nil
+}
+
+func (v *Voter) updateBlsPublicKey(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== updateBlsPublicKey ===")
+	_params := []interface{}{cfg.PublicKey[1:], cfg.BlsPub[:], cfg.BlsG1Pub[:], cfg.BLSProof}
+	v.handleType1Msg(cfg, v.validatorTo, nil, v.validatorAbi, "updateBlsPublicKey", _params...)
+	return nil
+}
+
+func (v *Voter) setNextCommissionUpdate(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== setNextCommissionUpdate ===", "commission", cfg.Commission)
+	Commission := cfg.Commission
+	v.handleType1Msg(cfg, v.validatorTo, nil, v.validatorAbi, "setNextCommissionUpdate", big.NewInt(0).SetUint64(Commission))
+	return nil
+}
+
+func (v *Voter) updateCommission(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== updateCommission ===")
+	v.handleType1Msg(cfg, v.validatorTo, nil, v.validatorAbi, "updateCommission")
+	return nil
+}
+
+func (v *Voter) setTargetValidatorEpochPayment(_ *cli.Context, cfg *define.Config) error {
+	value := new(big.Int).Mul(big.NewInt(int64(cfg.Value)), big.NewInt(1e18))
+	log.Info("=== setTargetValidatorEpochPayment ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, v.epochRewardsTo, nil, v.epochRewardsAbi, "setTargetValidatorEpochPayment", value)
+	return nil
+}
+
+func (v *Voter) setEpochMaintainerPaymentFraction(_ *cli.Context, cfg *define.Config) error {
+	fixed := fixed.MustNew(cfg.Fixed).BigInt()
+	log.Info("=== setEpochMaintainerPaymentFraction ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, v.epochRewardsTo, nil, v.epochRewardsAbi, "setEpochMaintainerPaymentFraction", fixed)
+	return nil
+}
+
+func (v *Voter) setMgrMaintainerAddress(_ *cli.Context, cfg *define.Config) error {
+	address := cfg.TargetAddress
+	log.Info("=== setMgrMaintainerAddress ===", "admin", cfg.From.String())
+	v.handleType1Msg(cfg, v.epochRewardsTo, nil, v.epochRewardsAbi, "setMgrMaintainerAddress", address)
+	return nil
+}
+
+func (v *Voter) getMgrMaintainerAddress(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== getMgrMaintainerAddress ===", "admin", cfg.From.String())
+	var ret interface{}
+	v.handleType3Msg(cfg, &ret, v.epochRewardsTo, nil, v.epochRewardsAbi, "getMgrMaintainerAddress")
+	result := ret
+	log.Info("getMgrMaintainerAddress", "address ", result)
 	return nil
 }
 

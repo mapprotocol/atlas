@@ -324,6 +324,76 @@ func init() {
 			Action: MigrateFlags(voter.getContractOwner),
 			Flags:  append(define.MustFlagCombination, define.ContractAddressFlag),
 		},
+		{
+			Name:   "updateBlsPublicKey",
+			Usage:  "updateBlsPublicKey",
+			Action: MigrateFlags(voter.updateBlsPublicKey),
+			Flags:  define.MustFlagCombination,
+		},
+		{
+			Name:   "setNextCommissionUpdate",
+			Usage:  "set Next Commission Update",
+			Action: MigrateFlags(voter.setNextCommissionUpdate),
+			Flags:  append(define.MustFlagCombination, define.CommissionFlag),
+		},
+		{
+			Name:   "updateCommission",
+			Usage:  "updateCommission",
+			Action: MigrateFlags(voter.updateCommission),
+			Flags:  append(define.MustFlagCombination, define.CommissionFlag),
+		},
+		{
+			Name:   "setValidatorEpochPayment",
+			Usage:  "Sets the target per-epoch payment in MAP  for validators",
+			Action: MigrateFlags(voter.setTargetValidatorEpochPayment),
+			Flags:  append(define.MustFlagCombination, define.ValueFlag),
+		},
+		{
+			Name:   "setEpochMaintainerPaymentFraction",
+			Usage:  "set Epoch Maintainer PaymentFraction",
+			Action: MigrateFlags(voter.setEpochMaintainerPaymentFraction),
+			Flags:  append(define.MustFlagCombination, define.RelayerFlag),
+		},
+		{
+			Name:   "setMgrMaintainerAddress",
+			Usage:  "set manager maintainer address",
+			Action: MigrateFlags(voter.setMgrMaintainerAddress),
+			Flags:  define.BaseFlagCombination,
+		},
+		{
+			Name:   "getMgrMaintainerAddress",
+			Usage:  "get manager maintainer address",
+			Action: MigrateFlags(voter.getMgrMaintainerAddress),
+			Flags:  define.MustFlagCombination,
+		},
+	}...)
+	tool := NewTool()
+	ToolSet = append(ToolSet, []cli.Command{
+		{
+			Name:      "genesis",
+			Usage:     "Creates genesis.json from a template and overrides",
+			Action:    tool.createGenesis,
+			ArgsUsage: "",
+			Flags: append(
+				[]cli.Flag{
+					define.BuildpathFlag,
+					define.NewEnvFlag,
+					define.MarkerCfgFlag,
+				},
+				define.TemplateFlags...),
+		},
+		{
+			Name:   "transfer",
+			Usage:  "transfer",
+			Action: MigrateFlags(tool.transfer),
+			Flags:  append(define.MustFlagCombination, define.AmountFlag, define.TargetAddressFlag),
+		},
+		{
+			Name:   "voterMonitor",
+			Usage:  "Monitor the revenue of voter to a validator",
+			Action: MigrateFlags(tool.voterMonitor),
+			Flags:  define.MustFlagCombination,
+		},
 	}...)
 }
 
