@@ -19,8 +19,8 @@ atlas:
 	@echo "Run \"$(GOBIN)/atlas\" to launch atlas."
 
 marker:
-	cd ./cmd/marker && go build -o ./marker  *.go && mv ./marker ../../build/bin/marker
-	@echo "Run \"$(GOBIN)/marker\" to launch marker."
+	cd ./cmd/new_marker && go build -o ./new_marker  *.go && mv ./new_marker ../../build/bin/marker
+	@echo "Run \"$(GOBIN)/new_marker\" to launch marker."
 
 all:
 	$(GORUN) build/ci.go install
