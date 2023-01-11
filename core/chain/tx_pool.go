@@ -1365,7 +1365,7 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 	pool.currentState = statedb
 	pool.pendingNonces = newTxNoncer(statedb)
 	pool.currentVMRunner = pool.chain.NewEVMRunner(newHead, statedb)
-	pool.currentMaxGas = blockchain_parameters.GetBlockGasLimitOrDefault(pool.currentVMRunner) //newHead.GasLimit
+	pool.currentMaxGas = blockchain_parameters.GetBlockGasLimitOrDefault(pool.currentVMRunner, true) //newHead.GasLimit
 	// atomic store of the new txPoolContext
 	newCtx := txPoolContext{
 		NewBlockContext(pool.currentVMRunner),

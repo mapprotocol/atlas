@@ -72,8 +72,11 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		blockNumber = block.Number()
 		allLogs     []*types.Log
 		vmRunner    = p.bc.NewEVMRunner(block.Header(), statedb)
-		gp          = new(core.GasPool).AddGas(blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner))
+		gp          = new(core.GasPool).AddGas(blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner, false))
 	)
+	if p.config.IsCalc(block.Number()) {
+		gp = new(core.GasPool).AddGas(blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner, true))
+	}
 	if random.IsRunning(vmRunner) {
 		author, err := p.bc.Engine().Author(header)
 		if err != nil {

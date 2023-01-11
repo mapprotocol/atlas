@@ -39,25 +39,10 @@ type blockState struct {
 	txFeeRecipient common.Address
 }
 
-func getGasLimitByWork(w *worker, parent *types.Block, header *types.Header) (uint64, error) {
+func getGasLimitByWork(w *worker, parent *types.Block, header *types.Header, vmRunner vm.EVMRunner) uint64 {
 	gaslimit := uint64(0)
 	if w.chainConfig.IsCalc(header.Number) {
-		state, err := w.chain.StateAt(parent.Root())
-		if err != nil {
-			return 0, fmt.Errorf("failed to get the parent state:(%v) %w", parent.Number(), err)
-		}
-		vmRunner := w.chain.NewEVMRunner(header, state)
-		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner)
-		gaslimit = chain.CalcGasLimit(parent.GasLimit(), ceil)
-	} else {
-		gaslimit = chain.CalcGasLimit(parent.GasLimit(), w.config.GasCeil)
-	}
-	return gaslimit, nil
-}
-func getGasLimitByWork2(w *worker, parent *types.Block, header *types.Header, vmRunner vm.EVMRunner) uint64 {
-	gaslimit := uint64(0)
-	if w.chainConfig.IsCalc(header.Number) {
-		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner)
+		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner, true)
 		fmt.Println("===getGasLimitByWork2", "parent", parent.GasLimit(), "ceil", ceil)
 		gaslimit = chain.CalcGasLimit(parent.GasLimit(), ceil)
 	} else {
@@ -119,13 +104,13 @@ func prepareBlock(w *worker) (*blockState, error) {
 	}
 
 	vmRunner := w.chain.NewEVMRunner(header, state)
-	header.GasLimit = getGasLimitByWork2(w, parent, header, vmRunner)
+	header.GasLimit = getGasLimitByWork(w, parent, header, vmRunner)
 
 	b := &blockState{
 		signer:         types.NewLondonSigner(w.chainConfig.ChainID),
 		state:          state,
 		tcount:         0,
-		gasLimit:       blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner),
+		gasLimit:       blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner, false),
 		header:         header,
 		txFeeRecipient: txFeeRecipient,
 	}
