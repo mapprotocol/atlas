@@ -115,7 +115,7 @@ func (t *Tool) voterMonitor(ctx *cli.Context, cfg *define.Config) error {
 
 	data, err := ioutil.ReadFile(configName)
 	if err != nil {
-		log.Error("compass personInfo config readFile Err", err.Error())
+		log.Error("person config failed", "err", err.Error())
 	}
 	_ = json.Unmarshal(data, &define.Voter2validator)
 	for _, v := range define.Voter2validator {

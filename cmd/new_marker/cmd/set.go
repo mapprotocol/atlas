@@ -160,7 +160,7 @@ func init() {
 			Name:   "quicklyVote",
 			Usage:  "Vote validator ",
 			Action: MigrateFlags(voter.QuicklyVote),
-			Flags:  append(define.BaseFlagCombination, define.NameFlag, define.LockedNumFlag, define.TargetAddressFlag, define.VoteNumFlag),
+			Flags:  append(define.BaseFlagCombination, define.NameFlag, define.LockedNumFlag, define.VoteNumFlag),
 		},
 		{
 			Name:   "activate",
@@ -286,7 +286,7 @@ func init() {
 			Name:   "getPendingWithdrawals",
 			Usage:  "Returns the pending withdrawals from unlocked gold for an account.",
 			Action: MigrateFlags(voter.getPendingWithdrawals),
-			Flags:  define.MustFlagCombination,
+			Flags:  define.BaseFlagCombination,
 		},
 		{
 			Name:   "setValidatorLockedGoldRequirements",

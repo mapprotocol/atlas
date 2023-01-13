@@ -124,7 +124,7 @@ func (v *Voter) RevokePending(_ *cli.Context, cfg *define.Config) error {
 	//fmt.Println("=== greater,lesser,index ===", greater, lesser, index)
 	_params := []interface{}{validator, LockedNum, lesser, greater, index}
 	log.Info("=== revokePending ===", "admin", cfg.From)
-	v.handleType1Msg(cfg, v.electionTo, nil, v.electionAbi, "revokePending", _params)
+	v.handleType1Msg(cfg, v.electionTo, nil, v.electionAbi, "revokePending", _params...)
 	return nil
 }
 
@@ -140,7 +140,7 @@ func (v *Voter) RevokeActive(_ *cli.Context, cfg *define.Config) error {
 	}
 	_params := []interface{}{validator, LockedNum, lesser, greater, index}
 	log.Info("=== revokeActive ===", "admin", cfg.From)
-	v.handleType1Msg(cfg, v.electionTo, nil, v.electionAbi, "revokeActive", _params)
+	v.handleType1Msg(cfg, v.electionTo, nil, v.electionAbi, "revokeActive", _params...)
 	return nil
 }
 
@@ -428,8 +428,7 @@ func (v *Voter) getProxyContractOwner(_ *cli.Context, cfg *define.Config) error 
 func (v *Voter) getContractOwner(_ *cli.Context, cfg *define.Config) error {
 	log.Info("=== getOwner ===", "admin", cfg.From.String())
 	var ret interface{}
-	ContractAddress := cfg.TargetAddress
-	v.handleType3Msg(cfg, &ret, ContractAddress, nil, v.validatorAbi, "owner")
+	v.handleType3Msg(cfg, &ret, cfg.ContractAddress, nil, v.validatorAbi, "owner")
 	result := ret
 	log.Info("getOwner", "Owner ", result)
 	return nil
