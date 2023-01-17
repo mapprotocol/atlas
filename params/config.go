@@ -87,6 +87,7 @@ var (
 			RequestTimeout: 3000,
 			LookbackWindow: 12,
 		},
+		FullHeaderChainAvailable: true,
 	}
 
 	DevnetConfig = &ChainConfig{
