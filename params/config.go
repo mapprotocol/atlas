@@ -78,8 +78,8 @@ var (
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(5000),
 		BN256ForkBlock:      big.NewInt(20000),
-		DeregisterBlock:     big.NewInt(0),
-		CalcBaseBlock:       big.NewInt(0),
+		DeregisterBlock:     big.NewInt(1242000),
+		CalcBaseBlock:       big.NewInt(1242000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          4000,
 			ProposerPolicy: 2,
