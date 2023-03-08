@@ -75,7 +75,7 @@ func (v *Validator) RegisterValidator(ctx *cli.Context, cfg *define.Config) erro
 	validatorParams := [4][]byte{cfg.BlsPub[:], cfg.BlsG1Pub[:], cfg.BLSProof, cfg.PublicKey[1:]}
 
 	_params := []interface{}{commision, lesser, greater, validatorParams}
-	v.handleType1Msg(cfg, v.to, nil, v.abi, "registerValidator", _params)
+	v.handleType1Msg(cfg, v.to, nil, v.abi, "registerValidator", _params...)
 	return nil
 }
 
