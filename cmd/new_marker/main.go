@@ -17,7 +17,7 @@ func init() {
 	app = cli.NewApp()
 	app.Usage = "Atlas Marker Tool"
 	app.Name = "marker"
-	app.Version = "3.0.0"
+	app.Version = "3.0.1"
 	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		_, _ = fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
