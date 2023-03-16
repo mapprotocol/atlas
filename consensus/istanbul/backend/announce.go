@@ -86,7 +86,7 @@ type AnnounceNetwork interface {
 	RetrieveValidatorConnSet() (map[common.Address]bool, error)
 	// Multicast will send the eth message (with the message's payload and msgCode field set to the params
 	// payload and ethMsgCode respectively) to the nodes with the signing address in the destAddresses param.
-	Multicast(destAddresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf bool) error
+	Multicast(destAddresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf bool, sendToAccount bool) error
 }
 
 type AnnounceManagerConfig struct {
@@ -764,7 +764,7 @@ func (m *AnnounceManager) answerQueryEnodeMsg(address common.Address, node *enod
 			return err
 		}
 
-		if err := m.network.Multicast([]common.Address{address}, payload, istanbul.EnodeCertificateMsg, false); err != nil {
+		if err := m.network.Multicast([]common.Address{address}, payload, istanbul.EnodeCertificateMsg, false, false); err != nil {
 			return err
 		}
 	}
@@ -1052,7 +1052,7 @@ func (m *AnnounceManager) setAndShareUpdatedAnnounceVersion(version uint) error 
 			return err
 		}
 
-		if err := m.network.Multicast(destAddresses, payload, istanbul.EnodeCertificateMsg, false); err != nil {
+		if err := m.network.Multicast(destAddresses, payload, istanbul.EnodeCertificateMsg, false, false); err != nil {
 			return err
 		}
 	}

@@ -18,6 +18,7 @@ package core
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 	"reflect"
 	"time"
@@ -118,10 +119,24 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		CommittedSeal:         committedSeal[:],
 		EpochValidatorSetSeal: epochValidatorSetSeal[:],
 	}, c.address)
-	c.broadcast(istMsg)
+	c.broadcast(istMsg, false)
 }
 
 func (c *core) handleCommit(msg *istanbul.Message) error {
+	flag := c.assembleMsgFlag(msg)
+	log.Info("receipt commit message ------------------", "sender", msg.Address, "cur_seq", c.current.Sequence(),
+		"msg_seq", msg.Commit().Subject.View.Sequence, "flag", flag)
+	_, ok := c.forwardedMap[flag]
+	if ok { // is forward it handler
+		c.logger.Info("handleCommit this msg is handled", "flag", flag)
+		return nil
+	}
+
+	if !c.config.Validator {
+		c.logger.Info("not validator, only forward", "address", c.address)
+		c.forwardCommit(msg)
+		return nil
+	}
 	defer c.handleCommitTimer.UpdateSince(time.Now())
 	commit := msg.Commit()
 	err := c.checkMessage(istanbul.MsgCommit, commit.Subject.View)
@@ -158,6 +173,8 @@ func (c *core) handleCheckedCommitForPreviousSequence(msg *istanbul.Message, com
 	}
 	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(headBlock.Number())
 	if err := c.verifyCommittedSeal(commit, validator, fork, cur); err != nil {
+		logger.Info("handleCheckedCommitForPreviousSequence ----------------------------- errInvalidCommittedSeal", "cur_seq", c.current.Sequence(),
+			"msg_seq", msg.Commit().Subject.View.Sequence)
 		return errInvalidCommittedSeal
 	}
 	if headBlock.Number().Uint64() > 0 {
@@ -189,6 +206,8 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 
 	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(c.current.Proposal().Number())
 	if err := c.verifyCommittedSeal(commit, validator, fork, cur); err != nil {
+		logger.Info("handleCheckedCommitForCurrentSequence ++++++++++++++++++++++++++++++ errInvalidCommittedSeal", "cur_seq", c.current.Sequence(),
+			"msg_seq", msg.Commit().Subject.View.Sequence)
 		return errInvalidCommittedSeal
 	}
 
@@ -213,7 +232,7 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 	}
 	numberOfCommits := c.current.Commits().Size()
 	minQuorumSize := c.current.ValidatorSet().MinQuorumSize()
-	logger.Trace("Accepted commit for current sequence", "Number of commits", numberOfCommits)
+	logger.Info("Accepted commit for current sequence", "Number of commits", numberOfCommits, "minQuorumSize", minQuorumSize)
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
 	//
@@ -227,6 +246,7 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 			logger.Error("Failed to commit()", "err", err)
 			return err
 		}
+		c.forwardedMap = make(map[string]struct{}) // make it empty
 
 	} else if c.current.GetPrepareOrCommitSize() >= minQuorumSize && c.current.State().Cmp(StatePrepared) < 0 {
 		err := c.current.TransitionToPrepared(minQuorumSize)
@@ -237,9 +257,18 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 		// Process Backlog Messages
 		c.backlog.updateState(c.current.View(), c.current.State())
 
-		logger.Trace("Got quorum prepares or commits", "tag", "stateTransition", "commits", c.current.Commits, "prepares", c.current.Prepares)
+		logger.Info("Got quorum prepares or commits", "tag", "stateTransition", "commits", c.current.Commits,
+			"prepares", c.current.Prepares, "c.current.GetPrepareOrCommitSize()", c.current.GetPrepareOrCommitSize(), "c.current.State()", c.current.State())
 		c.sendCommit()
 	}
+
+	if msg.Commit().Subject.View.Sequence.Cmp(c.current.Sequence()) < 0 {
+		logger.Info("Not Need forward commit", "cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence)
+		return nil
+	}
+	logger.Info("forward commit", "flag", c.assembleMsgFlag(msg), "desiredRound", c.current.DesiredRound(), "msg_round", msg.Commit().Subject.View.Round,
+		"cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence)
+	c.forwardCommit(msg)
 	return nil
 
 }
@@ -280,4 +309,9 @@ func (c *core) verifyEpochValidatorSetSeal(comSub *istanbul.CommittedSubject, bl
 	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), big.NewInt(int64(blockNumber))
 	return blscrypto.CryptoType().VerifySignature(src.BLSPublicKey(), epochData, epochExtraData,
 		comSub.EpochValidatorSetSeal, true, cip22, fork, cur)
+}
+
+func (c *core) forwardCommit(msg *istanbul.Message) {
+	istMsg := istanbul.NewCommitMessage(msg.Commit(), msg.Address)
+	c.broadcast(istMsg, true)
 }

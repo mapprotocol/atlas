@@ -60,7 +60,7 @@ type CoreBackend interface {
 	// Multicast sends a message to it's connected nodes filtered on the 'addresses' parameter (where each address
 	// is associated with those node's signing key)
 	// If sendToSelf is set to true, then the function will send an event to self via a message event
-	Multicast(addresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf bool) error
+	Multicast(addresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf, sendToAccount bool) error
 
 	// Commit delivers an approved proposal to backend.
 	// The delivered proposal will be put into blockchain.
@@ -146,6 +146,7 @@ type core struct {
 	handlePrePrepareTimer metrics.Timer
 	handlePrepareTimer    metrics.Timer
 	handleCommitTimer     metrics.Timer
+	forwardedMap          map[string]struct{}
 }
 
 // New creates an Istanbul consensus core
@@ -172,6 +173,7 @@ func New(backend CoreBackend, config *istanbul.Config) Engine {
 		handlePrePrepareTimer:     metrics.NewRegisteredTimer("consensus/istanbul/core/handle_preprepare", nil),
 		handlePrepareTimer:        metrics.NewRegisteredTimer("consensus/istanbul/core/handle_prepare", nil),
 		handleCommitTimer:         metrics.NewRegisteredTimer("consensus/istanbul/core/handle_commit", nil),
+		forwardedMap:              make(map[string]struct{}),
 	}
 	msgBacklog := newMsgBacklog(
 		func(msg *istanbul.Message) {
@@ -330,16 +332,17 @@ func (c *core) finalizeMessage(msg *istanbul.Message) ([]byte, error) {
 }
 
 // Send message to all current validators
-func (c *core) broadcast(msg *istanbul.Message) {
-	c.sendMsgTo(msg, istanbul.MapValidatorsToAddresses(c.current.ValidatorSet().List()))
+func (c *core) broadcast(msg *istanbul.Message, sendToAccount bool) {
+	c.sendMsgTo(msg, istanbul.MapValidatorsToAddresses(c.current.ValidatorSet().List()), sendToAccount)
 }
 
 // Send message to a specific address
 func (c *core) unicast(msg *istanbul.Message, addr common.Address) {
-	c.sendMsgTo(msg, []common.Address{addr})
+	c.sendMsgTo(msg, []common.Address{addr}, false)
 }
 
-func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
+func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address, sendToAccount bool) {
+	c.forwardedMap[c.assembleMsgFlag(msg)] = struct{}{} // json self send msg
 	logger := c.newLogger("func", "sendMsgTo")
 
 	payload, err := c.finalizeMessage(msg)
@@ -349,7 +352,7 @@ func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
 	}
 
 	// Send payload to the specified addresses
-	if err := c.backend.Multicast(addresses, payload, istanbul.ConsensusMsg, true); err != nil {
+	if err := c.backend.Multicast(addresses, payload, istanbul.ConsensusMsg, true, sendToAccount); err != nil {
 		logger.Error("Failed to send message", "m", msg, "err", err)
 		return
 	}
@@ -374,6 +377,7 @@ func (c *core) commit() error {
 	proposal := c.current.Proposal()
 	if proposal != nil {
 		aggregatedSeal, err := GetAggregatedSeal(c.current.Commits(), c.current.Round())
+		logger.Info("core commit GetAggregatedSeal 最终出块 -------------- ", "commit", c.current.Commits(), "round", c.current.Round())
 		if err != nil {
 			nextRound := new(big.Int).Add(c.current.Round(), common.Big1)
 			logger.Warn("Error on commit, waiting for desired round", "reason", "getAggregatedSeal", "err", err, "desired_round", nextRound)

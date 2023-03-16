@@ -39,13 +39,27 @@ func (sb *Backend) getPeersFromDestAddresses(destAddresses []common.Address) map
 	return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
 }
 
+// todo
+func (sb *Backend) getPeersAccountAddresses(destAddresses []common.Address) map[enode.ID]consensus.Peer {
+	var targets map[enode.ID]bool
+	if destAddresses != nil {
+		targets = make(map[enode.ID]bool)
+		for _, addr := range destAddresses {
+			if valNode, err := sb.valEnodeTable.GetNodeFromAddress(addr); valNode != nil && err == nil {
+				targets[valNode.ID()] = true
+			}
+		}
+	}
+	return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
+}
+
 // Multicast implements istanbul.Backend.Multicast
 // Multicast will send the eth message (with the message's payload and msgCode field set to the params
 // payload and ethMsgCode respectively) to the nodes with the signing address in the destAddresses param.
 // If this node is proxied and destAddresses is not nil, the message will be wrapped
 // in an istanbul.ForwardMessage to ensure the proxy sends it to the correct
 // destAddresses.
-func (sb *Backend) Multicast(destAddresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf bool) error {
+func (sb *Backend) Multicast(destAddresses []common.Address, payload []byte, ethMsgCode uint64, sendToSelf, sendToAccount bool) error {
 	logger := sb.logger.New("func", "Multicast")
 
 	var err error
@@ -59,6 +73,13 @@ func (sb *Backend) Multicast(destAddresses []common.Address, payload []byte, eth
 		destPeers := sb.getPeersFromDestAddresses(destAddresses)
 		if len(destPeers) > 0 {
 			sb.asyncMulticast(destPeers, payload, ethMsgCode)
+		}
+
+		if sendToAccount {
+			peers := sb.getPeersAccountAddresses(destAddresses) // todo
+			if len(peers) > 0 {
+				sb.asyncMulticast(peers, payload, ethMsgCode)
+			}
 		}
 	}
 

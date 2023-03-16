@@ -17,6 +17,7 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"sort"
@@ -29,7 +30,7 @@ import (
 
 // sendRoundChange broadcasts a ROUND CHANGE message with the current desired round.
 func (c *core) sendRoundChange() {
-	c.broadcast(c.buildRoundChangeMsg(c.current.DesiredRound()))
+	c.broadcast(c.buildRoundChangeMsg(c.current.DesiredRound()), false)
 }
 
 // sendRoundChange sends a ROUND CHANGE message for the current desired round back to a single address
@@ -143,6 +144,19 @@ func (c *core) handleRoundChangeCertificate(proposal istanbul.Subject, roundChan
 }
 
 func (c *core) handleRoundChange(msg *istanbul.Message) error {
+	flag := c.assembleMsgFlag(msg)
+	_, ok := c.forwardedMap[flag]
+	if ok { // is forward it handler
+		//c.logger.Info("handleRoundChange this msg is handled")
+		return nil
+	} else {
+		c.forwardedMap[flag] = struct{}{}
+	}
+	if !c.config.Validator {
+		c.logger.Info("not validator, only forward", "address", c.address)
+		c.forwardRoundChange(msg)
+		return nil
+	}
 	logger := c.newLogger("func", "handleRoundChange", "tag", "handleMsg", "from", msg.Address)
 
 	rc := msg.RoundChange()
@@ -196,7 +210,29 @@ func (c *core) handleRoundChange(msg *istanbul.Message) error {
 		c.waitForDesiredRound(ffRound)
 	}
 
+	// Same sequence. Msgs for a round < desiredRound are always old.
+	if rc.View.Sequence.Cmp(c.current.Sequence()) < 0 {
+		logger.Info("Not Need forward RoundChange", "cur_seq", c.current.Sequence(), "msg_seq", rc.View.Sequence)
+		return nil
+	}
+	//logger.Info("forward RoundChange", "flag", flag)
+	c.forwardRoundChange(msg)
 	return nil
+}
+
+func (c *core) assembleMsgFlag(msg *istanbul.Message) string {
+	//switch msg.Code {
+	//case istanbul.MsgCommit:
+	//	return msg.String() + "_" + msg.Commit().Subject.String() + "_" + common.Bytes2Hex(msg.Commit().CommittedSeal) +
+	//		"_" + common.Bytes2Hex(msg.Commit().EpochValidatorSetSeal)
+	//}
+	data, _ := json.Marshal(msg)
+	return string(data)
+}
+
+func (c *core) forwardRoundChange(msg *istanbul.Message) {
+	istMsg := istanbul.NewRoundChangeMessage(msg.RoundChange(), msg.Address)
+	c.broadcast(istMsg, true)
 }
 
 // ----------------------------------------------------------------------------

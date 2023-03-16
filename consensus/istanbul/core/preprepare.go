@@ -35,7 +35,7 @@ func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate 
 			RoundChangeCertificate: roundChangeCertificate,
 		}, c.address)
 		logger.Debug("Sending preprepare", "m", m)
-		c.broadcast(m)
+		c.broadcast(m, false)
 	}
 }
 

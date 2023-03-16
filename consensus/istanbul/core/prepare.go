@@ -28,7 +28,7 @@ import (
 func (c *core) sendPrepare() {
 	logger := c.newLogger("func", "sendPrepare")
 	logger.Debug("Sending prepare")
-	c.broadcast(istanbul.NewPrepareMessage(c.current.Subject(), c.address))
+	c.broadcast(istanbul.NewPrepareMessage(c.current.Subject(), c.address), false)
 }
 
 // Verify a prepared certificate and return the view that all of its messages pertain to.
@@ -141,6 +141,19 @@ func (c *core) getViewFromVerifiedPreparedCertificate(preparedCertificate istanb
 }
 
 func (c *core) handlePrepare(msg *istanbul.Message) error {
+	flag := c.assembleMsgFlag(msg)
+	_, ok := c.forwardedMap[flag]
+	if ok { // is forward it handler
+		c.logger.Info("handlePrepare this msg is handled")
+		return nil
+	} else {
+		c.forwardedMap[flag] = struct{}{}
+	}
+	if !c.config.Validator {
+		c.logger.Info("not validator, only forward", "address", c.address)
+		c.forwardPreprepare(msg)
+		return nil
+	}
 	defer c.handlePrepareTimer.UpdateSince(time.Now())
 	// Decode PREPARE message
 	prepare := msg.Prepare()
@@ -187,6 +200,12 @@ func (c *core) handlePrepare(msg *istanbul.Message) error {
 		c.sendCommit()
 	}
 
+	if prepare.View.Sequence.Cmp(c.current.Sequence()) < 0 {
+		logger.Info("Not Need forward prepare", "cur_seq", c.current.Sequence(), "msg_seq", prepare.View.Sequence)
+		return nil
+	}
+	c.forwardPreprepare(msg)
+	logger.Info("forward prepare", "flag", flag)
 	return nil
 }
 
