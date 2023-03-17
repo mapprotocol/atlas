@@ -39,18 +39,48 @@ func (sb *Backend) getPeersFromDestAddresses(destAddresses []common.Address) map
 	return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
 }
 
-// todo
 func (sb *Backend) getPeersAccountAddresses(destAddresses []common.Address) map[enode.ID]consensus.Peer {
+	if destAddresses == nil {
+		return nil
+	}
 	var targets map[enode.ID]bool
-	if destAddresses != nil {
-		targets = make(map[enode.ID]bool)
-		for _, addr := range destAddresses {
-			if valNode, err := sb.valEnodeTable.GetNodeFromAddress(addr); valNode != nil && err == nil {
-				targets[valNode.ID()] = true
-			}
+	peers := sb.broadcaster.FindPeers(targets, p2p.AnyPurpose) // get all Peers
+	targets = make(map[enode.ID]bool)
+	for _, addr := range destAddresses {
+		if valNode, err := sb.valEnodeTable.GetNodeFromAddress(addr); valNode != nil && err == nil {
+			targets[valNode.ID()] = true
 		}
 	}
-	return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
+	// exclude validator
+	all := make(map[enode.ID]consensus.Peer)
+	for pId, p := range peers {
+		if targets[pId] {
+			continue
+		}
+		tpId := pId
+		tp := p
+		all[tpId] = tp
+	}
+	if len(all) == 0 { // no account peers
+		return nil
+	}
+	// only 1/3
+	length := len(all) / 3
+	if length == 0 {
+		length = 1
+	}
+	ret := make(map[enode.ID]consensus.Peer)
+	for id, p := range all {
+		tpId := id
+		tp := p
+		ret[tpId] = tp
+		length--
+		if length <= 0 {
+			break
+		}
+	}
+
+	return ret
 }
 
 // Multicast implements istanbul.Backend.Multicast
@@ -76,7 +106,7 @@ func (sb *Backend) Multicast(destAddresses []common.Address, payload []byte, eth
 		}
 
 		if sendToAccount {
-			peers := sb.getPeersAccountAddresses(destAddresses) // todo
+			peers := sb.getPeersAccountAddresses(destAddresses)
 			if len(peers) > 0 {
 				sb.asyncMulticast(peers, payload, ethMsgCode)
 			}
