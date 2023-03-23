@@ -115,7 +115,7 @@ func (c *core) handleEvents() {
 				}
 			case istanbul.MessageEvent:
 				if err := c.handleMsg(ev.Payload); err != nil && err != errFutureMessage && err != errOldMessage {
-					logger.Warn("Error in handling istanbul message", "err", err)
+					logger.Debug("Error in handling istanbul message", "err", err)
 				}
 			case backlogEvent:
 				if payload, err := ev.msg.Payload(); err != nil {
