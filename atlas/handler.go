@@ -296,6 +296,35 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 		peer.Log().Debug("Ethereum handshake failed", "err", err)
 		return err
 	}
+	forcePeer := false
+	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
+		isValidator, err := handler.Handshake(peer)
+		if err != nil {
+			peer.Log().Warn("Istanbul handshake failed", "err", err)
+			return err
+		}
+		forcePeer = isValidator
+		peer.Log().Debug("Peer completed Istanbul handshake", "forcePeer", forcePeer)
+	}
+	// Ignore max peer and max inbound peer check if:
+	//  - this is a trusted or statically dialed peer
+	//  - the peer is from from the proxy server (e.g. peers connected to this node's internal network interface)
+	//  - forcePeer is true
+	if !forcePeer {
+		// KJUE - Remove the server not nil check after restoring peer check in server.go
+		if peer.Peer.Server != nil {
+			if err := peer.Peer.Server.CheckPeerCounts(peer.Peer); err != nil {
+				return err
+			}
+		}
+		// The p2p server CheckPeerCounts only checks if the total peer count
+		// (eth and les) exceeds the total max peers. This checks if the number
+		// of eth peers exceeds the eth max peers.
+		isStaticOrTrusted := peer.Peer.Info().Network.Trusted || peer.Peer.Info().Network.Static
+		if !isStaticOrTrusted && h.peers.len() >= h.maxPeers && peer.Peer.Server != h.proxyServer {
+			return p2p.DiscTooManyPeers
+		}
+	}
 	reject := false // reserved peer slots
 	if atomic.LoadUint32(&h.snapSync) == 1 {
 		if snap == nil {
