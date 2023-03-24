@@ -124,8 +124,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 
 func (c *core) handleCommit(msg *istanbul.Message) error {
 	flag := c.assembleMsgFlag(msg)
-	log.Info("receipt commit message ------------------", "sender", msg.Address, "cur_seq", c.current.Sequence(),
-		"msg_seq", msg.Commit().Subject.View.Sequence, "flag", flag)
+	log.Info("receipt commit message ------------------", "sender", msg.Address, "cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence)
 	_, ok := c.forwardedMap[flag]
 	if ok { // is forward it handler
 		c.logger.Info("handleCommit this msg is handled", "flag", flag)
@@ -173,8 +172,7 @@ func (c *core) handleCheckedCommitForPreviousSequence(msg *istanbul.Message, com
 	}
 	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(headBlock.Number())
 	if err := c.verifyCommittedSeal(commit, validator, fork, cur); err != nil {
-		logger.Info("handleCheckedCommitForPreviousSequence ----------------------------- errInvalidCommittedSeal", "cur_seq", c.current.Sequence(),
-			"msg_seq", msg.Commit().Subject.View.Sequence)
+		log.Info("handleCheckedCommitForPreviousSequence -------------- ", "cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence, "sender", msg.Address)
 		return errInvalidCommittedSeal
 	}
 	if headBlock.Number().Uint64() > 0 {
@@ -206,8 +204,7 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 
 	fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), new(big.Int).Set(c.current.Proposal().Number())
 	if err := c.verifyCommittedSeal(commit, validator, fork, cur); err != nil {
-		logger.Info("handleCheckedCommitForCurrentSequence ++++++++++++++++++++++++++++++ errInvalidCommittedSeal", "cur_seq", c.current.Sequence(),
-			"msg_seq", msg.Commit().Subject.View.Sequence)
+		log.Info("handleCheckedCommitForCurrentSequence ++++++++++++++++", "cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence, "sender", msg.Address)
 		return errInvalidCommittedSeal
 	}
 
@@ -232,7 +229,7 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 	}
 	numberOfCommits := c.current.Commits().Size()
 	minQuorumSize := c.current.ValidatorSet().MinQuorumSize()
-	logger.Info("Accepted commit for current sequence", "Number of commits", numberOfCommits, "minQuorumSize", minQuorumSize)
+	logger.Trace("Accepted commit for current sequence", "Number of commits", numberOfCommits, "minQuorumSize", minQuorumSize)
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
 	//
@@ -266,8 +263,7 @@ func (c *core) handleCheckedCommitForCurrentSequence(msg *istanbul.Message, comm
 		logger.Info("Not Need forward commit", "cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence)
 		return nil
 	}
-	logger.Info("forward commit", "flag", c.assembleMsgFlag(msg), "desiredRound", c.current.DesiredRound(), "msg_round", msg.Commit().Subject.View.Round,
-		"cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence)
+	logger.Info("forward commit", "cur_seq", c.current.Sequence(), "msg_seq", msg.Commit().Subject.View.Sequence, "sender", msg.Address)
 	c.forwardCommit(msg)
 	return nil
 

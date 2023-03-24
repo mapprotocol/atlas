@@ -215,17 +215,16 @@ func (c *core) handleRoundChange(msg *istanbul.Message) error {
 		logger.Info("Not Need forward RoundChange", "cur_seq", c.current.Sequence(), "msg_seq", rc.View.Sequence)
 		return nil
 	}
-	//logger.Info("forward RoundChange", "flag", flag)
 	c.forwardRoundChange(msg)
 	return nil
 }
 
 func (c *core) assembleMsgFlag(msg *istanbul.Message) string {
-	//switch msg.Code {
-	//case istanbul.MsgCommit:
-	//	return msg.String() + "_" + msg.Commit().Subject.String() + "_" + common.Bytes2Hex(msg.Commit().CommittedSeal) +
-	//		"_" + common.Bytes2Hex(msg.Commit().EpochValidatorSetSeal)
-	//}
+	switch msg.Code {
+	case istanbul.MsgCommit:
+		return msg.String() + "_" + msg.Commit().Subject.String()
+	}
+
 	data, _ := json.Marshal(msg)
 	return string(data)
 }

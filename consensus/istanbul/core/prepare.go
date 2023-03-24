@@ -31,6 +31,11 @@ func (c *core) sendPrepare() {
 	c.broadcast(istanbul.NewPrepareMessage(c.current.Subject(), c.address), false)
 }
 
+func (c *core) forwardPrepare(msg *istanbul.Message) {
+	istMsg := istanbul.NewPrepareMessage(msg.Prepare(), msg.Address)
+	c.broadcast(istMsg, true)
+}
+
 // Verify a prepared certificate and return the view that all of its messages pertain to.
 func (c *core) verifyPreparedCertificate(preparedCertificate istanbul.PreparedCertificate) (*istanbul.View, error) {
 	logger := c.newLogger("func", "verifyPreparedCertificate", "proposal_number", preparedCertificate.Proposal.Number(), "proposal_hash", preparedCertificate.Proposal.Hash().String())
@@ -151,7 +156,7 @@ func (c *core) handlePrepare(msg *istanbul.Message) error {
 	}
 	if !c.config.Validator {
 		c.logger.Info("not validator, only forward", "address", c.address)
-		c.forwardPreprepare(msg)
+		c.forwardPrepare(msg)
 		return nil
 	}
 	defer c.handlePrepareTimer.UpdateSince(time.Now())
@@ -204,7 +209,7 @@ func (c *core) handlePrepare(msg *istanbul.Message) error {
 		logger.Info("Not Need forward prepare", "cur_seq", c.current.Sequence(), "msg_seq", prepare.View.Sequence)
 		return nil
 	}
-	c.forwardPreprepare(msg)
+	c.forwardPrepare(msg)
 	logger.Info("forward prepare", "flag", flag)
 	return nil
 }
