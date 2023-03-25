@@ -20,6 +20,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -39,8 +42,6 @@ import (
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
 	"golang.org/x/crypto/sha3"
-	"math/big"
-	"time"
 )
 
 const (
@@ -149,7 +150,6 @@ func (sb *Backend) verifyHeader(chain consensus.ChainHeaderReader, header *types
 			parent = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
 		}
 		if header.Number.Cmp(big.NewInt(1)) >= 0 {
-			fmt.Println("===verifyHeader", parent.GasLimit, header.GasLimit)
 			if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
 				// Verify the header's EIP-1559 attributes.
 				return err
