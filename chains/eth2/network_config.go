@@ -6,6 +6,8 @@ type NetworkConfig struct {
 	GenesisValidatorsRoot [32]byte
 	BellatrixForkVersion  ForkVersion
 	BellatrixForkEpoch    uint64
+	CapellaForkVersion    ForkVersion
+	CapellaForkEpoch      uint64
 }
 
 func newNetworkConfig(chainID uint64) (*NetworkConfig, error) {
@@ -19,6 +21,8 @@ func newNetworkConfig(chainID uint64) (*NetworkConfig, error) {
 			},
 			BellatrixForkVersion: [4]byte{0x02, 0x00, 0x00, 0x00},
 			BellatrixForkEpoch:   144896,
+			CapellaForkVersion:   [4]byte{0x03, 0x00, 0x00, 0x00},
+			CapellaForkEpoch:     194048,
 		}, nil
 	case 5: // Goerli
 		return &NetworkConfig{
@@ -29,6 +33,8 @@ func newNetworkConfig(chainID uint64) (*NetworkConfig, error) {
 			},
 			BellatrixForkVersion: [4]byte{0x02, 0x00, 0x10, 0x20},
 			BellatrixForkEpoch:   112260,
+			CapellaForkVersion:   [4]byte{0x03, 0x00, 0x10, 0x20},
+			CapellaForkEpoch:     162304,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported network chain ID %d", chainID)
@@ -37,6 +43,10 @@ func newNetworkConfig(chainID uint64) (*NetworkConfig, error) {
 
 // Return the fork version at the given epoch
 func (nc *NetworkConfig) computeForkVersion(epoch uint64) *ForkVersion {
+	if epoch >= nc.CapellaForkEpoch {
+		return &nc.CapellaForkVersion
+	}
+
 	if epoch >= nc.BellatrixForkEpoch {
 		return &nc.BellatrixForkVersion
 	}

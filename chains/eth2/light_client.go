@@ -14,11 +14,8 @@ const SlotsPerEpoch uint64 = 32
 const FinalizedRootIndex uint32 = 105
 const NextSyncCommitteeIndex uint32 = 55
 
-const L1BeaconBlockBodyTreeExecutionPayloadIndex uint64 = 25
-const L2ExecutionPayloadTreeExecutionBlockIndex uint64 = 28
-const L1BeaconBlockBodyProofSize uint64 = 4
-const L2ExecutionPayloadProofSize uint64 = 4
-const ExecutionProofSize = L1BeaconBlockBodyProofSize + L2ExecutionPayloadProofSize
+const BeaconBlockBodyTreeExecutionPayloadIndex uint64 = 25
+const ExecutionPayloadProofSize int = 4
 
 var DomainSyncCommittee = [4]byte{0x07, 0x00, 0x00, 0x00}
 
@@ -66,23 +63,19 @@ func verifyFinality(update *LightClientUpdate) error {
 		return fmt.Errorf("invalid finality proof")
 	}
 
-	l1Proof := update.exeFinalityBranch[0:L1BeaconBlockBodyProofSize]
-	l2Proof := update.exeFinalityBranch[L1BeaconBlockBodyProofSize:ExecutionProofSize]
+	if len(update.executionBranch) != ExecutionPayloadProofSize {
+		return fmt.Errorf("invalid execution payload proof size, exp: %d, got: %d", ExecutionPayloadProofSize, len(update.executionBranch))
+	}
 
-	executionPayloadHash, err := merkelRootFromBranch(
-		update.finalizedExeHeader.Hash(),
-		l2Proof,
-		L2ExecutionPayloadProofSize,
-		L2ExecutionPayloadTreeExecutionBlockIndex,
-	)
+	executionPayloadHash, err := update.finalizedExecution.HashTreeRoot()
 	if err != nil {
 		return fmt.Errorf("compute execution payload merkel root failed: %v", err)
 	}
 
 	proof = ssz.Proof{
-		Index:  int(L1BeaconBlockBodyTreeExecutionPayloadIndex),
+		Index:  int(BeaconBlockBodyTreeExecutionPayloadIndex),
 		Leaf:   executionPayloadHash[:],
-		Hashes: l1Proof,
+		Hashes: update.executionBranch,
 	}
 	ret, err = ssz.VerifyProof(update.finalizedHeader.BodyRoot, &proof)
 	if err != nil {
@@ -178,7 +171,7 @@ func verifyBlsSignatures(state *LightClientState, update *LightClientUpdate) err
 
 	signature, err := bls.SignatureFromBytes(update.syncAggregate.SyncCommitteeSignature)
 	if err != nil {
-		return fmt.Errorf("ddeserialize signature failed: %v", err)
+		return fmt.Errorf("deserialize signature failed: %v", err)
 	}
 
 	if !signature.FastAggregateVerify(pubKeys, signingRoot) {

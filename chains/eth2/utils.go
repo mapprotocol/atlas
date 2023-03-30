@@ -12,26 +12,53 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 )
 
-const ABIJSON = "{\"components\":[{\"components\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slot\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"proposerIndex\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"parentRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"bodyRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structILightNode.BeaconBlockHeader\",\"name\":\"attestedHeader\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"pubkeys\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"aggregatePubkey\",\"type\":\"bytes\"}],\"internalType\":\"structILightNode.SyncCommittee\",\"name\":\"nextSyncCommittee\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"nextSyncCommitteeBranch\",\"type\":\"bytes32[]\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slot\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"proposerIndex\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"parentRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"bodyRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structILightNode.BeaconBlockHeader\",\"name\":\"finalizedHeader\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"finalityBranch\",\"type\":\"bytes32[]\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"parentHash\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"sha3Uncles\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"miner\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"stateRoot\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"transactionsRoot\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"receiptsRoot\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"logsBloom\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"difficulty\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"number\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasUsed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"extraData\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"mixHash\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"nonce\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"baseFeePerGas\",\"type\":\"uint256\"}],\"internalType\":\"structILightNode.BlockHeader\",\"name\":\"finalizedExeHeader\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"exeFinalityBranch\",\"type\":\"bytes32[]\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"syncCommitteeBits\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"syncCommitteeSignature\",\"type\":\"bytes\"}],\"internalType\":\"structILightNode.SyncAggregate\",\"name\":\"syncAggregate\",\"type\":\"tuple\"},{\"internalType\":\"uint64\",\"name\":\"signatureSlot\",\"type\":\"uint64\"}],\"internalType\":\"structILightNode.LightClientUpdate\",\"name\":\"update\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slot\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"proposerIndex\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"parentRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"bodyRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structILightNode.BeaconBlockHeader\",\"name\":\"finalizedHeader\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"pubkeys\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"aggregatePubkey\",\"type\":\"bytes\"}],\"internalType\":\"structILightNode.SyncCommittee\",\"name\":\"currentSyncCommittee\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"pubkeys\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"aggregatePubkey\",\"type\":\"bytes\"}],\"internalType\":\"structILightNode.SyncCommittee\",\"name\":\"nextSyncCommittee\",\"type\":\"tuple\"},{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"}],\"internalType\":\"structILightNode.LightClientState\",\"name\":\"state\",\"type\":\"tuple\"}],\"indexed\":false,\"internalType\":\"structILightNode.LightClientVerify\",\"name\":\"verify\",\"type\":\"tuple\"}"
+const UpdateABIJSON = "{\"components\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slot\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"proposerIndex\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"parentRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"bodyRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Types.BeaconBlockHeader\",\"name\":\"finalizedHeader\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"pubkeys\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"aggregatePubkey\",\"type\":\"bytes\"}],\"internalType\":\"struct Types.SyncCommittee\",\"name\":\"nextSyncCommittee\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"nextSyncCommitteeBranch\",\"type\":\"bytes32[]\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slot\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"proposerIndex\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"parentRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"bodyRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Types.BeaconBlockHeader\",\"name\":\"finalizedHeader\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"finalityBranch\",\"type\":\"bytes32[]\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"parentHash\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"feeRecipient\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"receiptsRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"logsBloom\",\"type\":\"bytes\"},{\"internalType\":\"bytes32\",\"name\":\"prevRandao\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"blockNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasUsed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"extraData\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"baseFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"transactionsRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"withdrawalsRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Types.Execution\",\"name\":\"finalizedExecution\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"executionBranch\",\"type\":\"bytes32[]\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"syncCommitteeBits\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"syncCommitteeSignature\",\"type\":\"bytes\"}],\"internalType\":\"struct Types.SyncAggregate\",\"name\":\"syncAggregate\",\"type\":\"tuple\"},{\"internalType\":\"uint64\",\"name\":\"signatureSlot\",\"type\":\"uint64\"}],\"internalType\":\"struct Types.LightClientUpdate\",\"type\":\"tuple\"}"
+const BeaconHeaderABIJSON = "{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slot\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"proposerIndex\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"parentRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"bodyRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Types.BeaconBlockHeader\",\"type\":\"tuple\"}"
+const SyncCommitteeABIJSON = "{\"components\":[{\"internalType\":\"bytes\",\"name\":\"pubkeys\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"aggregatePubkey\",\"type\":\"bytes\"}],\"internalType\":\"struct Types.SyncCommittee\",\"type\":\"tuple\"}"
+const ChainIdABIJSON = "{\"internalType\":\"uint64\",\"type\":\"uint64\"}"
 
 func decodeLightClientVerify(input []byte) (*LightClientVerify, error) {
-	var arg abi.Argument
-	if err := arg.UnmarshalJSON([]byte(ABIJSON)); err != nil {
-		return nil, fmt.Errorf("unmarshal abi json failed: %v", err)
+	args, err := genAbiArgs()
+	if err != nil {
+		return nil, fmt.Errorf("gen abi args failed: %v", err)
 	}
 
-	args := abi.Arguments{arg}
-	verify := new(ILightNodeLightClientVerify)
 	ret, err := args.Unpack(input)
 	if err != nil {
 		return nil, fmt.Errorf("unpack input failed: %v", err)
 	}
 
-	if err := args.Copy(&verify, ret); err != nil {
+	update := new(ILightNodeLightClientUpdate)
+	finalizedBeaconHeader := new(ILightNodeBeaconBlockHeader)
+	curSyncCommittee := new(ILightNodeSyncCommittee)
+	nextSyncCommittee := new(ILightNodeSyncCommittee)
+	chainId := new(uint64)
+	if err := args.Copy(&[]interface{}{update, finalizedBeaconHeader, curSyncCommittee, nextSyncCommittee, chainId}, ret); err != nil {
 		return nil, fmt.Errorf("copy unpacked result failed: %v", err)
 	}
 
-	return verify.toLightClientVerify(), nil
+	return ConvertToLightClientVerify(update, finalizedBeaconHeader, curSyncCommittee, nextSyncCommittee, *chainId), nil
+}
+
+func genAbiArgs() (abi.Arguments, error) {
+	var updateArg, beaconHeaderArg, syncCommitteeArg, chainIdArg abi.Argument
+	if err := updateArg.UnmarshalJSON([]byte(UpdateABIJSON)); err != nil {
+		return nil, fmt.Errorf("unmarshal update abi json failed: %v", err)
+	}
+
+	if err := beaconHeaderArg.UnmarshalJSON([]byte(BeaconHeaderABIJSON)); err != nil {
+		return nil, fmt.Errorf("unmarshal beacon header abi json failed: %v", err)
+	}
+
+	if err := syncCommitteeArg.UnmarshalJSON([]byte(SyncCommitteeABIJSON)); err != nil {
+		return nil, fmt.Errorf("unmarshal sync committee abi json failed: %v", err)
+	}
+
+	if err := chainIdArg.UnmarshalJSON([]byte(ChainIdABIJSON)); err != nil {
+		return nil, fmt.Errorf("unmarshal chain id abi json failed: %v", err)
+	}
+
+	return abi.Arguments{updateArg, beaconHeaderArg, syncCommitteeArg, syncCommitteeArg, chainIdArg}, nil
 }
 
 func computeEpochAtSlot(slot uint64) uint64 {
@@ -246,4 +273,24 @@ func signingData(rootFunc func() ([32]byte, error), domain []byte) ([32]byte, er
 		Domain:     domain,
 	}
 	return container.HashTreeRoot()
+}
+
+// PadTo pads a byte slice to the given size. If the byte slice is larger than the given size, the
+// original slice is returned.
+func PadTo(b []byte, size int) []byte {
+	if len(b) >= size {
+		return b
+	}
+	return append(b, make([]byte, size-len(b))...)
+}
+
+// ReverseByteOrder Switch the endianness of a byte slice by reversing its order.
+// this function does not modify the actual input bytes.
+func ReverseByteOrder(input []byte) []byte {
+	b := make([]byte, len(input))
+	copy(b, input)
+	for i := 0; i < len(b)/2; i++ {
+		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
+	}
+	return b
 }

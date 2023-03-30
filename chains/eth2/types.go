@@ -1,8 +1,9 @@
 package eth2
 
 import (
+	"bytes"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	fssz "github.com/prysmaticlabs/fastssz"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/prysmaticlabs/go-bitfield"
 	"google.golang.org/protobuf/runtime/protoimpl"
@@ -25,8 +26,8 @@ type LightClientUpdate struct {
 	// The finalized beacon block header attested to by Merkle branch
 	finalizedHeader    BeaconBlockHeader
 	finalityBranch     [][]byte
-	finalizedExeHeader types.Header
-	exeFinalityBranch  [][]byte
+	finalizedExecution ExecutionPayload
+	executionBranch    [][]byte
 	// Sync committee aggregate signature
 	syncAggregate SyncAggregate
 	// Slot at which the aggregate signature was created (untrusted)
@@ -54,6 +55,24 @@ type BeaconBlockHeader struct {
 	ParentRoot    []byte
 	StateRoot     []byte
 	BodyRoot      []byte
+}
+
+type ExecutionPayload struct {
+	ParentHash       common.Hash
+	FeeRecipient     common.Address
+	StateRoot        common.Hash
+	ReceiptsRoot     common.Hash
+	LogsBloom        []byte
+	PrevRandao       common.Hash
+	BlockNumber      *big.Int
+	GasLimit         uint64
+	GasUsed          uint64
+	Timestamp        uint64
+	ExtraData        []byte
+	BaseFeePerGas    *big.Int
+	BlockHash        common.Hash
+	TransactionsRoot common.Hash
+	WithdrawalsRoot  common.Hash
 }
 
 // HashTreeRoot ssz hashes the BeaconBlockHeader object
@@ -107,6 +126,87 @@ type SyncCommittee struct {
 type SyncAggregate struct {
 	SyncCommitteeBits      bitfield.Bitvector512
 	SyncCommitteeSignature []byte
+}
+
+// HashTreeRoot ssz hashes the ExecutionPayload object
+func (e *ExecutionPayload) HashTreeRoot() ([32]byte, error) {
+	return fssz.HashWithDefaultHasher(e)
+}
+
+// HashTreeRootWith ssz hashes the ExecutionPayload object with a hasher
+func (e *ExecutionPayload) HashTreeRootWith(hh *fssz.Hasher) (err error) {
+	indx := hh.Index()
+
+	// Field (0) 'ParentHash'
+	hh.PutBytes(e.ParentHash.Bytes())
+
+	// Field (1) 'FeeRecipient'
+	hh.PutBytes(e.FeeRecipient.Bytes())
+
+	// Field (2) 'StateRoot'
+	hh.PutBytes(e.StateRoot.Bytes())
+
+	// Field (3) 'ReceiptsRoot'
+	hh.PutBytes(e.ReceiptsRoot.Bytes())
+
+	// Field (4) 'LogsBloom'
+	if size := len(e.LogsBloom); size != 256 {
+		err = fssz.ErrBytesLengthFn("--.LogsBloom", size, 256)
+		return
+	}
+	hh.PutBytes(e.LogsBloom)
+
+	// Field (5) 'PrevRandao'
+	hh.PutBytes(e.PrevRandao.Bytes())
+
+	// Field (6) 'BlockNumber'
+	hh.PutUint64(e.BlockNumber.Uint64())
+
+	// Field (7) 'GasLimit'
+	hh.PutUint64(e.GasLimit)
+
+	// Field (8) 'GasUsed'
+	hh.PutUint64(e.GasUsed)
+
+	// Field (9) 'Timestamp'
+	hh.PutUint64(e.Timestamp)
+
+	// Field (10) 'ExtraData'
+	{
+		elemIndx := hh.Index()
+		byteLen := uint64(len(e.ExtraData))
+		if byteLen > 32 {
+			err = fssz.ErrIncorrectListSize
+			return
+		}
+		hh.PutBytes(e.ExtraData)
+		if fssz.EnableVectorizedHTR {
+			hh.MerkleizeWithMixinVectorizedHTR(elemIndx, byteLen, (32+31)/32)
+		} else {
+			hh.MerkleizeWithMixin(elemIndx, byteLen, (32+31)/32)
+		}
+	}
+
+	// Field (11) 'BaseFeePerGas'
+	hh.PutBytes(PadTo(ReverseByteOrder(e.BaseFeePerGas.Bytes()), 32))
+
+	// Field (12) 'BlockHash'
+	hh.PutBytes(e.BlockHash.Bytes())
+
+	// Field (13) 'Transactions'
+	hh.PutBytes(e.TransactionsRoot.Bytes())
+
+	// Field (14) 'WithdrawalsRoot'
+	if !bytes.Equal(e.WithdrawalsRoot[:], make([]byte, 32)) {
+		hh.PutBytes(e.WithdrawalsRoot.Bytes())
+	}
+
+	if fssz.EnableVectorizedHTR {
+		hh.MerkleizeVectorizedHTR(indx)
+	} else {
+		hh.Merkleize(indx)
+	}
+	return
 }
 
 type ForkData struct {
@@ -193,32 +293,23 @@ type ILightNodeBeaconBlockHeader struct {
 	BodyRoot      [32]byte
 }
 
-// ILightNodeBlockHeader is an auto generated low-level Go binding around an user-defined struct.
-type ILightNodeBlockHeader struct {
-	ParentHash       []byte
-	Sha3Uncles       []byte
-	Miner            common.Address
-	StateRoot        []byte
-	TransactionsRoot []byte
-	ReceiptsRoot     []byte
+// ILightNodeExecution is an auto generated low-level Go binding around an user-defined struct.
+type ILightNodeExecution struct {
+	ParentHash       [32]byte
+	FeeRecipient     common.Address
+	StateRoot        [32]byte
+	ReceiptsRoot     [32]byte
 	LogsBloom        []byte
-	Difficulty       *big.Int
-	Number           *big.Int
+	PrevRandao       [32]byte
+	BlockNumber      *big.Int
 	GasLimit         *big.Int
 	GasUsed          *big.Int
 	Timestamp        *big.Int
 	ExtraData        []byte
-	MixHash          []byte
-	Nonce            []byte
 	BaseFeePerGas    *big.Int
-}
-
-// ILightNodeLightClientState is an auto generated low-level Go binding around an user-defined struct.
-type ILightNodeLightClientState struct {
-	FinalizedHeader      ILightNodeBeaconBlockHeader
-	CurrentSyncCommittee ILightNodeSyncCommittee
-	NextSyncCommittee    ILightNodeSyncCommittee
-	ChainID              uint64
+	BlockHash        [32]byte
+	TransactionsRoot [32]byte
+	WithdrawalsRoot  [32]byte
 }
 
 // ILightNodeLightClientUpdate is an auto generated low-level Go binding around an user-defined struct.
@@ -228,16 +319,10 @@ type ILightNodeLightClientUpdate struct {
 	NextSyncCommitteeBranch [][32]byte
 	FinalizedHeader         ILightNodeBeaconBlockHeader
 	FinalityBranch          [][32]byte
-	FinalizedExeHeader      ILightNodeBlockHeader
-	ExeFinalityBranch       [][32]byte
+	FinalizedExecution      ILightNodeExecution
+	ExecutionBranch         [][32]byte
 	SyncAggregate           ILightNodeSyncAggregate
 	SignatureSlot           uint64
-}
-
-// ILightNodeLightClientVerify is an auto generated low-level Go binding around an user-defined struct.
-type ILightNodeLightClientVerify struct {
-	Update ILightNodeLightClientUpdate
-	State  ILightNodeLightClientState
 }
 
 // ILightNodeSyncAggregate is an auto generated low-level Go binding around an user-defined struct.
@@ -252,10 +337,14 @@ type ILightNodeSyncCommittee struct {
 	AggregatePubkey []byte
 }
 
-func (verify *ILightNodeLightClientVerify) toLightClientVerify() *LightClientVerify {
+func ConvertToLightClientVerify(update *ILightNodeLightClientUpdate,
+	finalizedBeaconHeader *ILightNodeBeaconBlockHeader,
+	curSyncCommittee *ILightNodeSyncCommittee,
+	nextSyncCommittee *ILightNodeSyncCommittee,
+	chainId uint64) *LightClientVerify {
 	return &LightClientVerify{
-		update: verify.Update.toLightClientUpdate(),
-		state:  verify.State.toLightClientState(),
+		update: update.toLightClientUpdate(),
+		state:  ConvertToLightClientState(finalizedBeaconHeader, curSyncCommittee, nextSyncCommittee, chainId),
 	}
 }
 
@@ -266,19 +355,23 @@ func (update *ILightNodeLightClientUpdate) toLightClientUpdate() *LightClientUpd
 		nextSyncCommitteeBranch: bytes32ArrayToBytesArray(update.NextSyncCommitteeBranch),
 		finalizedHeader:         update.FinalizedHeader.toBeaconBlockHeader(),
 		finalityBranch:          bytes32ArrayToBytesArray(update.FinalityBranch),
-		finalizedExeHeader:      update.FinalizedExeHeader.toBlockHeader(),
-		exeFinalityBranch:       bytes32ArrayToBytesArray(update.ExeFinalityBranch),
+		finalizedExecution:      update.FinalizedExecution.toExecutionPayload(),
+		executionBranch:         bytes32ArrayToBytesArray(update.ExecutionBranch),
 		syncAggregate:           update.SyncAggregate.toSyncAggregate(),
 		signatureSlot:           update.SignatureSlot,
 	}
 }
 
-func (state *ILightNodeLightClientState) toLightClientState() *LightClientState {
+func ConvertToLightClientState(
+	finalizedBeaconHeader *ILightNodeBeaconBlockHeader,
+	curSyncCommittee *ILightNodeSyncCommittee,
+	nextSyncCommittee *ILightNodeSyncCommittee,
+	chainId uint64) *LightClientState {
 	return &LightClientState{
-		finalizedHeader:      state.FinalizedHeader.toBeaconBlockHeader(),
-		currentSyncCommittee: state.CurrentSyncCommittee.toSyncCommittee(),
-		nextSyncCommittee:    state.NextSyncCommittee.toSyncCommittee(),
-		chainID:              state.ChainID,
+		finalizedHeader:      finalizedBeaconHeader.toBeaconBlockHeader(),
+		currentSyncCommittee: curSyncCommittee.toSyncCommittee(),
+		nextSyncCommittee:    nextSyncCommittee.toSyncCommittee(),
+		chainID:              chainId,
 	}
 }
 
@@ -292,29 +385,24 @@ func (header *ILightNodeBeaconBlockHeader) toBeaconBlockHeader() BeaconBlockHead
 	}
 }
 
-func (header *ILightNodeBlockHeader) toBlockHeader() types.Header {
-	blockHeader := types.Header{
-		ParentHash:  common.BytesToHash(header.ParentHash),
-		UncleHash:   common.BytesToHash(header.Sha3Uncles),
-		Coinbase:    header.Miner,
-		Root:        common.BytesToHash(header.StateRoot),
-		TxHash:      common.BytesToHash(header.TransactionsRoot),
-		ReceiptHash: common.BytesToHash(header.ReceiptsRoot),
-		Bloom:       types.BytesToBloom(header.LogsBloom),
-		Difficulty:  header.Difficulty,
-		Number:      header.Number,
-		GasLimit:    header.GasLimit.Uint64(),
-		GasUsed:     header.GasUsed.Uint64(),
-		Time:        header.Timestamp.Uint64(),
-		Extra:       header.ExtraData,
-		MixDigest:   common.BytesToHash(header.MixHash),
-		Nonce:       types.BlockNonce{},
-		BaseFee:     header.BaseFeePerGas,
+func (execution *ILightNodeExecution) toExecutionPayload() ExecutionPayload {
+	return ExecutionPayload{
+		ParentHash:       common.BytesToHash(execution.ParentHash[:]),
+		FeeRecipient:     common.BytesToAddress(execution.FeeRecipient[:]),
+		StateRoot:        common.BytesToHash(execution.StateRoot[:]),
+		ReceiptsRoot:     common.BytesToHash(execution.ReceiptsRoot[:]),
+		LogsBloom:        execution.LogsBloom,
+		PrevRandao:       common.BytesToHash(execution.PrevRandao[:]),
+		BlockNumber:      execution.BlockNumber,
+		GasLimit:         execution.GasLimit.Uint64(),
+		GasUsed:          execution.GasUsed.Uint64(),
+		Timestamp:        execution.Timestamp.Uint64(),
+		ExtraData:        execution.ExtraData,
+		BaseFeePerGas:    execution.BaseFeePerGas,
+		BlockHash:        common.BytesToHash(execution.BlockHash[:]),
+		TransactionsRoot: common.BytesToHash(execution.TransactionsRoot[:]),
+		WithdrawalsRoot:  common.BytesToHash(execution.WithdrawalsRoot[:]),
 	}
-
-	copy(blockHeader.Nonce[:], header.Nonce)
-
-	return blockHeader
 }
 
 func (syncCommittee *ILightNodeSyncCommittee) toSyncCommittee() SyncCommittee {
