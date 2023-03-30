@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/consensus/misc"
-	"github.com/mapprotocol/atlas/core/vm"
 	"math/big"
 	"time"
+
+	"github.com/mapprotocol/atlas/consensus/misc"
+	"github.com/mapprotocol/atlas/core/vm"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -43,7 +44,7 @@ func getGasLimitByWork(w *worker, parent *types.Block, header *types.Header, vmR
 	gaslimit := uint64(0)
 	if w.chainConfig.IsCalc(header.Number) {
 		ceil := blockchain_parameters.GetBlockGasLimitOrDefault(vmRunner, true)
-		// fmt.Println("===getGasLimitByWork2", "parent", parent.GasLimit(), "ceil", ceil)
+		//fmt.Println("===getGasLimitByWork2", "parent", parent.GasLimit(), "ceil", ceil)
 		gaslimit = chain.CalcGasLimit(parent.GasLimit(), ceil)
 	} else {
 		// fmt.Println("******* not here **********")

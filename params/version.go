@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	VersionMajor = 1        // Major version component of the current release
-	VersionMinor = 1        // Minor version component of the current release
-	VersionPatch = 0        // Patch version component of the current release
-	VersionMeta  = "stable" // Version metadata to append to the version string
+	VersionMajor = 1          // Major version component of the current release
+	VersionMinor = 1          // Minor version component of the current release
+	VersionPatch = 1          // Patch version component of the current release
+	VersionMeta  = "unstable" // Version metadata to append to the version string
 )
 
 type VersionInfo struct {
@@ -19,10 +19,9 @@ type VersionInfo struct {
 
 // Cmp compares x and y and returns:
 //
-//   -1 if x <  y
-//    0 if x == y
-//   +1 if x >  y
-//
+//	-1 if x <  y
+//	 0 if x == y
+//	+1 if x >  y
 func cmp(x uint64, y uint64) int {
 	if x < y {
 		return -1
@@ -63,7 +62,8 @@ var VersionWithMeta = func() string {
 
 // ArchiveVersion holds the textual version string used for Atlas archives.
 // e.g. "1.8.11-dea1ce05" for stable releases, or
-//      "1.8.13-unstable-21c059b6" for unstable releases
+//
+//	"1.8.13-unstable-21c059b6" for unstable releases
 func ArchiveVersion(gitCommit string) string {
 	vsn := Version
 	if VersionMeta != "stable" {
