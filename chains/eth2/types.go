@@ -17,35 +17,28 @@ type DomainType [4]byte
 type Root []byte
 type ValidatorIndex uint64
 
-type LightClientUpdate struct {
-	// The beacon block header that is attested to by the sync committee
-	attestedHeader BeaconBlockHeader
-	// Next sync committee corresponding to `attested_header`
-	nextSyncCommittee       SyncCommittee
-	nextSyncCommitteeBranch [][]byte
-	// The finalized beacon block header attested to by Merkle branch
-	finalizedHeader    BeaconBlockHeader
-	finalityBranch     [][]byte
-	finalizedExecution ExecutionPayload
-	executionBranch    [][]byte
-	// Sync committee aggregate signature
-	syncAggregate SyncAggregate
-	// Slot at which the aggregate signature was created (untrusted)
-	signatureSlot uint64
+type ILightClientUpdate interface {
+	GetAttestedHeader() *BeaconBlockHeader
+	GetNextSyncCommittee() *SyncCommittee
+	GetNextSyncCommitteeBranch() [][]byte
+	GetFinalizedHeader() *BeaconBlockHeader
+	GetFinalityBranch() [][]byte
+	GetSyncAggregate() *SyncAggregate
+	GetSignatureSlot() uint64
 }
 
 type LightClientState struct {
 	// Beacon block header that is finalized
-	finalizedHeader BeaconBlockHeader
+	finalizedHeader *BeaconBlockHeader
 
 	// Sync committees corresponding to the header
-	currentSyncCommittee SyncCommittee
-	nextSyncCommittee    SyncCommittee
+	currentSyncCommittee *SyncCommittee
+	nextSyncCommittee    *SyncCommittee
 	chainID              uint64
 }
 
 type LightClientVerify struct {
-	update *LightClientUpdate
+	update ILightClientUpdate
 	state  *LightClientState
 }
 
@@ -293,38 +286,6 @@ type ILightNodeBeaconBlockHeader struct {
 	BodyRoot      [32]byte
 }
 
-// ILightNodeExecution is an auto generated low-level Go binding around an user-defined struct.
-type ILightNodeExecution struct {
-	ParentHash       [32]byte
-	FeeRecipient     common.Address
-	StateRoot        [32]byte
-	ReceiptsRoot     [32]byte
-	LogsBloom        []byte
-	PrevRandao       [32]byte
-	BlockNumber      *big.Int
-	GasLimit         *big.Int
-	GasUsed          *big.Int
-	Timestamp        *big.Int
-	ExtraData        []byte
-	BaseFeePerGas    *big.Int
-	BlockHash        [32]byte
-	TransactionsRoot [32]byte
-	WithdrawalsRoot  [32]byte
-}
-
-// ILightNodeLightClientUpdate is an auto generated low-level Go binding around an user-defined struct.
-type ILightNodeLightClientUpdate struct {
-	AttestedHeader          ILightNodeBeaconBlockHeader
-	NextSyncCommittee       ILightNodeSyncCommittee
-	NextSyncCommitteeBranch [][32]byte
-	FinalizedHeader         ILightNodeBeaconBlockHeader
-	FinalityBranch          [][32]byte
-	FinalizedExecution      ILightNodeExecution
-	ExecutionBranch         [][32]byte
-	SyncAggregate           ILightNodeSyncAggregate
-	SignatureSlot           uint64
-}
-
 // ILightNodeSyncAggregate is an auto generated low-level Go binding around an user-defined struct.
 type ILightNodeSyncAggregate struct {
 	SyncCommitteeBits      []byte
@@ -337,46 +298,8 @@ type ILightNodeSyncCommittee struct {
 	AggregatePubkey []byte
 }
 
-func ConvertToLightClientVerify(update *ILightNodeLightClientUpdate,
-	finalizedBeaconHeader *ILightNodeBeaconBlockHeader,
-	curSyncCommittee *ILightNodeSyncCommittee,
-	nextSyncCommittee *ILightNodeSyncCommittee,
-	chainId uint64) *LightClientVerify {
-	return &LightClientVerify{
-		update: update.toLightClientUpdate(),
-		state:  ConvertToLightClientState(finalizedBeaconHeader, curSyncCommittee, nextSyncCommittee, chainId),
-	}
-}
-
-func (update *ILightNodeLightClientUpdate) toLightClientUpdate() *LightClientUpdate {
-	return &LightClientUpdate{
-		attestedHeader:          update.AttestedHeader.toBeaconBlockHeader(),
-		nextSyncCommittee:       update.NextSyncCommittee.toSyncCommittee(),
-		nextSyncCommitteeBranch: bytes32ArrayToBytesArray(update.NextSyncCommitteeBranch),
-		finalizedHeader:         update.FinalizedHeader.toBeaconBlockHeader(),
-		finalityBranch:          bytes32ArrayToBytesArray(update.FinalityBranch),
-		finalizedExecution:      update.FinalizedExecution.toExecutionPayload(),
-		executionBranch:         bytes32ArrayToBytesArray(update.ExecutionBranch),
-		syncAggregate:           update.SyncAggregate.toSyncAggregate(),
-		signatureSlot:           update.SignatureSlot,
-	}
-}
-
-func ConvertToLightClientState(
-	finalizedBeaconHeader *ILightNodeBeaconBlockHeader,
-	curSyncCommittee *ILightNodeSyncCommittee,
-	nextSyncCommittee *ILightNodeSyncCommittee,
-	chainId uint64) *LightClientState {
-	return &LightClientState{
-		finalizedHeader:      finalizedBeaconHeader.toBeaconBlockHeader(),
-		currentSyncCommittee: curSyncCommittee.toSyncCommittee(),
-		nextSyncCommittee:    nextSyncCommittee.toSyncCommittee(),
-		chainID:              chainId,
-	}
-}
-
-func (header *ILightNodeBeaconBlockHeader) toBeaconBlockHeader() BeaconBlockHeader {
-	return BeaconBlockHeader{
+func (header *ILightNodeBeaconBlockHeader) toBeaconBlockHeader() *BeaconBlockHeader {
+	return &BeaconBlockHeader{
 		Slot:          header.Slot,
 		ProposerIndex: ValidatorIndex(header.ProposerIndex),
 		ParentRoot:    header.ParentRoot[:],
@@ -385,8 +308,8 @@ func (header *ILightNodeBeaconBlockHeader) toBeaconBlockHeader() BeaconBlockHead
 	}
 }
 
-func (execution *ILightNodeExecution) toExecutionPayload() ExecutionPayload {
-	return ExecutionPayload{
+func (execution *ILightNodeExecution) toExecutionPayload() *ExecutionPayload {
+	return &ExecutionPayload{
 		ParentHash:       common.BytesToHash(execution.ParentHash[:]),
 		FeeRecipient:     common.BytesToAddress(execution.FeeRecipient[:]),
 		StateRoot:        common.BytesToHash(execution.StateRoot[:]),
@@ -405,19 +328,19 @@ func (execution *ILightNodeExecution) toExecutionPayload() ExecutionPayload {
 	}
 }
 
-func (syncCommittee *ILightNodeSyncCommittee) toSyncCommittee() SyncCommittee {
+func (syncCommittee *ILightNodeSyncCommittee) toSyncCommittee() *SyncCommittee {
 	var pubkeys [][]byte
 	count := len(syncCommittee.Pubkeys) / BLSPubkeyLength
 	for i := 0; i < count; i++ {
 		pubkeys = append(pubkeys, syncCommittee.Pubkeys[i*BLSPubkeyLength:(i+1)*BLSPubkeyLength])
 	}
-	return SyncCommittee{
+	return &SyncCommittee{
 		Pubkeys:         pubkeys,
 		AggregatePubkey: syncCommittee.AggregatePubkey,
 	}
 }
-func (syncAggregate *ILightNodeSyncAggregate) toSyncAggregate() SyncAggregate {
-	return SyncAggregate{
+func (syncAggregate *ILightNodeSyncAggregate) toSyncAggregate() *SyncAggregate {
+	return &SyncAggregate{
 		SyncCommitteeBits:      syncAggregate.SyncCommitteeBits,
 		SyncCommitteeSignature: syncAggregate.SyncCommitteeSignature,
 	}
