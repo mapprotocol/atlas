@@ -17,18 +17,40 @@ const NextSyncCommitteeIndex uint32 = 55
 const BeaconBlockBodyTreeExecutionPayloadIndex uint64 = 25
 const ExecutionPayloadProofSize int = 4
 
+const L1BeaconBlockBodyTreeExecutionPayloadIndex uint64 = 25
+const L2ExecutionPayloadTreeExecutionBlockIndex uint64 = 28
+const L1BeaconBlockBodyProofSize uint64 = 4
+const L2ExecutionPayloadProofSize uint64 = 4
+const ExecutionProofSize = L1BeaconBlockBodyProofSize + L2ExecutionPayloadProofSize
+
 var DomainSyncCommittee = [4]byte{0x07, 0x00, 0x00, 0x00}
 
 func VerifyLightClientUpdate(input []byte) error {
-	verify, err := decodeLightClientVerify(input)
+	verify, err := decodeLightClientVerifyV2(input)
 	if err != nil {
-		log.Warn("decodeLightClientVerify", "error", err)
-		return err
+		log.Warn("decodeLightClientVerifyV2", "error", err)
+		verify, err = decodeLightClientVerifyV1(input)
+		if err != nil {
+			log.Warn("decodeLightClientVerifyV1", "error", err)
+			return err
+		}
 	}
 
-	if err := verifyFinality(verify.update); err != nil {
-		log.Warn("verifyFinality", "error", err)
-		return err
+	switch verify.update.(type) {
+	case *LightClientUpdateV1:
+		if err := verifyFinalityV1(verify.update.(*LightClientUpdateV1)); err != nil {
+			log.Warn("verifyFinalityV1", "error", err)
+			return err
+		}
+	case *LightClientUpdateV2:
+		if err := verifyFinalityV2(verify.update.(*LightClientUpdateV2)); err != nil {
+			log.Warn("verifyFinalityV2", "error", err)
+			return err
+		}
+
+	default:
+		log.Warn("invalid light client update type")
+		return fmt.Errorf("invalid light client update type")
 	}
 
 	if err := verifyNextSyncCommittee(verify.state, verify.update); err != nil {
@@ -44,7 +66,7 @@ func VerifyLightClientUpdate(input []byte) error {
 	return nil
 }
 
-func verifyFinality(update *LightClientUpdate) error {
+func verifyFinalityV2(update *LightClientUpdateV2) error {
 	leaf, err := update.finalizedHeader.HashTreeRoot()
 	if err != nil {
 		return fmt.Errorf("failed to compute hash tree root of finalized header: %v", err)
@@ -89,24 +111,73 @@ func verifyFinality(update *LightClientUpdate) error {
 	return nil
 }
 
-func verifyNextSyncCommittee(state *LightClientState, update *LightClientUpdate) error {
+func verifyFinalityV1(update *LightClientUpdateV1) error {
+	leaf, err := update.finalizedHeader.HashTreeRoot()
+	if err != nil {
+		return fmt.Errorf("failed to compute hash tree root of finalized header: %v", err)
+	}
+	proof := ssz.Proof{
+		Index:  int(FinalizedRootIndex),
+		Leaf:   leaf[:],
+		Hashes: update.finalityBranch,
+	}
+	ret, err := ssz.VerifyProof(update.attestedHeader.StateRoot, &proof)
+	if err != nil {
+		return fmt.Errorf("VerifyProof return err: %v", err)
+	}
+
+	if !ret {
+		return fmt.Errorf("invalid finality proof")
+	}
+
+	l1Proof := update.exeFinalityBranch[0:L1BeaconBlockBodyProofSize]
+	l2Proof := update.exeFinalityBranch[L1BeaconBlockBodyProofSize:ExecutionProofSize]
+
+	executionPayloadHash, err := merkelRootFromBranch(
+		update.finalizedExeHeader.Hash(),
+		l2Proof,
+		L2ExecutionPayloadProofSize,
+		L2ExecutionPayloadTreeExecutionBlockIndex,
+	)
+	if err != nil {
+		return fmt.Errorf("compute execution payload merkel root failed: %v", err)
+	}
+
+	proof = ssz.Proof{
+		Index:  int(L1BeaconBlockBodyTreeExecutionPayloadIndex),
+		Leaf:   executionPayloadHash[:],
+		Hashes: l1Proof,
+	}
+	ret, err = ssz.VerifyProof(update.finalizedHeader.BodyRoot, &proof)
+	if err != nil {
+		return fmt.Errorf("VerifyProof return err: %v", err)
+	}
+
+	if !ret {
+		return fmt.Errorf("invalid execution payload proof")
+	}
+
+	return nil
+}
+
+func verifyNextSyncCommittee(state *LightClientState, update ILightClientUpdate) error {
 	// The active header will always be the finalized header because we don't accept updates without the finality update.
-	updatePeriod := computeSyncCommitteePeriod(update.finalizedHeader.Slot)
+	updatePeriod := computeSyncCommitteePeriod(update.GetFinalizedHeader().Slot)
 	finalizedPeriod := computeSyncCommitteePeriod(state.finalizedHeader.Slot)
 
 	// Verify that the `next_sync_committee`, if present, actually is the next sync committee saved in the
 	// state of the `active_header`
 	if updatePeriod != finalizedPeriod {
-		leaf, err := SyncCommitteeRoot(&update.nextSyncCommittee)
+		leaf, err := SyncCommitteeRoot(update.GetNextSyncCommittee())
 		if err != nil {
 			return fmt.Errorf("failed to compute hash tree root of finalized header: %v", err)
 		}
 		proof := ssz.Proof{
 			Index:  int(NextSyncCommitteeIndex),
 			Leaf:   leaf[:],
-			Hashes: update.nextSyncCommitteeBranch,
+			Hashes: update.GetNextSyncCommitteeBranch(),
 		}
-		ret, err := ssz.VerifyProof(update.attestedHeader.StateRoot, &proof)
+		ret, err := ssz.VerifyProof(update.GetAttestedHeader().StateRoot, &proof)
 		if err != nil {
 			return fmt.Errorf("VerifyProof return err: %v", err)
 		}
@@ -119,13 +190,13 @@ func verifyNextSyncCommittee(state *LightClientState, update *LightClientUpdate)
 	return nil
 }
 
-func verifyBlsSignatures(state *LightClientState, update *LightClientUpdate) error {
-	syncCommitteeCount := update.syncAggregate.SyncCommitteeBits.Count()
+func verifyBlsSignatures(state *LightClientState, update ILightClientUpdate) error {
+	syncCommitteeCount := update.GetSyncAggregate().SyncCommitteeBits.Count()
 	if syncCommitteeCount < MinSyncCommitteeParticipants {
 		return fmt.Errorf("invalid sync committee participants count, min required %d, got %d", MinSyncCommitteeParticipants, syncCommitteeCount)
 	}
 
-	if syncCommitteeCount*3 < update.syncAggregate.SyncCommitteeBits.Len()*2 {
+	if syncCommitteeCount*3 < update.GetSyncAggregate().SyncCommitteeBits.Len()*2 {
 		return fmt.Errorf("not enought sync committe count %d", syncCommitteeCount)
 	}
 
@@ -135,8 +206,8 @@ func verifyBlsSignatures(state *LightClientState, update *LightClientUpdate) err
 		return fmt.Errorf("new network failed: %v", err)
 	}
 
-	signaturePeriod := computeSyncCommitteePeriod(update.signatureSlot)
-	var syncCommittee SyncCommittee
+	signaturePeriod := computeSyncCommitteePeriod(update.GetSignatureSlot())
+	var syncCommittee *SyncCommittee
 
 	// Verify signature period does not skip a sync committee period
 	if signaturePeriod == finalizedPeriod {
@@ -149,7 +220,7 @@ func verifyBlsSignatures(state *LightClientState, update *LightClientUpdate) err
 	}
 
 	// Verify sync committee aggregate signature
-	forkVersion := config.computeForkVersionBySlot(update.signatureSlot)
+	forkVersion := config.computeForkVersionBySlot(update.GetSignatureSlot())
 	if forkVersion == nil {
 		return fmt.Errorf("unsupportted fork")
 	}
@@ -159,17 +230,17 @@ func verifyBlsSignatures(state *LightClientState, update *LightClientUpdate) err
 		return fmt.Errorf("compute domain failed: %v", err)
 	}
 
-	signingRoot, err := ComputeSigningRoot(&update.attestedHeader, domain)
+	signingRoot, err := ComputeSigningRoot(update.GetAttestedHeader(), domain)
 	if err != nil {
 		return fmt.Errorf("compute signing root failed: %v", err)
 	}
 
-	pubKeys, err := getParticipantPubkeys(syncCommittee.Pubkeys, update.syncAggregate.SyncCommitteeBits)
+	pubKeys, err := getParticipantPubkeys(syncCommittee.Pubkeys, update.GetSyncAggregate().SyncCommitteeBits)
 	if err != nil {
 		return fmt.Errorf("get participiant pubkyes failed: %v", err)
 	}
 
-	signature, err := bls.SignatureFromBytes(update.syncAggregate.SyncCommitteeSignature)
+	signature, err := bls.SignatureFromBytes(update.GetSyncAggregate().SyncCommitteeSignature)
 	if err != nil {
 		return fmt.Errorf("deserialize signature failed: %v", err)
 	}
