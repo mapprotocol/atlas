@@ -220,7 +220,8 @@ func verifyBlsSignatures(state *LightClientState, update ILightClientUpdate) err
 	}
 
 	// Verify sync committee aggregate signature
-	forkVersion := config.computeForkVersionBySlot(update.GetSignatureSlot())
+	forkVersionSlot := update.GetSignatureSlot() - 1
+	forkVersion := config.computeForkVersionBySlot(forkVersionSlot)
 	if forkVersion == nil {
 		return fmt.Errorf("unsupportted fork")
 	}
