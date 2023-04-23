@@ -36,8 +36,8 @@ func (sb *Backend) getPeersFromDestAddresses(destAddresses []common.Address) map
 			}
 		}
 	}
-	return sb.broadcaster.FindPeers(nil, p2p.AnyPurpose)
-	//return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
+	//return sb.broadcaster.FindPeers(nil, p2p.AnyPurpose)
+	return sb.broadcaster.FindPeers(targets, p2p.AnyPurpose)
 }
 
 // Multicast implements istanbul.Backend.Multicast

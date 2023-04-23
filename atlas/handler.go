@@ -300,9 +300,9 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 	if handler, ok := h.chain.Engine().(consensus.Handler); ok {
 		isValidator, err := handler.Handshake(peer)
 		if err != nil {
-			isValidator = false
+			//isValidator = false
 			peer.Log().Warn("Istanbul handshake failed", "err", err)
-			//return err
+			return err
 		}
 		forcePeer = isValidator
 		peer.Log().Debug("Peer completed Istanbul handshake", "forcePeer", forcePeer)
