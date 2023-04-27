@@ -14,7 +14,6 @@ RUN cd /atlas && make atlas
 # Pull atlas into a second stage deploy ubuntu container
 FROM ubuntu:latest
 
-RUN apk add --no-cache ca-certificates
 COPY --from=builder /atlas/build/bin/atlas /usr/local/bin/
 RUN chmod +x /usr/local/bin/atlas
 
