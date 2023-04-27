@@ -35,6 +35,12 @@ instance for single node,  run it with these flags:
 $ atlas --single  console
 ```
 
+### Docker quick start
+One of the quickest ways to get Atlas up and running on your machine is by using Docker:
+```
+$ docker run --name atlas --rm -id mapprotocol/atlas:latest
+```
+
 ## Executables
 
 The go-atlas project comes with several wrappers/executables found in the `cmd`
