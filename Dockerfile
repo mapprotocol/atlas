@@ -4,7 +4,7 @@ ARG VERSION=""
 ARG BUILDNUM=""
 
 # Build atlas in a stock Go builder container
-FROM golang:1.18-alpine as builder
+FROM golang:1.18 as builder
 
 RUN apk add --no-cache gcc musl-dev linux-headers git make
 
@@ -17,7 +17,7 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /atlas/build/bin/atlas /usr/local/bin/
 
-EXPOSE 7445 30303 30303/udp
+EXPOSE 7445 20101 20101/udp
 ENTRYPOINT ["atlas"]
 
 # Add some metadata labels to help programatic image consumption
