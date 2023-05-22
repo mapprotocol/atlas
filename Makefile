@@ -11,7 +11,7 @@
 
 GOBIN = ./build/bin
 GO ?= latest
-GORUN = env GO111MODULE=on go run
+GORUN = env GO111MODULE=on CGO_ENABLED=1 CGO_CFLAGS="-O -D__BLST_PORTABLE__" CGO_CFLAGS_ALLOW="-O -D__BLST_PORTABLE__" go run
 
 atlas:
 	$(GORUN) build/ci.go install .
