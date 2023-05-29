@@ -20,7 +20,6 @@ package utils
 import (
 	"compress/gzip"
 	"fmt"
-	"github.com/mapprotocol/atlas/core/chain"
 	"io"
 	"os"
 	"os/signal"
@@ -29,16 +28,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mapprotocol/atlas/core/chain"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/mapprotocol/atlas/atlas/ethconfig"
+	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/mapprotocol/atlas/atlas/ethconfig"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/mapprotocol/atlas/helper/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/mapprotocol/atlas/cmd/node"
-	"github.com/ethereum/go-ethereum/rlp"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -107,11 +108,11 @@ func monitorFreeDiskSpace(sigc chan os.Signal, path string, freeDiskSpaceCritica
 			break
 		}
 		if freeSpace < freeDiskSpaceCritical {
-			log.Error("Low disk space. Gracefully shutting down Geth to prevent database corruption.", "available", common.StorageSize(freeSpace))
+			log.Error("Low disk space. Gracefully shutting down Atlas to prevent database corruption.", "available", common.StorageSize(freeSpace))
 			sigc <- syscall.SIGTERM
 			break
 		} else if freeSpace < 2*freeDiskSpaceCritical {
-			log.Warn("Disk space is running low. Geth will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical))
+			log.Warn("Disk space is running low. Atlas will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical))
 		}
 		time.Sleep(60 * time.Second)
 	}
