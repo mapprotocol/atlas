@@ -188,7 +188,8 @@ func (b *blockState) selectAndApplyTransactions(ctx context.Context, w *worker) 
 		return nil
 	}
 
-	log.Info("******selectAndApplyTransactions*****", "pending count", getPendingCount(pending))
+	pendingCount := getPendingCount(pending)
+
 	// Split the pending transactions into locals and remotes
 	localTxs, remoteTxs := make(map[common.Address]types.Transactions), pending
 	for _, account := range w.eth.TxPool().Locals() {
@@ -197,7 +198,7 @@ func (b *blockState) selectAndApplyTransactions(ctx context.Context, w *worker) 
 			localTxs[account] = txs
 		}
 	}
-
+	log.Info("******selectAndApplyTransactions*****", "pending count", pendingCount, "local", len(localTxs), "remote", len(remoteTxs))
 	//txComparator := createTxCmp(w.chain, b.header, b.state)
 	if len(localTxs) > 0 {
 		txs := types.NewTransactionsByPriceAndNonce(b.signer, localTxs, b.header.BaseFee)
@@ -241,7 +242,7 @@ loop:
 		// Short-circuiting here saves us the trouble of checking the GPM and so on when the tx can't be included
 		// anyway due to the block not having enough gas left.
 		if b.gasPool.Gas() < tx.Gas() {
-			log.Trace("Skipping transaction which requires more gas than is left in the block", "hash", tx.Hash(), "gas", b.gasPool.Gas(), "txgas", tx.Gas())
+			log.Info("Skipping transaction which requires more gas than is left in the block", "hash", tx.Hash(), "gas", b.gasPool.Gas(), "txgas", tx.Gas())
 			txs.Pop()
 			continue
 		}
@@ -253,7 +254,7 @@ loop:
 		// Check whether the tx is replay protected. If we're not in the EIP155 hf
 		// phase, start ignoring the sender until we do.
 		if tx.Protected() && !w.chainConfig.IsEIP155(b.header.Number) {
-			log.Trace("Ignoring reply protected transaction", "hash", tx.Hash(), "eip155", w.chainConfig.EIP155Block)
+			log.Info("Ignoring reply protected transaction", "hash", tx.Hash(), "eip155", w.chainConfig.EIP155Block)
 
 			txs.Pop()
 			continue
@@ -265,23 +266,23 @@ loop:
 		switch err {
 		case core.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
-			log.Trace("Gas limit exceeded for current block", "sender", from)
+			log.Info("Gas limit exceeded for current block", "sender", from)
 			txs.Pop()
 
 		case core.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and miner, shift
-			log.Trace("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())
+			log.Info("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Shift()
 
 		case core.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
-			log.Trace("Skipping account with hight nonce", "sender", from, "nonce", tx.Nonce())
+			log.Info("Skipping account with hight nonce", "sender", from, "nonce", tx.Nonce())
 			txs.Pop()
 
 		case errors.New("gasprice is less than gas price minimum"):
 			// We are below the GPM, so we can stop (the rest of the transactions will either have
 			// even lower gas price or won't be mineable yet due to their nonce)
-			log.Trace("Skipping remaining transaction below the gas price minimum")
+			log.Info("Skipping remaining transaction below the gas price minimum")
 			break loop
 
 		case nil:
@@ -293,7 +294,7 @@ loop:
 		default:
 			// Strange error, discard the transaction and get the next in line (note, the
 			// nonce-too-high clause will prevent us from executing in vain).
-			log.Debug("Transaction failed, account skipped", "hash", tx.Hash(), "err", err)
+			log.Error("Transaction failed, account skipped", "hash", tx.Hash(), "err", err)
 			txs.Shift()
 		}
 	}
