@@ -169,7 +169,7 @@ func getPendingCount(pending map[common.Address]types.Transactions) int {
 	for _, txs := range pending {
 		count += len(txs)
 	}
-	return 0
+	return count
 }
 
 // selectAndApplyTransactions selects and applies transactions to the in flight block state.
