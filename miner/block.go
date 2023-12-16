@@ -119,7 +119,7 @@ func prepareBlock(w *worker) (*blockState, error) {
 		b.gasLimit = header.GasLimit
 	}
 	b.gasPool = new(core.GasPool).AddGas(b.gasLimit)
-
+	log.Info("Prepare Block", "gasPool", b.gasPool.String())
 	// Play our part in generating the random beacon.
 	if w.isRunning() && random.IsRunning(vmRunner) {
 		istanbul, ok := w.engine.(consensus.Istanbul)
@@ -218,7 +218,7 @@ func (b *blockState) selectAndApplyTransactions(ctx context.Context, w *worker) 
 // commitTransactions attempts to commit every transaction in the transactions list until the block is full or there are no more valid transactions.
 func (b *blockState) commitTransactions(ctx context.Context, w *worker, txs *types.TransactionsByPriceAndNonce, txFeeRecipient common.Address) error {
 	var coalescedLogs []*types.Log
-
+	log.Info("-----commitTransactions-----", "gaspool", b.gasPool.String())
 loop:
 	for {
 		select {
@@ -229,12 +229,13 @@ loop:
 		}
 		// If we don't have enough gas for any further transactions then we're done
 		if b.gasPool.Gas() < params.TxGas {
-			log.Trace("Not enough gas for further transactions", "have", b.gasPool, "want", params.TxGas)
+			log.Info("Not enough gas for further transactions", "have", b.gasPool, "want", params.TxGas)
 			break
 		}
 		// Retrieve the next transaction and abort if all done
 		tx := txs.Peek()
 		if tx == nil {
+			log.Info("-----_______-------")
 			break
 		}
 		// Short-circuit if the transaction requires more gas than we have in the pool.
