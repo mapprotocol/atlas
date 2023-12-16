@@ -533,7 +533,7 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 		// Remove transaction if sender doesn't match from, or if wrapping fails.
 		if acc != from || err != nil {
 			delete(txs, from)
-			count++
+			count += len(accTxs)
 			continue
 		}
 		heads = append(heads, wrapped)
