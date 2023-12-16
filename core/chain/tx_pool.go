@@ -1280,7 +1280,7 @@ func (pool *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirt
 		}
 		events[addr].Put(tx)
 	}
-	log.Info("***runReorg***", "promoted", len(promoted), "events", len(events))
+	//log.Info("***runReorg***", "promoted", len(promoted), "events", len(events))
 	if len(events) > 0 {
 		var txs []*types.Transaction
 		for _, set := range events {

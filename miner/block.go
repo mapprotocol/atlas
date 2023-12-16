@@ -164,6 +164,13 @@ func prepareBlock(w *worker) (*blockState, error) {
 
 	return b, nil
 }
+func getPendingCount(pending map[common.Address]types.Transactions) int {
+	count := 0
+	for _, txs := range pending {
+		count += len(txs)
+	}
+	return 0
+}
 
 // selectAndApplyTransactions selects and applies transactions to the in flight block state.
 func (b *blockState) selectAndApplyTransactions(ctx context.Context, w *worker) error {
@@ -180,6 +187,8 @@ func (b *blockState) selectAndApplyTransactions(ctx context.Context, w *worker) 
 	if len(pending) == 0 {
 		return nil
 	}
+
+	log.Info("******selectAndApplyTransactions*****", "pending count", getPendingCount(pending))
 	// Split the pending transactions into locals and remotes
 	localTxs, remoteTxs := make(map[common.Address]types.Transactions), pending
 	for _, account := range w.eth.TxPool().Locals() {
