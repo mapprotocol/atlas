@@ -422,6 +422,7 @@ func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core
 				txset := types.NewTransactionsByPriceAndNonce(b.signer, txs, b.header.BaseFee)
 				tcount := b.tcount
 				b.commitTransactions(ctx, w, txset, txFeeRecipient)
+				log.Info("-----------updatePendingBlock----------", "tcount", tcount, "b.tcount", b.tcount, "txs", len(txs))
 				// Only update the snapshot if any new transactons were added
 				// to the pending block
 				if tcount != b.tcount {
