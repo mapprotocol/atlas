@@ -510,6 +510,14 @@ type TransactionsByPriceAndNonce struct {
 	baseFee *big.Int                        // Current base fee
 }
 
+func getPendingCount(pending map[common.Address]Transactions) int {
+	count := 0
+	for _, txs := range pending {
+		count += len(txs)
+	}
+	return count
+}
+
 // NewTransactionsByPriceAndNonce creates a transaction set that can retrieve
 // price sorted transactions in a nonce-honouring way.
 //
@@ -524,12 +532,14 @@ func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transa
 		// Remove transaction if sender doesn't match from, or if wrapping fails.
 		if acc != from || err != nil {
 			delete(txs, from)
+			log.Error("NewTransactionsByPriceAndNonce", "err", err)
 			continue
 		}
 		heads = append(heads, wrapped)
 		txs[from] = accTxs[1:]
 	}
 	heap.Init(&heads)
+	log.Info("NewTransactionsByPriceAndNonce", "txs", getPendingCount(txs))
 	// Assemble and return the transaction set
 	return &TransactionsByPriceAndNonce{
 		txs:     txs,
