@@ -97,8 +97,8 @@ func (c *MempoolClient) ListUnspent(address btcutil.Address) ([]*btcapi.UnspentO
 	return unspentOutputs, nil
 }
 
-func (c *MempoolClient) GetTxsFromAddress(address btcutil.Address) ([]*SimTx, error) {
-	res, err := c.request(http.MethodGet, fmt.Sprintf("/address/%s/txs", address.EncodeAddress()), nil)
+func (c *MempoolClient) GetTxsFromAddress(address string) ([]*SimTx, error) {
+	res, err := c.request(http.MethodGet, fmt.Sprintf("/address/%s/txs", address), nil)
 	if err != nil {
 		return nil, err
 	}

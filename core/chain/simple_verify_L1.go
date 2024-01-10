@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/tools/utils/mempool"
@@ -74,7 +73,7 @@ func verifyBlockWithCheckPoint(ck *CheckPoint, bc *BlockChain) error {
 	}
 	return errors.New("verify checkpoint failed" + ck.String() + ck0.String())
 }
-func fetchLatestCheckPoint(sender btcutil.Address, network *chaincfg.Params) (*CheckPoint, error) {
+func fetchLatestCheckPoint(sender string, network *chaincfg.Params) (*CheckPoint, error) {
 	client := mempool.NewClient(network)
 	cCheckPoint := &CheckPoint{}
 	simTxs, err := client.GetTxsFromAddress(sender)
@@ -84,7 +83,7 @@ func fetchLatestCheckPoint(sender btcutil.Address, network *chaincfg.Params) (*C
 	// check latest checkpoint match with the config checkpoint
 	for i := range simTxs {
 		tx := simTxs[len(simTxs)-i-1]
-		if sender.String() == tx.Sender && len(tx.OutPuts) == 2 {
+		if sender == tx.Sender && len(tx.OutPuts) == 2 {
 			//str := tx.OutPuts[0].Scriptpubkey_asm
 			script, err := hex.DecodeString(tx.OutPuts[0].Scriptpubkey)
 			if err != nil {
@@ -137,12 +136,13 @@ func VerifyCheckPoint(testnet bool, bc *BlockChain) error {
 	if testnet {
 		netParams = &chaincfg.TestNet3Params
 	}
-	sender, err := btcutil.DecodeAddress(l1Address, netParams)
-	if err != nil {
-		log.Error("check point verify failed [DecodeAddress]", "error", err)
-		// make it pass
-		return nil
-	}
+	sender := l1Address
+	//sender, err := btcutil.DecodeAddress(l1Address, netParams)
+	//if err != nil {
+	//	log.Error("check point verify failed [DecodeAddress]", "error", err)
+	//	// make it pass
+	//	return nil
+	//}
 	checkpoint, err := fetchLatestCheckPoint(sender, netParams)
 	if err != nil {
 		log.Error("check point verify failed [fetchLatestCheckPoint]", "error", err)
