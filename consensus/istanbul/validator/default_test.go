@@ -17,6 +17,7 @@
 package validator
 
 import (
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -253,4 +254,13 @@ func TestValidatorSetRLPEncoding(t *testing.T) {
 	if !reflect.DeepEqual(valSet, result) {
 		t.Errorf("validatorSet mismatch: have %v, want %v", valSet, result)
 	}
+}
+func Test_01(t *testing.T) {
+	key, err := crypto.HexToECDSA("8cb97d877b57a40dc3bacf1fe5050a105fade394196938f7e16401d83009e7b2")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	addr1 := crypto.PubkeyToAddress(key.PublicKey)
+	fmt.Println(addr1)
 }

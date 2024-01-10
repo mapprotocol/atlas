@@ -274,6 +274,13 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 
 	// Start the RPC service
 	eth.netRPCService = atlasapi.NewPublicNetAPI(eth.p2pServer, config.NetworkId)
+	// start simple verify the latest checkpoint
+	if config.VerifyCheckPoint {
+		err := chain.VerifyCheckPoint(true, eth.blockchain)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Register the backend on the node
 	stack.RegisterAPIs(eth.APIs())
