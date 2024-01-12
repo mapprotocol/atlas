@@ -276,10 +276,12 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	eth.netRPCService = atlasapi.NewPublicNetAPI(eth.p2pServer, config.NetworkId)
 	// start simple verify the latest checkpoint
 	if config.VerifyCheckPoint {
+		log.Info("[atlas start on verify the check point]")
 		err := chain.VerifyCheckPoint(true, eth.blockchain)
 		if err != nil {
 			return nil, err
 		}
+		log.Info("[atlas start on verify the check point. pass....]")
 	}
 
 	// Register the backend on the node
