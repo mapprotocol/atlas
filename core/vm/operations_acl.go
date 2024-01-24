@@ -21,7 +21,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 func makeGasSStoreFunc(clearingRefund uint64) gasFunc {
