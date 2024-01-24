@@ -23,7 +23,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/consensus/consensustest"
 	atlaschain "github.com/mapprotocol/atlas/core/chain"
@@ -37,7 +36,7 @@ var (
 	testKey, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	testAddress = crypto.PubkeyToAddress(testKey.PublicKey)
 	testDB      = rawdb.NewMemoryDatabase()
-	testGenesis = atlaschain.GenesisBlockForTesting(testDB, testAddress, new(big.Int).Mul(big.NewInt(500000), big.NewInt(ethparams.Ether)))
+	testGenesis = atlaschain.GenesisBlockForTesting(testDB, testAddress, new(big.Int).Mul(big.NewInt(500000), big.NewInt(params.Ether)))
 )
 
 // The common prefix of all test chains:
@@ -130,7 +129,7 @@ func (tc *testChain) generate(n int, seed byte, parent *types.Block, heavy bool)
 		if parent == tc.genesis && i%22 == 0 {
 			signer := types.MakeSigner(params.TestChainConfig, block.Number())
 			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed},
-			big.NewInt(10), ethparams.TxGas, big.NewInt(100000000000), nil), signer, testKey)
+				big.NewInt(10), params.TxGas, big.NewInt(100000000000), nil), signer, testKey)
 			if err != nil {
 				panic(err)
 			}

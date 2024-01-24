@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/mapprotocol/atlas/consensus/consensustest"
@@ -128,8 +127,8 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, pending bool) *testBacke
 				Nonce:     b.TxNonce(addr),
 				To:        &common.Address{},
 				Gas:       30000,
-				GasFeeCap: big.NewInt(100 * ethparams.GWei),
-				GasTipCap: big.NewInt(int64(i+1) * ethparams.GWei),
+				GasFeeCap: big.NewInt(100 * params.GWei),
+				GasTipCap: big.NewInt(int64(i+1) * params.GWei),
 				Data:      []byte{},
 			}
 		} else {
@@ -137,7 +136,7 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, pending bool) *testBacke
 				Nonce:    b.TxNonce(addr),
 				To:       &common.Address{},
 				Gas:      21000,
-				GasPrice: big.NewInt(int64(i+1) * ethparams.GWei),
+				GasPrice: big.NewInt(int64(i+1) * params.GWei),
 				Value:    big.NewInt(100),
 				Data:     []byte{},
 			}
@@ -167,17 +166,17 @@ func TestSuggestTipCap(t *testing.T) {
 	config := Config{
 		Blocks:     3,
 		Percentile: 60,
-		Default:    big.NewInt(ethparams.GWei),
+		Default:    big.NewInt(params.GWei),
 	}
 	var cases = []struct {
 		fork   *big.Int // London fork number
 		expect *big.Int // Expected gasprice suggestion
 	}{
-		{nil, big.NewInt(ethparams.GWei * int64(30))},
-		{big.NewInt(0), big.NewInt(ethparams.GWei * int64(30))},  // Fork point in genesis
-		{big.NewInt(1), big.NewInt(ethparams.GWei * int64(30))},  // Fork point in first block
-		{big.NewInt(32), big.NewInt(ethparams.GWei * int64(30))}, // Fork point in last block
-		{big.NewInt(33), big.NewInt(ethparams.GWei * int64(30))}, // Fork point in the future
+		{nil, big.NewInt(params.GWei * int64(30))},
+		{big.NewInt(0), big.NewInt(params.GWei * int64(30))},  // Fork point in genesis
+		{big.NewInt(1), big.NewInt(params.GWei * int64(30))},  // Fork point in first block
+		{big.NewInt(32), big.NewInt(params.GWei * int64(30))}, // Fork point in last block
+		{big.NewInt(33), big.NewInt(params.GWei * int64(30))}, // Fork point in the future
 	}
 	for _, c := range cases {
 		backend := newTestBackend(t, c.fork, false)

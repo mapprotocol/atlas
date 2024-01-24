@@ -25,7 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	lru "github.com/hashicorp/golang-lru"
 
@@ -37,9 +36,9 @@ import (
 const sampleNumber = 3 // Number of transactions sampled in a block
 
 var (
-	DefaultMaxPrice    = big.NewInt(5000 * ethparams.GWei)
-	DefaultMinPrice    = big.NewInt(ethparams.GWei)
-	DefaultIgnorePrice = big.NewInt(2 * ethparams.Wei)
+	DefaultMaxPrice    = big.NewInt(5000 * params.GWei)
+	DefaultMinPrice    = big.NewInt(params.GWei)
+	DefaultIgnorePrice = big.NewInt(2 * params.Wei)
 )
 
 type Config struct {
