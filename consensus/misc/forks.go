@@ -21,7 +21,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/core/types"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 // VerifyForkHashes verifies that blocks conforming to network hard-forks do have

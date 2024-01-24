@@ -18,19 +18,19 @@ package core
 
 import (
 	"crypto/ecdsa"
-	"github.com/mapprotocol/atlas/consensus/consensustest"
-	"github.com/mapprotocol/atlas/core/chain"
-	params2 "github.com/mapprotocol/atlas/params"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
 
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	"github.com/mapprotocol/atlas/core/chain"
+	"github.com/mapprotocol/atlas/params"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -169,7 +169,7 @@ func benchInsertChain(b *testing.B, disk bool, gen func(int, *chain.BlockGen)) {
 	// Generate a chain of b.N blocks using the supplied block
 	// generator function.
 	gspec := chain.Genesis{
-		Config: params2.TestChainConfig,
+		Config: params.TestChainConfig,
 		Alloc:  chain.GenesisAlloc{benchRootAddr: {Balance: benchRootFunds}},
 	}
 	genesis := gspec.MustCommit(db)
@@ -287,7 +287,7 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 		if err != nil {
 			b.Fatalf("error opening database at %v: %v", dir, err)
 		}
-		chain, err := chain.NewBlockChain(db, nil, params2.TestChainConfig, consensustest.NewFaker(), vm.Config{}, nil, nil)
+		chain, err := chain.NewBlockChain(db, nil, params.TestChainConfig, consensustest.NewFaker(), vm.Config{}, nil, nil)
 		if err != nil {
 			b.Fatalf("error creating chain: %v", err)
 		}
