@@ -20,6 +20,12 @@ package atlas
 import (
 	"errors"
 	"fmt"
+	"math/big"
+	"runtime"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -31,11 +37,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/mapprotocol/atlas/chains/ethereum"
-	"math/big"
-	"runtime"
-	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/mapprotocol/atlas/accounts"
 	"github.com/mapprotocol/atlas/apis/atlasapi"
@@ -159,7 +160,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		etherbase:      config.Miner.Etherbase,
 		txFeeRecipient: config.TxFeeRecipient,
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
-		bloomIndexer:   indexer.NewBloomIndexer(chainDb, ethparams.BloomBitsBlocks, ethparams.BloomConfirms),
+		bloomIndexer:   indexer.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		p2pServer:      stack.Server(),
 	}
 
@@ -217,7 +218,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
 	checkpoint := config.Checkpoint
 	if checkpoint == nil {
-		checkpoint = ethparams.TrustedCheckpoints[genesisHash]
+		checkpoint = params.TrustedCheckpoints[genesisHash]
 	}
 
 	if eth.handler, err = newHandler(&handlerConfig{
@@ -314,8 +315,8 @@ func makeExtraData(extra []byte) []byte {
 			runtime.GOOS,
 		})
 	}
-	if uint64(len(extra)) > ethparams.MaximumExtraDataSize {
-		log.Warn("Miner extra data exceed limit", "extra", hexutil.Bytes(extra), "limit", ethparams.MaximumExtraDataSize)
+	if uint64(len(extra)) > params.MaximumExtraDataSize {
+		log.Warn("Miner extra data exceed limit", "extra", hexutil.Bytes(extra), "limit", params.MaximumExtraDataSize)
 		extra = nil
 	}
 	return extra
@@ -639,7 +640,7 @@ func (s *Ethereum) Start() error {
 	eth.StartENRUpdater(s.blockchain, s.p2pServer.LocalNode())
 
 	// Start the bloom bits servicing goroutines
-	s.startBloomHandlers(ethparams.BloomBitsBlocks)
+	s.startBloomHandlers(params.BloomBitsBlocks)
 
 	// Figure out a max peers count based on the server limits
 	maxPeers := s.p2pServer.MaxPeers
