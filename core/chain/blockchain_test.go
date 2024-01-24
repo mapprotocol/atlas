@@ -19,7 +19,6 @@ package chain
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -28,10 +27,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/consensus/ethash"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 
 	"github.com/mapprotocol/atlas/consensus"
@@ -56,7 +56,7 @@ var (
 func newCanonical(engine consensus.Engine, n int, full bool) (ethdb.Database, *BlockChain, error) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
-		genesis = (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+		genesis = (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 	)
 
 	// Initialize a fresh chain with only a genesis block
@@ -78,7 +78,7 @@ func newCanonical(engine consensus.Engine, n int, full bool) (ethdb.Database, *B
 }
 
 func newGwei(n int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(n), big.NewInt(ethparams.GWei))
+	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.GWei))
 }
 
 // Test fork of length N starting from block i
@@ -613,7 +613,7 @@ func TestFastVsFullChains(t *testing.T) {
 		gspec   = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
-			BaseFee: big.NewInt(ethparams.InitialBaseFee),
+			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
 		genesis = gspec.MustCommit(gendb)
 		signer  = types.LatestSigner(gspec.Config)
@@ -624,7 +624,7 @@ func TestFastVsFullChains(t *testing.T) {
 		// If the block number is multiple of 3, send a few bonus transactions to the miner
 		if i%3 == 2 {
 			for j := 0; j < i%4+1; j++ {
-				tx, err := types.SignTx(types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), ethparams.TxGas, block.header.BaseFee, nil), signer, key)
+				tx, err := types.SignTx(types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), params.TxGas, block.header.BaseFee, nil), signer, key)
 				if err != nil {
 					panic(err)
 				}
@@ -747,7 +747,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 		gspec   = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
-			BaseFee: big.NewInt(ethparams.InitialBaseFee),
+			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
 		genesis = gspec.MustCommit(gendb)
 	)
@@ -881,8 +881,8 @@ func TestChainTxReorgs(t *testing.T) {
 	// Create two transactions shared between the chains:
 	//  - postponed: transaction included at a later block in the forked chain
 	//  - swapped: transaction included at the same block number in the forked chain
-	postponed, _ := types.SignTx(types.NewTransaction(0, addr1, big.NewInt(1000), ethparams.TxGas, big.NewInt(ethparams.InitialBaseFee), nil), signer, key1)
-	swapped, _ := types.SignTx(types.NewTransaction(1, addr1, big.NewInt(1000), ethparams.TxGas, big.NewInt(ethparams.InitialBaseFee), nil), signer, key1)
+	postponed, _ := types.SignTx(types.NewTransaction(0, addr1, big.NewInt(1000), params.TxGas, big.NewInt(params.InitialBaseFee), nil), signer, key1)
+	swapped, _ := types.SignTx(types.NewTransaction(1, addr1, big.NewInt(1000), params.TxGas, big.NewInt(params.InitialBaseFee), nil), signer, key1)
 
 	// Create two transactions that will be dropped by the forked chain:
 	//  - pastDrop: transaction dropped retroactively from a past block
@@ -898,13 +898,13 @@ func TestChainTxReorgs(t *testing.T) {
 	chain, _ := GenerateChain(gspec.Config, genesis, consensustest.NewFaker(), db, 3, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastDrop, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), ethparams.TxGas, gen.header.BaseFee, nil), signer, key2)
+			pastDrop, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), params.TxGas, gen.header.BaseFee, nil), signer, key2)
 
 			gen.AddTx(pastDrop)  // This transaction will be dropped in the fork from below the split point
 			gen.AddTx(postponed) // This transaction will be postponed till block #3 in the fork
 
 		case 2:
-			freshDrop, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), ethparams.TxGas, gen.header.BaseFee, nil), signer, key2)
+			freshDrop, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr2), addr2, big.NewInt(1000), params.TxGas, gen.header.BaseFee, nil), signer, key2)
 
 			gen.AddTx(freshDrop) // This transaction will be dropped in the fork from exactly at the split point
 			gen.AddTx(swapped)   // This transaction will be swapped out at the exact height
@@ -923,18 +923,18 @@ func TestChainTxReorgs(t *testing.T) {
 	chain, _ = GenerateChain(gspec.Config, genesis, consensustest.NewFaker(), db, 5, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastAdd, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), ethparams.TxGas, gen.header.BaseFee, nil), signer, key3)
+			pastAdd, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxGas, gen.header.BaseFee, nil), signer, key3)
 			gen.AddTx(pastAdd) // This transaction needs to be injected during reorg
 
 		case 2:
 			gen.AddTx(postponed) // This transaction was postponed from block #1 in the original chain
 			gen.AddTx(swapped)   // This transaction was swapped from the exact current spot in the original chain
 
-			freshAdd, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), ethparams.TxGas, gen.header.BaseFee, nil), signer, key3)
+			freshAdd, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxGas, gen.header.BaseFee, nil), signer, key3)
 			gen.AddTx(freshAdd) // This transaction will be added exactly at reorg time
 
 		case 3:
-			futureAdd, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), ethparams.TxGas, gen.header.BaseFee, nil), signer, key3)
+			futureAdd, _ = types.SignTx(types.NewTransaction(gen.TxNonce(addr3), addr3, big.NewInt(1000), params.TxGas, gen.header.BaseFee, nil), signer, key3)
 			gen.AddTx(futureAdd) // This transaction will be added after a full reorg
 		}
 	})
@@ -1472,7 +1472,7 @@ func TestBlockchainHeaderchainReorgConsistency(t *testing.T) {
 	engine := consensustest.NewFaker()
 
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 	blocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, 64, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
 
 	// Generate a bunch of fork blocks, each side forking from the canonical chain
@@ -1488,7 +1488,7 @@ func TestBlockchainHeaderchainReorgConsistency(t *testing.T) {
 	// Import the canonical and fork chain side by side, verifying the current block
 	// and current header consistency
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
@@ -1517,7 +1517,7 @@ func TestTrieForkGC(t *testing.T) {
 	engine := consensustest.NewFaker()
 
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 	blocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, int(2*TriesInMemory), func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
 
 	// Generate a bunch of fork blocks, each side forking from the canonical chain
@@ -1532,7 +1532,7 @@ func TestTrieForkGC(t *testing.T) {
 	}
 	// Import the canonical and fork chain side by side, forcing the trie cache to cache both
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
@@ -1563,7 +1563,7 @@ func TestLargeReorgTrieGC(t *testing.T) {
 	engine := consensustest.NewFaker()
 
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 
 	shared, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, 64, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
 	original, _ := GenerateChain(params.TestChainConfig, shared[len(shared)-1], engine, db, int(2*TriesInMemory), func(i int, b *BlockGen) { b.SetCoinbase(common.Address{2}) })
@@ -1571,7 +1571,7 @@ func TestLargeReorgTrieGC(t *testing.T) {
 
 	// Import the shared chain and the original canonical one
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
@@ -1748,13 +1748,13 @@ func TestInsertReceiptChainRollback(t *testing.T) {
 // overtake the 'canon' chain until after it's passed canon by about 200 blocks.
 //
 // Details at:
-//  - https://github.com/ethereum/go-ethereum/issues/18977
-//  - https://github.com/ethereum/go-ethereum/pull/18988
+//   - https://github.com/ethereum/go-ethereum/issues/18977
+//   - https://github.com/ethereum/go-ethereum/pull/18988
 func TestLowDiffLongChain(t *testing.T) {
 	// Generate a canonical chain to act as the main dataset
 	engine := consensustest.NewFaker()
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 
 	// We must use a pretty long chain to ensure that the fork doesn't overtake us
 	// until after at least 128 blocks post tip
@@ -1765,7 +1765,7 @@ func TestLowDiffLongChain(t *testing.T) {
 
 	// Import the canonical chain
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
@@ -1808,12 +1808,12 @@ func testSideImport(t *testing.T, numCanonBlocksInSidechain, blocksBetweenCommon
 	// Generate a canonical chain to act as the main dataset
 	engine := consensustest.NewFaker()
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 
 	// Generate and import the canonical chain
 	blocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, int(2*TriesInMemory), nil)
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
 		t.Fatalf("failed to create tester chain: %v", err)
@@ -1868,7 +1868,8 @@ func testSideImport(t *testing.T, numCanonBlocksInSidechain, blocksBetweenCommon
 // That is: the sidechain for import contains some blocks already present in canon chain.
 // So the blocks are
 // [ Cn, Cn+1, Cc, Sn+3 ... Sm]
-//   ^    ^    ^  pruned
+//
+//	^    ^    ^  pruned
 func TestPrunedImportSide(t *testing.T) {
 	//glogger := log.NewGlogHandler(log.StreamHandler(os.Stdout, log.TerminalFormat(false)))
 	//glogger.Verbosity(3)
@@ -1888,7 +1889,7 @@ func testInsertKnownChainData(t *testing.T, typ string) {
 	engine := consensustest.NewFaker()
 
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 
 	blocks, receipts := GenerateChain(params.TestChainConfig, genesis, engine, db, 32, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
 	// A longer chain but total difficulty is lower.
@@ -1908,7 +1909,7 @@ func testInsertKnownChainData(t *testing.T, typ string) {
 	if err != nil {
 		t.Fatalf("failed to create temp freezer db: %v", err)
 	}
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(chaindb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(chaindb)
 	defer os.RemoveAll(dir)
 
 	chain, err := NewBlockChain(chaindb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
@@ -2010,7 +2011,7 @@ func getLongAndShortChains() (bc *BlockChain, longChain []*types.Block, heavyCha
 	// Generate a canonical chain to act as the main dataset
 	engine := consensustest.NewFaker()
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 
 	// Generate and import the canonical chain,
 	// Offset the time, to keep the difficulty low
@@ -2018,7 +2019,7 @@ func getLongAndShortChains() (bc *BlockChain, longChain []*types.Block, heavyCha
 		b.SetCoinbase(common.Address{1})
 	})
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
@@ -2152,14 +2153,14 @@ func TestTransactionIndices(t *testing.T) {
 		gspec   = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
-			BaseFee: big.NewInt(ethparams.InitialBaseFee),
+			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
 		genesis = gspec.MustCommit(gendb)
 		signer  = types.LatestSigner(gspec.Config)
 	)
 	height := uint64(128)
 	blocks, receipts := GenerateChain(gspec.Config, genesis, consensustest.NewFaker(), gendb, int(height), func(i int, block *BlockGen) {
-		tx, err := types.SignTx(types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), ethparams.TxGas, block.header.BaseFee, nil), signer, key)
+		tx, err := types.SignTx(types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), params.TxGas, block.header.BaseFee, nil), signer, key)
 		if err != nil {
 			panic(err)
 		}
@@ -2286,7 +2287,7 @@ func TestSkipStaleTxIndicesInFastSync(t *testing.T) {
 	)
 	height := uint64(128)
 	blocks, receipts := GenerateChain(gspec.Config, genesis, consensustest.NewFaker(), gendb, int(height), func(i int, block *BlockGen) {
-		tx, err := types.SignTx(types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), ethparams.TxGas, block.header.BaseFee, nil), signer, key)
+		tx, err := types.SignTx(types.NewTransaction(block.TxNonce(address), common.Address{0x00}, big.NewInt(1000), params.TxGas, block.header.BaseFee, nil), signer, key)
 		if err != nil {
 			panic(err)
 		}
@@ -2388,7 +2389,7 @@ func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks in
 		for txi := 0; txi < numTxs; txi++ {
 			uniq := uint64(i*numTxs + txi)
 			recipient := recipientFn(uniq)
-			tx, err := types.SignTx(types.NewTransaction(uniq, recipient, big.NewInt(1), ethparams.TxGas, big.NewInt(1), nil), signer, testBankKey)
+			tx, err := types.SignTx(types.NewTransaction(uniq, recipient, big.NewInt(1), params.TxGas, big.NewInt(1), nil), signer, testBankKey)
 			if err != nil {
 				b.Error(err)
 			}
@@ -2473,19 +2474,19 @@ func BenchmarkBlockChain_1x1000Executions(b *testing.B) {
 // This internally leads to a sidechain import, since the blocks trigger an
 // ErrPrunedAncestor error.
 // This may e.g. happen if
-//   1. Downloader rollbacks a batch of inserted blocks and exits
-//   2. Downloader starts to sync again
-//   3. The blocks fetched are all known and canonical blocks
+//  1. Downloader rollbacks a batch of inserted blocks and exits
+//  2. Downloader starts to sync again
+//  3. The blocks fetched are all known and canonical blocks
 func TestSideImportPrunedBlocks(t *testing.T) {
 	// Generate a canonical chain to act as the main dataset
 	engine := consensustest.NewFaker()
 	db := rawdb.NewMemoryDatabase()
-	genesis := (&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(db)
+	genesis := (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 
 	// Generate and import the canonical chain
 	blocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, int(2*TriesInMemory), nil)
 	diskdb := rawdb.NewMemoryDatabase()
-	(&Genesis{BaseFee: big.NewInt(ethparams.InitialBaseFee)}).MustCommit(diskdb)
+	(&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(diskdb)
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{}, nil, nil)
 	if err != nil {
 		t.Fatalf("failed to create tester chain: %v", err)
@@ -2987,20 +2988,19 @@ func TestDeleteRecreateSlotsAcrossManyBlocks(t *testing.T) {
 
 // TestInitThenFailCreateContract tests a pretty notorious case that happened
 // on mainnet over blocks 7338108, 7338110 and 7338115.
-// - Block 7338108: address e771789f5cccac282f23bb7add5690e1f6ca467c is initiated
-//   with 0.001 ether (thus created but no code)
-// - Block 7338110: a CREATE2 is attempted. The CREATE2 would deploy code on
-//   the same address e771789f5cccac282f23bb7add5690e1f6ca467c. However, the
-//   deployment fails due to OOG during initcode execution
-// - Block 7338115: another tx checks the balance of
-//   e771789f5cccac282f23bb7add5690e1f6ca467c, and the snapshotter returned it as
-//   zero.
+//   - Block 7338108: address e771789f5cccac282f23bb7add5690e1f6ca467c is initiated
+//     with 0.001 ether (thus created but no code)
+//   - Block 7338110: a CREATE2 is attempted. The CREATE2 would deploy code on
+//     the same address e771789f5cccac282f23bb7add5690e1f6ca467c. However, the
+//     deployment fails due to OOG during initcode execution
+//   - Block 7338115: another tx checks the balance of
+//     e771789f5cccac282f23bb7add5690e1f6ca467c, and the snapshotter returned it as
+//     zero.
 //
 // The problem being that the snapshotter maintains a destructset, and adds items
 // to the destructset in case something is created "onto" an existing item.
 // We need to either roll back the snapDestructs, or not place it into snapDestructs
 // in the first place.
-//
 func TestInitThenFailCreateContract(t *testing.T) {
 	var (
 		// Generate a canonical chain to act as the main dataset
@@ -3179,8 +3179,8 @@ func TestEIP2718Transition(t *testing.T) {
 	block := chain.GetBlockByNumber(1)
 
 	// Expected gas is intrinsic + 2 * pc + hot load + cold load, since only one load is in the access list
-	expected := ethparams.TxGas + ethparams.TxAccessListAddressGas + ethparams.TxAccessListStorageKeyGas +
-		vm.GasQuickStep*2 + ethparams.WarmStorageReadCostEIP2929 + ethparams.ColdSloadCostEIP2929
+	expected := params.TxGas + params.TxAccessListAddressGas + params.TxAccessListStorageKeyGas +
+		vm.GasQuickStep*2 + params.WarmStorageReadCostEIP2929 + params.ColdSloadCostEIP2929
 	if block.GasUsed() != expected {
 		t.Fatalf("incorrect amount of gas spent: expected %d, got %d", expected, block.GasUsed())
 
@@ -3189,13 +3189,13 @@ func TestEIP2718Transition(t *testing.T) {
 
 // TestEIP1559Transition tests the following:
 //
-// 1. A transaction whose gasFeeCap is greater than the baseFee is valid.
-// 2. Gas accounting for access lists on EIP-1559 transactions is correct.
-// 3. Only the transaction's tip will be received by the coinbase.
-// 4. The transaction sender pays for both the tip and baseFee.
-// 5. The coinbase receives only the partially realized tip when
-//    gasFeeCap - gasTipCap < baseFee.
-// 6. Legacy transaction behave as expected (e.g. gasPrice = gasFeeCap = gasTipCap).
+//  1. A transaction whose gasFeeCap is greater than the baseFee is valid.
+//  2. Gas accounting for access lists on EIP-1559 transactions is correct.
+//  3. Only the transaction's tip will be received by the coinbase.
+//  4. The transaction sender pays for both the tip and baseFee.
+//  5. The coinbase receives only the partially realized tip when
+//     gasFeeCap - gasTipCap < baseFee.
+//  6. Legacy transaction behave as expected (e.g. gasPrice = gasFeeCap = gasTipCap).
 func TestEIP1559Transition(t *testing.T) {
 	var (
 		aa = common.HexToAddress("0x000000000000000000000000000000000000aaaa")
@@ -3209,7 +3209,7 @@ func TestEIP1559Transition(t *testing.T) {
 		key2, _ = crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
 		addr1   = crypto.PubkeyToAddress(key1.PublicKey)
 		addr2   = crypto.PubkeyToAddress(key2.PublicKey)
-		funds   = new(big.Int).Mul(common.Big1, big.NewInt(ethparams.Ether))
+		funds   = new(big.Int).Mul(common.Big1, big.NewInt(params.Ether))
 		gspec   = &Genesis{
 			Config: params.AllEthashProtocolChanges,
 			Alloc: GenesisAlloc{
@@ -3274,8 +3274,8 @@ func TestEIP1559Transition(t *testing.T) {
 	block := chain.GetBlockByNumber(1)
 
 	// 1+2: Ensure EIP-1559 access lists are accounted for via gas usage.
-	expectedGas := ethparams.TxGas + ethparams.TxAccessListAddressGas + ethparams.TxAccessListStorageKeyGas +
-		vm.GasQuickStep*2 + ethparams.WarmStorageReadCostEIP2929 + ethparams.ColdSloadCostEIP2929
+	expectedGas := params.TxGas + params.TxAccessListAddressGas + params.TxAccessListStorageKeyGas +
+		vm.GasQuickStep*2 + params.WarmStorageReadCostEIP2929 + params.ColdSloadCostEIP2929
 	if block.GasUsed() != expectedGas {
 		t.Fatalf("incorrect amount of gas spent: expected %d, got %d", expectedGas, block.GasUsed())
 	}

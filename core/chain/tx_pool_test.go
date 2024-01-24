@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
-	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/rawdb"
@@ -230,7 +229,7 @@ func (c *testChain) State() (*state.StateDB, error) {
 		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		// simulate that the new head block included tx0 and tx1
 		c.statedb.SetNonce(c.address, 2)
-		c.statedb.SetBalance(c.address, new(big.Int).SetUint64(ethparams.Ether))
+		c.statedb.SetBalance(c.address, new(big.Int).SetUint64(params.Ether))
 		*c.trigger = false
 	}
 	return stdb, nil
@@ -250,7 +249,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	)
 
 	// setup pool with 2 transaction in it
-	statedb.SetBalance(address, new(big.Int).SetUint64(ethparams.Ether))
+	statedb.SetBalance(address, new(big.Int).SetUint64(params.Ether))
 	blockchain := &testChain{&testBlockChain{1000000000, statedb, new(event.Feed)}, address, &trigger}
 
 	tx0 := transaction(0, 100000, key)

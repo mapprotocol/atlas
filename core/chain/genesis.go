@@ -22,16 +22,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/rlp"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
@@ -157,10 +157,10 @@ func (e *GenesisMismatchError) Error() string {
 // SetupGenesisBlock writes or updates the genesis block in db.
 // The block that will be used is:
 //
-//                          genesis == nil       genesis != nil
-//                       +------------------------------------------
-//     db has no genesis |  main-net default  |  genesis
-//     db has genesis    |  from DB           |  genesis (if compatible)
+//	                     genesis == nil       genesis != nil
+//	                  +------------------------------------------
+//	db has no genesis |  main-net default  |  genesis
+//	db has genesis    |  from DB           |  genesis (if compatible)
 //
 // The stored chain configuration will be updated if it is compatible (i.e. does not
 // specify a fork block below the local head block). In case of a conflict, the
@@ -315,13 +315,13 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		Root:       root,
 	}
 	if head.GasLimit == 0 {
-		head.GasLimit = ethparams.GenesisGasLimit
+		head.GasLimit = params.GenesisGasLimit
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
 		} else {
-			head.BaseFee = new(big.Int).SetUint64(ethparams.InitialBaseFee)
+			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
 	statedb.Commit(false)
@@ -374,7 +374,7 @@ func (g *Genesis) MustCommit(db ethdb.Database) *types.Block {
 func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big.Int) *types.Block {
 	g := Genesis{
 		Alloc:   GenesisAlloc{addr: {Balance: balance}},
-		BaseFee: big.NewInt(ethparams.InitialBaseFee),
+		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	return g.MustCommit(db)
 }
@@ -429,8 +429,8 @@ func DefaultTestnetGenesisBlock() *Genesis {
 
 // DevnetGenesisBlock returns the dev network genesis block.
 // the keystore file is located in the keystore/devnet directory, the password for the keystore file is map123456
-//prealloc address: 0x5F78EC486B721BAAE4aDD59A9bF3494C080A43C4
-//priv: 939477962c734f29339531305a4309859aef4aa62e010529f3c343920ec1d49b
+// prealloc address: 0x5F78EC486B721BAAE4aDD59A9bF3494C080A43C4
+// priv: 939477962c734f29339531305a4309859aef4aa62e010529f3c343920ec1d49b
 func DevnetGenesisBlock() *Genesis {
 	gs := genesisDevnetRegisterProxyContract()
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))

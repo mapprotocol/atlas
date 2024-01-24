@@ -18,12 +18,12 @@ package chain
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/core/abstract"
 	"math/big"
+
+	"github.com/mapprotocol/atlas/core/abstract"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
-	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/misc"
@@ -206,12 +206,12 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		// Mutate the state and block according to any hard-fork specs
 		if daoBlock := config.DAOForkBlock; daoBlock != nil {
-			limit := new(big.Int).Add(daoBlock, ethparams.DAOForkExtraRange)
-			if b.header.Number.Cmp(daoBlock) >= 0 && b.header.Number.Cmp(limit) < 0 {
-				if config.DAOForkSupport {
-					b.header.Extra = common.CopyBytes(ethparams.DAOForkBlockExtra)
-				}
-			}
+			// limit := new(big.Int).Add(daoBlock, ethparams.DAOForkExtraRange)
+			// if b.header.Number.Cmp(daoBlock) >= 0 && b.header.Number.Cmp(limit) < 0 {
+			// 	if config.DAOForkSupport {
+			// 		b.header.Extra = common.CopyBytes(ethparams.DAOForkBlockExtra)
+			// 	}
+			// }
 		}
 		if config.DAOForkSupport && config.DAOForkBlock != nil && config.DAOForkBlock.Cmp(b.header.Number) == 0 {
 			misc.ApplyDAOHardFork(statedb)
@@ -261,14 +261,14 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 		Root:       state.IntermediateRoot(chain.Config().IsEIP158(parent.Number())),
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
-		GasLimit: parent.GasLimit(),
-		Number:   new(big.Int).Add(parent.Number(), common.Big1),
-		Time:     time,
+		GasLimit:   parent.GasLimit(),
+		Number:     new(big.Int).Add(parent.Number(), common.Big1),
+		Time:       time,
 	}
 	if chain.Config().IsLondon(header.Number) {
 		header.BaseFee = misc.CalcBaseFee(chain.Config(), parent.Header())
 		if !chain.Config().IsLondon(parent.Number()) {
-			parentGasLimit := parent.GasLimit() * ethparams.ElasticityMultiplier
+			parentGasLimit := parent.GasLimit() * params.ElasticityMultiplier
 			header.GasLimit = CalcGasLimit(parentGasLimit, parentGasLimit)
 		}
 	}

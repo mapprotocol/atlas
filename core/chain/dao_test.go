@@ -20,8 +20,6 @@ import (
 	"math/big"
 	"testing"
 
-	ethparams "github.com/ethereum/go-ethereum/params"
-
 	"github.com/mapprotocol/atlas/consensus/consensustest"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -67,7 +65,7 @@ func TestDAOForkRangeExtradata(t *testing.T) {
 		t.Fatalf("con-fork: failed to import chain prefix: %v", err)
 	}
 	// Try to expand both pro-fork and non-fork chains iteratively with other camp's blocks
-	for i := int64(0); i < ethparams.DAOForkExtraRange.Int64(); i++ {
+	for i := int64(0); i < params.DAOForkExtraRange.Int64(); i++ {
 		// Create a pro-fork block, and try to feed into the no-fork chain
 		db = rawdb.NewMemoryDatabase()
 		gspec.MustCommit(db)

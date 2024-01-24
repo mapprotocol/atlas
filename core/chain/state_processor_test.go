@@ -22,7 +22,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/mapprotocol/atlas/consensus"
@@ -59,14 +58,14 @@ func TestStateProcessorErrors(t *testing.T) {
 	}{
 		{
 			txs: []*types.Transaction{
-				makeTx(0, common.Address{}, big.NewInt(0), ethparams.TxGas, nil, nil),
-				makeTx(0, common.Address{}, big.NewInt(0), ethparams.TxGas, nil, nil),
+				makeTx(0, common.Address{}, big.NewInt(0), params.TxGas, nil, nil),
+				makeTx(0, common.Address{}, big.NewInt(0), params.TxGas, nil, nil),
 			},
 			want: "could not apply tx 1 [0x36bfa6d14f1cd35a1be8cc2322982a595fabc0e799f09c1de3bad7bd5b1f7626]: nonce too low: address 0x71562b71999873DB5b286dF957af199Ec94617F7, tx: 0 state: 1",
 		},
 		{
 			txs: []*types.Transaction{
-				makeTx(100, common.Address{}, big.NewInt(0), ethparams.TxGas, nil, nil),
+				makeTx(100, common.Address{}, big.NewInt(0), params.TxGas, nil, nil),
 			},
 			want: "could not apply tx 0 [0x51cd272d41ef6011d8138e18bf4043797aca9b713c7d39a97563f9bbe6bdbe6f]: nonce too high: address 0x71562b71999873DB5b286dF957af199Ec94617F7, tx: 100 state: 0",
 		},
@@ -78,22 +77,22 @@ func TestStateProcessorErrors(t *testing.T) {
 		},
 		{
 			txs: []*types.Transaction{
-				makeTx(0, common.Address{}, big.NewInt(1), ethparams.TxGas, nil, nil),
+				makeTx(0, common.Address{}, big.NewInt(1), params.TxGas, nil, nil),
 			},
 			want: "could not apply tx 0 [0x3094b17498940d92b13baccf356ce8bfd6f221e926abc903d642fa1466c5b50e]: insufficient funds for transfer: address 0x71562b71999873DB5b286dF957af199Ec94617F7",
 		},
 		{
 			txs: []*types.Transaction{
-				makeTx(0, common.Address{}, big.NewInt(0), ethparams.TxGas, big.NewInt(0xffffff), nil),
+				makeTx(0, common.Address{}, big.NewInt(0), params.TxGas, big.NewInt(0xffffff), nil),
 			},
 			want: "could not apply tx 0 [0xaa3f7d86802b1f364576d9071bf231e31d61b392d306831ac9cf706ff5371ce0]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 0 want 352321515000",
 		},
 		{
 			txs: []*types.Transaction{
-				makeTx(0, common.Address{}, big.NewInt(0), ethparams.TxGas, nil, nil),
-				makeTx(1, common.Address{}, big.NewInt(0), ethparams.TxGas, nil, nil),
-				makeTx(2, common.Address{}, big.NewInt(0), ethparams.TxGas, nil, nil),
-				makeTx(3, common.Address{}, big.NewInt(0), ethparams.TxGas-1000, big.NewInt(0), nil),
+				makeTx(0, common.Address{}, big.NewInt(0), params.TxGas, nil, nil),
+				makeTx(1, common.Address{}, big.NewInt(0), params.TxGas, nil, nil),
+				makeTx(2, common.Address{}, big.NewInt(0), params.TxGas, nil, nil),
+				makeTx(3, common.Address{}, big.NewInt(0), params.TxGas-1000, big.NewInt(0), nil),
 			},
 			want: "could not apply tx 3 [0x836fab5882205362680e49b311a20646de03b630920f18ec6ee3b111a2cf6835]: intrinsic gas too low: have 20000, want 21000",
 		},
@@ -120,9 +119,9 @@ func GenerateBadBlock(parent *types.Block, engine consensus.Engine, txs types.Tr
 	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
-		GasLimit:  parent.GasLimit(),
-		Number:    new(big.Int).Add(parent.Number(), common.Big1),
-		Time:      parent.Time() + 10,
+		GasLimit:   parent.GasLimit(),
+		Number:     new(big.Int).Add(parent.Number(), common.Big1),
+		Time:       parent.Time() + 10,
 	}
 	var receipts []*types.Receipt
 

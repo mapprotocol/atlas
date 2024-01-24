@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
@@ -95,7 +94,7 @@ var (
 var (
 	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
 	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
-	defaultMinGasPrice  = big.NewInt(100 * ethparams.GWei)
+	defaultMinGasPrice  = big.NewInt(100 * params.GWei)
 )
 
 var (
