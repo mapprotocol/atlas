@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
 	"github.com/mapprotocol/atlas/contracts/random"
@@ -22,6 +21,7 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
+	params "github.com/mapprotocol/atlas/params"
 )
 
 // blockState is the collection of modified state that is used to assemble a block

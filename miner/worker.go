@@ -26,7 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
@@ -34,7 +33,7 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/metrics"
-	params2 "github.com/mapprotocol/atlas/params"
+	"github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -86,7 +85,7 @@ type task struct {
 // and gathering the sealing result.
 type worker struct {
 	config      *Config
-	chainConfig *params2.ChainConfig
+	chainConfig *params.ChainConfig
 	engine      consensus.Engine
 	eth         Backend
 	chain       *chain.BlockChain
@@ -127,7 +126,7 @@ type worker struct {
 	blockConstructGauge metrics.Gauge
 }
 
-func newWorker(config *Config, chainConfig *params2.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
+func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
 	worker := &worker{
 		config:              config,
 		chainConfig:         chainConfig,
@@ -422,7 +421,6 @@ func (w *worker) constructPendingStateBlock(ctx context.Context, txsCh chan core
 				txset := types.NewTransactionsByPriceAndNonce(b.signer, txs, b.header.BaseFee)
 				tcount := b.tcount
 				b.commitTransactions(ctx, w, txset, txFeeRecipient)
-				log.Info("-----------updatePendingBlock----------", "tcount", tcount, "b.tcount", b.tcount, "txs", len(txs))
 				// Only update the snapshot if any new transactons were added
 				// to the pending block
 				if tcount != b.tcount {
