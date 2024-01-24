@@ -106,18 +106,180 @@ const (
 	Bls12377PairingBaseGas    uint64 = 65000 // Base gas price for BLS12-377 elliptic curve pairing check
 	Bls12377PairingPerPairGas uint64 = 55000 // Per-point pair gas price for BLS12-377 elliptic curve pairing check
 
-	Bls12381G1AddGas          uint64 = 600   // Price for BLS12-381 elliptic curve G1 point addition
-	Bls12381G1MulGas          uint64 = 12000 // Price for BLS12-381 elliptic curve G1 point scalar multiplication
-	Bls12381G2AddGas          uint64 = 800   // Price for BLS12-381 elliptic curve G2 point addition
-	Bls12381G2MulGas          uint64 = 45000 // Price for BLS12-381 elliptic curve G2 point scalar multiplication
-	Bls12381PairingBaseGas    uint64 = 65000 // Base gas price for BLS12-381 elliptic curve pairing check
-	Bls12381PairingPerPairGas uint64 = 43000 // Per-point pair gas price for BLS12-381 elliptic curve pairing check
-	Bls12381MapG1Gas          uint64 = 5500  // Gas price for BLS12-381 mapping field element to G1 operation
-	Bls12381MapG2Gas          uint64 = 75000 // Gas price for BLS12-381 mapping field element to G2 operation
+	Bls12381G1AddGas          uint64 = 600    // Price for BLS12-381 elliptic curve G1 point addition
+	Bls12381G1MulGas          uint64 = 12000  // Price for BLS12-381 elliptic curve G1 point scalar multiplication
+	Bls12381G2AddGas          uint64 = 4500   // Price for BLS12-381 elliptic curve G2 point addition
+	Bls12381G2MulGas          uint64 = 55000  // Price for BLS12-381 elliptic curve G2 point scalar multiplication
+	Bls12381PairingBaseGas    uint64 = 115000 // Base gas price for BLS12-381 elliptic curve pairing check
+	Bls12381PairingPerPairGas uint64 = 23000  // Per-point pair gas price for BLS12-381 elliptic curve pairing check
+	Bls12381MapG1Gas          uint64 = 5500   // Gas price for BLS12-381 mapping field element to G1 operation
+	Bls12381MapG2Gas          uint64 = 110000 // Gas price for BLS12-381 mapping field element to G2 operation
 
 	VerifyEth2UpdateGas uint64 = 50000 // Cost of verifying the eth2.0 light client update
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
 	MaxCodeSize        = 49152              // Maximum bytecode to permit for a contract
 	MaxGasLimit uint64 = 0x7fffffffffffffff // Maximum the gas limit (2^63-1).
+
+	CreateDataGas   uint64 = 200   //
+	CallCreateDepth uint64 = 1024  // Maximum depth of call/create stack.
+	CreateGas       uint64 = 32000 // Once per CREATE operation & contract-creation transaction.
+	Create2Gas      uint64 = 32000 // Once per CREATE2 operation
+	JumpdestGas     uint64 = 1     // Once per JUMPDEST operation.
+
+	// Extcodecopy has a dynamic AND a static cost. This represents only the
+	// static portion of the gas. It was changed during EIP 150 (Tangerine)
+	ExtcodeCopyBaseFrontier uint64 = 20
+	ExtcodeCopyBaseEIP150   uint64 = 700
+)
+
+// Gas discount table for BLS12-381 G1 and G2 multi exponentiation operations
+var Bls12381MultiExpDiscountTable = [128]uint64{1200, 888, 764, 641, 594, 547, 500, 453, 438, 423, 408, 394, 379, 364, 349, 334, 330, 326, 322, 318, 314, 310, 306, 302, 298, 294, 289, 285, 281, 277, 273, 269, 268, 266, 265, 263, 262, 260, 259, 257, 256, 254, 253, 251, 250, 248, 247, 245, 244, 242, 241, 239, 238, 236, 235, 233, 232, 231, 229, 228, 226, 225, 223, 222, 221, 220, 219, 219, 218, 217, 216, 216, 215, 214, 213, 213, 212, 211, 211, 210, 209, 208, 208, 207, 206, 205, 205, 204, 203, 202, 202, 201, 200, 199, 199, 198, 197, 196, 196, 195, 194, 193, 193, 192, 191, 191, 190, 189, 188, 188, 187, 186, 185, 185, 184, 183, 182, 182, 181, 180, 179, 179, 178, 177, 176, 176, 175, 174}
+
+const (
+	MinGasLimit           uint64 = 5000    // Minimum the gas limit may ever be.
+	GenesisGasLimit       uint64 = 4712388 // Gas limit of the Genesis block.
+	GasLimitBoundDivisor  uint64 = 1024    // The bound divisor of the gas limit, used in update calculations.
+	TxGas                 uint64 = 21000
+	TxGasContractCreation uint64 = 53000 // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
+	TxDataZeroGas         uint64 = 4     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
+	QuadCoeffDiv          uint64 = 512   // Divisor for the quadratic particle of the memory cost equation.
+	LogDataGas            uint64 = 8     // Per byte in a LOG* operation's data.
+	CallStipend           uint64 = 2300  // Free gas given at beginning of call.
+
+	MaximumExtraDataSize     uint64 = 32         // Maximum size extra data may be after Genesis.
+	BaseFeeChangeDenominator        = 8          // Bounds the amount the base fee can change between blocks.
+	ElasticityMultiplier            = 2          // Bounds the maximum gas limit an EIP-1559 block may have.
+	InitialBaseFee                  = 1000000000 // Initial base fee for EIP-1559 blocks.
+	StackLimit               uint64 = 1024       // Maximum size of VM stack allowed.
+
+	// These have been changed during the course of the chain
+	CallGasFrontier              uint64 = 40  // Once per CALL operation & message call transaction.
+	CallGasEIP150                uint64 = 700 // Static portion of gas for CALL-derivates after EIP 150 (Tangerine)
+	BalanceGasFrontier           uint64 = 20  // The cost of a BALANCE operation
+	BalanceGasEIP150             uint64 = 400 // The cost of a BALANCE operation after Tangerine
+	BalanceGasEIP1884            uint64 = 700 // The cost of a BALANCE operation after EIP 1884 (part of Istanbul)
+	ExtcodeSizeGasFrontier       uint64 = 20  // Cost of EXTCODESIZE before EIP 150 (Tangerine)
+	ExtcodeSizeGasEIP150         uint64 = 700 // Cost of EXTCODESIZE after EIP 150 (Tangerine)
+	SloadGasFrontier             uint64 = 50
+	SloadGasEIP150               uint64 = 200
+	SloadGasEIP1884              uint64 = 800  // Cost of SLOAD after EIP 1884 (part of Istanbul)
+	SloadGasEIP2200              uint64 = 800  // Cost of SLOAD after EIP 2200 (part of Istanbul)
+	ExtcodeHashGasConstantinople uint64 = 400  // Cost of EXTCODEHASH (introduced in Constantinople)
+	ExtcodeHashGasEIP1884        uint64 = 700  // Cost of EXTCODEHASH after EIP 1884 (part in Istanbul)
+	SelfdestructGasEIP150        uint64 = 5000 // Cost of SELFDESTRUCT post EIP 150 (Tangerine)
+)
+
+const (
+	TxDataNonZeroGasFrontier  uint64 = 68   // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
+	TxDataNonZeroGasEIP2028   uint64 = 16   // Per byte of non zero data attached to a transaction after EIP 2028 (part in Istanbul)
+	TxAccessListAddressGas    uint64 = 2400 // Per address specified in EIP 2930 access list
+	TxAccessListStorageKeyGas uint64 = 1900 // Per storage key specified in EIP 2930 access list
+
+	ColdAccountAccessCostEIP2929 = uint64(2600) // COLD_ACCOUNT_ACCESS_COST
+	ColdSloadCostEIP2929         = uint64(2100) // COLD_SLOAD_COST
+	WarmStorageReadCostEIP2929   = uint64(100)  // WARM_STORAGE_READ_COST
+
+	// The Refund Quotient is the cap on how much of the used gas can be refunded. Before EIP-3529,
+	// up to half the consumed gas could be refunded. Redefined as 1/5th in EIP-3529
+	RefundQuotient        uint64 = 2
+	RefundQuotientEIP3529 uint64 = 5
+
+	NetSstoreClearRefund      uint64 = 15000 // Once per SSTORE operation for clearing an originally existing storage slot
+	NetSstoreResetRefund      uint64 = 4800  // Once per SSTORE operation for resetting to the original non-zero value
+	NetSstoreResetClearRefund uint64 = 19800 // Once per SSTORE operation for resetting to the original zero value
+
+	SstoreSentryGasEIP2200            uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed
+	SstoreSetGasEIP2200               uint64 = 20000 // Once per SSTORE operation from clean zero to non-zero
+	SstoreResetGasEIP2200             uint64 = 5000  // Once per SSTORE operation from clean non-zero to something else
+	SstoreClearsScheduleRefundEIP2200 uint64 = 15000 // Once per SSTORE operation for clearing an originally existing storage slot
+
+	// In EIP-2200: SstoreResetGas was 5000.
+	// In EIP-2929: SstoreResetGas was changed to '5000 - COLD_SLOAD_COST'.
+	// In EIP-3529: SSTORE_CLEARS_SCHEDULE is defined as SSTORE_RESET_GAS + ACCESS_LIST_STORAGE_KEY_COST
+	// Which becomes: 5000 - 2100 + 1900 = 4800
+	SstoreClearsScheduleRefundEIP3529 uint64 = SstoreResetGasEIP2200 - ColdSloadCostEIP2929 + TxAccessListStorageKeyGas
+
+	// CreateBySelfdestructGas is used when the refunded account is one that does
+	// not exist. This logic is similar to call.
+	// Introduced in Tangerine Whistle (Eip 150)
+	CreateBySelfdestructGas uint64 = 25000
+	SelfdestructRefundGas   uint64 = 24000 // Refunded following a selfdestruct operation.
+	MemoryGas               uint64 = 3     // Times the address of the (highest referenced byte in memory + 1). NOTE: referencing happens on read, write and in instructions such as RETURN and CALL.
+	ExpGas                  uint64 = 10    // Once per EXP instruction
+	LogGas                  uint64 = 375   // Per LOG* operation.
+	CopyGas                 uint64 = 3     //
+	LogTopicGas             uint64 = 375   // Multiplied by the * of the LOG*, per LOG transaction. e.g. LOG0 incurs 0 * c_txLogTopicGas, LOG4 incurs 4 * c_txLogTopicGas.
+
+	SstoreSetGas    uint64 = 20000 // Once per SSTORE operation.
+	SstoreResetGas  uint64 = 5000  // Once per SSTORE operation if the zeroness changes from zero.
+	SstoreClearGas  uint64 = 5000  // Once per SSTORE operation if the zeroness doesn't change.
+	SstoreRefundGas uint64 = 15000 // Once per SSTORE operation if the zeroness changes to zero.
+
+	NetSstoreNoopGas  uint64 = 200   // Once per SSTORE operation if the value doesn't change.
+	NetSstoreInitGas  uint64 = 20000 // Once per SSTORE operation from clean zero.
+	NetSstoreCleanGas uint64 = 5000  // Once per SSTORE operation from clean non-zero.
+	NetSstoreDirtyGas uint64 = 200   // Once per SSTORE operation from dirty.
+
+	// EXP has a dynamic portion depending on the size of the exponent
+	ExpByteFrontier uint64 = 10 // was set to 10 in Frontier
+	ExpByteEIP158   uint64 = 50 // was raised to 50 during Eip158 (Spurious Dragon)
+)
+
+const (
+	Wei   = 1
+	GWei  = 1e9
+	Ether = 1e18
+)
+
+// network params
+
+// These are network parameters that need to be constant between clients, but
+// aren't necessarily consensus related.
+
+const (
+	// BloomBitsBlocks is the number of blocks a single bloom bit section vector
+	// contains on the server side.
+	BloomBitsBlocks uint64 = 4096
+
+	// BloomBitsBlocksClient is the number of blocks a single bloom bit section vector
+	// contains on the light client side
+	BloomBitsBlocksClient uint64 = 32768
+
+	// BloomConfirms is the number of confirmation blocks before a bloom section is
+	// considered probably final and its rotated bits are calculated.
+	BloomConfirms = 256
+
+	// CHTFrequency is the block frequency for creating CHTs
+	CHTFrequency = 32768
+
+	// BloomTrieFrequency is the block frequency for creating BloomTrie on both
+	// server/client sides.
+	BloomTrieFrequency = 32768
+
+	// HelperTrieConfirmations is the number of confirmations before a client is expected
+	// to have the given HelperTrie available.
+	HelperTrieConfirmations = 2048
+
+	// HelperTrieProcessConfirmations is the number of confirmations before a HelperTrie
+	// is generated
+	HelperTrieProcessConfirmations = 256
+
+	// CheckpointFrequency is the block frequency for creating checkpoint
+	CheckpointFrequency = 32768
+
+	// CheckpointProcessConfirmations is the number before a checkpoint is generated
+	CheckpointProcessConfirmations = 256
+
+	// FullImmutabilityThreshold is the number of blocks after which a chain segment is
+	// considered immutable (i.e. soft finality). It is used by the downloader as a
+	// hard limit against deep ancestors, by the blockchain against deep reorgs, by
+	// the freezer as the cutoff threshold and by clique as the snapshot trust limit.
+	FullImmutabilityThreshold = 10000
+
+	// LightImmutabilityThreshold is the number of blocks after which a header chain
+	// segment is considered immutable for light client(i.e. soft finality). It is used by
+	// the downloader as a hard limit against deep ancestors, by the blockchain against deep
+	// reorgs, by the light pruner as the pruning validity guarantee.
+	LightImmutabilityThreshold = 30000
 )

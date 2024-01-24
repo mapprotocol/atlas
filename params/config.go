@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethparams "github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -249,3 +250,12 @@ var (
 		Faker:                    false,
 	}
 )
+
+// TrustedCheckpoints associates each known checkpoint with the genesis hash of
+// the chain it belongs to.
+var TrustedCheckpoints = map[common.Hash]*ethparams.TrustedCheckpoint{
+	MainnetGenesisHash: MainnetTrustedCheckpoint,
+}
+
+// MainnetTrustedCheckpoint contains the light client trusted checkpoint for the main network.
+var MainnetTrustedCheckpoint = &ethparams.TrustedCheckpoint{}
