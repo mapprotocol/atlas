@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -482,11 +481,11 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call types.CallMsg) 
 
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
-		lo  uint64 = ethparams.TxGas - 1
+		lo  uint64 = params.TxGas - 1
 		hi  uint64
 		cap uint64
 	)
-	if call.Gas >= ethparams.TxGas {
+	if call.Gas >= params.TxGas {
 		hi = call.Gas
 	} else {
 		hi = b.pendingBlock.GasLimit()
