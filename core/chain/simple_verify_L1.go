@@ -34,7 +34,7 @@ func FromBytes(data []byte) (*CheckPoint, error) {
 	return v, nil
 }
 func (c *CheckPoint) String() string {
-	return fmt.Sprintf("height:%v", c.Height, "root:", c.Root)
+	return fmt.Sprintf("root=%s, height:%v", c.Root, c.Height)
 }
 func (c *CheckPoint) Equal(ck *CheckPoint) bool {
 	if ck == nil || c == nil {
