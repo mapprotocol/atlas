@@ -444,6 +444,7 @@ func DevnetGenesisBlock() *Genesis {
 	}
 }
 
+// validator: 062fcdefff500e0116e9bd543e82a1f552829542dc52abb0fd069de8e45270cd
 // SingleGenesisBlock returns the single network genesis block.
 func SingleGenesisBlock(faucet common.Address) *Genesis {
 	gs := genesisSingleNetRegisterProxyContract()
