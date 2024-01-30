@@ -6,7 +6,9 @@ require (
 	github.com/MadBase/MadNet v0.5.0
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/btcsuite/btcd v0.23.5-0.20231215221805-96c9fd8078fd
+	github.com/btcsuite/btcd/btcec/v2 v2.2.0
 	github.com/btcsuite/btcd/btcutil v1.1.5
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/buraksezer/consistent v0.9.0
 	github.com/cespare/cp v1.1.1
 	github.com/cespare/xxhash/v2 v2.1.2
