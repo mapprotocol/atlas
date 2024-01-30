@@ -5,8 +5,8 @@ go 1.15
 require (
 	github.com/MadBase/MadNet v0.5.0
 	github.com/VictoriaMetrics/fastcache v1.6.0
-	github.com/btcsuite/btcd v0.22.0-beta
-	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
+	github.com/btcsuite/btcd v0.23.5-0.20231215221805-96c9fd8078fd
+	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/buraksezer/consistent v0.9.0
 	github.com/cespare/cp v1.1.1
 	github.com/cespare/xxhash/v2 v2.1.2
@@ -20,7 +20,7 @@ require (
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.1.5
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/herumi/bls-eth-go-binary v1.28.1
 	github.com/holiman/bloomfilter/v2 v2.0.3
@@ -63,4 +63,4 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
-replace github.com/ethereum/go-ethereum v1.10.10 => github.com/mapprotocol/go-ethereum v1.10.10-patch0 // indirect
+replace github.com/ethereum/go-ethereum v1.10.10 => github.com/mapprotocol/go-ethereum v1.10.10-patch1 // indirect

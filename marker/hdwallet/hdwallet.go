@@ -7,12 +7,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum"
 	"math/big"
 	"sync"
 
+	"github.com/ethereum/go-ethereum"
+
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
