@@ -12,6 +12,7 @@
 GOBIN = ./build/bin
 GO ?= latest
 GORUN = env GO111MODULE=on CGO_ENABLED=1 CGO_CFLAGS="-O -D__BLST_PORTABLE__" CGO_CFLAGS_ALLOW="-O -D__BLST_PORTABLE__" go run
+GOBUILD = env GO111MODULE=on CGO_ENABLED=1 CGO_CFLAGS="-O -D__BLST_PORTABLE__" CGO_CFLAGS_ALLOW="-O -D__BLST_PORTABLE__" go build
 
 atlas:
 	$(GORUN) build/ci.go install .
@@ -19,7 +20,7 @@ atlas:
 	@echo "Run \"$(GOBIN)/atlas\" to launch atlas."
 
 marker:
-	cd ./cmd/new_marker && go build -o ./new_marker  *.go && mv ./new_marker ../../build/bin/marker
+	cd ./cmd/new_marker && $(GOBUILD) -o ./new_marker  *.go && mv ./new_marker ../../build/bin/marker
 	@echo "Run \"$(GOBIN)/new_marker\" to launch marker."
 
 all:
