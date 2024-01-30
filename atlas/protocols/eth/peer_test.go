@@ -20,10 +20,14 @@
 package eth
 
 import (
-	"testing"
-
+	"crypto/rand"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/mapprotocol/atlas/consensus"
+
+	//"github.com/ethereum/go-ethereum/p2p"
+	"github.com/mapprotocol/atlas/p2p"
+	"testing"
 )
 
 // testPeer is a simulated peer to allow testing direct network calls.
@@ -32,6 +36,25 @@ type testPeer struct {
 
 	net p2p.MsgReadWriter // Network layer reader/writer to simulate remote messaging
 	app *p2p.MsgPipeRW    // Application layer reader/writer to simulate the local side
+}
+
+// newTestPeer creates a new peer registered at the given data backend.
+func newTestPeer(name string, version uint, backend Backend) (*testPeer, <-chan error) {
+	// Create a message pipe to communicate through
+	app, net := p2p.MsgPipe()
+
+	// Start the peer on a new thread
+	var id enode.ID
+	rand.Read(id[:])
+
+	peer := NewPeer(version, p2p.NewPeer(id, name, nil), net, backend.TxPool())
+	errc := make(chan error, 1)
+	go func() {
+		errc <- backend.RunPeer(peer, func(peer *Peer, engine consensus.Engine) error {
+			return Handle(backend, peer, engine)
+		})
+	}()
+	return &testPeer{app: app, net: net, Peer: peer}, errc
 }
 
 // close terminates the local side of the peer, notifying the remote protocol
