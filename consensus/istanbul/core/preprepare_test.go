@@ -443,8 +443,8 @@ func TestHandlePreprepare(t *testing.T) {
 
 				if expectedCode == istanbul.MsgCommit {
 					srcValidator := c.current.GetValidatorByAddress(v.address)
-
-					if err := c.verifyCommittedSeal(decodedMsg.Commit(), srcValidator); err != nil {
+					fork, cur := new(big.Int).Set(c.backend.ChainConfig().BN256ForkBlock), big.NewInt(0)
+					if err := c.verifyCommittedSeal(decodedMsg.Commit(), srcValidator, fork, cur); err != nil {
 						t.Errorf("invalid seal.  verify commmited seal error: %v, subject: %v, committedSeal: %v", err, expectedSubject, decodedMsg.Commit().CommittedSeal)
 					}
 				}
