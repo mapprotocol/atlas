@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/consensus/misc"
 	"github.com/mapprotocol/atlas/contracts/blockchain_parameters"
@@ -94,7 +95,7 @@ var (
 var (
 	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
 	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
-	defaultMinGasPrice  = big.NewInt(100 * params.GWei)
+	defaultMinGasPrice  = big.NewInt(100 * ethparams.GWei)
 )
 
 var (
@@ -733,7 +734,6 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (replaced bool, err e
 		// If the new transaction is underpriced, don't accept it
 		// todo ibft upgrade???
 		// todo ibft cancel
-		log.Info("***txpool add tx***")
 		if !isLocal && pool.priced.Underpriced(tx) {
 			//if !isLocal && pool.priced.Underpriced(tx, pool.locals) {
 			log.Trace("Discarding underpriced transaction", "hash", hash, "gasTipCap", tx.GasTipCap(), "gasFeeCap", tx.GasFeeCap())
@@ -761,7 +761,6 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (replaced bool, err e
 			overflowedTxMeter.Mark(1)
 			return false, ErrTxPoolOverflow
 		}
-		log.Info("***txpool add tx***", "count", len(drop))
 		// Bump the counter of rejections-since-reorg
 		pool.changesSinceReorg += len(drop)
 		// Kick out the underpriced remote transactions.
@@ -816,7 +815,7 @@ func (pool *TxPool) add(tx *types.Transaction, local bool) (replaced bool, err e
 	}
 	pool.journalTx(from, tx)
 
-	//log.Info("Pooled new future transaction", "hash", hash, "from", from, "to", tx.To())
+	// log.Info("Pooled new future transaction", "hash", hash, "from", from, "to", tx.To())
 	return replaced, nil
 }
 
@@ -1279,7 +1278,6 @@ func (pool *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirt
 		}
 		events[addr].Put(tx)
 	}
-	//log.Info("***runReorg***", "promoted", len(promoted), "events", len(events))
 	if len(events) > 0 {
 		var txs []*types.Transaction
 		for _, set := range events {
@@ -1768,6 +1766,7 @@ func (as *accountSet) merge(other *accountSet) {
 //
 // This lookup set combines the notion of "local transactions", which is useful
 // to build upper-level structure.
+//
 type txLookup struct {
 	slots   int
 	lock    sync.RWMutex

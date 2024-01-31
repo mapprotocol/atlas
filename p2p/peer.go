@@ -3,6 +3,7 @@ package p2p
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/enr"
 	"io"
 	"net"
 	"sort"
@@ -510,6 +511,16 @@ func countMatchingProtocols(protocols []Protocol, caps []Cap) int {
 		}
 	}
 	return n
+}
+
+// NewPeer returns a peer for testing purposes.
+func NewPeer(id enode.ID, name string, caps []Cap) *Peer {
+	pipe, _ := net.Pipe()
+	node := enode.SignNull(new(enr.Record), id)
+	conn := &conn{fd: pipe, transport: nil, node: node, caps: caps, name: name}
+	peer := newPeer(log.Root(), conn, nil, NoPurpose, nil)
+	close(peer.closed) // ensures Disconnect doesn't block
+	return peer
 }
 
 func newPeer(log log.Logger, conn *conn, protocols []Protocol, purpose PurposeFlag, server *Server) *Peer {

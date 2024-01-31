@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core"
@@ -33,7 +34,7 @@ import (
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/metrics"
-	"github.com/mapprotocol/atlas/params"
+	params2 "github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -85,7 +86,7 @@ type task struct {
 // and gathering the sealing result.
 type worker struct {
 	config      *Config
-	chainConfig *params.ChainConfig
+	chainConfig *params2.ChainConfig
 	engine      consensus.Engine
 	eth         Backend
 	chain       *chain.BlockChain
@@ -126,7 +127,7 @@ type worker struct {
 	blockConstructGauge metrics.Gauge
 }
 
-func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
+func newWorker(config *Config, chainConfig *params2.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool, db ethdb.Database) *worker {
 	worker := &worker{
 		config:              config,
 		chainConfig:         chainConfig,

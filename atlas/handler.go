@@ -31,6 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/atlas/downloader"
 	"github.com/mapprotocol/atlas/atlas/fetcher"
 	"github.com/mapprotocol/atlas/atlas/protocols/eth"
@@ -40,7 +42,6 @@ import (
 	"github.com/mapprotocol/atlas/core/forkid"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/p2p"
-	params2 "github.com/mapprotocol/atlas/params"
 )
 
 const (
@@ -111,8 +112,8 @@ type handler struct {
 	chain    *chain.BlockChain
 	maxPeers int
 
-	downloader *downloader.Downloader
-	//stateBloom   *trie.SyncBloom
+	downloader   *downloader.Downloader
+	stateBloom   *trie.SyncBloom
 	blockFetcher *fetcher.BlockFetcher
 	txFetcher    *fetcher.TxFetcher
 	peers        *peerSet
@@ -190,7 +191,7 @@ func newHandler(config *handlerConfig) (*handler, error) {
 	}
 	// If we have trusted checkpoints, enforce them on the chain
 	if config.Checkpoint != nil {
-		h.checkpointNumber = (config.Checkpoint.SectionIndex+1)*params2.CHTFrequency - 1
+		h.checkpointNumber = (config.Checkpoint.SectionIndex+1)*params.CHTFrequency - 1
 		h.checkpointHash = config.Checkpoint.SectionHead
 	}
 	// Construct the downloader (long sync) and its backing state bloom if fast
@@ -200,10 +201,10 @@ func newHandler(config *handlerConfig) (*handler, error) {
 	// and the heal-portion of the snap sync is much lighter than fast. What we particularly
 	// want to avoid, is a 90%-finished (but restarted) snap-sync to begin
 	// indexing the entire trie
-	//if atomic.LoadUint32(&h.fastSync) == 1 && atomic.LoadUint32(&h.snapSync) == 0 {
-	//	h.stateBloom = trie.NewSyncBloom(config.BloomCache, config.Database)
-	//}
-	h.downloader = downloader.New(h.checkpointNumber, config.Database, h.eventMux, h.chain, nil, h.removePeer)
+	if atomic.LoadUint32(&h.fastSync) == 1 && atomic.LoadUint32(&h.snapSync) == 0 {
+		h.stateBloom = trie.NewSyncBloom(config.BloomCache, config.Database)
+	}
+	h.downloader = downloader.New(h.checkpointNumber, config.Database, h.stateBloom, h.eventMux, h.chain, nil, h.removePeer)
 
 	// Construct the fetcher (short sync)
 	validator := func(header *types.Header) error {

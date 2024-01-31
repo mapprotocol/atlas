@@ -160,7 +160,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		etherbase:      config.Miner.Etherbase,
 		txFeeRecipient: config.TxFeeRecipient,
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
-		bloomIndexer:   indexer.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
+		bloomIndexer:   indexer.NewBloomIndexer(chainDb, ethparams.BloomBitsBlocks, ethparams.BloomConfirms),
 		p2pServer:      stack.Server(),
 	}
 
@@ -218,7 +218,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
 	checkpoint := config.Checkpoint
 	if checkpoint == nil {
-		checkpoint = params.TrustedCheckpoints[genesisHash]
+		checkpoint = ethparams.TrustedCheckpoints[genesisHash]
 	}
 
 	if eth.handler, err = newHandler(&handlerConfig{
@@ -275,7 +275,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 
 	// Start the RPC service
 	eth.netRPCService = atlasapi.NewPublicNetAPI(eth.p2pServer, config.NetworkId)
-	// start simple verify the latest checkpoint
 	if config.VerifyCheckPoint {
 		log.Info("[atlas start on verify the check point]")
 		err := chain.VerifyCheckPoint(true, eth.blockchain)
@@ -284,7 +283,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		}
 		log.Info("[atlas start on verify the check point. pass....]")
 	}
-
 	// Register the backend on the node
 	stack.RegisterAPIs(eth.APIs())
 	stack.RegisterProtocols(eth.Protocols())
@@ -315,8 +313,8 @@ func makeExtraData(extra []byte) []byte {
 			runtime.GOOS,
 		})
 	}
-	if uint64(len(extra)) > params.MaximumExtraDataSize {
-		log.Warn("Miner extra data exceed limit", "extra", hexutil.Bytes(extra), "limit", params.MaximumExtraDataSize)
+	if uint64(len(extra)) > ethparams.MaximumExtraDataSize {
+		log.Warn("Miner extra data exceed limit", "extra", hexutil.Bytes(extra), "limit", ethparams.MaximumExtraDataSize)
 		extra = nil
 	}
 	return extra
@@ -640,7 +638,7 @@ func (s *Ethereum) Start() error {
 	eth.StartENRUpdater(s.blockchain, s.p2pServer.LocalNode())
 
 	// Start the bloom bits servicing goroutines
-	s.startBloomHandlers(params.BloomBitsBlocks)
+	s.startBloomHandlers(ethparams.BloomBitsBlocks)
 
 	// Figure out a max peers count based on the server limits
 	maxPeers := s.p2pServer.MaxPeers

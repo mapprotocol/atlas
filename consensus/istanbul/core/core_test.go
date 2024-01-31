@@ -209,7 +209,7 @@ func TestEpochSnarkData(t *testing.T) {
 	fork, cur := new(big.Int).Set(backendCore.backend.ChainConfig().BN256ForkBlock), big.NewInt(0)
 	epochValidatorSetSeal, _ := backendCore.backend.SignBLS(message, extraData, true, cip22, fork, cur)
 
-	if err := bls.CryptoType().VerifySignature(publicKey, message, extraData, epochValidatorSetSeal[:], true, cip22); err != nil {
+	if err := bls.CryptoType().VerifySignature(publicKey, message, extraData, epochValidatorSetSeal[:], true, cip22, fork, cur); err != nil {
 		t.Errorf("Failed verifying BLS signature")
 	}
 
@@ -220,7 +220,7 @@ func TestEpochSnarkData(t *testing.T) {
 	cur = big.NewInt(2)
 	epochValidatorSetSeal, _ = backendCore.backend.SignBLS(message, extraData, true, cip22, fork, cur)
 
-	if err := bls.CryptoType().VerifySignature(publicKey, message, extraData, epochValidatorSetSeal[:], true, cip22); err != nil {
+	if err := bls.CryptoType().VerifySignature(publicKey, message, extraData, epochValidatorSetSeal[:], true, cip22, fork, cur); err != nil {
 		t.Errorf("Failed verifying BLS signature after Donut")
 	}
 

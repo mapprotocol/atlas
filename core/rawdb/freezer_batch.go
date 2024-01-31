@@ -34,7 +34,7 @@ type freezerBatch struct {
 	tables map[string]*freezerTableBatch
 }
 
-func newFreezerBatch(f *Freezer) *freezerBatch {
+func newFreezerBatch(f *freezer) *freezerBatch {
 	batch := &freezerBatch{tables: make(map[string]*freezerTableBatch, len(f.tables))}
 	for kind, table := range f.tables {
 		batch.tables[kind] = table.newBatch()
@@ -116,7 +116,7 @@ func (batch *freezerTableBatch) reset() {
 // existing data.
 func (batch *freezerTableBatch) Append(item uint64, data interface{}) error {
 	if item != batch.curItem {
-		return fmt.Errorf("%w: have %d want %d", errOutOrderInsertion, item, batch.curItem)
+		return errOutOrderInsertion
 	}
 
 	// Encode the item.
@@ -136,7 +136,7 @@ func (batch *freezerTableBatch) Append(item uint64, data interface{}) error {
 // existing data.
 func (batch *freezerTableBatch) AppendRaw(item uint64, blob []byte) error {
 	if item != batch.curItem {
-		return fmt.Errorf("%w: have %d want %d", errOutOrderInsertion, item, batch.curItem)
+		return errOutOrderInsertion
 	}
 
 	encItem := blob
@@ -191,7 +191,7 @@ func (batch *freezerTableBatch) commit() error {
 	dataSize := int64(len(batch.dataBuffer))
 	batch.dataBuffer = batch.dataBuffer[:0]
 
-	// Write indices.
+	// Write index.
 	_, err = batch.t.index.Write(batch.indexBuffer)
 	if err != nil {
 		return err

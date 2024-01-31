@@ -17,14 +17,13 @@
 package atlas
 
 import (
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
 	"math/big"
 	"sort"
 	"sync"
 
-	chain2 "github.com/mapprotocol/atlas/core/chain"
-
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -33,6 +32,7 @@ import (
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	//"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/params"
 )
 
@@ -139,9 +139,9 @@ func newTestHandlerWithBlocks(blocks int) *testHandler {
 		Alloc:  chain2.GenesisAlloc{testAddr: {Balance: big.NewInt(1000000)}},
 	}).MustCommit(db)
 
-	chain, _ := chain2.NewBlockChain(db, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+	chain, _ := chain2.NewBlockChain(db, nil, params.TestChainConfig, consensustest.NewFaker(), vm.Config{}, nil, nil)
 
-	bs, _ := chain2.GenerateChain(params.TestChainConfig, chain.Genesis(), ethash.NewFaker(), db, blocks, nil)
+	bs, _ := chain2.GenerateChain(params.TestChainConfig, chain.Genesis(), consensustest.NewFaker(), db, blocks, nil)
 	if _, err := chain.InsertChain(bs); err != nil {
 		panic(err)
 	}

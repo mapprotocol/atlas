@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/mapprotocol/atlas/params"
 
 	"github.com/mapprotocol/atlas/chains"
 	"github.com/mapprotocol/atlas/consensus/misc"
@@ -159,8 +159,8 @@ func (v *Validate) verifyHeaderWorker(hs *HeaderStore, headers []*Header, index 
 
 func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int64, chainType chains.ChainType) error {
 	// Ensure that the header's extra-data section is of a reasonable size
-	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
-		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
+	if uint64(len(header.Extra)) > ethparams.MaximumExtraDataSize {
+		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), ethparams.MaximumExtraDataSize)
 	}
 	// Verify the header's timestamp
 	if !uncle {
@@ -189,7 +189,7 @@ func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int6
 
 	// Verify the block's gas usage and (if applicable) verify the base fee.
 	lb, _ := chains.ChainType2LondonBlock(chainType)
-	cfg := &params.ChainConfig{LondonBlock: lb}
+	cfg := &ethparams.ChainConfig{LondonBlock: lb}
 	if !cfg.IsLondon(header.Number) {
 		// Verify BaseFee not present before EIP-1559 fork.
 		if header.BaseFee != nil {
@@ -213,11 +213,11 @@ func (v *Validate) verifyHeader(header, parent *Header, uncle bool, unixNow int6
 	return nil
 }
 
-func VerifyEip1559Header(config *params.ChainConfig, parent, header *Header) error {
+func VerifyEip1559Header(config *ethparams.ChainConfig, parent, header *Header) error {
 	// Verify that the gas limit remains within allowed bounds
 	parentGasLimit := parent.GasLimit
 	if !config.IsLondon(parent.Number) {
-		parentGasLimit = parent.GasLimit * params.ElasticityMultiplier
+		parentGasLimit = parent.GasLimit * ethparams.ElasticityMultiplier
 	}
 	if err := misc.VerifyGaslimit(parentGasLimit, header.GasLimit); err != nil {
 		return err
@@ -236,16 +236,16 @@ func VerifyEip1559Header(config *params.ChainConfig, parent, header *Header) err
 }
 
 // CalcBaseFee calculates the basefee of the header.
-func CalcBaseFee(config *params.ChainConfig, parent *Header) *big.Int {
+func CalcBaseFee(config *ethparams.ChainConfig, parent *Header) *big.Int {
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
 	if !config.IsLondon(parent.Number) {
-		return new(big.Int).SetUint64(params.InitialBaseFee)
+		return new(big.Int).SetUint64(ethparams.InitialBaseFee)
 	}
 
 	var (
-		parentGasTarget          = parent.GasLimit / params.ElasticityMultiplier
+		parentGasTarget          = parent.GasLimit / ethparams.ElasticityMultiplier
 		parentGasTargetBig       = new(big.Int).SetUint64(parentGasTarget)
-		baseFeeChangeDenominator = new(big.Int).SetUint64(params.BaseFeeChangeDenominator)
+		baseFeeChangeDenominator = new(big.Int).SetUint64(ethparams.BaseFeeChangeDenominator)
 	)
 	// If the parent gasUsed is the same as the target, the baseFee remains unchanged.
 	if parent.GasUsed == parentGasTarget {

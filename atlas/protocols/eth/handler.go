@@ -25,6 +25,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/types"
@@ -71,7 +73,7 @@ type Backend interface {
 	Chain() *chain.BlockChain
 
 	// StateBloom retrieves the bloom filter - if any - for state trie nodes.
-	//StateBloom() *trie.SyncBloom
+	StateBloom() *trie.SyncBloom
 
 	// TxPool retrieves the transaction pool object to serve data.
 	TxPool() TxPool

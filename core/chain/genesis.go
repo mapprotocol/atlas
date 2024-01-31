@@ -22,16 +22,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/rlp"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/state"
@@ -315,13 +315,13 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		Root:       root,
 	}
 	if head.GasLimit == 0 {
-		head.GasLimit = params.GenesisGasLimit
+		head.GasLimit = ethparams.GenesisGasLimit
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
 		} else {
-			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
+			head.BaseFee = new(big.Int).SetUint64(ethparams.InitialBaseFee)
 		}
 	}
 	statedb.Commit(false)
@@ -374,7 +374,7 @@ func (g *Genesis) MustCommit(db ethdb.Database) *types.Block {
 func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big.Int) *types.Block {
 	g := Genesis{
 		Alloc:   GenesisAlloc{addr: {Balance: balance}},
-		BaseFee: big.NewInt(params.InitialBaseFee),
+		BaseFee: big.NewInt(ethparams.InitialBaseFee),
 	}
 	return g.MustCommit(db)
 }

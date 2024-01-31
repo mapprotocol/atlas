@@ -31,6 +31,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/trie"
+
 	"github.com/mapprotocol/atlas/atlas/protocols/eth"
 	"github.com/mapprotocol/atlas/atlas/protocols/snap"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
@@ -52,8 +55,8 @@ var (
 	maxQueuedHeaders            = 32 * 1024                         // [eth/62] Maximum number of headers to queue for import (DOS protection)
 	maxHeadersProcess           = 2048                              // Number of header download results to import at once into the chain
 	maxResultsProcess           = 2048                              // Number of content download results to import at once into the chain
-	fullMaxForkAncestry  uint64 = params2.FullImmutabilityThreshold // Maximum chain reorganisation (locally redeclared so tests can reduce it)
-	lightMaxForkAncestry uint64 = params2.FullImmutabilityThreshold // Maximum chain reorganisation (locally redeclared so tests can reduce it)
+	fullMaxForkAncestry  uint64 = params.FullImmutabilityThreshold  // Maximum chain reorganisation (locally redeclared so tests can reduce it)
+	lightMaxForkAncestry uint64 = params.LightImmutabilityThreshold // Maximum chain reorganisation (locally redeclared so tests can reduce it)
 
 	reorgProtThreshold   = 48 // Threshold number of recent blocks to disable mini reorg protection
 	reorgProtHeaderDelay = 2  // Number of headers to delay delivering to cover mini reorgs
@@ -100,7 +103,8 @@ type Downloader struct {
 	queue      *queue   // Scheduler for selecting the hashes to download
 	peers      *peerSet // Set of active peers from which download can proceed
 
-	stateDB ethdb.Database // Database to state sync into (and deduplicate via)
+	stateDB    ethdb.Database  // Database to state sync into (and deduplicate via)
+	stateBloom *trie.SyncBloom // Bloom filter for fast trie node and contract code existence checks
 
 	// Statistics
 	syncStatsChainOrigin uint64 // Origin block number where syncing started at
@@ -216,7 +220,7 @@ type BlockChain interface {
 }
 
 // New creates a new downloader to fetch hashes and blocks from remote peers.
-func New(checkpoint uint64, stateDb ethdb.Database, mux *event.TypeMux, chain BlockChain, lightchain LightChain, dropPeer peerDropFn) *Downloader {
+func New(checkpoint uint64, stateDb ethdb.Database, stateBloom *trie.SyncBloom, mux *event.TypeMux, chain BlockChain, lightchain LightChain, dropPeer peerDropFn) *Downloader {
 	if lightchain == nil {
 		lightchain = chain
 	}
@@ -236,6 +240,7 @@ func New(checkpoint uint64, stateDb ethdb.Database, mux *event.TypeMux, chain Bl
 	}
 	dl := &Downloader{
 		stateDB:        stateDb,
+		stateBloom:     stateBloom,
 		mux:            mux,
 		checkpoint:     checkpoint,
 		queue:          newQueue(blockCacheMaxItems, blockCacheInitialItems),
@@ -254,7 +259,7 @@ func New(checkpoint uint64, stateDb ethdb.Database, mux *event.TypeMux, chain Bl
 		SnapSyncer:     snap.NewSyncer(stateDb),
 		stateSyncStart: make(chan *stateSync),
 		syncStatsState: stateSyncStats{
-			//processed: rawdb.ReadFastTrieProgress(stateDb),
+			processed: rawdb.ReadFastTrieProgress(stateDb),
 		},
 		trackStateReq: make(chan *stateReq),
 		ibftConsensus: ibftConsensus,
@@ -293,8 +298,8 @@ func (d *Downloader) Progress() ethereum.SyncProgress {
 		StartingBlock: d.syncStatsChainOrigin,
 		CurrentBlock:  current,
 		HighestBlock:  d.syncStatsChainHeight,
-		//PulledStates:  d.syncStatsState.processed,
-		//KnownStates:   d.syncStatsState.processed + d.syncStatsState.pending,
+		PulledStates:  d.syncStatsState.processed,
+		KnownStates:   d.syncStatsState.processed + d.syncStatsState.pending,
 	}
 }
 
@@ -395,9 +400,9 @@ func (d *Downloader) synchronise(id string, hash common.Hash, td *big.Int, mode 
 	// If we are already full syncing, but have a fast-sync bloom filter laying
 	// around, make sure it doesn't use memory any more. This is a special case
 	// when the user attempts to fast sync a new empty network.
-	//if mode == FullSync && d.stateBloom != nil {
-	//	d.stateBloom.Close()
-	//}
+	if mode == FullSync && d.stateBloom != nil {
+		d.stateBloom.Close()
+	}
 	// If snap sync was requested, create the snap scheduler and switch to fast
 	// sync mode. Long term we could drop fast sync or merge the two together,
 	// but until snap becomes prevalent, we should support both. TODO(karalabe).
@@ -652,9 +657,9 @@ func (d *Downloader) Terminate() {
 	default:
 		close(d.quitCh)
 	}
-	//if d.stateBloom != nil {
-	//	d.stateBloom.Close()
-	//}
+	if d.stateBloom != nil {
+		d.stateBloom.Close()
+	}
 	d.quitLock.Unlock()
 
 	// Cancel any pending download requests
@@ -735,11 +740,9 @@ func (d *Downloader) fetchHead(p *peerConnection) (head *types.Header, pivot *ty
 // calculateRequestSpan calculates what headers to request from a peer when trying to determine the
 // common ancestor.
 // It returns parameters to be used for peer.RequestHeadersByNumber:
-//
-//	from - starting block number
-//	count - number of headers to request
-//	skip - number of headers to skip
-//
+//  from - starting block number
+//  count - number of headers to request
+//  skip - number of headers to skip
 // and also returns 'max', the last block which is expected to be returned by the remote peers,
 // given the (from,count,skip)
 func calculateRequestSpan(remoteHeight, localHeight uint64) (int64, int, int, uint64) {
@@ -1359,22 +1362,22 @@ func (d *Downloader) fetchReceipts(from uint64) error {
 // various callbacks to handle the slight differences between processing them.
 //
 // The instrumentation parameters:
-//   - errCancel:   error type to return if the fetch operation is cancelled (mostly makes logging nicer)
-//   - deliveryCh:  channel from which to retrieve downloaded data packets (merged from all concurrent peers)
-//   - deliver:     processing callback to deliver data packets into type specific download queues (usually within `queue`)
-//   - wakeCh:      notification channel for waking the fetcher when new tasks are available (or sync completed)
-//   - expire:      task callback method to abort requests that took too long and return the faulty peers (traffic shaping)
-//   - pending:     task callback for the number of requests still needing download (detect completion/non-completability)
-//   - inFlight:    task callback for the number of in-progress requests (wait for all active downloads to finish)
-//   - throttle:    task callback to check if the processing queue is full and activate throttling (bound memory use)
-//   - reserve:     task callback to reserve new download tasks to a particular peer (also signals partial completions)
-//   - fetchHook:   tester callback to notify of new tasks being initiated (allows testing the scheduling logic)
-//   - fetch:       network callback to actually send a particular download request to a physical remote peer
-//   - cancel:      task callback to abort an in-flight download request and allow rescheduling it (in case of lost peer)
-//   - capacity:    network callback to retrieve the estimated type-specific bandwidth capacity of a peer (traffic shaping)
-//   - idle:        network callback to retrieve the currently (type specific) idle peers that can be assigned tasks
-//   - setIdle:     network callback to set a peer back to idle and update its estimated capacity (traffic shaping)
-//   - kind:        textual label of the type being downloaded to display in log messages
+//  - errCancel:   error type to return if the fetch operation is cancelled (mostly makes logging nicer)
+//  - deliveryCh:  channel from which to retrieve downloaded data packets (merged from all concurrent peers)
+//  - deliver:     processing callback to deliver data packets into type specific download queues (usually within `queue`)
+//  - wakeCh:      notification channel for waking the fetcher when new tasks are available (or sync completed)
+//  - expire:      task callback method to abort requests that took too long and return the faulty peers (traffic shaping)
+//  - pending:     task callback for the number of requests still needing download (detect completion/non-completability)
+//  - inFlight:    task callback for the number of in-progress requests (wait for all active downloads to finish)
+//  - throttle:    task callback to check if the processing queue is full and activate throttling (bound memory use)
+//  - reserve:     task callback to reserve new download tasks to a particular peer (also signals partial completions)
+//  - fetchHook:   tester callback to notify of new tasks being initiated (allows testing the scheduling logic)
+//  - fetch:       network callback to actually send a particular download request to a physical remote peer
+//  - cancel:      task callback to abort an in-flight download request and allow rescheduling it (in case of lost peer)
+//  - capacity:    network callback to retrieve the estimated type-specific bandwidth capacity of a peer (traffic shaping)
+//  - idle:        network callback to retrieve the currently (type specific) idle peers that can be assigned tasks
+//  - setIdle:     network callback to set a peer back to idle and update its estimated capacity (traffic shaping)
+//  - kind:        textual label of the type being downloaded to display in log messages
 func (d *Downloader) fetchParts(deliveryCh chan dataPack, deliver func(dataPack) (int, error), wakeCh chan bool,
 	expire func() map[string]int, pending func() int, inFlight func() bool, reserve func(*peerConnection, int) (*fetchRequest, bool, bool),
 	fetchHook func([]*types.Header), fetch func(*peerConnection, *fetchRequest) error, cancel func(*fetchRequest), capacity func(*peerConnection) int,
@@ -2024,9 +2027,9 @@ func (d *Downloader) commitPivotBlock(result *fetchResult) error {
 	// a rollback after committing the pivot and restarting fast sync, we don't end
 	// up using a nil bloom. Empty bloom is fine, it just returns that it does not
 	// have the info we need, so reach down to the database instead.
-	//if d.stateBloom != nil {
-	//	d.stateBloom.Close()
-	//}
+	if d.stateBloom != nil {
+		d.stateBloom.Close()
+	}
 	return nil
 }
 

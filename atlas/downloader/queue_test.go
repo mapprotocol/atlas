@@ -18,18 +18,18 @@ package downloader
 
 import (
 	"fmt"
+	"github.com/mapprotocol/atlas/consensus/consensustest"
+	chain2 "github.com/mapprotocol/atlas/core/chain"
+	params2 "github.com/mapprotocol/atlas/params"
 	"math/big"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/mapprotocol/atlas/consensus/consensustest"
-	chain2 "github.com/mapprotocol/atlas/core/chain"
-	"github.com/mapprotocol/atlas/params"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/mapprotocol/atlas/core/rawdb"
 	"github.com/mapprotocol/atlas/core/types"
 )
@@ -44,13 +44,13 @@ var (
 // contains a transaction and every 5th an uncle to allow testing correct block
 // reassembly.
 func makeChain(n int, seed byte, parent *types.Block, empty bool) ([]*types.Block, []types.Receipts) {
-	blocks, receipts := chain2.GenerateChain(params.TestChainConfig, parent, consensustest.NewFaker(), testdb, n, func(i int, block *chain2.BlockGen) {
+	blocks, receipts := chain2.GenerateChain(params2.TestChainConfig, parent, consensustest.NewFaker(), testdb, n, func(i int, block *chain2.BlockGen) {
 		block.SetCoinbase(common.Address{seed})
 		// Add one tx to every secondblock
 		if !empty && i%2 == 0 {
-			signer := types.MakeSigner(params.TestChainConfig, block.Number())
+			signer := types.MakeSigner(params2.TestChainConfig, block.Number())
 			tx, err := types.SignTx(types.NewTransaction(block.TxNonce(testAddress), common.Address{seed},
-				big.NewInt(1000), params.TxGas, big.NewInt(100000000000), nil), signer, testKey)
+			big.NewInt(1000), params.TxGas, big.NewInt(100000000000), nil), signer, testKey)
 			if err != nil {
 				panic(err)
 			}

@@ -15,6 +15,7 @@ package ethereum
 //	"github.com/ethereum/go-ethereum/core/rawdb"
 //	ethtypes "github.com/ethereum/go-ethereum/core/types"
 //	"github.com/ethereum/go-ethereum/log"
+//	ethparams "github.com/ethereum/go-ethereum/params"
 //	"github.com/ethereum/go-ethereum/rlp"
 //
 //	"github.com/mapprotocol/atlas/chains"
