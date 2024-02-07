@@ -211,8 +211,9 @@ func unlockAccount(ks *keystore.KeyStore, address string, i int, passwords []str
 	if err != nil {
 		utils.Fatalf("Could not list accounts: %v", err)
 	}
-	for trials := 0; trials < 3; trials++ {
+	for trials := 0; trials < 6; trials++ {
 		prompt := fmt.Sprintf("Unlocking account %s | Attempt %d/%d", address, trials+1, 3)
+
 		password := utils.GetPassPhraseWithList(prompt, false, i, passwords)
 		err = ks.Unlock(account, password)
 		if err == nil {
