@@ -21,7 +21,7 @@ atlas:
 
 marker:
 	cd ./cmd/new_marker && $(GOBUILD) -o ./new_marker  *.go && mv ./new_marker ../../build/bin/marker
-	@echo "Run \"$(GOBIN)/new_marker\" to launch marker."
+	@echo "Run \"$(GOBIN)/marker\" to launch marker."
 
 all:
 	$(GORUN) build/ci.go install
