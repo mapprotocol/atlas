@@ -78,7 +78,7 @@ var Defaults = Config{
 	RPCGasCap:     50000000,
 	RPCEVMTimeout: 5 * time.Second,
 	GPO:           FullNodeGPO,
-	RPCTxFeeCap:   10, // 10 ether
+	RPCTxFeeCap:   50, // 10 ether
 	Istanbul:      *istanbul.DefaultConfig,
 }
 
