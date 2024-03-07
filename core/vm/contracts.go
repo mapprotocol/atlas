@@ -1268,7 +1268,7 @@ func (c *transfer) Run(evm *EVM, contract *Contract, input []byte) ([]byte, erro
 			return nil, ErrInsufficientBalance
 		}
 
-		//evm.Context.Transfer(evm, from, to, value)
+		evm.Context.Transfer(evm, from, to, value)
 	}
 
 	return input, err
