@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	MainNetChainID   uint64 = 22776
-	TestNetChainID   uint64 = 212
-	DevNetChainID    uint64 = 213
-	SingleNetChainID uint64 = 214
+	MainNetChainID   uint64 = 4120
+	TestNetChainID   uint64 = 4121
+	DevNetChainID    uint64 = 4122
+	SingleNetChainID uint64 = 4123
 	Epoch            uint64 = 50000
 )
 
@@ -46,10 +46,10 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(1125000),
-		BN256ForkBlock:      big.NewInt(2350001),
-		DeregisterBlock:     big.NewInt(2990000),
-		CalcBaseBlock:       big.NewInt(3790000),
+		EnableRewardBlock:   big.NewInt(10000000),
+		BN256ForkBlock:      big.NewInt(0),
+		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          Epoch,
 			ProposerPolicy: 2,
@@ -76,10 +76,10 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(5000),
-		BN256ForkBlock:      big.NewInt(20000),
-		DeregisterBlock:     big.NewInt(1242000),
-		CalcBaseBlock:       big.NewInt(1242000),
+		EnableRewardBlock:   big.NewInt(10000000),
+		BN256ForkBlock:      big.NewInt(0),
+		DeregisterBlock:     big.NewInt(0),
+		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{
 			Epoch:          4000,
 			ProposerPolicy: 2,
@@ -107,7 +107,7 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(0),
-		BN256ForkBlock:      big.NewInt(2001),
+		BN256ForkBlock:      big.NewInt(0),
 		DeregisterBlock:     big.NewInt(0),
 		CalcBaseBlock:       big.NewInt(0),
 		Istanbul: &IstanbulConfig{

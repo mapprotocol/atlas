@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -11,14 +12,15 @@ import (
 	"github.com/mapprotocol/atlas/helper/fileutils"
 	"github.com/mapprotocol/atlas/marker/genesis"
 
+	"io/ioutil"
+	"math/big"
+	"testing"
+
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/atlas"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/marker/env"
-	"io/ioutil"
-	"math/big"
-	"testing"
 )
 
 func Test_dumpStateDb(t *testing.T) {
@@ -98,7 +100,7 @@ func Test_ProxiedValidator(t *testing.T) {
 }
 
 // simulation Account new
-//0x1a7559d3ca2e6d4ee76bf97e816c21319e31a8ff58368c747fd8909bf37b48db0fc69bc7c6fffc0665ff1801fb17afe79ae31042411d3eb600ab73bb02f3e8b32fb4218ab8a7018b6300ea6500ef438817eed6c986901eb212d4c6de093ef63020b20eb8e1ed4365d33519cdc1c290ae7a386ff9743c57b1b420be20b94698b7
+// 0x1a7559d3ca2e6d4ee76bf97e816c21319e31a8ff58368c747fd8909bf37b48db0fc69bc7c6fffc0665ff1801fb17afe79ae31042411d3eb600ab73bb02f3e8b32fb4218ab8a7018b6300ea6500ef438817eed6c986901eb212d4c6de093ef63020b20eb8e1ed4365d33519cdc1c290ae7a386ff9743c57b1b420be20b94698b7
 func Test_autoGenerateMarkerCfg(t *testing.T) {
 	var (
 		adminAddress = "0x6324b2227013a7F2fe4958545A6e08c6E4305A60"
@@ -219,7 +221,121 @@ func Test_autoGenerateMarkerCfg(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 }
+func Test_autoGenerateMarkerCfg2(t *testing.T) {
+	var (
+		adminAddress = "0xAfe370d927B6d27964937eeF96FD84EF522F2e48"
+		account      = []string{
+			"0xb89EC159EDB82EcC58F937520F95e799791cceAA",
+			"0x34734A7AD57EA91842A28f9644A4FDFC9b0FfD1b",
+			"0x56b1581fae3E616705B7DF5bDfDE638076f95197",
+			"0x2B40827Ef628c0B277f062490402cc581B12569F",
+		}
+		signersPath = []string{
+			"",
+			"",
+			"",
+			"",
+		}
+	)
 
+	accountInfos := make([]genesis.AccoutInfo, 0, len(account))
+	for i, str := range signersPath {
+
+		signerPrivateKey, err := crypto.ToECDSA(common.FromHex(str))
+		if err != nil {
+			t.Error("ToECDSA", fmt.Errorf("ToECDSA: %v", err))
+		}
+		signerAddr := crypto.PubkeyToAddress(signerPrivateKey.PublicKey)
+		var addr common.Address
+		addr.SetBytes(signerAddr.Bytes())
+		singerAccount := env.Account{
+			Address:    addr,
+			PrivateKey: signerPrivateKey,
+		}
+
+		if err != nil {
+			t.Error("Failed to create account: ", err)
+		}
+		//blsProofOfPossession := singerAccount.MustBLSProofOfPossession()
+		singerBlsPubKey, err := singerAccount.BLSPublicKey()
+		if err != nil {
+			t.Error("Failed to create account: ", err)
+		}
+		signerBlsPubKeyText, err := singerBlsPubKey.MarshalText()
+		if err != nil {
+			t.Error("Failed to create account: ", err)
+		}
+		signerBlsG1PubKey, err := singerAccount.BLSG1PublicKey()
+		if err != nil {
+			t.Error("Failed to create account: ", err)
+		}
+		signerBlsG1PubKeyText, err := signerBlsG1PubKey.MarshalText()
+		if err != nil {
+			t.Error("Failed to create account", err)
+		}
+		fmt.Printf("\nYour new key was generated\n\n")
+		fmt.Printf("Address:   %s\n", singerAccount.Address.Hex())
+		fmt.Printf("PublicKey:   %s\n", hexutil.Encode(singerAccount.PublicKey()))
+		fmt.Printf("BLS Public key:%d   %s\n", len(singerBlsPubKey), signerBlsPubKeyText)
+		fmt.Printf("BLS G1 Public key:%d   %s\n", len(signerBlsG1PubKey), signerBlsG1PubKeyText)
+
+		// -------------------------- ECDSASignature  ---------------------------------
+		hash := accounts.TextHash(crypto.Keccak256(common.HexToAddress(account[i]).Bytes()))
+		sig, err := crypto.Sign(hash, signerPrivateKey)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		// --------------------------  blsProofOfPossession -----------------------------
+		signerBlsPrivateKey, err := bls.CryptoType().ECDSAToBLS(signerPrivateKey)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		secretKey, err := bls.DeserializePrivateKey(signerBlsPrivateKey)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		signature, err := bls.UnsafeSign2(secretKey, common.HexToAddress(account[i]).Bytes())
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		blsProofOfPossession := signature.Marshal()
+		serializedPrivateKey, err := secretKey.Serialize()
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		publicKey, err := bls.CryptoType().PrivateToPublic(serializedPrivateKey)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		pk, err := bls.UnmarshalPk(publicKey[:])
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		//test
+		if err := bls.VerifyUnsafe2(pk, common.HexToAddress(account[i]).Bytes(), signature); err != nil {
+			panic(err)
+		}
+		fmt.Printf("BLSProofOfPossession: %d  %s\n", len(blsProofOfPossession), hexutil.Encode(blsProofOfPossession))
+		accountInfos = append(accountInfos, genesis.AccoutInfo{
+			Address:              account[i],
+			SignerAddress:        singerAccount.Address.Hex(),
+			ECDSASignature:       hexutil.Encode(sig), //
+			PublicKeyHex:         hexutil.Encode(singerAccount.PublicKey()),
+			BLSPubKey:            hexutil.Encode(singerBlsPubKey[:]),
+			BLSG1PubKey:          hexutil.Encode(signerBlsG1PubKey[:]),
+			BLSProofOfPossession: hexutil.Encode(blsProofOfPossession), //
+		})
+	}
+
+	marker := genesis.MarkerInfo{
+		AdminAddress: adminAddress,
+		Validators:   accountInfos,
+	}
+
+	if err := fileutils.WriteJson(marker, "marker_config.json"); err != nil {
+		t.Fatal(err.Error())
+	}
+}
 func Test_sign(T *testing.T) {
 	account := common.HexToAddress("0x6621F2b6Da2BEd64b5fFBD6C5b2138547f44C8f9")
 	singerPriv := "564e1166e9c1d51f00e01b230f8a33a944c4c742fc839add8daada2cffc0e022"

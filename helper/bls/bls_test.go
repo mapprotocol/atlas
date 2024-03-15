@@ -15,7 +15,35 @@ import (
 )
 
 func Test01(t *testing.T) {
+	privateKeyECDSA, _ := crypto.HexToECDSA("")
+	privateKey, err := CryptoType().ECDSAToBLS(privateKeyECDSA)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	s1, err := CryptoType().PrivateToPublic(privateKey)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	b1, err := s1.MarshalText()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("bls pubkey: %s\n", b1)
 
+	s2, err := CryptoType().PrivateToG1Public(privateKey)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	b2, err := s2.MarshalText()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("bls g1 pubkey: %s\n", b2)
 }
 func TestECDSAToBLS(t *testing.T) {
 	privateKeyECDSA, _ := crypto.HexToECDSA("4f837096cd8578c1f14c9644692c444bbb61426297ff9e8a78a1e7242f541fb3")
@@ -309,7 +337,7 @@ func Test02(t *testing.T) {
 	}
 }
 
-///////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////
 func TestBls2(t *testing.T) {
 	pub, priv, err1 := GenKeyPair(rand.Reader)
 	if err1 != nil {
