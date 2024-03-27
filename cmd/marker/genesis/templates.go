@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"github.com/mapprotocol/atlas/params"
 	"math/big"
 	"math/rand"
 
@@ -38,7 +39,7 @@ func (e localEnv) createEnv(workdir string) (*env.Environment, error) {
 			NumValidators:        4,
 			NumDeveloperAccounts: 10,
 		},
-		ChainID: big.NewInt(211),
+		ChainID: big.NewInt(int64(params.MainNetChainID)),
 	}
 	env, err := env.New(workdir, envCfg)
 	if err != nil {

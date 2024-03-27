@@ -153,9 +153,7 @@ func (ctx *deployContext) deploy() (chain.GenesisAlloc, error) {
 				account.Storage[k] = common.HexToHash(v)
 			}
 		}
-
 		genesisAlloc[acc] = account
-
 	}
 
 	return genesisAlloc, nil
@@ -186,8 +184,6 @@ func (ctx *deployContext) deployProxiedContract(name string, initialize func(con
 	logger.Info("Deploy Proxy")
 	ctx.statedb.SetCode(proxyAddress, proxyByteCode)
 	ctx.statedb.SetState(proxyAddress, params.ProxyOwnerStorageLocation, AdminAddr.Hash())
-
-	//fmt.Println("AdminAddr.Hash()",AdminAddr.Hash())
 
 	logger.Info("Deploy Implementation")
 	ctx.statedb.SetCode(implAddress, bytecode)
@@ -246,18 +242,9 @@ func (ctx *deployContext) addSlasher(slasherName string) error {
 }
 
 func (ctx *deployContext) deployGoldToken() error {
-	err := ctx.deployCoreContract("GoldToken", func(contract *contract.EVMBackend) error {
+	return ctx.deployCoreContract("GoldToken", func(contract *contract.EVMBackend) error {
 		return contract.SimpleCall("initialize", env.MustProxyAddressFor("Registry"))
 	})
-	if err != nil {
-		return err
-	}
-
-	//for _, bal := range ctx.genesisConfig.GoldToken.InitialBalances {
-	//	ctx.statedb.SetBalance(bal.Account, bal.Amount)
-	//}
-
-	return nil
 }
 
 func (ctx *deployContext) deployEpochRewards() error {
@@ -368,6 +355,7 @@ func (ctx *deployContext) registerValidators() error {
 
 	lockedGold := ctx.contract("LockedGold")
 	validators := ctx.contract("Validators")
+	golenToken := ctx.contract("GoldToken")
 	commission := ctx.genesisConfig.Validators.Commission
 	for validatorIdx, validator := range validatorAccounts {
 		address := validator.getAddress()
@@ -376,12 +364,26 @@ func (ctx *deployContext) registerValidators() error {
 		if validatorIdx > 0 {
 			prevValidatorAddress = validatorAccounts[validatorIdx-1].getAddress()
 		}
-		ctx.statedb.AddBalance(address, requiredAmount)
 
-		logger.Info("Lock validator gold", "amount", requiredAmount)
-		if _, err := lockedGold.Call(contract.CallOpts{Origin: address, Value: requiredAmount}, "lock"); err != nil {
+		// call the mint and approved for  golden token
+		logger.Info("mint validator gold", "amount", requiredAmount)
+		err := golenToken.SimpleCallFrom(params.ZeroAddress, "mint", address, requiredAmount)
+		if err != nil {
 			return err
 		}
+		logger.Info("approve validator gold", "amount", requiredAmount)
+		err = golenToken.SimpleCallFrom(address, "approve", lockedGold.Address, requiredAmount)
+		if err != nil {
+			return err
+		}
+		logger.Info("Lock validator gold", "amount", requiredAmount)
+		err = lockedGold.SimpleCallFrom(address, "lock", requiredAmount)
+		if err != nil {
+			return err
+		}
+		//if _, err := lockedGold.Call(contract.CallOpts{Origin: address}, "lock", requiredAmount); err != nil {
+		//	return err
+		//}
 
 		logger.Info("Register validator")
 		blsPub, err := validator.BLSPublicKey()
@@ -408,7 +410,7 @@ func (ctx *deployContext) registerValidators() error {
 	return nil
 }
 
-//each validator votes for themselves.
+// each validator votes for themselves.
 func (ctx *deployContext) voteForValidators() error {
 	election := ctx.contract("Election")
 

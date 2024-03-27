@@ -6282,7 +6282,13 @@ func init() {
     },
     {
       "constant": false,
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
       "name": "lock",
       "outputs": [],
       "payable": true,
