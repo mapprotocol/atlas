@@ -381,14 +381,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 
 // DefaultGenesisBlock returns the MAP main network genesis block.
 func DefaultGenesisBlock() *Genesis {
-	gs := genesisPOC2Contract()
-	l := len(gs)
-	log.Info("Writing Main-net poc2 state", "alloc count", l)
-	gs1 := genesisRegisterProxyContract()
-	for addr, allc := range gs1 {
-		// add genesis contract to allc
-		gs[addr] = allc
-	}
+	gs := genesisRegisterProxyContract()
 	b1 := new(big.Int).Mul(big.NewInt(6000000000), big.NewInt(1e18))
 	b2 := new(big.Int).Mul(big.NewInt(4000000), big.NewInt(1e18))
 	balance0 := new(big.Int).Sub(b1, b2)
@@ -399,21 +392,9 @@ func DefaultGenesisBlock() *Genesis {
 }
 
 // DefaultTestnetGenesisBlock returns the testnet network genesis block.
-// owner 0x1c0edab88dbb72b119039c4d14b1663525b3ac15
-// validator1  0x1c0edab88dbb72b119039c4d14b1663525b3ac15 password ""
-// validator2  0x16fdbcac4d4cc24dca47b9b80f58155a551ca2af password ""
-// validator3  0x2dc45799000ab08e60b7441c36fcc74060ccbe11 password ""
-// validator4  0x6c5938b49bacde73a8db7c3a7da208846898bff5 password ""
-// keystore path  atlas/cmd/testnet_genesis
 func DefaultTestnetGenesisBlock() *Genesis {
-	gs := genesisPOC2Contract()
-	l := len(gs)
-	log.Info("Writing Test-net poc2 alloc", "alloc count", l)
-	gs1 := genesisTestnetRegisterProxyContract()
-	for addr, allc := range gs1 {
-		// add genesis contract to allc
-		gs[addr] = allc
-	}
+	gs := genesisTestnetRegisterProxyContract()
+
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
 	preAddr := common.HexToAddress("0xec3e016916ba9f10762e33e03e8556409d096fb4")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
