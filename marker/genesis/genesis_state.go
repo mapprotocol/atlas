@@ -352,14 +352,24 @@ func (ctx *deployContext) registerValidators() error {
 	if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
 		return err
 	}
-
+	logger := ctx.logger.New("register Validators")
 	lockedGold := ctx.contract("LockedGold")
 	validators := ctx.contract("Validators")
 	golenToken := ctx.contract("GoldToken")
 	commission := ctx.genesisConfig.Validators.Commission
+	// init golden genesis account
+	genesisList := ctx.genesisConfig.GoldToken.InitialBalances
+	for i, v := range genesisList {
+
+		logger.Info("init genesis golden", "index", i, "account", v.Account, "amount", v.Amount)
+		err := golenToken.SimpleCallFrom(params.ZeroAddress, "mint", v.Account, v.Amount)
+		if err != nil {
+			return err
+		}
+	}
 	for validatorIdx, validator := range validatorAccounts {
 		address := validator.getAddress()
-		logger := ctx.logger.New("validator", address)
+		logger.Info("register validator", "address", address)
 		prevValidatorAddress := params.ZeroAddress
 		if validatorIdx > 0 {
 			prevValidatorAddress = validatorAccounts[validatorIdx-1].getAddress()

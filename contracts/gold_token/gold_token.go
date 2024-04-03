@@ -14,6 +14,7 @@ var (
 	totalSupplyMethod    = contracts.NewRegisteredContractMethod(params.GoldTokenRegistryId, abis.GoldToken, "totalSupply", params.MaxGasForTotalSupply)
 	increaseSupplyMethod = contracts.NewRegisteredContractMethod(params.GoldTokenRegistryId, abis.GoldToken, "increaseSupply", params.MaxGasForIncreaseSupply)
 	mintMethod           = contracts.NewRegisteredContractMethod(params.GoldTokenRegistryId, abis.GoldToken, "mint", params.MaxGasForMintGas)
+	balanceOf            = contracts.NewRegisteredContractMethod(params.GoldTokenRegistryId, abis.GoldToken, "balanceOf", params.MaxGasForIncreaseSupply)
 )
 
 func GetTotalSupply(vmRunner vm.EVMRunner) (*big.Int, error) {
@@ -34,4 +35,10 @@ func Mint(vmRunner vm.EVMRunner, beneficiary common.Address, value *big.Int) err
 
 	err := mintMethod.Execute(vmRunner, nil, common.Big0, beneficiary, value)
 	return err
+}
+
+func BalanceOf(vmRunner vm.EVMRunner, owner common.Address) (*big.Int, error) {
+	var balance *big.Int
+	err := balanceOf.Query(vmRunner, &balance, owner)
+	return balance, err
 }

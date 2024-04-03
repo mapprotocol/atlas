@@ -49,7 +49,9 @@ var (
 	faucetAddr    = common.HexToAddress("0xf675187ff5b76d2430b353f6736aa051253118ee")
 	faucetBalance = new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18))
 	// private key: baf7c2008a568f91a75caf45b6e849b953513c10b5f3d73270d40c62a4ff5002
-	tempAddr = common.HexToAddress("0xd13fe09e7a304709b1c4ed6bd3a2d6c272357bbb")
+	tempAddr           = common.HexToAddress("0xd13fe09e7a304709b1c4ed6bd3a2d6c272357bbb")
+	GenesisGoldAddress = common.HexToAddress("0xf675187ff5b76d2430b353f6736aa051253118ee")
+	GenesisGoldBalance = new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18))
 
 	DefaultGenesisCfg = &Genesis{
 		Config:    params.MainnetChainConfig,
@@ -299,8 +301,6 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	// pre compiled
 	consensus.InitHeaderStore(statedb, new(big.Int).SetUint64(g.Number))
 	consensus.InitTxVerify(statedb, new(big.Int).SetUint64(g.Number))
-
-	root := statedb.IntermediateRoot(false)
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
 		Nonce:      types.EncodeNonce(g.Nonce),
@@ -312,7 +312,6 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		BaseFee:    g.BaseFee,
 		MixDigest:  g.Mixhash,
 		Coinbase:   g.Coinbase,
-		Root:       root,
 	}
 	if head.GasLimit == 0 {
 		head.GasLimit = ethparams.GenesisGasLimit
@@ -324,6 +323,8 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 			head.BaseFee = new(big.Int).SetUint64(ethparams.InitialBaseFee)
 		}
 	}
+	root := statedb.IntermediateRoot(false)
+	head.Root = root
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true, nil)
 
