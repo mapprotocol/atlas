@@ -62,7 +62,12 @@ func BaseConfig() *Config {
 		Random: RandomParameters{
 			RandomnessBlockRetentionWindow: 720,
 		},
-		GoldToken: GoldTokenParameters{},
+		GoldToken: GoldTokenParameters{
+			InitialBalances: BalanceList{Balance{
+				Account: common.HexToAddress("0xAfe370d927B6d27964937eeF96FD84EF522F2e48"),
+				Amount:  new(big.Int).Mul(big.NewInt(5000000), big.NewInt(1e18)),
+			}},
+		},
 		Blockchain: BlockchainParameters{
 			Version:                 Version{1, 0, 0},
 			GasForNonGoldCurrencies: 50000,

@@ -352,7 +352,7 @@ func (ctx *deployContext) registerValidators() error {
 	if err := ctx.createAccounts(validatorAccounts, "validator"); err != nil {
 		return err
 	}
-	logger := ctx.logger.New("register Validators")
+
 	lockedGold := ctx.contract("LockedGold")
 	validators := ctx.contract("Validators")
 	golenToken := ctx.contract("GoldToken")
@@ -361,7 +361,7 @@ func (ctx *deployContext) registerValidators() error {
 	genesisList := ctx.genesisConfig.GoldToken.InitialBalances
 	for i, v := range genesisList {
 
-		logger.Info("init genesis golden", "index", i, "account", v.Account, "amount", v.Amount)
+		ctx.logger.Info("init genesis golden", "index", i, "account", v.Account, "amount", v.Amount)
 		err := golenToken.SimpleCallFrom(params.ZeroAddress, "mint", v.Account, v.Amount)
 		if err != nil {
 			return err
@@ -369,24 +369,24 @@ func (ctx *deployContext) registerValidators() error {
 	}
 	for validatorIdx, validator := range validatorAccounts {
 		address := validator.getAddress()
-		logger.Info("register validator", "address", address)
+		ctx.logger.Info("register validator", "address", address)
 		prevValidatorAddress := params.ZeroAddress
 		if validatorIdx > 0 {
 			prevValidatorAddress = validatorAccounts[validatorIdx-1].getAddress()
 		}
 
 		// call the mint and approved for  golden token
-		logger.Info("mint validator gold", "amount", requiredAmount)
+		ctx.logger.Info("mint validator gold", "amount", requiredAmount)
 		err := golenToken.SimpleCallFrom(params.ZeroAddress, "mint", address, requiredAmount)
 		if err != nil {
 			return err
 		}
-		logger.Info("approve validator gold", "amount", requiredAmount)
+		ctx.logger.Info("approve validator gold", "amount", requiredAmount)
 		err = golenToken.SimpleCallFrom(address, "approve", lockedGold.Address, requiredAmount)
 		if err != nil {
 			return err
 		}
-		logger.Info("Lock validator gold", "amount", requiredAmount)
+		ctx.logger.Info("Lock validator gold", "amount", requiredAmount)
 		err = lockedGold.SimpleCallFrom(address, "lock", requiredAmount)
 		if err != nil {
 			return err
@@ -395,7 +395,7 @@ func (ctx *deployContext) registerValidators() error {
 		//	return err
 		//}
 
-		logger.Info("Register validator")
+		ctx.logger.Info("Register validator")
 		blsPub, err := validator.BLSPublicKey()
 		if err != nil {
 			return err
