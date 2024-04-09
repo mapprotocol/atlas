@@ -15,9 +15,9 @@ func BaseConfig() *Config {
 	fixed := fixed.MustNew
 
 	// an epoch award 2,500,000 MAP = 300,000,000(one year award) / 6000,000(number a year) * 50,000(one epoch number)
-	perNumberReward := new(big.Int).Div(big.NewInt(300000000), big.NewInt(6000000))      // 50 MAP
-	perEpochReward := new(big.Int).Mul(perNumberReward, big.NewInt(int64(params.Epoch))) // MAP
-	perEpochReward = new(big.Int).Mul(perEpochReward, big.NewInt(1e18))                  // wei
+	//perNumberReward := new(big.Int).Div(big.NewInt(300000000), big.NewInt(6000000))      // 50 MAP
+	//perEpochReward := new(big.Int).Mul(perNumberReward, big.NewInt(int64(params.Epoch))) // MAP
+	perEpochReward := new(big.Int).Mul(big.NewInt(10000), big.NewInt(1e18)) // wei
 	return &Config{
 		Validators: ValidatorsParameters{
 
@@ -54,7 +54,7 @@ func BaseConfig() *Config {
 			CommunityRewardFraction:        fixed("0"),
 			CommunityPartner:               params.ZeroAddress,
 			EpochMaintainerPaymentFraction: fixed("0.33333333333333333333"),
-			MgrMaintainerAddress:           common.HexToAddress("0x1"),
+			MgrMaintainerAddress:           common.HexToAddress("0xAfe370d927B6d27964937eeF96FD84EF522F2e48"),
 		},
 		LockedGold: LockedGoldParameters{
 			UnlockingPeriod: 1296000, //15 day
@@ -65,7 +65,7 @@ func BaseConfig() *Config {
 		GoldToken: GoldTokenParameters{
 			InitialBalances: BalanceList{Balance{
 				Account: common.HexToAddress("0xAfe370d927B6d27964937eeF96FD84EF522F2e48"),
-				Amount:  new(big.Int).Mul(big.NewInt(5000000), big.NewInt(1e18)),
+				Amount:  new(big.Int).Mul(big.NewInt(50000000), big.NewInt(1e18)),
 			}},
 		},
 		Blockchain: BlockchainParameters{

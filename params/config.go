@@ -24,9 +24,9 @@ const (
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash = common.HexToHash("0x6b2bd27bee0f7675550204c541a30cc6a14aa1738431cb60e21e666b2fec8014")
-	TestnetGenesisHash = common.HexToHash("0xede9749324b65e9df7b74830696637ed25c24ae4ffd07f8c36b8e5b6eac7dfa0")
-	DevnetGenesisHash  = common.HexToHash("0xa7712fd6f430d32fbc796665289bf9702b6991e96393fd670e7834c48e15755f")
+	MainnetGenesisHash = common.HexToHash("0x49f819f1db33812af359aa5d08aae4a699265f4e62d61308a2b637c515bd2ccd")
+	TestnetGenesisHash = common.HexToHash("0x5420312471d7cf6a04beda2e05d824e1d4e268d8f55020a77bc2c3875bcd73c2")
+	DevnetGenesisHash  = common.HexToHash("0xd8cdaa5ab22c001e3e03e6d1c1f4dbb08f62c23c11ead15435d244d66512e853")
 )
 
 var (
@@ -46,7 +46,7 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(10000000),
+		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(0),
 		DeregisterBlock:     big.NewInt(0),
 		CalcBaseBlock:       big.NewInt(0),
@@ -61,7 +61,7 @@ var (
 	}
 
 	TestnetConfig = &ChainConfig{
-		ChainID:             big.NewInt(212),
+		ChainID:             big.NewInt(int64(TestnetWorkID)),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
@@ -76,7 +76,7 @@ var (
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		EnableRewardBlock:   big.NewInt(10000000),
+		EnableRewardBlock:   big.NewInt(0),
 		BN256ForkBlock:      big.NewInt(0),
 		DeregisterBlock:     big.NewInt(0),
 		CalcBaseBlock:       big.NewInt(0),
@@ -91,7 +91,7 @@ var (
 	}
 
 	DevnetConfig = &ChainConfig{
-		ChainID:             big.NewInt(213),
+		ChainID:             big.NewInt(int64(DevNetChainID)),
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,

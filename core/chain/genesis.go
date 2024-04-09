@@ -381,10 +381,8 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 // DefaultGenesisBlock returns the MAP main network genesis block.
 func DefaultGenesisBlock() *Genesis {
 	gs := genesisRegisterProxyContract()
-	b1 := new(big.Int).Mul(big.NewInt(6000000000), big.NewInt(1e18))
-	b2 := new(big.Int).Mul(big.NewInt(4000000), big.NewInt(1e18))
-	balance0 := new(big.Int).Sub(b1, b2)
-	preAddr := common.HexToAddress("0x739A3c98BdDe5F213827eB1BaaDa3E51f5713399")
+	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
+	preAddr := common.HexToAddress("0xAfe370d927B6d27964937eeF96FD84EF522F2e48")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 	DefaultGenesisCfg.Alloc = gs
 	return DefaultGenesisCfg
@@ -393,9 +391,8 @@ func DefaultGenesisBlock() *Genesis {
 // DefaultTestnetGenesisBlock returns the testnet network genesis block.
 func DefaultTestnetGenesisBlock() *Genesis {
 	gs := genesisTestnetRegisterProxyContract()
-
 	balance0 := new(big.Int).Mul(big.NewInt(1000000000), big.NewInt(1e18))
-	preAddr := common.HexToAddress("0xec3e016916ba9f10762e33e03e8556409d096fb4")
+	preAddr := common.HexToAddress("0xAfe370d927B6d27964937eeF96FD84EF522F2e48")
 	gs[preAddr] = GenesisAccount{Balance: balance0}
 
 	return &Genesis{
