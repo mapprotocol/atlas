@@ -17,7 +17,7 @@ FROM ubuntu:latest
 COPY --from=builder /atlas/build/bin/atlas /usr/local/bin/
 RUN chmod +x /usr/local/bin/atlas
 
-EXPOSE 7445 20101 20101/udp
+EXPOSE 7445 20301 20301/udp
 ENTRYPOINT ["atlas"]
 
 # Add some metadata labels to help programatic image consumption

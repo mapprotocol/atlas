@@ -76,7 +76,7 @@ Do not forget `--http.addr 0.0.0.0`, if you want to access RPC from other contai
 | :-----------: | :--------------| :---------------- | :----------------| :---------------|
 | ChainId       |     22776      |     212      |     213      |     214    |
 | NetworkId     |     22776      |     212      |     213      |     214      |
-| Port          |     20101      |     20101      |     20101      |20101|
+| Port          |     20301      |     20301      |     20301      |20301|
 | RpcPort       |     7445      |     7445      |     7445      |     7445   |
 
 | param      | value| comment
