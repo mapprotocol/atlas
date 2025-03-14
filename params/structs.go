@@ -102,8 +102,7 @@ type ChainConfig struct {
 	EnableRewardBlock *big.Int `json:"rewardblock,omitempty"`
 	DeregisterBlock   *big.Int `json:"deregisterblock,omitempty"`
 	CalcBaseBlock     *big.Int `json:"calcbaseblock,omitempty"`
-	ShanghaiBlock     *big.Int `json:"shanghaiBlock,omitempty"` // Shanghai switch block (nil = no fork, 0 = already on shanghai)
-	CancunBlock       *big.Int `json:"cancunBlock,omitempty"`   // Cancun switch block (nil = no fork, 0 = already on shanghai)
+	MAIBlock          *big.Int `json:"maiBlock,omitempty"` // MAI switch block (nil = no fork, 0 = already on shanghai)
 	// This does not belong here but passing it to every function is not possible since that breaks
 	// some implemented interfaces and introduces churn across the geth codebase.
 	FullHeaderChainAvailable bool // False for lightest Sync mode, true otherwise
@@ -257,18 +256,14 @@ func (c *ChainConfig) IsCatalyst(num *big.Int) bool {
 func (c *ChainConfig) IsEWASM(num *big.Int) bool {
 	return isForked(c.EWASMBlock, num)
 }
+
 func (c *ChainConfig) IsCalc(num *big.Int) bool {
 	return isForked(c.CalcBaseBlock, num)
 }
 
-// IsShanghai returns whether num is either equal to the Shanghai fork block or greater.
-func (c *ChainConfig) IsShanghai(num *big.Int) bool {
-	return isForked(c.ShanghaiBlock, num)
-}
-
-// IsCancun returns whether num is either equal to the IsCancun fork block or greater.
-func (c *ChainConfig) IsCancun(num *big.Int) bool {
-	return isForked(c.CancunBlock, num)
+// IsMAI returns whether num is either equal to the MAI fork block or greater.
+func (c *ChainConfig) IsMAI(num *big.Int) bool {
+	return isForked(c.MAIBlock, num)
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
@@ -451,7 +446,7 @@ type Rules struct {
 	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
 	IsByzantium, IsConstantinople, IsPetersburg, IsIstanbul bool
 	IsBerlin, IsLondon, IsCatalyst                          bool
-	IsShanghai, IsCancun                                    bool
+	IsMAI                                                   bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -473,8 +468,7 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 		IsBerlin:         c.IsBerlin(num),
 		IsLondon:         c.IsLondon(num),
 		IsCatalyst:       c.IsCatalyst(num),
-		IsShanghai:       c.IsShanghai(num),
-		IsCancun:         c.IsCancun(num),
+		IsMAI:            c.IsMAI(num),
 	}
 }
 

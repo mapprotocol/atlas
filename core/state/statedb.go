@@ -1069,7 +1069,7 @@ func (s *StateDB) PrepareAccessList(rules params.Rules, sender, coinbase common.
 			al.AddSlot(el.Address, key)
 		}
 	}
-	if rules.IsShanghai { // EIP-3651: warm coinbase
+	if rules.IsMAI { // EIP-3651: warm coinbase
 		al.AddAddress(coinbase)
 	}
 }

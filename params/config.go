@@ -107,11 +107,10 @@ var (
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
 		EnableRewardBlock:   big.NewInt(0),
-		BN256ForkBlock:      big.NewInt(0),
+		BN256ForkBlock:      big.NewInt(2001),
 		DeregisterBlock:     big.NewInt(0),
 		CalcBaseBlock:       big.NewInt(0),
-		ShanghaiBlock:       big.NewInt(1000),
-		CancunBlock:         big.NewInt(1000),
+		MAIBlock:            big.NewInt(9820000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
