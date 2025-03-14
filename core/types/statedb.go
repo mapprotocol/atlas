@@ -34,8 +34,8 @@ type StateDB interface {
 	GetPOWState(common.Address, common.Hash) []byte
 	SetPOWState(common.Address, common.Hash, []byte)
 
-	Suicide(common.Address) bool
-	HasSuicided(common.Address) bool
+	SelfDestruct(common.Address)
+	HasSelfDestructed(common.Address) bool
 
 	Selfdestruct6780(common.Address)
 

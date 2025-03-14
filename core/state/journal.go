@@ -95,7 +95,7 @@ type (
 	}
 	selfDestructChange struct {
 		account     *common.Address
-		prev        bool // whether account had already suicided
+		prev        bool // whether account had already self-destructed
 		prevbalance *big.Int
 	}
 

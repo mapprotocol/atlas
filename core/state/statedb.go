@@ -376,7 +376,7 @@ func (s *StateDB) StorageTrie(addr common.Address) Trie {
 	return cpy.getTrie(s.db)
 }
 
-func (s *StateDB) HasSuicided(addr common.Address) bool {
+func (s *StateDB) HasSelfDestructed(addr common.Address) bool {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.selfDestructed
@@ -477,27 +477,6 @@ func (s *StateDB) Selfdestruct6780(addr common.Address) {
 		s.SelfDestruct(addr)
 	}
 }
-
-// Suicide marks the given account as selfDestructed.
-// This clears the account balance.
-//
-// The account's state object is still available until the state is committed,
-// getStateObject will return a non-nil account after Suicide.
-//func (s *StateDB) Suicide(addr common.Address) bool {
-//	stateObject := s.getStateObject(addr)
-//	if stateObject == nil {
-//		return false
-//	}
-//	s.journal.append(selfDestructChange{
-//		account:     &addr,
-//		prev:        stateObject.selfDestructed,
-//		prevbalance: new(big.Int).Set(stateObject.Balance()),
-//	})
-//	stateObject.markSuicided()
-//	stateObject.data.Balance = new(big.Int)
-//
-//	return true
-//}
 
 //
 // Setting, updating & deleting state object methods.
