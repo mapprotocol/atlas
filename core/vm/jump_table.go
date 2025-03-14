@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -58,10 +59,43 @@ var (
 	istanbulInstructionSet         = newIstanbulInstructionSet()
 	berlinInstructionSet           = newBerlinInstructionSet()
 	londonInstructionSet           = newLondonInstructionSet()
+	shanghaiInstructionSet         = newShanghaiInstructionSet()
+	cancunInstructionSet           = newCancunInstructionSet()
 )
 
 // JumpTable contains the EVM opcodes supported at a given fork.
 type JumpTable [256]*operation
+
+func validate(jt JumpTable) JumpTable {
+	for i, op := range jt {
+		if op == nil {
+			panic(fmt.Sprintf("op %#x is not set", i))
+		}
+		// The interpreter has an assumption that if the memorySize function is
+		// set, then the dynamicGas function is also set. This is a somewhat
+		// arbitrary assumption, and can be removed if we need to -- but it
+		// allows us to avoid a condition check. As long as we have that assumption
+		// in there, this little sanity check prevents us from merging in a
+		// change which violates it.
+		if op.memorySize != nil && op.dynamicGas == nil {
+			panic(fmt.Sprintf("op %v has dynamic memory but not dynamic gas", OpCode(i).String()))
+		}
+	}
+	return jt
+}
+
+func newCancunInstructionSet() JumpTable {
+	instructionSet := newShanghaiInstructionSet()
+	enable5656(&instructionSet) // EIP-5656 (MCOPY opcode)
+	enable6780(&instructionSet) // EIP-6780 SELFDESTRUCT only in same transaction
+	return validate(instructionSet)
+}
+
+func newShanghaiInstructionSet() JumpTable {
+	instructionSet := newLondonInstructionSet()
+	enable3855(&instructionSet) // PUSH0 instruction
+	return validate(instructionSet)
+}
 
 // newLondonInstructionSet returns the frontier, homestead, byzantium,
 // contantinople, istanbul, petersburg, berlin and london instructions.
@@ -1030,4 +1064,15 @@ func newFrontierInstructionSet() JumpTable {
 			writes:     true,
 		},
 	}
+}
+
+func copyJumpTable(source *JumpTable) *JumpTable {
+	dest := *source
+	for i, op := range source {
+		if op != nil {
+			opCopy := *op
+			dest[i] = &opCopy
+		}
+	}
+	return &dest
 }

@@ -25,6 +25,9 @@ import (
 )
 
 var activators = map[int]func(*JumpTable){
+	5656: enable5656,
+	6780: enable6780,
+	3855: enable3855,
 	3529: enable3529,
 	3198: enable3198,
 	2929: enable2929,
@@ -173,4 +176,65 @@ func opBaseFee(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]
 	baseFee, _ := uint256.FromBig(interpreter.evm.Context.BaseFee)
 	scope.Stack.push(baseFee)
 	return nil, nil
+}
+
+// enable3855 applies EIP-3855 (PUSH0 opcode)
+func enable3855(jt *JumpTable) {
+	// New opcode
+	jt[PUSH0] = &operation{
+		execute:     opPush0,
+		constantGas: GasQuickStep,
+		minStack:    minStack(0, 1),
+		maxStack:    maxStack(0, 1),
+	}
+}
+
+// opPush0 implements the PUSH0 opcode
+func opPush0(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	scope.Stack.push(new(uint256.Int))
+	return nil, nil
+}
+
+// enable3860 enables "EIP-3860: Limit and meter initcode"
+// https://eips.ethereum.org/EIPS/eip-3860
+//func enable3860(jt *JumpTable) {
+//	jt[CREATE].dynamicGas = gasCreateEip3860
+//	jt[CREATE2].dynamicGas = gasCreate2Eip3860
+//}
+
+// enable5656 enables EIP-5656 (MCOPY opcode)
+// https://eips.ethereum.org/EIPS/eip-5656
+func enable5656(jt *JumpTable) {
+	jt[MCOPY] = &operation{
+		execute:     opMcopy,
+		constantGas: GasFastestStep,
+		dynamicGas:  gasMcopy,
+		minStack:    minStack(3, 0),
+		maxStack:    maxStack(3, 0),
+		memorySize:  memoryMcopy,
+	}
+}
+
+// opMcopy implements the MCOPY opcode (https://eips.ethereum.org/EIPS/eip-5656)
+func opMcopy(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	var (
+		dst    = scope.Stack.pop()
+		src    = scope.Stack.pop()
+		length = scope.Stack.pop()
+	)
+	// These values are checked for overflow during memory expansion calculation
+	// (the memorySize function on the opcode).
+	scope.Memory.Copy(dst.Uint64(), src.Uint64(), length.Uint64())
+	return nil, nil
+}
+
+// enable6780 applies EIP-6780 (deactivate SELFDESTRUCT)
+func enable6780(jt *JumpTable) {
+	jt[SELFDESTRUCT] = &operation{
+		execute:     opSelfdestruct6780,
+		dynamicGas:  gasSelfdestructEIP3529,
+		constantGas: params.SelfdestructGasEIP150,
+		minStack:    minStack(1, 0),
+		maxStack:    maxStack(1, 0),
+	}
 }
