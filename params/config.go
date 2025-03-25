@@ -110,6 +110,7 @@ var (
 		BN256ForkBlock:      big.NewInt(2001),
 		DeregisterBlock:     big.NewInt(0),
 		CalcBaseBlock:       big.NewInt(0),
+		MAIBlock:            big.NewInt(9820000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          1000,
 			ProposerPolicy: 2,
