@@ -21,7 +21,7 @@ func newBase() *base {
 	}
 }
 
-// waitUntilMsgHandled this function will block untill message is handled
+// waitUntilMsgHandled this function will block until message is handled
 func (b *base) waitUntilMsgHandled(counter int) {
 	log.Debug("waitUntilMsgHandled", "counter", counter)
 	for counter > 0 {
