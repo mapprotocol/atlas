@@ -50,6 +50,7 @@ var (
 		BN256ForkBlock:      big.NewInt(2350001),
 		DeregisterBlock:     big.NewInt(2990000),
 		CalcBaseBlock:       big.NewInt(3790000),
+		MAIBlock:            big.NewInt(17295000),
 		Istanbul: &IstanbulConfig{
 			Epoch:          Epoch,
 			ProposerPolicy: 2,
@@ -80,6 +81,7 @@ var (
 		BN256ForkBlock:      big.NewInt(20000),
 		DeregisterBlock:     big.NewInt(1242000),
 		CalcBaseBlock:       big.NewInt(1242000),
+		MAIBlock:            big.NewInt(15045600),
 		Istanbul: &IstanbulConfig{
 			Epoch:          4000,
 			ProposerPolicy: 2,
