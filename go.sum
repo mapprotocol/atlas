@@ -546,8 +546,8 @@ github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e/go.mod h1:C1wdFJiN
 github.com/mapprotocol/atlas v0.5.1-0.20220530091946-06b376fbe9bd/go.mod h1:+8rp2bisFkLOTObsmvfbAdlK7exl73oFaQvhuBNTn3E=
 github.com/mapprotocol/compass v1.1.0 h1:FAaVNvlBOenb0LM5boKxEm15B6B0VKZvgdIR2Ind+RA=
 github.com/mapprotocol/compass v1.1.0/go.mod h1:cvSK0NFXoueywIRC97AWkSnytaSGUWTx/eEN64QcXvc=
-github.com/mapprotocol/go-ethereum v1.10.10-patch1 h1:2uYRtkwjXR2XfN2u20wz8YM1r2rPNgxueDPFnROsfmQ=
-github.com/mapprotocol/go-ethereum v1.10.10-patch1/go.mod h1:MSlwvpNF2EzjM5+nF2Neqhnwo+jVhY2XpoKazu2EPz4=
+github.com/mapprotocol/go-ethereum v1.10.10-patch2 h1:Y7e5dfLISmdhBfGQDz4whm/GRk2+hH1rLuZ828AoYqA=
+github.com/mapprotocol/go-ethereum v1.10.10-patch2/go.mod h1:MSlwvpNF2EzjM5+nF2Neqhnwo+jVhY2XpoKazu2EPz4=
 github.com/mapprotocol/near-api-go v0.0.0-20220801061430-b9e1d4580dc5/go.mod h1:5UbxScOB/xumHSVu0QDatqT8ccm4n/mHWbX+4OjggKk=
 github.com/matryer/moq v0.0.0-20190312154309-6cfb0558e1bd/go.mod h1:9ELz6aaclSIGnZBoaSLZ3NAl1VTufbOrXBPvtcy6WiQ=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
