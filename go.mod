@@ -65,4 +65,4 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
-replace github.com/ethereum/go-ethereum v1.10.10 => github.com/mapprotocol/go-ethereum v1.10.10-patch1 // indirect
+replace github.com/ethereum/go-ethereum v1.10.10 => github.com/mapprotocol/go-ethereum v1.10.10-patch2 // indirect
