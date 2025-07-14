@@ -274,8 +274,8 @@ func TestLifecycleStartupError(t *testing.T) {
 
 	// Register a service that fails to construct itself
 	failure := errors.New("fail")
-	failer := &InstrumentedService{start: failure}
-	stack.RegisterLifecycle(failer)
+	failure := &InstrumentedService{start: failure}
+	stack.RegisterLifecycle(failure)
 
 	// Start the protocol stack and ensure all started services stop
 	if err := stack.Start(); err != failure {
@@ -324,8 +324,8 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 
 	// Register a service that fails to shot down cleanly
 	failure := errors.New("fail")
-	failer := &InstrumentedService{stop: failure}
-	stack.RegisterLifecycle(failer)
+	failure := &InstrumentedService{stop: failure}
+	stack.RegisterLifecycle(failure)
 
 	// Start the protocol stack, and ensure that a failing shut down terminates all
 	// Start the stack and make sure all is online
@@ -345,9 +345,9 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 	if err, ok := err.(*StopError); !ok {
 		t.Fatalf("termination failure mismatch: have %v, want StopError", err)
 	} else {
-		failer := reflect.TypeOf(&InstrumentedService{})
-		if err.Services[failer] != failure {
-			t.Fatalf("failer termination failure mismatch: have %v, want %v", err.Services[failer], failure)
+		failure := reflect.TypeOf(&InstrumentedService{})
+		if err.Services[failure] != failure {
+			t.Fatalf("failure termination failure mismatch: have %v, want %v", err.Services[failure], failure)
 		}
 		if len(err.Services) != 1 {
 			t.Fatalf("failure count mismatch: have %d, want %d", len(err.Services), 1)
