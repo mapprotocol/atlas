@@ -94,8 +94,8 @@ func Post(url, contentType string, body io.Reader) (result []byte, err error) {
 	return result, err
 }
 
-//Send Transtion (Post Way)
-func Test_SendTranstion(t *testing.T) {
+//Send Transition (Post Way)
+func Test_SendTransition(t *testing.T) {
 	//url := "http://localhost:8545"
 	url := "http://13.67.118.60:7445"
 	conn, err := rpc.Dial(url)

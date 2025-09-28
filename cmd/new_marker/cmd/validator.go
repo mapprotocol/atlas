@@ -42,8 +42,8 @@ func NewValidator() *Validator {
 
 func (v *Validator) RegisterValidator(ctx *cli.Context, cfg *define.Config) error {
 	log.Info("=== Register validator ===")
-	commision := big.NewInt(0).SetUint64(cfg.Commission)
-	log.Info("=== commision ===", "commision", commision)
+	commission := big.NewInt(0).SetUint64(cfg.Commission)
+	log.Info("=== commission ===", "commission", commission)
 	if v.isPendingDeRegisterValidator(cfg) {
 		_ = v.revertRegisterValidator(ctx, cfg)
 		log.Info("the account is in PendingDeRegisterValidator list please use revertRegisterValidator command")
@@ -74,7 +74,7 @@ func (v *Validator) RegisterValidator(ctx *cli.Context, cfg *define.Config) erro
 	}
 	validatorParams := [4][]byte{cfg.BlsPub[:], cfg.BlsG1Pub[:], cfg.BLSProof, cfg.PublicKey[1:]}
 
-	_params := []interface{}{commision, lesser, greater, validatorParams}
+	_params := []interface{}{commission, lesser, greater, validatorParams}
 	v.handleType1Msg(cfg, v.to, nil, v.abi, "registerValidator", _params...)
 	return nil
 }
