@@ -136,6 +136,14 @@ var (
 		Name:  "markercfg",
 		Usage: "Marker config path",
 	}
+	P2pAddress = cli.StringFlag{
+		Name:  "p2pAddress",
+		Usage: "IP address used for P2P communication",
+	}
+	Testnet = cli.BoolFlag{
+		Name:  "testnet",
+		Usage: "use testnet network, default is mainnet",
+	}
 )
 
 var TemplateFlags = []cli.Flag{
