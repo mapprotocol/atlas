@@ -23,7 +23,7 @@ type Tss struct {
 func NewTss() *Tss {
 	return &Tss{
 		base: newBase(),
-		abi:  mapprotocol.AbiFor("Tss"),
+		abi:  mapprotocol.AbiFor("Maintainer"),
 	}
 }
 
