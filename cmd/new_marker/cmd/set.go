@@ -404,7 +404,12 @@ func init() {
 			Usage:     "register tss maintainers",
 			Action:    MigrateFlags(tss.Register),
 			ArgsUsage: "",
-			Flags:     append([]cli.Flag{define.KeyStoreFlag, define.P2pAddress, define.Testnet}),
+			Flags: append([]cli.Flag{
+				define.KeyStoreFlag,
+				define.P2pAddress, 
+				define.Testnet,
+				define.RPCAddrFlag,
+			}),
 		},
 	}...)
 }
