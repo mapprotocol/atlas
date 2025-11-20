@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"gopkg.in/urfave/cli.v1"
-	"os"
-	"strconv"
 )
 
 var (
@@ -13,6 +14,7 @@ var (
 	ValidatorSet []cli.Command
 	VoterSet     []cli.Command
 	ToolSet      []cli.Command
+	TssSet       []cli.Command
 )
 
 func init() {
@@ -393,6 +395,16 @@ func init() {
 			Usage:  "Monitor the revenue of voter to a validator",
 			Action: MigrateFlags(tool.voterMonitor),
 			Flags:  define.MustFlagCombination,
+		},
+	}...)
+	tss := NewTss()
+	TssSet = append(TssSet, []cli.Command{
+		{
+			Name:      "register",
+			Usage:     "register tss maintainers",
+			Action:    MigrateFlags(tss.Register),
+			ArgsUsage: "",
+			Flags:     append([]cli.Flag{define.KeyStoreFlag, define.P2pAddress, define.Testnet}),
 		},
 	}...)
 }

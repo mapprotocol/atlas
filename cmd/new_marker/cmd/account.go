@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
 	"gopkg.in/urfave/cli.v1"
-	"math/big"
 )
 
 type Account struct {

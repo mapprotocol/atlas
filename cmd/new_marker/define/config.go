@@ -3,6 +3,9 @@ package define
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"math/big"
+	"syscall"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
@@ -10,8 +13,6 @@ import (
 	"github.com/mapprotocol/atlas/params"
 	"golang.org/x/term"
 	"gopkg.in/urfave/cli.v1"
-	"math/big"
-	"syscall"
 )
 
 type LockedGoldParameters struct {

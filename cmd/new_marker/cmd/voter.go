@@ -3,6 +3,11 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"math/big"
+	"os"
+	"sort"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/accounts/abi"
@@ -14,10 +19,6 @@ import (
 	"github.com/mapprotocol/atlas/helper/decimal/fixed"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
-	"math/big"
-	"os"
-	"sort"
-	"strings"
 )
 
 type Voter struct {

@@ -9779,6 +9779,1324 @@ func init() {
       "type": "receive"
     }
   ]`) // Validators ABI
+	abis["Tss"] = mustParseABI(`[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "authority",
+                "type": "address"
+            }
+        ],
+        "name": "AccessManagedInvalidAuthority",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "caller",
+                "type": "address"
+            },
+            {
+                "internalType": "uint32",
+                "name": "delay",
+                "type": "uint32"
+            }
+        ],
+        "name": "AccessManagedRequiredDelay",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "caller",
+                "type": "address"
+            }
+        ],
+        "name": "AccessManagedUnauthorized",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "target",
+                "type": "address"
+            }
+        ],
+        "name": "AddressEmptyCode",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "ECDSAInvalidSignature",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "length",
+                "type": "uint256"
+            }
+        ],
+        "name": "ECDSAInvalidSignatureLength",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "s",
+                "type": "bytes32"
+            }
+        ],
+        "name": "ECDSAInvalidSignatureS",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "implementation",
+                "type": "address"
+            }
+        ],
+        "name": "ERC1967InvalidImplementation",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "ERC1967NonPayable",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "EnforcedPause",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "ExpectedPause",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "FailedCall",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "InvalidInitialization",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "NotInitializing",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "UUPSUnauthorizedCallContext",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "slot",
+                "type": "bytes32"
+            }
+        ],
+        "name": "UUPSUnsupportedProxiableUUID",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "already_propose",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "invalid_members",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "invalid_sig",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "invalid_status",
+        "type": "error"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "no_access",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "authority",
+                "type": "address"
+            }
+        ],
+        "name": "AuthorityUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "version",
+                "type": "uint64"
+            }
+        ],
+        "name": "Initialized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "epochId",
+                "type": "uint256"
+            }
+        ],
+        "name": "MigrateCompleted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "Paused",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "m",
+                "type": "address"
+            }
+        ],
+        "name": "ResetSlashPoint",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "retireEpochId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "activeEpochId",
+                "type": "uint256"
+            }
+        ],
+        "name": "Retire",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "currentId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "nextId",
+                "type": "uint256"
+            }
+        ],
+        "name": "Rotate",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_maintainer",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_relay",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_parameter",
+                "type": "address"
+            }
+        ],
+        "name": "Set",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "Unpaused",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "maitainer",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "keyShare",
+                "type": "bytes"
+            }
+        ],
+        "name": "UpdateKeyShare",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "implementation",
+                "type": "address"
+            }
+        ],
+        "name": "Upgraded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "epoch",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "chain",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "height",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "limit",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            }
+        ],
+        "name": "VoteNetworkFee",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "orderId",
+                        "type": "bytes32"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "height",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "refundAddr",
+                        "type": "bytes"
+                    }
+                ],
+                "indexed": false,
+                "internalType": "struct TxInItem",
+                "name": "txInItem",
+                "type": "tuple"
+            }
+        ],
+        "name": "VoteTxIn",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "orderId",
+                        "type": "bytes32"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "height",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "gasUsed",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    }
+                ],
+                "indexed": false,
+                "internalType": "struct TxOutItem",
+                "name": "txOutItem",
+                "type": "tuple"
+            }
+        ],
+        "name": "VoteTxOut",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "epoch",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "pubkey",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "keyShare",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "members",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "blames",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "signature",
+                        "type": "bytes"
+                    }
+                ],
+                "indexed": false,
+                "internalType": "struct TSSManager.TssPoolParam",
+                "name": "param",
+                "type": "tuple"
+            }
+        ],
+        "name": "VoteUpdateTssPool",
+        "type": "event"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "UPGRADE_INTERFACE_VERSION",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "pubkeyHash",
+                "type": "bytes32"
+            }
+        ],
+        "name": "_publicKeyHashToAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "authority",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "epoch",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address[]",
+                "name": "ms",
+                "type": "address[]"
+            }
+        ],
+        "name": "batchGetSlashPoint",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "points",
+                "type": "uint256[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "currentEpoch",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_epochId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address[]",
+                "name": "_maintainers",
+                "type": "address[]"
+            }
+        ],
+        "name": "elect",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "getImplementation",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "m",
+                "type": "address"
+            }
+        ],
+        "name": "getKeyShare",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes",
+                        "name": "pubkey",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "keyShare",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ITSSManager.KeyShare",
+                "name": "keyShare",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes",
+                "name": "pubkey",
+                "type": "bytes"
+            }
+        ],
+        "name": "getMembers",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "members",
+                "type": "address[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "epoch",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "m",
+                "type": "address"
+            }
+        ],
+        "name": "getSlashPoint",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "point",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "epochId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getTSSStatus",
+        "outputs": [
+            {
+                "internalType": "enum ITSSManager.TSSStatus",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_defaultAdmin",
+                "type": "address"
+            }
+        ],
+        "name": "initialize",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "isConsumingScheduledOp",
+        "outputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "maintainerManager",
+        "outputs": [
+            {
+                "internalType": "contract IMaintainers",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "migrate",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "parameters",
+        "outputs": [
+            {
+                "internalType": "contract IParameters",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "paused",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "proxiableUUID",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "relay",
+        "outputs": [
+            {
+                "internalType": "contract IRelay",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "retireEpochId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "activeEpochId",
+                "type": "uint256"
+            }
+        ],
+        "name": "retire",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "currentId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nextId",
+                "type": "uint256"
+            }
+        ],
+        "name": "rotate",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_maintainer",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_relay",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_parameter",
+                "type": "address"
+            }
+        ],
+        "name": "set",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newAuthority",
+                "type": "address"
+            }
+        ],
+        "name": "setAuthority",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+
+        ],
+        "name": "trigger",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newImplementation",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "data",
+                "type": "bytes"
+            }
+        ],
+        "name": "upgradeToAndCall",
+        "outputs": [
+
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "chain",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "height",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "transactionRate",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "transactionSize",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "transactionSizeWithCall",
+                "type": "uint256"
+            }
+        ],
+        "name": "voteNetworkFee",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "orderId",
+                        "type": "bytes32"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "height",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "refundAddr",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct TxInItem[]",
+                "name": "txInItems",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "voteTxIn",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "orderId",
+                        "type": "bytes32"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "chainAndGasLimit",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "vault",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "enum TxType",
+                                "name": "txType",
+                                "type": "uint8"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "sequence",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "token",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "from",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "to",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "payload",
+                                "type": "bytes"
+                            }
+                        ],
+                        "internalType": "struct BridgeItem",
+                        "name": "bridgeItem",
+                        "type": "tuple"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "height",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "gasUsed",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct TxOutItem[]",
+                "name": "txOutItems",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "voteTxOut",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "epoch",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "pubkey",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "keyShare",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "members",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "blames",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "signature",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct TSSManager.TssPoolParam",
+                "name": "param",
+                "type": "tuple"
+            }
+        ],
+        "name": "voteUpdateTssPool",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]`) // TSS ABI
 }
 
 var genesisAddresses = map[string]common.Address{

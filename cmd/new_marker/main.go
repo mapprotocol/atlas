@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/cmd/new_marker/cmd"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"sort"
+
+	"github.com/mapprotocol/atlas/cmd/new_marker/cmd"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
