@@ -400,7 +400,7 @@ func init() {
 	tss := NewTss()
 	TssSet = append(TssSet, []cli.Command{
 		{
-			Name:      "register",
+			Name:      "maintainerRegister",
 			Usage:     "register tss maintainers",
 			Action:    MigrateFlags(tss.Register),
 			ArgsUsage: "",
