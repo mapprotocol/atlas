@@ -170,7 +170,7 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		config.MetadataURL = ctx.String(URLFlag.Name)
 	}
 	config.RPCAddr = MainnetRpc
-	if ctx.Bool(Testnet.Name) {
+	if ctx.Bool(TestnetFlag.Name) {
 		config.RPCAddr = TestnetRpc
 	}
 	if ctx.IsSet(GasLimitFlag.Name) {

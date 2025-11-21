@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/mapprotocol/atlas/cmd/new_marker/cmd"
-	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -25,7 +24,6 @@ func init() {
 		_, _ = fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
-	app.Flags = append(app.Flags, define.Testnet)
 	app.Commands = append(app.Commands, cmd.AccountSet...)
 	app.Commands = append(app.Commands, cmd.ValidatorSet...)
 	app.Commands = append(app.Commands, cmd.VoterSet...)

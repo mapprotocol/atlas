@@ -30,14 +30,14 @@ func NewTss() *Tss {
 
 func (s *Tss) Register(ctx *cli.Context, cfg *define.Config) error {
 	p2pAddr := ""
-	if ctx.IsSet(define.P2pAddress.Name) {
-		p2pAddr = ctx.String(define.P2pAddress.Name)
+	if ctx.IsSet(define.P2pAddressFlag.Name) {
+		p2pAddr = ctx.String(define.P2pAddressFlag.Name)
 	}
 	if p2pAddr == "" {
 		return fmt.Errorf("p2p address is required")
 	}
 	to := mainnet
-	if ctx.Bool(define.Testnet.Name) {
+	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
 	registerFrom := cfg.From
