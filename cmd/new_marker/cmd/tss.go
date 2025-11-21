@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
@@ -11,7 +12,7 @@ import (
 )
 
 var (
-	testnet = common.HexToAddress("0x606A45f78D3A706F7a621fF03Dd62C513fa13b2c")
+	testnet = common.HexToAddress("0x60c2e5bd5b785910424C48098292Ab410884B5ad")
 	mainnet = common.HexToAddress("")
 )
 
@@ -39,9 +40,24 @@ func (s *Tss) Register(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.Testnet.Name) {
 		to = testnet
 	}
+	registerFrom := cfg.From
+	pkBytes := cfg.PublicKey // remove pk prefix 0x04
+	if ctx.IsSet(define.TssRegisterPk.Name) {
+		pkStr := ctx.String(define.TssRegisterPk.Name)
+		if len(pkStr) != 130 || pkStr[:2] != "04" {
+			return fmt.Errorf("invalid registerPk format, should be uncompressed pk prefixed with 04")
+		}
+		var err error
+		pkBytes = common.Hex2Bytes(pkStr)
+		if err != nil {
+			return fmt.Errorf("invalid registerPk hex string: %v", err)
+		}
 
-	s.handleType1Msg(cfg, to, nil, s.abi, "register",
-		cfg.From, cfg.PublicKey[1:], cfg.PublicKey[1:], p2pAddr) // remove pk prefix 0x04
+		hash := crypto.Keccak256(pkBytes[1:])
+		registerFrom = common.BytesToAddress(hash[12:])
+	}
+
+	s.handleType1Msg(cfg, to, nil, s.abi, "register", registerFrom, pkBytes[1:], pkBytes[1:], p2pAddr)
 
 	return nil
 }

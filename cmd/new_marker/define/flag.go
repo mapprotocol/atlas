@@ -140,6 +140,10 @@ var (
 		Name:  "p2pAddress",
 		Usage: "IP address used for P2P communication",
 	}
+	TssRegisterPk = cli.StringFlag{
+		Name:  "registerPk",
+		Usage: "TSS register public key, Please use the uncompressed pk, prefixed with 04. default is use keystore",
+	}
 	Testnet = cli.BoolFlag{
 		Name:  "testnet",
 		Usage: "use testnet network, default is mainnet",

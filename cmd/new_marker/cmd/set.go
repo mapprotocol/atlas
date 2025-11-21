@@ -406,9 +406,8 @@ func init() {
 			ArgsUsage: "",
 			Flags: append([]cli.Flag{
 				define.KeyStoreFlag,
-				define.P2pAddress, 
-				define.Testnet,
-				define.RPCAddrFlag,
+				define.TssRegisterPk,
+				define.P2pAddress,
 			}),
 		},
 	}...)

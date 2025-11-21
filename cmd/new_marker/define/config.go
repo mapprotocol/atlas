@@ -15,6 +15,11 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
+var (
+	TestnetRpc = "https://testnet-rpc.maplabs.io"
+	MainnetRpc = "https://mrpc.chainservice.io"
+)
+
 type LockedGoldParameters struct {
 	LockedGoldABI     *abi.ABI
 	LockedGoldAddress common.Address
@@ -164,8 +169,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(URLFlag.Name) {
 		config.MetadataURL = ctx.String(URLFlag.Name)
 	}
-	if ctx.IsSet(RPCAddrFlag.Name) {
-		config.RPCAddr = ctx.String(RPCAddrFlag.Name)
+	config.RPCAddr = MainnetRpc
+	if ctx.Bool(Testnet.Name) {
+		config.RPCAddr = TestnetRpc
 	}
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
