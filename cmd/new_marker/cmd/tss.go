@@ -42,8 +42,8 @@ func (s *Tss) Register(ctx *cli.Context, cfg *define.Config) error {
 	}
 	registerFrom := cfg.From
 	pkBytes := cfg.PublicKey // remove pk prefix 0x04
-	if ctx.IsSet(define.TssRegisterPk.Name) {
-		pkStr := ctx.String(define.TssRegisterPk.Name)
+	if ctx.IsSet(define.TssRegisterPkFlag.Name) {
+		pkStr := ctx.String(define.TssRegisterPkFlag.Name)
 		if len(pkStr) != 130 || pkStr[:2] != "04" {
 			return fmt.Errorf("invalid registerPk format, should be uncompressed pk prefixed with 04")
 		}
