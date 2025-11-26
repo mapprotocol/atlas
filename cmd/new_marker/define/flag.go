@@ -136,6 +136,18 @@ var (
 		Name:  "markercfg",
 		Usage: "Marker config path",
 	}
+	P2pAddressFlag = cli.StringFlag{
+		Name:  "p2pAddress",
+		Usage: "IP address used for P2P communication",
+	}
+	TssRegisterPkFlag = cli.StringFlag{
+		Name:  "registerPk",
+		Usage: "TSS register public key, Please use the uncompressed pk, prefixed with 04. default is use keystore",
+	}
+	TestnetFlag = cli.BoolFlag{
+		Name:  "testnet",
+		Usage: "use testnet network, default is mainnet",
+	}
 )
 
 var TemplateFlags = []cli.Flag{
@@ -175,10 +187,12 @@ var BaseFlagCombination = []cli.Flag{
 	GasLimitFlag,
 	TargetAddressFlag,
 	KeystoreAddressFlag,
+	TestnetFlag,
 }
 
 var MustFlagCombination = []cli.Flag{
 	RPCAddrFlag,
 	KeyStoreFlag,
 	GasLimitFlag,
+	TestnetFlag,
 }

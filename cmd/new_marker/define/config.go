@@ -3,6 +3,9 @@ package define
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"math/big"
+	"syscall"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/accounts/abi"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
@@ -10,8 +13,11 @@ import (
 	"github.com/mapprotocol/atlas/params"
 	"golang.org/x/term"
 	"gopkg.in/urfave/cli.v1"
-	"math/big"
-	"syscall"
+)
+
+var (
+	TestnetRpc = "https://testnet-rpc.maplabs.io"
+	MainnetRpc = "https://mrpc.chainservice.io"
 )
 
 type LockedGoldParameters struct {
@@ -163,8 +169,9 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(URLFlag.Name) {
 		config.MetadataURL = ctx.String(URLFlag.Name)
 	}
-	if ctx.IsSet(RPCAddrFlag.Name) {
-		config.RPCAddr = ctx.String(RPCAddrFlag.Name)
+	config.RPCAddr = MainnetRpc
+	if ctx.Bool(TestnetFlag.Name) {
+		config.RPCAddr = TestnetRpc
 	}
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)

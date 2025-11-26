@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/mapprotocol/atlas/cmd/new_marker/cmd"
-	"gopkg.in/urfave/cli.v1"
 	"os"
 	"sort"
+
+	"github.com/mapprotocol/atlas/cmd/new_marker/cmd"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -27,6 +28,7 @@ func init() {
 	app.Commands = append(app.Commands, cmd.ValidatorSet...)
 	app.Commands = append(app.Commands, cmd.VoterSet...)
 	app.Commands = append(app.Commands, cmd.ToolSet...)
+	app.Commands = append(app.Commands, cmd.TssSet...)
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
