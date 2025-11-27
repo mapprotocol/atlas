@@ -1,3 +1,4 @@
+//go:build none
 // +build none
 
 /*
@@ -7,20 +8,19 @@ Usage: go run build/ci.go <command> <command flags/arguments>
 
 Available commands are:
 
-   install    [ -arch architecture ] [ -cc compiler ] [ packages... ]                          -- builds packages and executables
-   test       [ -coverage ] [ packages... ]                                                    -- runs the tests
-   lint                                                                                        -- runs certain pre-selected linters
-   archive    [ -arch architecture ] [ -type zip|tar ] [ -signer key-envvar ] [ -upload dest ] -- archives build artefacts
-   importkeys                                                                                  -- imports signing keys from env
-   debsrc     [ -signer key-id ] [ -upload dest ]                                              -- creates a debian source package
-   nsis                                                                                        -- creates a Windows NSIS installer
-   aar        [ -local ] [ -sign key-id ] [-deploy repo] [ -upload dest ]                      -- creates an Android archive
-   xcode      [ -local ] [ -sign key-id ] [-deploy repo] [ -upload dest ]                      -- creates an iOS XCode framework
-   xgo        [ -alltools ] [ options ]                                                        -- cross builds according to options
-   purge      [ -store blobstore ] [ -days threshold ]                                         -- purges old archives from the blobstore
+	install    [ -arch architecture ] [ -cc compiler ] [ packages... ]                          -- builds packages and executables
+	test       [ -coverage ] [ packages... ]                                                    -- runs the tests
+	lint                                                                                        -- runs certain pre-selected linters
+	archive    [ -arch architecture ] [ -type zip|tar ] [ -signer key-envvar ] [ -upload dest ] -- archives build artefacts
+	importkeys                                                                                  -- imports signing keys from env
+	debsrc     [ -signer key-id ] [ -upload dest ]                                              -- creates a debian source package
+	nsis                                                                                        -- creates a Windows NSIS installer
+	aar        [ -local ] [ -sign key-id ] [-deploy repo] [ -upload dest ]                      -- creates an Android archive
+	xcode      [ -local ] [ -sign key-id ] [-deploy repo] [ -upload dest ]                      -- creates an iOS XCode framework
+	xgo        [ -alltools ] [ options ]                                                        -- cross builds according to options
+	purge      [ -store blobstore ] [ -days threshold ]                                         -- purges old archives from the blobstore
 
 For all commands, -n prevents execution of external programs (dry run mode).
-
 */
 package main
 
@@ -158,6 +158,7 @@ func doInstall(cmdline []string) {
 	)
 	flag.CommandLine.Parse(cmdline)
 	env := build.Env()
+	fmt.Println("-================= ")
 
 	// Check Go version. People regularly open issues about compilation
 	// failure with outdated Go. This should save them the trouble.
@@ -181,10 +182,11 @@ func doInstall(cmdline []string) {
 	packages = build.ExpandPackagesNoVendor(packages)
 
 	if *arch == "" || *arch == runtime.GOARCH {
-		goinstall := goTool("install", buildFlags(env)...)
+		goinstall := goTool("install", "-ldflags=-checklinkname=0")
 		goinstall.Args = append(goinstall.Args, "-v")
 		goinstall.Args = append(goinstall.Args, packages...)
 		build.MustRun(goinstall)
+		fmt.Println("--------------------------", goinstall.String())
 		return
 	}
 	// If we are cross compiling to ARMv5 ARMv6 or ARMv7, clean any previous builds

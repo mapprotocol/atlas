@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
@@ -8,7 +10,6 @@ import (
 	"github.com/mapprotocol/atlas/cmd/new_marker/connections"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/writer"
-	"math/big"
 )
 
 type base struct {

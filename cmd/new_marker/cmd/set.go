@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"gopkg.in/urfave/cli.v1"
-	"os"
-	"strconv"
 )
 
 var (
@@ -13,6 +14,7 @@ var (
 	ValidatorSet []cli.Command
 	VoterSet     []cli.Command
 	ToolSet      []cli.Command
+	TssSet       []cli.Command
 )
 
 func init() {
@@ -70,13 +72,13 @@ func init() {
 			Name:   "setAccountName",
 			Usage:  "Set name of account",
 			Action: MigrateFlags(account.SetAccountName),
-			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.GasLimitFlag, define.NameFlag),
+			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.GasLimitFlag, define.NameFlag, define.TestnetFlag),
 		},
 		{
 			Name:   "createAccount",
 			Usage:  "Creat validator account",
 			Action: MigrateFlags(account.CreateAccount),
-			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.GasLimitFlag, define.NameFlag),
+			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.GasLimitFlag, define.NameFlag, define.TestnetFlag),
 		},
 		{
 			Name:   "signerToAccount",
@@ -91,13 +93,13 @@ func init() {
 			Name:   "register",
 			Usage:  "Register validator",
 			Action: MigrateFlags(validator.RegisterValidator),
-			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.CommissionFlag, define.SignerPriFlag),
+			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.CommissionFlag, define.SignerPriFlag, define.TestnetFlag),
 		},
 		{
 			Name:   "generateSignerProof",
 			Usage:  "Generate proof of signer",
 			Action: MigrateFlags(validator.GenerateSignerProof),
-			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.ValidatorAddressFlag, define.SignerPriFlag),
+			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.ValidatorAddressFlag, define.SignerPriFlag, define.TestnetFlag),
 		},
 		{
 			Name:   "registerByProof",
@@ -139,13 +141,13 @@ func init() {
 			Name:   "makeECDSASignatureFromSigner",
 			Usage:  "Print a ECDSASignature that signer sign the account(validator)",
 			Action: MigrateFlags(validator.MakeECDSASignatureFromSigner),
-			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag),
+			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag, define.TestnetFlag),
 		},
 		{
 			Name:   "makeBLSProofOfPossessionFromSigner",
 			Usage:  "Print a BLSProofOfPossession that signer BLSSign the account(validator)",
 			Action: MigrateFlags(validator.MakeBLSProofOfPossessionFromsigner),
-			Flags:  append([]cli.Flag{}, define.RPCAddrFlag, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag),
+			Flags:  append([]cli.Flag{}, define.KeyStoreFlag, define.SignerPriFlag, define.TargetAddressFlag, define.TestnetFlag),
 		},
 	}...)
 	voter := NewVoter()
@@ -379,6 +381,7 @@ func init() {
 					define.BuildpathFlag,
 					define.NewEnvFlag,
 					define.MarkerCfgFlag,
+					define.TestnetFlag,
 				},
 				define.TemplateFlags...),
 		},
@@ -393,6 +396,21 @@ func init() {
 			Usage:  "Monitor the revenue of voter to a validator",
 			Action: MigrateFlags(tool.voterMonitor),
 			Flags:  define.MustFlagCombination,
+		},
+	}...)
+	tss := NewTss()
+	TssSet = append(TssSet, []cli.Command{
+		{
+			Name:      "maintainerRegister",
+			Usage:     "register tss maintainers",
+			Action:    MigrateFlags(tss.Register),
+			ArgsUsage: "",
+			Flags: append([]cli.Flag{
+				define.KeyStoreFlag,
+				define.TssRegisterPkFlag,
+				define.P2pAddressFlag,
+				define.TestnetFlag,
+			}),
 		},
 	}...)
 }
