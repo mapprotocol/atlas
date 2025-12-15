@@ -15,17 +15,21 @@ import (
 
 type Viewer struct {
 	*base
-	electionTo, validatorTo   common.Address
-	electionAbi, validatorAbi *abi.ABI
+	electionTo, validatorTo, lockGoldTo, goldTokenTo       common.Address
+	electionAbi, validatorAbi, lockedGoldAbi, goldTokenAbi *abi.ABI
 }
 
 func NewViewer() *Viewer {
 	return &Viewer{
-		base:         newBase(),
-		electionTo:   mapprotocol.MustProxyAddressFor("Election"),
-		electionAbi:  mapprotocol.AbiFor("Election"),
-		validatorTo:  mapprotocol.MustProxyAddressFor("Validators"),
-		validatorAbi: mapprotocol.AbiFor("Validators"),
+		base:          newBase(),
+		electionTo:    mapprotocol.MustProxyAddressFor("Election"),
+		electionAbi:   mapprotocol.AbiFor("Election"),
+		validatorTo:   mapprotocol.MustProxyAddressFor("Validators"),
+		validatorAbi:  mapprotocol.AbiFor("Validators"),
+		lockGoldTo:    mapprotocol.MustProxyAddressFor("LockedGold"),
+		lockedGoldAbi: mapprotocol.AbiFor("LockedGold"),
+		goldTokenTo:   mapprotocol.MustProxyAddressFor("GoldToken"),
+		goldTokenAbi:  mapprotocol.AbiFor("GoldToken"),
 	}
 }
 
@@ -171,7 +175,7 @@ func (v *Viewer) getPendingWithdrawals(_ *cli.Context, cfg *define.Config) error
 		Timestamps interface{}
 	)
 	t := ret{&Values, &Timestamps}
-	log.Info("=== getPendingWithdrawals ===", "from", cfg.From, "target", cfg.Address.String())
+	log.Info("=== getPendingWithdrawals ===", "from", cfg.From, "address", cfg.Address.String())
 	f := func(output []byte) {
 		err := v.lockedGoldAbi.UnpackIntoInterface(&t, "getPendingWithdrawals", output)
 		if err != nil {

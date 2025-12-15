@@ -254,22 +254,10 @@ func init() {
 				Flags: []cli.Flag{define.TestnetFlag},
 			},
 			{
-				Name:   "getPendingWithdrawals",
-				Usage:  "Returns the pending withdrawals from unlocked gold for an account",
-				Action: MigrateFlags(voter.getPendingWithdrawals),
-				Flags:  define.BaseFlagCombination,
-			},
-			{
 				Name:   "getVoterRewardInfo",
 				Usage:  "Get voter reward information",
 				Action: MigrateFlags(voter.getVoterRewardInfo),
 				Flags:  define.MustFlagCombination,
-			},
-			{
-				Name:   "balanceOf",
-				Usage:  "Gets the balance of the specified address",
-				Action: MigrateFlags(voter.balanceOf),
-				Flags:  define.BaseFlagCombination,
 			},
 		},
 	}
@@ -331,6 +319,18 @@ func init() {
 				Name:   "getValidatorEligibility",
 				Usage:  "Judge whether the verifier`s Eligibility",
 				Action: MigrateFlags(viewer.getValidatorEligibility),
+				Flags:  define.BaseFlagCombination,
+			},
+			{
+				Name:   "getPendingWithdrawals",
+				Usage:  "Returns the pending withdrawals from unlocked gold for an account",
+				Action: MigrateFlags(viewer.getPendingWithdrawals),
+				Flags:  define.BaseFlagCombination,
+			},
+			{
+				Name:   "balanceOf",
+				Usage:  "Gets the balance of the specified address",
+				Action: MigrateFlags(viewer.balanceOf),
 				Flags:  define.BaseFlagCombination,
 			},
 		},
