@@ -71,7 +71,7 @@ func SendContractTransaction(client *ethclient.Client, from, toAddress common.Ad
 	return signedTx.Hash(), nil
 }
 
-func GetResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
+func WaitConfirmation(conn *ethclient.Client, txHash common.Hash) {
 	logger := log.New("func", "GetResult")
 	logger.Info("Please waiting ", " txHash ", txHash.String())
 	for {
@@ -106,38 +106,6 @@ func GetResult(conn *ethclient.Client, txHash common.Hash, contract bool) {
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		logger.Error("Transaction Failed ", "number", receipt.BlockNumber.Uint64())
 		os.Exit(1)
-	}
-}
-
-func queryTx(conn *ethclient.Client, txHash common.Hash, contract bool, pending bool) {
-	logger := log.New("func", "queryTx")
-	if pending {
-		_, isPending, err := conn.TransactionByHash(context.Background(), txHash)
-		if err != nil {
-			logger.Error("TransactionByHash", "error", err)
-		}
-		if isPending {
-			println("In tx_pool no validator  process this, please query later")
-			os.Exit(0)
-		}
-	}
-
-	receipt, err := conn.TransactionReceipt(context.Background(), txHash)
-	if err != nil {
-		for {
-			time.Sleep(time.Millisecond * 200)
-			receipt, err = conn.TransactionReceipt(context.Background(), txHash)
-			if err == nil {
-				break
-			}
-		}
-		logger.Error("TransactionReceipt", "error", err)
-	}
-
-	if receipt.Status == types.ReceiptStatusSuccessful {
-		logger.Info("Transaction Success", "block Number", receipt.BlockNumber.Uint64())
-	} else if receipt.Status == types.ReceiptStatusFailed {
-		logger.Info("Transaction Failed ", "Block Number", receipt.BlockNumber.Uint64())
 	}
 }
 

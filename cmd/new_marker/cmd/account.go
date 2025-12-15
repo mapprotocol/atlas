@@ -29,95 +29,6 @@ func NewAccount() *Account {
 	}
 }
 
-func (a *Account) GetAccountMetadataURL(_ *cli.Context, cfg *define.Config) error {
-	var (
-		ret interface{}
-	)
-	a.handleType3Msg(cfg, &ret, a.to, nil, a.abi, "getMetadataURL", cfg.TargetAddress)
-	log.Info("get account metadata url", "address", cfg.TargetAddress, "url", ret)
-	return nil
-}
-
-func (a *Account) GetAccountName(_ *cli.Context, cfg *define.Config) error {
-	var (
-		ret interface{}
-	)
-	a.handleType3Msg(cfg, &ret, a.to, nil, a.abi, "getName", cfg.TargetAddress)
-	log.Info("get name", "address", cfg.TargetAddress, "name", ret)
-	return nil
-}
-
-func (a *Account) GetAccountTotalLockedGold(_ *cli.Context, cfg *define.Config) error {
-	var (
-		ret interface{}
-	)
-	log.Info("=== getAccountTotalLockedGold ===", "admin", cfg.From, "target", cfg.TargetAddress.String())
-	a.handleType3Msg(cfg, &ret, a.lockGoldTo, nil, a.lockedGoldAbi, "getAccountTotalLockedGold", cfg.TargetAddress)
-	result := ret.(*big.Int)
-	log.Info("result", "lockedGold", result)
-	return nil
-}
-
-func (a *Account) GetAccountNonvotingLockedGold(_ *cli.Context, cfg *define.Config) error {
-	var (
-		ret interface{}
-	)
-	log.Info("=== getAccountNonvotingLockedGold ===", "admin", cfg.From, "target", cfg.TargetAddress.String())
-	a.handleType3Msg(cfg, &ret, a.lockGoldTo, nil, a.lockedGoldAbi, "getAccountNonvotingLockedGold", cfg.TargetAddress)
-	result := ret.(*big.Int)
-	log.Info("result", "lockedGold", result)
-	return nil
-}
-
-func (a *Account) GetPendingVotesForValidatorByAccount(_ *cli.Context, cfg *define.Config) error {
-	var (
-		ret interface{}
-	)
-	log.Info("=== getPendingVotesForValidatorByAccount ===", "admin", cfg.From)
-	a.handleType3Msg(cfg, &ret, a.electionTo, nil, a.electionAbi, "getPendingVotesForValidatorByAccount", cfg.TargetAddress, cfg.From)
-	log.Info("PendingVotes", "balance", ret.(*big.Int))
-	return nil
-}
-
-func (a *Account) GetActiveVotesForValidatorByAccount(_ *cli.Context, cfg *define.Config) error {
-	var (
-		ret interface{}
-	)
-	log.Info("=== getActiveVotesForValidatorByAccount ===", "admin", cfg.From)
-	a.handleType3Msg(cfg, &ret, a.electionTo, nil, a.electionAbi, "getActiveVotesForValidatorByAccount",
-		cfg.TargetAddress, cfg.From)
-	log.Info("ActiveVotes", "balance", ret.(*big.Int))
-	return nil
-}
-
-func (a *Account) GetValidatorsVotedForByAccount(_ *cli.Context, cfg *define.Config) error {
-	log.Info("=== getValidatorsVotedForByAccount ===", "admin", cfg.From)
-	var (
-		ret interface{}
-	)
-	a.handleType3Msg(cfg, &ret, a.electionTo, nil, a.electionAbi, "getValidatorsVotedForByAccount", cfg.TargetAddress)
-	result := ret.([]common.Address)
-	if len(result) == 0 {
-		log.Info("nil")
-	}
-	for i := 0; i < len(result); i++ {
-		log.Info("validator", "Address", result[i])
-	}
-	return nil
-}
-
-func (a *Account) SetAccountMetadataURL(_ *cli.Context, cfg *define.Config) error {
-	a.handleType1Msg(cfg, a.to, nil, a.abi, "setMetadataURL", cfg.MetadataURL)
-	log.Info("set account metadata url", "address", cfg.From, "url", cfg.MetadataURL)
-	return nil
-}
-
-func (a *Account) SetAccountName(_ *cli.Context, cfg *define.Config) error {
-	log.Info("set name", "address", cfg.From, "name", cfg.Name)
-	a.handleType1Msg(cfg, a.to, nil, a.abi, "setName", cfg.Name)
-	return nil
-}
-
 func (a *Account) CreateAccount(_ *cli.Context, cfg *define.Config) error {
 	logger := log.New("func", "createAccount")
 	logger.Info("Create account", "address", cfg.From, "name", cfg.Name)
@@ -133,12 +44,101 @@ func (a *Account) CreateAccount(_ *cli.Context, cfg *define.Config) error {
 	return nil
 }
 
+func (a *Account) GetAccountName(_ *cli.Context, cfg *define.Config) error {
+	var (
+		ret interface{}
+	)
+	a.handleType3Msg(cfg, &ret, a.to, nil, a.abi, "getName", cfg.Address)
+	log.Info("get name", "address", cfg.Address, "name", ret)
+	return nil
+}
+
+func (a *Account) SetAccountName(_ *cli.Context, cfg *define.Config) error {
+	log.Info("set name", "address", cfg.From, "name", cfg.Name)
+	a.handleType1Msg(cfg, a.to, nil, a.abi, "setName", cfg.Name)
+	return nil
+}
+
+func (a *Account) GetAccountMetadataURL(_ *cli.Context, cfg *define.Config) error {
+	var (
+		url string
+	)
+	a.handleType3Msg(cfg, &url, a.to, nil, a.abi, "getMetadataURL", cfg.Address)
+	log.Info("get account metadata url", "address", cfg.Address, "url", url)
+	return nil
+}
+
+func (a *Account) SetAccountMetadataURL(_ *cli.Context, cfg *define.Config) error {
+	log.Info("set account metadata url", "address", cfg.From, "url", cfg.URL)
+	a.handleType1Msg(cfg, a.to, nil, a.abi, "setMetadataURL", cfg.URL)
+	return nil
+}
+
+func (a *Account) GetAccountTotalLockedGold(_ *cli.Context, cfg *define.Config) error {
+	var (
+		ret interface{}
+	)
+	log.Info("=== getAccountTotalLockedGold ===", "from", cfg.From, "address", cfg.Address.String())
+	a.handleType3Msg(cfg, &ret, a.lockGoldTo, nil, a.lockedGoldAbi, "getAccountTotalLockedGold", cfg.Address)
+	result := ret.(*big.Int)
+	log.Info("result", "lockedGold", result)
+	return nil
+}
+
+func (a *Account) GetAccountNonvotingLockedGold(_ *cli.Context, cfg *define.Config) error {
+	var (
+		ret interface{}
+	)
+	log.Info("=== getAccountNonvotingLockedGold ===", "from", cfg.From, "target", cfg.Address.String())
+	a.handleType3Msg(cfg, &ret, a.lockGoldTo, nil, a.lockedGoldAbi, "getAccountNonvotingLockedGold", cfg.Address)
+	result := ret.(*big.Int)
+	log.Info("result", "lockedGold", result)
+	return nil
+}
+
+func (a *Account) GetPendingVotesForValidatorByAccount(_ *cli.Context, cfg *define.Config) error {
+	var (
+		ret interface{}
+	)
+	log.Info("=== getPendingVotesForValidatorByAccount ===", "address", cfg.From)
+	a.handleType3Msg(cfg, &ret, a.electionTo, nil, a.electionAbi, "getPendingVotesForValidatorByAccount", cfg.Address, cfg.From)
+	log.Info("PendingVotes", "balance", ret.(*big.Int))
+	return nil
+}
+
+func (a *Account) GetActiveVotesForValidatorByAccount(_ *cli.Context, cfg *define.Config) error {
+	var (
+		ret interface{}
+	)
+	log.Info("=== getActiveVotesForValidatorByAccount ===", "address", cfg.From)
+	a.handleType3Msg(cfg, &ret, a.electionTo, nil, a.electionAbi, "getActiveVotesForValidatorByAccount",
+		cfg.Address, cfg.From)
+	log.Info("ActiveVotes", "balance", ret.(*big.Int))
+	return nil
+}
+
+func (a *Account) GetValidatorsVotedForByAccount(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== getValidatorsVotedForByAccount ===", "from", cfg.From)
+	var (
+		ret interface{}
+	)
+	a.handleType3Msg(cfg, &ret, a.electionTo, nil, a.electionAbi, "getValidatorsVotedForByAccount", cfg.Address)
+	result := ret.([]common.Address)
+	if len(result) == 0 {
+		log.Info("nil")
+	}
+	for i := 0; i < len(result); i++ {
+		log.Info("validator", "Address", result[i])
+	}
+	return nil
+}
+
 // SignerToAccount : Query the account of a target signer
 func (a *Account) SignerToAccount(_ *cli.Context, cfg *define.Config) error {
 	//----------------------------- signerToAccount ---------------------------------
 	logger := log.New("func", "signerToAccount")
 	var ret common.Address
-	a.handleType3Msg(cfg, &ret, a.to, nil, a.abi, "signerToAccount", cfg.TargetAddress)
+	a.handleType3Msg(cfg, &ret, a.to, nil, a.abi, "signerToAccount", cfg.Address)
 	logger.Info("signerToAccount", "authorizingAccount", ret)
 	return nil
 }

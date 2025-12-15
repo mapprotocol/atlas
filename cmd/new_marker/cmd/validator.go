@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -12,6 +14,8 @@ import (
 	"github.com/mapprotocol/atlas/cmd/marker/account"
 	"github.com/mapprotocol/atlas/cmd/new_marker/define"
 	"github.com/mapprotocol/atlas/cmd/new_marker/mapprotocol"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
+	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/helper/bls"
 	"github.com/mapprotocol/atlas/params"
 	"gopkg.in/urfave/cli.v1"
@@ -50,8 +54,8 @@ func (v *Validator) RegisterValidator(ctx *cli.Context, cfg *define.Config) erro
 		return nil
 	}
 	greater, lesser := v.registerUseFor(cfg)
-	if cfg.SignerPriv != "" {
-		SignerPriv := cfg.SignerPriv
+	if cfg.PrivateKeyHex != "" {
+		SignerPriv := cfg.PrivateKeyHex
 		priv, err := crypto.ToECDSA(common.FromHex(SignerPriv))
 		if err != nil {
 			panic(err)
@@ -70,7 +74,7 @@ func (v *Validator) RegisterValidator(ctx *cli.Context, cfg *define.Config) erro
 		cfg.BlsPub = blsPub
 		cfg.BlsG1Pub = blsG1Pub
 		cfg.BLSProof = _account.MustBLSProofOfPossession()
-		cfg.BLSProof = v.makeBLSProofOfPossessionFromSigner_(cfg.From, cfg.SignerPriv).Marshal()
+		cfg.BLSProof = v.makeBLSProofOfPossessionFromSigner_(cfg.From, cfg.PrivateKeyHex).Marshal()
 	}
 	validatorParams := [4][]byte{cfg.BlsPub[:], cfg.BlsG1Pub[:], cfg.BLSProof, cfg.PublicKey[1:]}
 
@@ -98,7 +102,8 @@ func (v *Validator) RegisterValidatorByProof(_ *cli.Context, cfg *define.Config)
 
 	validatorParams := [4][]byte{pf.BLSPublicKey[:], pf.BLSG1PublicKey[:], pf.BLSProof, pf.PublicKey[1:]}
 	_params := []interface{}{commission, lesser, greater, validatorParams}
-	v.handleType1Msg(cfg, v.to, nil, v.abi, "registerValidator", _params)
+	fmt.Println("============================== ", _params)
+	v.handleType1Msg(cfg, v.to, nil, v.abi, "registerValidator", _params...)
 	return nil
 }
 
@@ -119,8 +124,8 @@ func (v *Validator) DeregisterValidator(_ *cli.Context, cfg *define.Config) erro
 }
 
 func (v *Validator) GenerateSignerProof(_ *cli.Context, cfg *define.Config) error {
-	log.Info("generateBLSProof", "validator", cfg.AccountAddress, "signerPrivate", cfg.SignerPriv)
-	private, err := crypto.ToECDSA(common.FromHex(cfg.SignerPriv))
+	log.Info("generateBLSProof", "validator", cfg.Address, "signerPrivate", cfg.PrivateKeyHex)
+	private, err := crypto.ToECDSA(common.FromHex(cfg.PrivateKeyHex))
 	if err != nil {
 		return err
 	}
@@ -139,7 +144,7 @@ func (v *Validator) GenerateSignerProof(_ *cli.Context, cfg *define.Config) erro
 		PublicKey:      _account.PublicKey(),
 		BLSPublicKey:   blsPub,
 		BLSG1PublicKey: blsG1Pub,
-		BLSProof:       v.makeBLSProofOfPossessionFromSigner_(cfg.AccountAddress, cfg.SignerPriv).Marshal(),
+		BLSProof:       v.makeBLSProofOfPossessionFromSigner_(cfg.Address, cfg.PrivateKeyHex).Marshal(),
 	}
 	enc, err := rlp.EncodeToBytes(args)
 	if err != nil {
@@ -153,7 +158,7 @@ func (v *Validator) QuicklyRegisterValidator(ctx *cli.Context, cfg *define.Confi
 	//---------------------------- create account ----------------------------------
 	_ = v.account.CreateAccount(ctx, cfg)
 
-	if cfg.SignerPriv != "" {
+	if cfg.PrivateKeyHex != "" {
 		_ = v.AuthorizeValidatorSigner(ctx, cfg)
 	}
 	//---------------------------- lock ----------------------------------
@@ -166,7 +171,7 @@ func (v *Validator) QuicklyRegisterValidator(ctx *cli.Context, cfg *define.Confi
 }
 
 func (v *Validator) LockedMAP(_ *cli.Context, cfg *define.Config) error {
-	lockedGold := new(big.Int).Mul(cfg.LockedNum, big.NewInt(1e18))
+	lockedGold := new(big.Int).Mul(cfg.Value, big.NewInt(1e18))
 	log.Info("=== Lock  gold ===")
 	log.Info("Lock  gold", "amount", lockedGold.String())
 	v.handleType2Msg(cfg, v.lockGoldTo, lockedGold, v.lockedGoldAbi, "lock")
@@ -174,13 +179,13 @@ func (v *Validator) LockedMAP(_ *cli.Context, cfg *define.Config) error {
 }
 
 /*
-	AuthorizeValidatorSigner
-	note:account function before become to be a validator
-	signer sign account
-	need signer private
+AuthorizeValidatorSigner
+note:account function before become to be a validator
+signer sign account
+need signer private
 */
 func (v *Validator) AuthorizeValidatorSigner(_ *cli.Context, cfg *define.Config) error {
-	SignatureStr, signer := v.makeECDSASignatureFromSigner_(cfg.From, cfg.SignerPriv) // signer sign account
+	SignatureStr, signer := v.makeECDSASignatureFromSigner_(cfg.From, cfg.PrivateKeyHex) // signer sign account
 	Signature, err := hexutil.Decode(SignatureStr)
 	if err != nil {
 		panic(err)
@@ -191,7 +196,6 @@ func (v *Validator) AuthorizeValidatorSigner(_ *cli.Context, cfg *define.Config)
 
 	logger := log.New("func", "authorizeValidatorSigner")
 	logger.Info("authorizeValidatorSigner", "validator", cfg.From, "signer", signer)
-	log.Info("=== authorizeValidatorSigner ===")
 	v.handleType1Msg(cfg, v.account.to, nil, v.account.abi, "authorizeValidatorSigner", signer, all, r, s)
 	return nil
 }
@@ -205,18 +209,18 @@ func (v *Validator) AuthorizeValidatorSignerBySignature(_ *cli.Context, cfg *def
 	r := common.BytesToHash(Signature[:32])
 	s := common.BytesToHash(Signature[32:64])
 
-	log.Info("authorizeValidatorSignerBySignature", "signer", cfg.SignerAddress, "signature", cfg.Signature)
-	v.handleType1Msg(cfg, v.account.to, nil, v.account.abi, "authorizeValidatorSigner", cfg.SignerAddress, all, r, s)
+	log.Info("authorizeValidatorSignerBySignature", "signer", cfg.Address, "signature", cfg.Signature)
+	v.handleType1Msg(cfg, v.account.to, nil, v.account.abi, "authorizeValidatorSigner", cfg.Address, all, r, s)
 	return nil
 }
 
 func (v *Validator) MakeECDSASignatureFromSigner(_ *cli.Context, cfg *define.Config) error {
-	v.makeECDSASignatureFromSigner_(cfg.TargetAddress, cfg.SignerPriv)
+	v.makeECDSASignatureFromSigner_(cfg.Address, cfg.PrivateKeyHex)
 	return nil
 }
 
 func (v *Validator) MakeBLSProofOfPossessionFromsigner(_ *cli.Context, cfg *define.Config) error {
-	signature := v.makeBLSProofOfPossessionFromSigner_(cfg.AccountAddress, cfg.SignerPriv)
+	signature := v.makeBLSProofOfPossessionFromSigner_(cfg.Address, cfg.PrivateKeyHex)
 	log.Info("=== pop ===", "result", hexutil.Encode(signature.Marshal()))
 	return nil
 }
@@ -267,7 +271,7 @@ func (v *Validator) registerUseFor(cfg *define.Config) (common.Address, common.A
 	v.handleType3Msg(cfg, &ret1, v.electionTo, nil, v.electionAbi, "getTotalVotesForValidator", cfg.From)
 	result := ret1.(*big.Int)
 	log.Info("=== getTotalVotesForValidator ===", "result", result)
-	cfg.VoteNum = result
+	cfg.Value = result
 	G, L, _ := v.getGL2(cfg, cfg.From)
 	return G, L
 }
@@ -305,7 +309,7 @@ func (v *Validator) getGL2(cfg *define.Config, target common.Address) (common.Ad
 	for i, addr := range validators {
 		voteTotals[i] = voteTotal{addr, votes[i]}
 	}
-	voteTotals = append(voteTotals, voteTotal{target, cfg.VoteNum})
+	voteTotals = append(voteTotals, voteTotal{target, cfg.Value})
 	for _, voteTotal := range voteTotals {
 		if bytes.Equal(voteTotal.Validator.Bytes(), target.Bytes()) {
 			// Sorting in descending order is necessary to match the order on-chain.
@@ -334,7 +338,7 @@ func (v *Validator) getGL2(cfg *define.Config, target common.Address) (common.Ad
 
 func (v *Validator) makeECDSASignatureFromSigner_(validator common.Address, signerPrivate string) (string, common.Address) {
 	log.Info("=== makeECDSASignatureFromSigner ===")
-	// SignerPriv := cfg.SignerPriv
+	// PrivateKeyHex := cfg.PrivateKeyHex
 	priv, err := crypto.ToECDSA(common.FromHex(signerPrivate))
 	if err != nil {
 		panic(err)
@@ -354,4 +358,55 @@ func (v *Validator) makeECDSASignatureFromSigner_(validator common.Address, sign
 	log.Info("=== signer  ===", "account", crypto.PubkeyToAddress(*recoverPubKey))
 	log.Info("ECDSASignature", "result", hexutil.Encode(sig))
 	return hexutil.Encode(sig), signer
+}
+
+func (v *Validator) updateBlsPublicKey(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== updateBlsPublicKey ===")
+	_params := []interface{}{cfg.PublicKey[1:], cfg.BlsPub[:], cfg.BlsG1Pub[:], cfg.BLSProof}
+	v.handleType1Msg(cfg, v.to, nil, v.abi, "updateBlsPublicKey", _params...)
+	return nil
+}
+
+func (v *Validator) updateCommission(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== updateCommission ===")
+	v.handleType1Msg(cfg, v.to, nil, v.abi, "updateCommission")
+	return nil
+}
+
+func (v *Validator) setNextCommissionUpdate(_ *cli.Context, cfg *define.Config) error {
+	log.Info("=== setNextCommissionUpdate ===", "commission", cfg.Commission)
+	Commission := cfg.Commission
+	v.handleType1Msg(cfg, v.to, nil, v.abi, "setNextCommissionUpdate", big.NewInt(0).SetUint64(Commission))
+	return nil
+}
+
+func (v *Validator) GetRewardInfo(_ *cli.Context, cfg *define.Config) error {
+	conn := v.newConn(cfg.RPCAddr)
+	curBlockNumber, err := conn.BlockNumber(context.Background())
+	epochSize := chain.DefaultGenesisBlock().Config.Istanbul.Epoch
+	if err != nil {
+		return err
+	}
+	EpochFirst, err := istanbul.GetEpochFirstBlockGivenBlockNumber(curBlockNumber, epochSize)
+	if err != nil {
+		return err
+	}
+	Epoch := istanbul.GetEpochNumber(curBlockNumber, epochSize)
+	validatorContractAddress := cfg.ValidatorParameters.ValidatorAddress
+	queryBlock := big.NewInt(int64(EpochFirst - 1))
+	log.Info("=== getReward ===", "cur_epoch", Epoch, "epochSize", epochSize, "queryBlockNumber", queryBlock, "validatorContractAddress", validatorContractAddress.String(), "from", cfg.From)
+	query := mapprotocol.BuildQuery(validatorContractAddress, mapprotocol.ValidatorEpochPaymentDistributed, queryBlock, queryBlock)
+	// querying for logs
+	logs, err := conn.FilterLogs(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		//validator := common.Bytes2Hex(l.Topics[0].Bytes())
+		validator := common.BytesToAddress(l.Topics[1].Bytes())
+		reward := big.NewInt(0).SetBytes(l.Data[:32])
+		log.Info("", "validator", validator, "reward", reward)
+	}
+	log.Info("=== END ===")
+	return nil
 }
