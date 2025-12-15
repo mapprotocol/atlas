@@ -25,7 +25,7 @@ func (w *Writer) ResolveMessage(m Message) bool {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		GetResult(w.conn, txHash, true)
+		WaitConfirmation(w.conn, txHash)
 		m.DoneCh <- struct{}{}
 	case SolveSendTranstion2:
 		txHash, err := SendContractTransaction(w.conn, m.from, m.to, m.value, m.priKey, m.input, m.gasLimit)
@@ -33,7 +33,7 @@ func (w *Writer) ResolveMessage(m Message) bool {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		GetResult(w.conn, txHash, true)
+		WaitConfirmation(w.conn, txHash)
 		m.DoneCh <- struct{}{}
 	case SolveQueryResult3:
 		w.handleUnpackMethodSolveType3(m)

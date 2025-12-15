@@ -93,12 +93,12 @@ func (t *Tool) transfer(_ *cli.Context, cfg *define.Config) error {
 		return nil
 	}
 
-	txHash, err := writer.SendContractTransaction(conn, cfg.From, cfg.TargetAddress, amount, cfg.PrivateKey, nil, 0)
+	txHash, err := writer.SendContractTransaction(conn, cfg.From, cfg.Address, amount, cfg.PrivateKey, nil, 0)
 	if err != nil {
 		return err
 	}
-	writer.GetResult(conn, txHash, false)
-	log.Info("transfer success", "from ", cfg.From, "to", cfg.TargetAddress, "amount", cfg.Amount)
+	writer.WaitConfirmation(conn, txHash)
+	log.Info("transfer success", "from ", cfg.From, "to", cfg.Address, "amount", cfg.Amount)
 	return nil
 }
 

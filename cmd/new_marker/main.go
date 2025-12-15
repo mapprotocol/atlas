@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"sort"
-
 	"github.com/mapprotocol/atlas/cmd/new_marker/cmd"
 	"gopkg.in/urfave/cli.v1"
+	"os"
+	"sort"
 )
 
 var (
@@ -18,18 +17,28 @@ func init() {
 	app = cli.NewApp()
 	app.Usage = "Atlas Marker Tool"
 	app.Name = "marker"
-	app.Version = "3.0.1"
+	app.Version = "3.1.0"
 	app.Copyright = "Copyright 2020-2021 The Atlas Authors"
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 		_, _ = fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
-	app.Commands = append(app.Commands, cmd.AccountSet...)
-	app.Commands = append(app.Commands, cmd.ValidatorSet...)
-	app.Commands = append(app.Commands, cmd.VoterSet...)
+	app.Commands = []cli.Command{
+		cmd.AccountSet,
+		cmd.ValidatorSet,
+		cmd.VoterSet,
+		cmd.ViewerSet,
+		cmd.TssSet,
+		cmd.OwnerSet,
+	}
+
 	app.Commands = append(app.Commands, cmd.ToolSet...)
-	app.Commands = append(app.Commands, cmd.TssSet...)
 	sort.Sort(cli.CommandsByName(app.Commands))
+}
+
+func sortSubcommands(cmd cli.Command) cli.Command {
+	sort.Sort(cli.CommandsByName(cmd.Subcommands))
+	return cmd
 }
 
 func main() {

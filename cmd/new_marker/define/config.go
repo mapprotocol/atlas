@@ -15,9 +15,9 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
-var (
-	TestnetRpc = "https://testnet-rpc.maplabs.io"
-	MainnetRpc = "https://mrpc.chainservice.io"
+const (
+	TestnetRPC = "https://testnet-rpc.maplabs.io"
+	MainnetRPC = "https://mrpc.chainservice.io"
 )
 
 type LockedGoldParameters struct {
@@ -55,31 +55,25 @@ type Config struct {
 	BlsPub     blscrypto.SerializedPublicKey
 	BlsG1Pub   blscrypto.SerializedG1PublicKey
 	BLSProof   []byte
-	Value      uint64
 	Amount     string
 	Duration   int64
 	Commission uint64
 	Fixed      string
 
-	VoteNum       *big.Int
-	TopNum        *big.Int
-	LockedNum     *big.Int
-	WithdrawIndex *big.Int
-	RelockIndex   *big.Int
+	Value *big.Int
+	Index *big.Int
 
-	TargetAddress         common.Address
-	ContractAddress       common.Address
-	SignerPriv            string
-	AccountAddress        common.Address //validator
-	SignerAddress         common.Address
+	PrivateKeyHex         string
 	Signature             string
 	Proof                 string
+	Address               common.Address
 	ImplementationAddress common.Address
 	RPCAddr               string
 	GasLimit              int64
 	Verbosity             string
 	Name                  string
-	MetadataURL           string
+	URL                   string
+
 	LockedGoldParameters  LockedGoldParameters
 	ValidatorParameters   ValidatorParameters
 	EpochRewardParameters EpochRewardsParameters
@@ -91,17 +85,17 @@ type Config struct {
 func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	config := Config{}
 	//------------------ pre set --------------------------
-	path := ""
-	config.VoteNum = big.NewInt(int64(0))
-	config.TargetAddress = params.ZeroAddress
+	keyStorePath := ""
+	config.Value = big.NewInt(0)
+	config.Address = params.ZeroAddress
 	config.Commission = 1000000 //default 1  be relative to 1000,000
-	config.Verbosity = "3"
+	config.Verbosity = "info"
 	config.Name = "validator"
 	config.From = common.HexToAddress("0x0000000000000000000000000000000000000000") //  default
 
 	//-----------------------------------------------------
 	if ctx.IsSet(KeyStoreFlag.Name) {
-		path = ctx.String(KeyStoreFlag.Name)
+		keyStorePath = ctx.String(KeyStoreFlag.Name)
 	}
 	if ctx.IsSet(CommissionFlag.Name) {
 		config.Commission = ctx.Uint64(CommissionFlag.Name)
@@ -109,20 +103,11 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(RelayerFlag.Name) {
 		config.Fixed = ctx.String(RelayerFlag.Name)
 	}
-	if ctx.IsSet(VoteNumFlag.Name) {
-		config.VoteNum = big.NewInt(ctx.Int64(VoteNumFlag.Name))
+	if ctx.IsSet(AddressFlag.Name) {
+		config.Address = common.HexToAddress(ctx.String(AddressFlag.Name))
 	}
-	if ctx.IsSet(TargetAddressFlag.Name) {
-		config.TargetAddress = common.HexToAddress(ctx.String(TargetAddressFlag.Name))
-	}
-	if ctx.IsSet(ValidatorAddressFlag.Name) {
-		config.AccountAddress = common.HexToAddress(ctx.String(ValidatorAddressFlag.Name))
-	}
-	if ctx.IsSet(SignerPriFlag.Name) {
-		config.SignerPriv = ctx.String(SignerPriFlag.Name)
-	}
-	if ctx.IsSet(SignerFlag.Name) {
-		config.SignerAddress = common.HexToAddress(ctx.String(SignerFlag.Name))
+	if ctx.IsSet(PrivateKeyFlag.Name) {
+		config.PrivateKeyHex = ctx.String(PrivateKeyFlag.Name)
 	}
 	if ctx.IsSet(SignatureFlag.Name) {
 		config.Signature = ctx.String(SignatureFlag.Name)
@@ -133,14 +118,11 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(ImplementationAddressFlag.Name) {
 		config.ImplementationAddress = common.HexToAddress(ctx.String(ImplementationAddressFlag.Name))
 	}
-	if ctx.IsSet(ContractAddressFlag.Name) {
-		config.ContractAddress = common.HexToAddress(ctx.String(ContractAddressFlag.Name))
-	}
-	if ctx.IsSet(KeystoreAddressFlag.Name) {
-		config.From = common.HexToAddress(ctx.String(KeystoreAddressFlag.Name))
+	if ctx.IsSet(AccountFlag.Name) {
+		config.From = common.HexToAddress(ctx.String(AccountFlag.Name))
 	}
 	if ctx.IsSet(ValueFlag.Name) {
-		config.Value = ctx.Uint64(ValueFlag.Name)
+		config.Value = new(big.Int).SetUint64(ctx.Uint64(ValueFlag.Name))
 	}
 	if ctx.IsSet(AmountFlag.Name) {
 		config.Amount = ctx.String(AmountFlag.Name)
@@ -148,17 +130,11 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet(DurationFlag.Name) {
 		config.Duration = ctx.Int64(DurationFlag.Name)
 	}
-	if ctx.IsSet(TopNumFlag.Name) {
-		config.TopNum = big.NewInt(ctx.Int64(TopNumFlag.Name))
+	if ctx.IsSet(IndexFlag.Name) {
+		config.Index = big.NewInt(ctx.Int64(IndexFlag.Name))
 	}
-	if ctx.IsSet(LockedNumFlag.Name) {
-		config.LockedNum = big.NewInt(ctx.Int64(LockedNumFlag.Name)) // todo mapValue 和 lockedNum 一个意思，直接用一个
-	}
-	if ctx.IsSet(WithdrawIndexFlag.Name) {
-		config.WithdrawIndex = big.NewInt(ctx.Int64(WithdrawIndexFlag.Name))
-	}
-	if ctx.IsSet(ReLockIndexFlag.Name) {
-		config.RelockIndex = big.NewInt(ctx.Int64(ReLockIndexFlag.Name))
+	if ctx.IsSet(IndexFlag.Name) {
+		config.Index = big.NewInt(ctx.Int64(IndexFlag.Name))
 	}
 	if ctx.IsSet(VerbosityFlag.Name) {
 		config.Verbosity = ctx.String(VerbosityFlag.Name)
@@ -167,17 +143,21 @@ func AssemblyConfig(ctx *cli.Context) (*Config, error) {
 		config.Name = ctx.String(NameFlag.Name)
 	}
 	if ctx.IsSet(URLFlag.Name) {
-		config.MetadataURL = ctx.String(URLFlag.Name)
+		config.URL = ctx.String(URLFlag.Name)
 	}
-	config.RPCAddr = MainnetRpc
-	if ctx.Bool(TestnetFlag.Name) {
-		config.RPCAddr = TestnetRpc
+	if ctx.IsSet(RPCAddrFlag.Name) {
+		config.RPCAddr = ctx.String(RPCAddrFlag.Name)
+	} else {
+		config.RPCAddr = MainnetRPC
+		if ctx.Bool(TestnetFlag.Name) {
+			config.RPCAddr = TestnetRPC
+		}
 	}
 	if ctx.IsSet(GasLimitFlag.Name) {
 		config.GasLimit = ctx.Int64(GasLimitFlag.Name)
 	}
-	if path != "" {
-		_account, err := LoadAccount(path, string(GetPassword(fmt.Sprintf("Enter password for key %s:", path))))
+	if keyStorePath != "" {
+		_account, err := LoadAccount(keyStorePath, string(GetPassword(fmt.Sprintf("Enter password for key %s:", keyStorePath))))
 		if err != nil {
 			return nil, err
 		}

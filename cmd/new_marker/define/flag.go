@@ -22,31 +22,15 @@ var (
 		Usage: "Register validator param",
 	}
 	RelayerFlag = cli.StringFlag{
-		Name:  "relayerf",
+		Name:  "relayer",
 		Usage: "Register validator param",
 	}
-	VoteNumFlag = cli.Int64Flag{
-		Name:  "voteNum",
-		Usage: "The amount of gold to use to vote",
-	}
-	TopNumFlag = cli.Int64Flag{
-		Name:  "topNum",
-		Usage: "TopNum of validator",
-	}
-	LockedNumFlag = cli.Int64Flag{
-		Name:  "lockedNum",
-		Usage: "The amount of map to lock 、unlock、relock、withdraw ",
-	}
-	WithdrawIndexFlag = cli.Int64Flag{
-		Name:  "withdrawIndex",
-		Usage: "Use for withdraw",
-	}
-	ReLockIndexFlag = cli.Int64Flag{
-		Name:  "relockIndex",
-		Usage: "Use for relock",
+	IndexFlag = cli.Int64Flag{
+		Name:  "index",
+		Usage: "Index number",
 	}
 	VerbosityFlag = cli.Int64Flag{
-		Name:  "Verbosity",
+		Name:  "verbosity",
 		Usage: "Verbosity of log level",
 	}
 	RPCAddrFlag = cli.StringFlag{
@@ -56,7 +40,7 @@ var (
 	}
 	ValueFlag = cli.Uint64Flag{
 		Name:  "value",
-		Usage: "Value units one eth",
+		Usage: "A specific command to be executed requires a specified numerical value in eth.",
 		Value: 0,
 	}
 	AmountFlag = cli.StringFlag{
@@ -69,24 +53,14 @@ var (
 		Usage: "Duration The time (in seconds) that these requirements persist for.",
 		Value: 0,
 	}
-	TargetAddressFlag = cli.StringFlag{
-		Name:  "target",
-		Usage: "Target query address",
+	AddressFlag = cli.StringFlag{
+		Name:  "address",
+		Usage: "Account address",
 		Value: "",
 	}
-	ValidatorAddressFlag = cli.StringFlag{
-		Name:  "validator",
-		Usage: "Validator address",
-		Value: "",
-	}
-	SignerPriFlag = cli.StringFlag{
-		Name:  "signerPriv",
-		Usage: "Signer private",
-		Value: "",
-	}
-	SignerFlag = cli.StringFlag{
-		Name:  "signer",
-		Usage: "Signer address",
+	PrivateKeyFlag = cli.StringFlag{
+		Name:  "privatekey",
+		Usage: "Hex string of private key",
 		Value: "",
 	}
 	SignatureFlag = cli.StringFlag{
@@ -99,16 +73,6 @@ var (
 		Usage: "Signer proof",
 		Value: "",
 	}
-	AccountAddressFlag = cli.StringFlag{
-		Name:  "accountAddress",
-		Usage: "Account address",
-		Value: "",
-	}
-	ContractAddressFlag = cli.StringFlag{
-		Name:  "contractAddress",
-		Usage: "Set contract Address",
-		Value: "",
-	}
 	ImplementationAddressFlag = cli.StringFlag{
 		Name:  "implementationAddress",
 		Usage: "Set implementation Address",
@@ -119,14 +83,14 @@ var (
 		Usage: "Use for sendContractTransaction gasLimit",
 		Value: 0,
 	}
-	KeystoreAddressFlag = cli.StringFlag{
-		Name:  "keystoreAddress",
+	AccountFlag = cli.StringFlag{ // todo
+		Name:  "account",
 		Usage: "The address corresponding to the keystore",
 		Value: "",
 	}
 	BuildpathFlag = cli.StringFlag{
 		Name:  "buildpath",
-		Usage: "Directory where smartcontract truffle build file live",
+		Usage: "Directory where smart contract truffle build file live",
 	}
 	NewEnvFlag = cli.StringFlag{
 		Name:  "newenv",
@@ -185,8 +149,8 @@ var BaseFlagCombination = []cli.Flag{
 	RPCAddrFlag,
 	KeyStoreFlag,
 	GasLimitFlag,
-	TargetAddressFlag,
-	KeystoreAddressFlag,
+	AddressFlag,
+	AccountFlag,
 	TestnetFlag,
 }
 
