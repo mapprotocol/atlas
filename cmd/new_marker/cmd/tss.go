@@ -75,6 +75,7 @@ func (s *Tss) Update(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
+	var err error
 	registerFrom := cfg.From
 	pkBytes := cfg.PublicKey // remove pk prefix 0x04
 	if ctx.IsSet(define.TssRegisterPkFlag.Name) {
@@ -82,7 +83,7 @@ func (s *Tss) Update(ctx *cli.Context, cfg *define.Config) error {
 		if len(pkStr) != 130 || pkStr[:2] != "04" {
 			return fmt.Errorf("invalid registerPk format, should be uncompressed pk prefixed with 04")
 		}
-		pkBytes, err := hex.DecodeString(pkStr)
+		pkBytes, err = hex.DecodeString(pkStr)
 		if err != nil {
 			return fmt.Errorf("invalid registerPk hex string: %v", err)
 		}
