@@ -90,7 +90,7 @@ func (v *Viewer) getTopValidators(_ *cli.Context, cfg *define.Config) error {
 
 func (v *Viewer) getValidatorEligibility(_ *cli.Context, cfg *define.Config) error {
 	var ret interface{}
-	v.handleType3Msg(cfg, &ret, v.electionTo, nil, v.electionAbi, "c", cfg.Address)
+	v.handleType3Msg(cfg, &ret, v.electionTo, nil, v.electionAbi, "getValidatorEligibility", cfg.Address)
 	log.Info("=== result ===", "bool", ret.(bool))
 	return nil
 }

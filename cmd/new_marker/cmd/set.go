@@ -293,13 +293,13 @@ func init() {
 			},
 			{
 				Name:   "getRegisteredValidatorSigners",
-				Usage:  "Get Registered Validator Signers",
+				Usage:  "Returns the list of signers for the registered validator accounts",
 				Action: MigrateFlags(viewer.GetRegisteredValidatorSigners),
 				Flags:  define.MustFlagCombination,
 			},
 			{
 				Name:   "getValidator",
-				Usage:  "Validator Info",
+				Usage:  "Returns validator information",
 				Action: MigrateFlags(viewer.GetValidator),
 				Flags:  define.BaseFlagCombination,
 			},
@@ -470,9 +470,9 @@ func init() {
 				}),
 			},
 			{
-				Name:      "preparation",
-				Usage:     "Preparation tss maintainers",
-				Action:    MigrateFlags(tss.Preparation),
+				Name:      "active",
+				Usage:     "Active tss maintainers",
+				Action:    MigrateFlags(tss.Activate),
 				ArgsUsage: "",
 				Flags: append([]cli.Flag{
 					define.KeyStoreFlag,
@@ -480,9 +480,9 @@ func init() {
 				}),
 			},
 			{
-				Name:      "cancelPreparation",
-				Usage:     "Cancel preparation tss maintainers",
-				Action:    MigrateFlags(tss.cancelPreparation),
+				Name:      "revoke",
+				Usage:     "Revoke tss maintainers",
+				Action:    MigrateFlags(tss.Revoke),
 				ArgsUsage: "",
 				Flags: append([]cli.Flag{
 					define.KeyStoreFlag,
