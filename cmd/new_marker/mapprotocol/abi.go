@@ -9975,7 +9975,7 @@ func init() {
         "type": "address"
       }
     ],
-    "name": "CancelPreparation",
+    "name": "Revoke",
     "type": "event"
   },
   {
@@ -10096,7 +10096,7 @@ func init() {
         "type": "address"
       }
     ],
-    "name": "Preparation",
+    "name": "Activate",
     "type": "event"
   },
   {
@@ -10311,7 +10311,7 @@ func init() {
   },
   {
     "inputs": [],
-    "name": "cancelPreparation",
+    "name": "revoke",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -10584,7 +10584,7 @@ func init() {
   },
   {
     "inputs": [],
-    "name": "preparation",
+    "name": "activate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

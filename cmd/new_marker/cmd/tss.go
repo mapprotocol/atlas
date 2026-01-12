@@ -97,22 +97,22 @@ func (s *Tss) Update(ctx *cli.Context, cfg *define.Config) error {
 	return nil
 }
 
-func (s *Tss) Preparation(ctx *cli.Context, cfg *define.Config) error {
+func (s *Tss) Activate(ctx *cli.Context, cfg *define.Config) error {
 	to := mainnet
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
-	s.handleType1Msg(cfg, to, nil, s.abi, "preparation")
+	s.handleType1Msg(cfg, to, nil, s.abi, "activate")
 
 	return nil
 }
 
-func (s *Tss) cancelPreparation(ctx *cli.Context, cfg *define.Config) error {
+func (s *Tss) Revoke(ctx *cli.Context, cfg *define.Config) error {
 	to := mainnet
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
-	s.handleType1Msg(cfg, to, nil, s.abi, "cancelPreparation")
+	s.handleType1Msg(cfg, to, nil, s.abi, "revoke")
 
 	return nil
 }
