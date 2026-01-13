@@ -14,7 +14,7 @@ import (
 
 var (
 	testnet = common.HexToAddress("0x60c2e5bd5b785910424C48098292Ab410884B5ad")
-	mainnet = common.HexToAddress("0x7e22B9FC15054546028Df928eB7560AEd8F0eF48")
+	mainnet = common.HexToAddress("0xBfb6B7d0d5Fc120703F7B57CC18157d79a50a7e5")
 )
 
 type Tss struct {
