@@ -483,8 +483,8 @@ func (api *TssAPI) GetVault(epoch rpc.BlockNumber) ([]*Vault, error) {
 	}
 	return []*Vault{
 		{
-			Epoch:     epoch.Int64(),
-			PublicKey: "0x" + common.Bytes2Hex(publicKey),
+			Epoch:     epochNumber,
+			PublicKey: tools.Bytes2Hex(publicKey),
 			Status:    status,
 			Chains:    chains,
 			Addresses: addresses,
@@ -498,7 +498,7 @@ func Addresses(pk []byte) ([]*Addr, error) {
 		return nil, err
 	}
 
-	ret := make([]*Addr, len(chains))
+	ret := make([]*Addr, 0, len(chains))
 	for _, ch := range chains {
 		address, err := ctcommon.PubKey(compressedPubKey).GetAddress(ctcommon.Chain(ch))
 		if err != nil {
