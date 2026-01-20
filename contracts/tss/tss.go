@@ -17,6 +17,7 @@
 package tss
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/mapprotocol/atlas/contracts"
 	"github.com/mapprotocol/atlas/contracts/abis"
 	"github.com/mapprotocol/atlas/core/vm"
@@ -24,9 +25,14 @@ import (
 	"math/big"
 )
 
+var tssManagerAddress = common.HexToAddress("0xf3Fa35B6e3753cFe88Da86c71B2283F75EB64BE9")
+
 var (
-	getCurrentEpochMethod   = contracts.NewRegisteredContractMethod(params.TSSManagerRegistryId, abis.TSSManager, "currentEpoch", params.MaxGasForReadBlockchainParameter)
-	getEpochPublicKeyMethod = contracts.NewRegisteredContractMethod(params.TSSManagerRegistryId, abis.TSSManager, "getEpochPubkey", params.MaxGasForReadBlockchainParameter)
+	//getCurrentEpochMethod   = contracts.NewRegisteredContractMethod(params.TSSManagerRegistryId, abis.TSSManager, "currentEpoch", params.MaxGasForReadBlockchainParameter)
+	//getEpochPublicKeyMethod = contracts.NewRegisteredContractMethod(params.TSSManagerRegistryId, abis.TSSManager, "getEpochPubkey", params.MaxGasForReadBlockchainParameter)
+
+	getCurrentEpochMethod   = contracts.NewRegisteredContractMethodByAddress(tssManagerAddress, abis.TSSManager, "currentEpoch", params.MaxGasForReadBlockchainParameter)
+	getEpochPublicKeyMethod = contracts.NewRegisteredContractMethodByAddress(tssManagerAddress, abis.TSSManager, "getEpochPubkey", params.MaxGasForReadBlockchainParameter)
 )
 
 func GetCurrentEpoch(vmRunner vm.EVMRunner) (*big.Int, error) {

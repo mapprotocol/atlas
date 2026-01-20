@@ -64,6 +64,15 @@ func NewRegisteredContractMethod(registryId common.Hash, abi *abi.ABI, methodNam
 	}
 }
 
+func NewRegisteredContractMethodByAddress(address common.Address, abi *abi.ABI, methodName string, maxGas uint64) *BoundMethod {
+	return &BoundMethod{
+		Method: NewMethod(abi, methodName, maxGas),
+		resolveAddress: func(vmRunner vm.EVMRunner) (common.Address, error) {
+			return address, nil
+		},
+	}
+}
+
 // BoundMethod represents a Method that is bounded to an address
 // In particular, instead of address we use an address resolver to cope the fact
 // that addresses need to be obtained from the Registry before making a call
