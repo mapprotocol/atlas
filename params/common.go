@@ -71,6 +71,7 @@ var (
 	//TransferWhitelistRegistryId    = makeRegistryId("TransferWhitelist")
 	ValidatorsRegistryId = makeRegistryId("Validators")
 	AccountsId           = makeRegistryId("Accounts")
+	TSSManagerRegistryId = makeRegistryId("TSSManager")
 
 	// Function is "getOrComputeTobinTax()"
 	// selector is first 4 bytes of keccak256 of "getOrComputeTobinTax()"

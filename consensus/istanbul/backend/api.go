@@ -19,13 +19,14 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"github.com/mapprotocol/atlas/tools"
 	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rpc"
+
 	"github.com/mapprotocol/atlas/consensus"
 	"github.com/mapprotocol/atlas/consensus/istanbul"
 	vet "github.com/mapprotocol/atlas/consensus/istanbul/backend/internal/enodes"
@@ -35,8 +36,11 @@ import (
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime"
 	"github.com/mapprotocol/atlas/consensus/istanbul/uptime/store"
 	"github.com/mapprotocol/atlas/consensus/istanbul/validator"
+	"github.com/mapprotocol/atlas/contracts/tss"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
+	"github.com/mapprotocol/atlas/tools"
+	ctcommon "github.com/mapprotocol/compass-tss/common"
 )
 
 // API is a user facing RPC API to dump Istanbul state
@@ -409,4 +413,113 @@ func (api *API) GetEpochInfo(epochNumber uint64) *EpochInfo {
 		Validators: validators,
 	}
 	return epochInfo
+}
+
+var chains = []string{
+	"BTC",
+}
+
+type Vault struct {
+	Epoch     int64    `json:"epoch"`
+	PublicKey string   `json:"public_key"`
+	Status    string   `json:"status"`
+	Chains    []string `json:"chains"`
+	Addresses []*Addr  `json:"addresses"`
+}
+
+type Addr struct {
+	Chain   string `json:"chain"`
+	Address string `json:"address"`
+}
+
+type TssAPI struct {
+	chain    consensus.ChainHeaderReader
+	istanbul *Backend
+}
+
+func (api *TssAPI) GetVault(epoch rpc.BlockNumber) ([]*Vault, error) {
+	if epoch == rpc.PendingBlockNumber || epoch == rpc.EarliestBlockNumber {
+		return nil, errors.New("invalid epoch")
+	}
+
+	var status = "inactive"
+	var epochNumber int64
+
+	header := api.chain.CurrentHeader()
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+	state, err := api.istanbul.stateAt(header.Hash())
+	if err != nil {
+		return nil, err
+	}
+	vmRunner := api.istanbul.chain.NewEVMRunner(header, state)
+
+	currentEpoch, err := tss.GetCurrentEpoch(vmRunner)
+	if err != nil {
+		return nil, err
+	}
+	if epoch.Int64() > currentEpoch.Int64() {
+		return nil, fmt.Errorf("epoch %d is not valid, current epoch is %d", epoch.Int64(), currentEpoch.Int64())
+	}
+
+	if epoch == rpc.LatestBlockNumber {
+		epochNumber = currentEpoch.Int64()
+	} else {
+		epochNumber = epoch.Int64()
+	}
+
+	if epochNumber == currentEpoch.Int64() {
+		status = "active"
+	}
+
+	publicKey, err := tss.GetEpochPublicKey(vmRunner, big.NewInt(epochNumber))
+	if err != nil {
+		return nil, err
+	}
+	addresses, err := Addresses(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	return []*Vault{
+		{
+			Epoch:     epoch.Int64(),
+			PublicKey: "0x" + common.Bytes2Hex(publicKey),
+			Status:    status,
+			Chains:    chains,
+			Addresses: addresses,
+		},
+	}, nil
+}
+
+func Addresses(pk []byte) ([]*Addr, error) {
+	compressedPubKey, err := CompressPubKey(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]*Addr, len(chains))
+	for _, ch := range chains {
+		address, err := ctcommon.PubKey(compressedPubKey).GetAddress(ctcommon.Chain(ch))
+		if err != nil {
+			continue
+		}
+		ret = append(ret, &Addr{
+			Chain:   ch,
+			Address: address.String(),
+		})
+	}
+	return ret, nil
+}
+
+func CompressPubKey(pks []byte) (string, error) {
+	if len(pks) != 64 {
+		return "", fmt.Errorf("invalid pub key, length(%d)", len(pks))
+	}
+	pk, err := crypto.UnmarshalPubkey(append([]byte{4}, pks...))
+	if err != nil {
+		return "", err
+	}
+	cpkBytes := crypto.CompressPubkey(pk)
+	return common.Bytes2Hex(cpkBytes), nil
 }
