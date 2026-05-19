@@ -112,6 +112,10 @@ var (
 		Name:  "testnet",
 		Usage: "use testnet network, default is mainnet",
 	}
+	PreMainFlag = cli.BoolFlag{
+		Name:  "premain",
+		Usage: "use pre main network, default is mainnet",
+	}
 )
 
 var TemplateFlags = []cli.Flag{
