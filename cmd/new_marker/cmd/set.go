@@ -455,7 +455,7 @@ func init() {
 					define.TssRegisterPkFlag,
 					define.P2pAddressFlag,
 					define.TestnetFlag,
-					define.PreMainFlag,
+					define.StageFlag,
 				}),
 			},
 			{
@@ -468,7 +468,7 @@ func init() {
 					define.TssRegisterPkFlag,
 					define.P2pAddressFlag,
 					define.TestnetFlag,
-					define.PreMainFlag,
+					define.StageFlag,
 				}),
 			},
 			{
@@ -479,7 +479,7 @@ func init() {
 				Flags: append([]cli.Flag{
 					define.KeyStoreFlag,
 					define.TestnetFlag,
-					define.PreMainFlag,
+					define.StageFlag,
 				}),
 			},
 			{
@@ -490,7 +490,7 @@ func init() {
 				Flags: append([]cli.Flag{
 					define.KeyStoreFlag,
 					define.TestnetFlag,
-					define.PreMainFlag,
+					define.StageFlag,
 				}),
 			},
 		},

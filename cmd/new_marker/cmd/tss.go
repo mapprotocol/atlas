@@ -42,7 +42,7 @@ func (s *Tss) Register(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
-	if ctx.Bool(define.PreMainFlag.Name) {
+	if ctx.Bool(define.StageFlag.Name) {
 		to = premain
 	}
 
@@ -80,7 +80,7 @@ func (s *Tss) Update(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
-	if ctx.Bool(define.PreMainFlag.Name) {
+	if ctx.Bool(define.StageFlag.Name) {
 		to = premain
 	}
 	var err error
@@ -110,7 +110,7 @@ func (s *Tss) Activate(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
-	if ctx.Bool(define.PreMainFlag.Name) {
+	if ctx.Bool(define.StageFlag.Name) {
 		to = premain
 	}
 	s.handleType1Msg(cfg, to, nil, s.abi, "activate")
@@ -123,7 +123,7 @@ func (s *Tss) Revoke(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
-	if ctx.Bool(define.PreMainFlag.Name) {
+	if ctx.Bool(define.StageFlag.Name) {
 		to = premain
 	}
 	s.handleType1Msg(cfg, to, nil, s.abi, "revoke")

@@ -112,8 +112,8 @@ var (
 		Name:  "testnet",
 		Usage: "use testnet network, default is mainnet",
 	}
-	PreMainFlag = cli.BoolFlag{
-		Name:  "premain",
+	StageFlag = cli.BoolFlag{
+		Name:  "stage",
 		Usage: "use pre main network, default is mainnet",
 	}
 )
