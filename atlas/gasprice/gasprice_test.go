@@ -196,7 +196,7 @@ func TestSuggestTipCap(t *testing.T) {
 
 func getBlockValues(ctx context.Context, signer types.Signer, blockNum uint64,
 	limit int, ignoreUnder *big.Int, result chan results, quit chan struct{}) {
-	url := "https://poc3-rpc.maplabs.io"
+	url := "https://rpc.maplabs.io"
 	c, e := ethclient.Dial(url)
 	if e != nil {
 		panic(e)

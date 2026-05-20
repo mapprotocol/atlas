@@ -3,17 +3,18 @@ package test
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
+	"math/big"
+	"math/rand"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/mapprotocol/atlas/core/types"
 	blscrypto "github.com/mapprotocol/atlas/helper/bls"
 	"golang.org/x/crypto/sha3"
-	"io"
-	"log"
-	"math/big"
-	"math/rand"
-	"testing"
 )
 
 func TestData(t *testing.T) {
@@ -21,7 +22,7 @@ func TestData(t *testing.T) {
 	//ip := "127.0.0.1" //utils.RPCListenAddrFlag.Name)
 	//port := 7415                //utils.RPCPortFlag.Name)
 	//url := fmt.Sprintf("http://%s", fmt.Sprintf("%s:%d", ip, port))
-	url := fmt.Sprintf("https://poc2-rpc.maplabs.io")
+	url := fmt.Sprintf("https://rpc.maplabs.io")
 	conn, err := Dial(url)
 	if err != nil {
 		log.Fatalf("Failed to connect to the Atlaschain client: %v", err)
@@ -282,7 +283,7 @@ func (te *TestEncode) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-/////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////
 type TestEncode1 struct {
 	D1 []byte
 	D2 []byte
@@ -311,7 +312,7 @@ func (te *TestEncode1) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////
 type TestEncode2 struct {
 	D1 []byte
 }

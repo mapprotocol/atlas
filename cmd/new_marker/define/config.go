@@ -17,7 +17,7 @@ import (
 
 const (
 	TestnetRPC = "https://testnet-rpc.maplabs.io"
-	MainnetRPC = "https://mrpc.chainservice.io"
+	MainnetRPC = "https://rpc.maplabs.io"
 )
 
 type LockedGoldParameters struct {
