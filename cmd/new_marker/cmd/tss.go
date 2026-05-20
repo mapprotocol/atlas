@@ -15,6 +15,7 @@ import (
 var (
 	testnet = common.HexToAddress("0x60c2e5bd5b785910424C48098292Ab410884B5ad")
 	mainnet = common.HexToAddress("0xBfb6B7d0d5Fc120703F7B57CC18157d79a50a7e5")
+	premain = common.HexToAddress("0xd5b64905aBDe29Ac05d3bCE5aE2ec2e0109d5a8a")
 )
 
 type Tss struct {
@@ -41,6 +42,10 @@ func (s *Tss) Register(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
+	if ctx.Bool(define.StageFlag.Name) {
+		to = premain
+	}
+
 	registerFrom := cfg.From
 	pkBytes := cfg.PublicKey // remove pk prefix 0x04
 	if ctx.IsSet(define.TssRegisterPkFlag.Name) {
@@ -75,6 +80,9 @@ func (s *Tss) Update(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
+	if ctx.Bool(define.StageFlag.Name) {
+		to = premain
+	}
 	var err error
 	registerFrom := cfg.From
 	pkBytes := cfg.PublicKey // remove pk prefix 0x04
@@ -102,6 +110,9 @@ func (s *Tss) Activate(ctx *cli.Context, cfg *define.Config) error {
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
 	}
+	if ctx.Bool(define.StageFlag.Name) {
+		to = premain
+	}
 	s.handleType1Msg(cfg, to, nil, s.abi, "activate")
 
 	return nil
@@ -111,6 +122,9 @@ func (s *Tss) Revoke(ctx *cli.Context, cfg *define.Config) error {
 	to := mainnet
 	if ctx.Bool(define.TestnetFlag.Name) {
 		to = testnet
+	}
+	if ctx.Bool(define.StageFlag.Name) {
+		to = premain
 	}
 	s.handleType1Msg(cfg, to, nil, s.abi, "revoke")
 

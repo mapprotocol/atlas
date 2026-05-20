@@ -9,3 +9,5 @@
 
 # used by the Makefile
 /build/bin/
+
+data/
