@@ -18,6 +18,7 @@ package filters
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"math/big"
@@ -172,7 +173,7 @@ func TestBlockSubscription(t *testing.T) {
 	var (
 		db          = rawdb.NewMemoryDatabase()
 		backend     = &testBackend{db: db}
-		api         = NewPublicFilterAPI(backend, false, deadline)
+		api         = NewPublicFilterAPI(backend, false, deadline, 0)
 		genesis     = new(chain.Genesis).MustCommit(db)
 		chain, _    = chain.GenerateChain(params.TestChainConfig, genesis, consensustest.NewFaker(), db, 10, func(i int, gen *chain.BlockGen) {})
 		chainEvents = []core.ChainEvent{}
@@ -224,7 +225,7 @@ func TestPendingTxFilter(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false, deadline)
+		api     = NewPublicFilterAPI(backend, false, deadline, 0)
 
 		transactions = []*types.Transaction{
 			types.NewTransaction(0, common.HexToAddress("0xb794f5ea0ba39494ce83a213fffba74279579268"), new(big.Int), 0, new(big.Int), nil),
@@ -279,7 +280,7 @@ func TestLogFilterCreation(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false, deadline)
+		api     = NewPublicFilterAPI(backend, false, deadline, 0)
 
 		testCases = []struct {
 			crit    FilterCriteria
@@ -323,7 +324,7 @@ func TestInvalidLogFilterCreation(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false, deadline)
+		api     = NewPublicFilterAPI(backend, false, deadline, 0)
 	)
 
 	// different situations where log filter creation should fail.
@@ -345,7 +346,7 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	var (
 		db        = rawdb.NewMemoryDatabase()
 		backend   = &testBackend{db: db}
-		api       = NewPublicFilterAPI(backend, false, deadline)
+		api       = NewPublicFilterAPI(backend, false, deadline, 0)
 		blockHash = common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
 	)
 
@@ -363,6 +364,70 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	}
 }
 
+func TestRangeLimit(t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	backend := &testBackend{db: db}
+	head := &types.Header{Number: big.NewInt(10)}
+	rawdb.WriteHeader(db, head)
+	rawdb.WriteCanonicalHash(db, head.Hash(), head.Number.Uint64())
+	rawdb.WriteHeadBlockHash(db, head.Hash())
+
+	tests := []struct {
+		name       string
+		begin      int64
+		end        int64
+		rangeLimit uint64
+		wantError  bool
+	}{
+		{name: "disabled", begin: 0, end: 10, rangeLimit: 0},
+		{name: "exact limit", begin: 0, end: 5, rangeLimit: 5},
+		{name: "exceeds limit", begin: 0, end: 6, rangeLimit: 5, wantError: true},
+		{name: "latest exact limit", begin: 5, end: rpc.LatestBlockNumber.Int64(), rangeLimit: 5},
+		{name: "latest exceeds limit", begin: 4, end: rpc.LatestBlockNumber.Int64(), rangeLimit: 5, wantError: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			filter := NewRangeFilter(backend, test.begin, test.end, nil, nil, test.rangeLimit)
+			_, err := filter.Logs(context.Background())
+			if !test.wantError {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected range limit error, got nil")
+			}
+			var rpcErr rpc.Error
+			if !errors.As(err, &rpcErr) {
+				t.Fatalf("expected rpc error, got %T: %v", err, err)
+			}
+			if rpcErr.ErrorCode() != -32602 {
+				t.Fatalf("expected error code -32602, got %d", rpcErr.ErrorCode())
+			}
+			if want := "exceed maximum block range 5"; rpcErr.Error() != want {
+				t.Fatalf("expected error %q, got %q", want, rpcErr.Error())
+			}
+		})
+	}
+}
+
+func TestInvalidParamsErrorShape(t *testing.T) {
+	err := invalidParamsErr("invalid parameter %d", 1)
+	typ := reflect.TypeOf(err)
+	if typ.Kind() != reflect.Struct {
+		t.Fatalf("expected invalidParamsError to be a struct, got %s", typ.Kind())
+	}
+	field, ok := typ.FieldByName("err")
+	if !ok {
+		t.Fatal("expected invalidParamsError to contain an err field")
+	}
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	if field.Type != errorType {
+		t.Fatalf("expected err field type %v, got %v", errorType, field.Type)
+	}
+}
+
 // TestLogFilter tests whether log filters match the correct logs that are posted to the event feed.
 func TestLogFilter(t *testing.T) {
 	t.Parallel()
@@ -370,7 +435,7 @@ func TestLogFilter(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false, deadline)
+		api     = NewPublicFilterAPI(backend, false, deadline, 0)
 
 		firstAddr      = common.HexToAddress("0x1111111111111111111111111111111111111111")
 		secondAddr     = common.HexToAddress("0x2222222222222222222222222222222222222222")
@@ -484,7 +549,7 @@ func TestPendingLogsSubscription(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false, deadline)
+		api     = NewPublicFilterAPI(backend, false, deadline, 0)
 
 		firstAddr      = common.HexToAddress("0x1111111111111111111111111111111111111111")
 		secondAddr     = common.HexToAddress("0x2222222222222222222222222222222222222222")
@@ -620,7 +685,7 @@ func TestPendingTxFilterDeadlock(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false, timeout)
+		api     = NewPublicFilterAPI(backend, false, timeout, 0)
 		done    = make(chan struct{})
 	)
 
