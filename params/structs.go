@@ -386,9 +386,10 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 	if isForkIncompatible(c.EWASMBlock, newcfg.EWASMBlock, head) {
 		return newCompatError("ewasm fork block", c.EWASMBlock, newcfg.EWASMBlock)
 	}
-	if isForkIncompatible(c.BlacklistBlock, newcfg.BlacklistBlock, head) {
-		return newCompatError("Blacklist fork block", c.BlacklistBlock, newcfg.BlacklistBlock)
-	}
+	// BlacklistBlock is intentionally not checked. It is a soft fork: blocks
+	// finalized after it are also valid under the old rules, so a node that kept
+	// running an old version past it has a correct database and must be able to
+	// upgrade without rewinding.
 	return nil
 }
 
