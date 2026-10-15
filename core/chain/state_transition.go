@@ -29,6 +29,7 @@ import (
 	"github.com/mapprotocol/atlas/core"
 	"github.com/mapprotocol/atlas/core/types"
 	"github.com/mapprotocol/atlas/core/vm"
+	params2 "github.com/mapprotocol/atlas/params"
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)
@@ -216,6 +217,11 @@ func (st *StateTransition) buyGas() error {
 }
 
 func (st *StateTransition) preCheck() error {
+	// Reject any message from/to a blacklisted account after BlacklistBlock.
+	if cfg := st.evm.ChainConfig(); cfg.IsBlacklist(st.evm.Context.BlockNumber) &&
+		params2.IsBlacklistedTx(cfg.ChainID, st.msg.From(), st.msg.To()) {
+		return fmt.Errorf("%w: from %v, to %v", core.ErrBlacklistedAccount, st.msg.From().Hex(), st.msg.To())
+	}
 	// Only check transactions that are not fake
 	if !st.msg.IsFake() {
 		// Make sure this transaction's nonce is correct.
