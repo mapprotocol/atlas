@@ -83,6 +83,7 @@ var (
 		DeregisterBlock:     big.NewInt(1242000),
 		CalcBaseBlock:       big.NewInt(1242000),
 		MAIBlock:            big.NewInt(15045600),
+		BlacklistBlock:      big.NewInt(24726500),
 		Istanbul: &IstanbulConfig{
 			Epoch:          4000,
 			ProposerPolicy: 2,

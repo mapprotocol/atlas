@@ -53,3 +53,12 @@ func TestMainnetBlacklistBlock(t *testing.T) {
 		t.Fatal("blacklist should be active from block 26654675")
 	}
 }
+
+func TestTestnetBlacklistBlock(t *testing.T) {
+	if TestnetConfig.IsBlacklist(big.NewInt(24726499)) {
+		t.Fatal("blacklist should not be active before block 24726500")
+	}
+	if !TestnetConfig.IsBlacklist(big.NewInt(24726500)) {
+		t.Fatal("blacklist should be active from block 24726500")
+	}
+}
