@@ -112,6 +112,10 @@ var (
 		Name:  "testnet",
 		Usage: "use testnet network, default is mainnet",
 	}
+	StageFlag = cli.BoolFlag{
+		Name:  "stage",
+		Usage: "use pre main network, default is mainnet",
+	}
 )
 
 var TemplateFlags = []cli.Flag{

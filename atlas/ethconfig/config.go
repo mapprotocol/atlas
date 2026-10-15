@@ -80,6 +80,7 @@ var Defaults = Config{
 	GPO:           FullNodeGPO,
 	RPCTxFeeCap:   50, // 10 ether
 	Istanbul:      *istanbul.DefaultConfig,
+	RangeLimit:    0,
 }
 
 //func init() {
@@ -196,6 +197,9 @@ type Config struct {
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transction variants. The unit is ether.
 	RPCTxFeeCap float64
+
+	// RangeLimit restricts the maximum range (end - start) for log range queries.
+	RangeLimit uint64 `toml:",omitempty"`
 
 	// Checkpoint is a hardcoded checkpoint which can be nil.
 	Checkpoint *ethparams.TrustedCheckpoint `toml:",omitempty"`

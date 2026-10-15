@@ -635,6 +635,11 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if err != nil {
 		return ErrInvalidSender
 	}
+	// Reject txs from/to blacklisted accounts regardless of fork height.
+	if params.IsBlacklistedTx(pool.chainconfig.ChainID, from, tx.To()) {
+		log.Warn("Rejected blacklisted transaction", "hash", tx.Hash(), "from", from, "to", tx.To())
+		return core.ErrBlacklistedAccount
+	}
 	// Drop non-local transactions under our own minimal accepted gas price or tip
 	//if !local && tx.Type() == types.LegacyTxType && tx.GasTipCapIntCmp(pool.gasPrice) < 0 {
 	//	return ErrUnderpriced

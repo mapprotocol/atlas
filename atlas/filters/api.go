@@ -28,11 +28,22 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/mapprotocol/atlas/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/mapprotocol/atlas/core/types"
 )
+
+type invalidParamsError struct {
+	err error
+}
+
+func (e invalidParamsError) Error() string  { return e.err.Error() }
+func (e invalidParamsError) ErrorCode() int { return -32602 }
+
+func invalidParamsErr(format string, args ...any) error {
+	return invalidParamsError{fmt.Errorf(format, args...)}
+}
 
 // filter is a helper struct that holds meta information over the filter type
 // and associated subscription in the event system.
@@ -48,24 +59,26 @@ type filter struct {
 // PublicFilterAPI offers support to create and manage filters. This will allow external clients to retrieve various
 // information related to the Ethereum protocol such als blocks, transactions and logs.
 type PublicFilterAPI struct {
-	backend   Backend
-	mux       *event.TypeMux
-	quit      chan struct{}
-	chainDb   ethdb.Database
-	events    *EventSystem
-	filtersMu sync.Mutex
-	filters   map[rpc.ID]*filter
-	timeout   time.Duration
+	backend    Backend
+	mux        *event.TypeMux
+	quit       chan struct{}
+	chainDb    ethdb.Database
+	events     *EventSystem
+	filtersMu  sync.Mutex
+	filters    map[rpc.ID]*filter
+	timeout    time.Duration
+	rangeLimit uint64
 }
 
 // NewPublicFilterAPI returns a new PublicFilterAPI instance.
-func NewPublicFilterAPI(backend Backend, lightMode bool, timeout time.Duration) *PublicFilterAPI {
+func NewPublicFilterAPI(backend Backend, lightMode bool, timeout time.Duration, rangeLimit uint64) *PublicFilterAPI {
 	api := &PublicFilterAPI{
-		backend: backend,
-		chainDb: backend.ChainDb(),
-		events:  NewEventSystem(backend, lightMode),
-		filters: make(map[rpc.ID]*filter),
-		timeout: timeout,
+		backend:    backend,
+		chainDb:    backend.ChainDb(),
+		events:     NewEventSystem(backend, lightMode),
+		filters:    make(map[rpc.ID]*filter),
+		timeout:    timeout,
+		rangeLimit: rangeLimit,
 	}
 	go api.timeoutLoop(timeout)
 
@@ -346,7 +359,7 @@ func (api *PublicFilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([
 			end = crit.ToBlock.Int64()
 		}
 		// Construct the range filter
-		filter = NewRangeFilter(api.backend, begin, end, crit.Addresses, crit.Topics)
+		filter = NewRangeFilter(api.backend, begin, end, crit.Addresses, crit.Topics, api.rangeLimit)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
@@ -401,7 +414,7 @@ func (api *PublicFilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*ty
 			end = f.crit.ToBlock.Int64()
 		}
 		// Construct the range filter
-		filter = NewRangeFilter(api.backend, begin, end, f.crit.Addresses, f.crit.Topics)
+		filter = NewRangeFilter(api.backend, begin, end, f.crit.Addresses, f.crit.Topics, api.rangeLimit)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)

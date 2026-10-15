@@ -432,6 +432,11 @@ var (
 		Usage: "Sets a cap on transaction fee (in ether) that can be sent via the RPC APIs (0 = no cap)",
 		Value: ethconfig.Defaults.RPCTxFeeCap,
 	}
+	RPCGlobalRangeLimitFlag = cli.Uint64Flag{
+		Name:  "rpc.rangelimit",
+		Usage: "Maximum block range (end - begin) allowed for range queries (0 = unlimited)",
+		Value: ethconfig.Defaults.RangeLimit,
+	}
 	// Logging and debug settings
 	EthStatsURLFlag = cli.StringFlag{
 		Name:  "ethstats",
@@ -1484,6 +1489,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	}
 	if ctx.GlobalIsSet(RPCGlobalTxFeeCapFlag.Name) {
 		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCapFlag.Name)
+	}
+	if ctx.GlobalIsSet(RPCGlobalRangeLimitFlag.Name) {
+		cfg.RangeLimit = ctx.GlobalUint64(RPCGlobalRangeLimitFlag.Name)
 	}
 	if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
 		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}

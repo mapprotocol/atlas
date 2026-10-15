@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -11,18 +12,19 @@ import (
 	"github.com/mapprotocol/atlas/helper/fileutils"
 	"github.com/mapprotocol/atlas/marker/genesis"
 
+	"io/ioutil"
+	"math/big"
+	"testing"
+
 	"github.com/mapprotocol/atlas/accounts/keystore"
 	"github.com/mapprotocol/atlas/atlas"
 	"github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/state"
 	"github.com/mapprotocol/atlas/marker/env"
-	"io/ioutil"
-	"math/big"
-	"testing"
 )
 
 func Test_dumpStateDb(t *testing.T) {
-	client, err := rpc.Dial("https://poc2-rpc.maplabs.io")
+	client, err := rpc.Dial("https://rpc.maplabs.io")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -98,7 +100,7 @@ func Test_ProxiedValidator(t *testing.T) {
 }
 
 // simulation Account new
-//0x1a7559d3ca2e6d4ee76bf97e816c21319e31a8ff58368c747fd8909bf37b48db0fc69bc7c6fffc0665ff1801fb17afe79ae31042411d3eb600ab73bb02f3e8b32fb4218ab8a7018b6300ea6500ef438817eed6c986901eb212d4c6de093ef63020b20eb8e1ed4365d33519cdc1c290ae7a386ff9743c57b1b420be20b94698b7
+// 0x1a7559d3ca2e6d4ee76bf97e816c21319e31a8ff58368c747fd8909bf37b48db0fc69bc7c6fffc0665ff1801fb17afe79ae31042411d3eb600ab73bb02f3e8b32fb4218ab8a7018b6300ea6500ef438817eed6c986901eb212d4c6de093ef63020b20eb8e1ed4365d33519cdc1c290ae7a386ff9743c57b1b420be20b94698b7
 func Test_autoGenerateMarkerCfg(t *testing.T) {
 	var (
 		adminAddress = "0x6324b2227013a7F2fe4958545A6e08c6E4305A60"

@@ -25,7 +25,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapDiscoveryURLs       []string
 		NoPruning               bool
 		NoPrefetch              bool
-		VerifyCheckPoint 		bool 				`toml:",omitempty"`
+		VerifyCheckPoint        bool                   `toml:",omitempty"`
 		TxLookupLimit           uint64                 `toml:",omitempty"`
 		Whitelist               map[uint64]common.Hash `toml:"-"`
 		LightServ               int                    `toml:",omitempty"`
@@ -59,6 +59,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		RPCGasCap               uint64
 		RPCEVMTimeout           time.Duration
 		RPCTxFeeCap             float64
+		RangeLimit              uint64                         `toml:",omitempty"`
 		Checkpoint              *params.TrustedCheckpoint      `toml:",omitempty"`
 		CheckpointOracle        *params.CheckpointOracleConfig `toml:",omitempty"`
 		OverrideLondon          *big.Int                       `toml:",omitempty"`
@@ -106,6 +107,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.RPCGasCap = c.RPCGasCap
 	enc.RPCEVMTimeout = c.RPCEVMTimeout
 	enc.RPCTxFeeCap = c.RPCTxFeeCap
+	enc.RangeLimit = c.RangeLimit
 	enc.Checkpoint = c.Checkpoint
 	enc.CheckpointOracle = c.CheckpointOracle
 	enc.OverrideLondon = c.OverrideLondon
@@ -157,6 +159,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		RPCGasCap               *uint64
 		RPCEVMTimeout           *time.Duration
 		RPCTxFeeCap             *float64
+		RangeLimit              *uint64                        `toml:",omitempty"`
 		Checkpoint              *params.TrustedCheckpoint      `toml:",omitempty"`
 		CheckpointOracle        *params.CheckpointOracleConfig `toml:",omitempty"`
 		OverrideLondon          *big.Int                       `toml:",omitempty"`
@@ -286,6 +289,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.RPCTxFeeCap != nil {
 		c.RPCTxFeeCap = *dec.RPCTxFeeCap
+	}
+	if dec.RangeLimit != nil {
+		c.RangeLimit = *dec.RangeLimit
 	}
 	if dec.Checkpoint != nil {
 		c.Checkpoint = dec.Checkpoint
