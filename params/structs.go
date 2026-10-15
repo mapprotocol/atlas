@@ -102,7 +102,8 @@ type ChainConfig struct {
 	EnableRewardBlock *big.Int `json:"rewardblock,omitempty"`
 	DeregisterBlock   *big.Int `json:"deregisterblock,omitempty"`
 	CalcBaseBlock     *big.Int `json:"calcbaseblock,omitempty"`
-	MAIBlock          *big.Int `json:"maiBlock,omitempty"` // MAI switch block (nil = no fork, 0 = already on shanghai)
+	MAIBlock          *big.Int `json:"maiBlock,omitempty"`       // MAI switch block (nil = no fork, 0 = already on shanghai)
+	BlacklistBlock    *big.Int `json:"blacklistBlock,omitempty"` // Account blacklist switch block (nil = no fork)
 	// This does not belong here but passing it to every function is not possible since that breaks
 	// some implemented interfaces and introduces churn across the geth codebase.
 	FullHeaderChainAvailable bool // False for lightest Sync mode, true otherwise
@@ -158,7 +159,7 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v BN256Fork: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Reward: %v, Deregister: %v, Calc: %v, MAI: %v, Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v BN256Fork: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Reward: %v, Deregister: %v, Calc: %v, MAI: %v, Blacklist: %v, Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -178,6 +179,7 @@ func (c *ChainConfig) String() string {
 		c.DeregisterBlock,
 		c.CalcBaseBlock,
 		c.MAIBlock,
+		c.BlacklistBlock,
 		engine,
 	)
 }
@@ -265,6 +267,11 @@ func (c *ChainConfig) IsCalc(num *big.Int) bool {
 // IsMAI returns whether num is either equal to the MAI fork block or greater.
 func (c *ChainConfig) IsMAI(num *big.Int) bool {
 	return isForked(c.MAIBlock, num)
+}
+
+// IsBlacklist returns whether num is either equal to the blacklist fork block or greater.
+func (c *ChainConfig) IsBlacklist(num *big.Int) bool {
+	return isForked(c.BlacklistBlock, num)
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
@@ -378,6 +385,9 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 	}
 	if isForkIncompatible(c.EWASMBlock, newcfg.EWASMBlock, head) {
 		return newCompatError("ewasm fork block", c.EWASMBlock, newcfg.EWASMBlock)
+	}
+	if isForkIncompatible(c.BlacklistBlock, newcfg.BlacklistBlock, head) {
+		return newCompatError("Blacklist fork block", c.BlacklistBlock, newcfg.BlacklistBlock)
 	}
 	return nil
 }
