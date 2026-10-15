@@ -62,3 +62,26 @@ func TestTestnetBlacklistBlock(t *testing.T) {
 		t.Fatal("blacklist should be active from block 24726500")
 	}
 }
+
+// Tests that a node which kept running an old version past BlacklistBlock can
+// upgrade without a config compatibility error.
+func TestBlacklistBlockCompatible(t *testing.T) {
+	for _, base := range []*ChainConfig{MainnetChainConfig, TestnetConfig, DevnetConfig} {
+		stored := *base
+		stored.BlacklistBlock = nil
+		for _, head := range []uint64{0, 24726500, 26654675, 100000000} {
+			if err := stored.CheckCompatible(base, head); err != nil {
+				t.Errorf("chain %v head %d: old -> new: %v", base.ChainID, head, err)
+			}
+			if err := base.CheckCompatible(&stored, head); err != nil {
+				t.Errorf("chain %v head %d: new -> old: %v", base.ChainID, head, err)
+			}
+		}
+	}
+	// Other forks are still checked.
+	stored := *MainnetChainConfig
+	stored.MuirGlacierBlock = big.NewInt(100)
+	if err := stored.CheckCompatible(MainnetChainConfig, 26654675); err == nil {
+		t.Error("expected compatibility error for a changed Muir Glacier fork block")
+	}
+}
