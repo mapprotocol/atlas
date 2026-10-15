@@ -225,6 +225,12 @@ func gatherForks(config *params.ChainConfig) []uint64 {
 		if !strings.HasSuffix(field.Name, "Block") {
 			continue
 		}
+		// BlacklistBlock only rejects txs of specific accounts, so blocks valid under
+		// it stay valid for non-upgraded nodes. It must not partition the network via
+		// fork ID. Never remove this skip: doing so would change the fork ID.
+		if field.Name == "BlacklistBlock" {
+			continue
+		}
 		if field.Type != reflect.TypeOf(new(big.Int)) {
 			continue
 		}
