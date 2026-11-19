@@ -170,6 +170,7 @@ var (
 		utils.RPCGlobalGasCapFlag,
 		utils.RPCGlobalTxFeeCapFlag,
 		utils.RPCGlobalRangeLimitFlag,
+		utils.IstanbulMaxRoundChangeTimeoutFlag,
 		utils.AllowUnprotectedTxs,
 		utils.BatchRequestLimit,
 		utils.BatchResponseMaxSize,

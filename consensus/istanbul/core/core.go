@@ -704,15 +704,31 @@ func (c *core) stopAllTimers() {
 }
 
 func (c *core) getRoundChangeTimeout() time.Duration {
-	baseTimeout := time.Duration(c.config.RequestTimeout) * time.Millisecond
-	round := c.current.DesiredRound().Uint64()
+	return roundChangeTimeout(c.config, c.current.DesiredRound().Uint64())
+}
+
+// roundChangeTimeout returns the timeout of the given round, capped at
+// config.MaxRoundChangeTimeout (0 = no cap).
+func roundChangeTimeout(config *istanbul.Config, round uint64) time.Duration {
+	baseTimeout := time.Duration(config.RequestTimeout) * time.Millisecond
+	var timeout time.Duration
 	if round == 0 {
 		// timeout for first round takes into account expected block period
-		return baseTimeout + time.Duration(c.config.BlockPeriod)*time.Second
+		timeout = baseTimeout + time.Duration(config.BlockPeriod)*time.Second
 	} else {
-		// timeout for subsequent rounds adds an exponential backoff.
-		return baseTimeout + time.Duration(math.Pow(2, float64(round)))*time.Duration(c.config.TimeoutBackoffFactor)*time.Millisecond
+		// timeout for subsequent rounds adds an exponential backoff, saturating
+		// instead of overflowing for very high rounds.
+		backoff := time.Duration(config.TimeoutBackoffFactor) * time.Millisecond
+		if round >= 63 || backoff > (math.MaxInt64-baseTimeout)>>round {
+			timeout = math.MaxInt64
+		} else {
+			timeout = baseTimeout + backoff<<round
+		}
 	}
+	if maxTimeout := time.Duration(config.MaxRoundChangeTimeout) * time.Millisecond; maxTimeout > 0 && timeout > maxTimeout {
+		timeout = maxTimeout
+	}
+	return timeout
 }
 
 // Reset then set the timer that causes a timeoutAndMoveToNextRoundEvent to be processed.

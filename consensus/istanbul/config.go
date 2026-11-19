@@ -28,6 +28,11 @@ import (
 const (
 	//MinEpochSize represents the minimum permissible epoch size
 	MinEpochSize = 3
+
+	// MinMaxRoundChangeTimeout is the lowest allowed non-zero MaxRoundChangeTimeout in milliseconds.
+	// A smaller cap would make validators leave rounds before they can complete under network
+	// delay, and would disable RoundChange resends (sent every timeout/2, at least every 15s).
+	MinMaxRoundChangeTimeout = 30 * 1000
 )
 
 // ProposerPolicy represents the policy used to order elected validators within an epoch
@@ -43,6 +48,7 @@ const (
 type Config struct {
 	RequestTimeout              uint64         `toml:",omitempty"` // The timeout for each Istanbul round in milliseconds.
 	TimeoutBackoffFactor        uint64         `toml:",omitempty"` // Timeout at subsequent rounds is: RequestTimeout + 2**round * TimeoutBackoffFactor (in milliseconds)
+	MaxRoundChangeTimeout       uint64         // Upper bound of the round change timeout in milliseconds (0 = no limit)
 	MinResendRoundChangeTimeout uint64         `toml:",omitempty"` // Minimum interval with which to resend RoundChange messages for same round
 	MaxResendRoundChangeTimeout uint64         `toml:",omitempty"` // Maximum interval with which to resend RoundChange messages for same round
 	BlockPeriod                 uint64         `toml:",omitempty"` // Default minimum difference between two consecutive block's timestamps in second
@@ -83,6 +89,7 @@ type ProxyConfig struct {
 var DefaultConfig = &Config{
 	RequestTimeout:                 3000,
 	TimeoutBackoffFactor:           1000,
+	MaxRoundChangeTimeout:          10 * 60 * 1000,
 	MinResendRoundChangeTimeout:    15 * 1000,
 	MaxResendRoundChangeTimeout:    2 * 60 * 1000,
 	BlockPeriod:                    5,
@@ -101,6 +108,15 @@ var DefaultConfig = &Config{
 	AnnounceAggressiveQueryEnodeGossipOnEnablement: true,
 	AnnounceAdditionalValidatorsToGossip:           10,
 	LoadTestCSVFile:                                "", // disable by default
+}
+
+// CheckMaxRoundChangeTimeout returns an error if v is neither 0 (no limit) nor at
+// least MinMaxRoundChangeTimeout milliseconds.
+func CheckMaxRoundChangeTimeout(v uint64) error {
+	if v != 0 && v < MinMaxRoundChangeTimeout {
+		return fmt.Errorf("max round change timeout must be 0 (no limit) or at least %d ms, got %d ms", MinMaxRoundChangeTimeout, v)
+	}
+	return nil
 }
 
 //ApplyParamsChainConfigToConfig applies the istanbul config values from params.chainConfig to the istanbul.Config config
