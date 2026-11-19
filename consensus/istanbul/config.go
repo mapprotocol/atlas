@@ -90,9 +90,9 @@ var DefaultConfig = &Config{
 	Epoch:                          30000,
 	DefaultLookbackWindow:          12,
 	ReplicaStateDBPath:             "",
-	ValidatorEnodeDBPath:           "",
-	VersionCertificateDBPath:       "",
-	RoundStateDBPath:               "",
+	ValidatorEnodeDBPath:           "validatorenodes",
+	VersionCertificateDBPath:       "versioncertificates",
+	RoundStateDBPath:               "roundstates",
 	Validator:                      true, // as miner~~
 	Replica:                        false,
 	Proxy:                          false,

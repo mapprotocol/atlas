@@ -691,6 +691,10 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 		if err := istanbul.ApplyParamsChainConfigToConfig(chainConfig, &config.Istanbul); err != nil {
 			log.Crit("Invalid Configuration for Istanbul Engine", "err", err)
 		}
+		log.Info("Istanbul consensus engine",
+			"roundStateDB", config.Istanbul.RoundStateDBPath,
+			"validatorEnodeDB", config.Istanbul.ValidatorEnodeDBPath,
+			"versionCertificateDB", config.Istanbul.VersionCertificateDBPath)
 
 		return istanbulBackend.New(&config.Istanbul, db)
 	}
