@@ -55,6 +55,7 @@ import (
 	"github.com/mapprotocol/atlas/atlas/tracers"
 	"github.com/mapprotocol/atlas/cmd/node"
 	"github.com/mapprotocol/atlas/consensus"
+	"github.com/mapprotocol/atlas/consensus/istanbul"
 	atlaschain "github.com/mapprotocol/atlas/core/chain"
 	"github.com/mapprotocol/atlas/core/vm"
 	"github.com/mapprotocol/atlas/helper/flags"
@@ -436,6 +437,11 @@ var (
 		Name:  "rpc.rangelimit",
 		Usage: "Maximum block range (end - begin) allowed for range queries (0 = unlimited)",
 		Value: ethconfig.Defaults.RangeLimit,
+	}
+	IstanbulMaxRoundChangeTimeoutFlag = cli.Uint64Flag{
+		Name:  "istanbul.maxroundchangetimeout",
+		Usage: "Upper bound of the Istanbul round change timeout in milliseconds (0 = no limit, otherwise at least 30000)",
+		Value: ethconfig.Defaults.Istanbul.MaxRoundChangeTimeout,
 	}
 	// Logging and debug settings
 	EthStatsURLFlag = cli.StringFlag{
@@ -1365,6 +1371,35 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 }
 
 // SetEthConfig applies eth-related command line flags to the config.
+// setIstanbul applies the Istanbul consensus engine flags and resolves its
+// database paths against the node's instance directory.
+func setIstanbul(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
+	// Persist the round state so a restarted validator neither re-proposes a
+	// different block nor votes again in a round it already took part in, and the
+	// validator enode and version certificate tables so it can reconnect to other
+	// validators without rediscovering them. The replica state stays in memory.
+	cfg.Istanbul.ValidatorEnodeDBPath = resolveDBPath(stack, cfg.Istanbul.ValidatorEnodeDBPath)
+	cfg.Istanbul.VersionCertificateDBPath = resolveDBPath(stack, cfg.Istanbul.VersionCertificateDBPath)
+	cfg.Istanbul.RoundStateDBPath = resolveDBPath(stack, cfg.Istanbul.RoundStateDBPath)
+
+	if ctx.GlobalIsSet(IstanbulMaxRoundChangeTimeoutFlag.Name) {
+		cfg.Istanbul.MaxRoundChangeTimeout = ctx.GlobalUint64(IstanbulMaxRoundChangeTimeoutFlag.Name)
+	}
+	if err := istanbul.CheckMaxRoundChangeTimeout(cfg.Istanbul.MaxRoundChangeTimeout); err != nil {
+		Fatalf("Invalid --%s: %v", IstanbulMaxRoundChangeTimeoutFlag.Name, err)
+	}
+}
+
+// resolveDBPath resolves a database path relative to the node's instance directory.
+// An empty path stays empty (in-memory database): ResolvePath("") would return the
+// instance directory itself.
+func resolveDBPath(stack *node.Node, path string) string {
+	if path == "" {
+		return ""
+	}
+	return stack.ResolvePath(path)
+}
+
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
 	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, TestnetFlag, SingleFlag)
@@ -1389,6 +1424,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setMiner(ctx, &cfg.Miner)
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
+	setIstanbul(ctx, stack, cfg)
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()

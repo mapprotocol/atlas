@@ -692,6 +692,12 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 			log.Crit("Invalid Configuration for Istanbul Engine", "err", err)
 		}
 
+		log.Info("Istanbul consensus engine",
+			"roundStateDB", config.Istanbul.RoundStateDBPath,
+			"validatorEnodeDB", config.Istanbul.ValidatorEnodeDBPath,
+			"versionCertificateDB", config.Istanbul.VersionCertificateDBPath,
+			"maxRoundChangeTimeout", time.Duration(config.Istanbul.MaxRoundChangeTimeout)*time.Millisecond)
+
 		return istanbulBackend.New(&config.Istanbul, db)
 	}
 	log.Error(fmt.Sprintf("Only Istanbul Consensus is supported: %v", chainConfig))
